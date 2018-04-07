@@ -3,7 +3,6 @@ package ru.avicomp.map.spin;
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.model.Argument;
@@ -13,7 +12,6 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.model.TargetFunction;
-import ru.avicomp.map.spin.vocabulary.SP;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 
@@ -39,7 +37,7 @@ public class MapManagerImpl implements MapManager {
 
     public static Model createLibraryModel() {
         UnionGraph g = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
-        return new ModelCom(g, SP.SPIN_PERSONALITY);
+        return SpinModelConfig.createModel(g);
     }
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
