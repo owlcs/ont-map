@@ -67,6 +67,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
     }
 
     public enum Resources {
+        AVC("/spin/avc.spin.ttl", "http://avc.ru/spin"),
         SP("/spin/sp.ttl", "http://spinrdf.org/sp"),
         SPIN("/spin/spin.ttl", "http://spinrdf.org/spin"),
         SPL("/spin/spl.spin.ttl", "http://spinrdf.org/spl"),

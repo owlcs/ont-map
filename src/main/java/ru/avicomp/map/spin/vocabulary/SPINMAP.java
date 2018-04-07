@@ -75,11 +75,11 @@ public class SPINMAP {
     public static final Property condition = property("condition");
 
 
-    protected static Resource resource(String local) {
+    public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }
 
-    protected static Property property(String local) {
+    public static Property property(String local) {
         return ResourceFactory.createProperty(NS + local);
     }
 

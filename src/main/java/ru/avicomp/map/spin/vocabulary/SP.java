@@ -10,6 +10,7 @@ import ru.avicomp.map.spin.SystemModels;
  * The difference: it does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personalities}.
  * <p>
  * Created by @szuev on 05.04.2018.
+ * @see org.topbraid.spin.vocabulary.SP
  */
 @SuppressWarnings({"WeakerAccess", "unused", "deprecation"})
 public class SP {
@@ -134,11 +135,11 @@ public class SP {
     public final static Resource sub = resource("sub");
     public final static Resource unaryMinus = resource("unaryMinus");
 
-    protected static Resource resource(String local) {
+    public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }
 
-    protected static Property property(String local) {
+    public static Property property(String local) {
         return ResourceFactory.createProperty(NS + local);
     }
 

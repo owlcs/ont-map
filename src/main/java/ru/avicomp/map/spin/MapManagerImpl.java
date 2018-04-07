@@ -12,8 +12,10 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.model.TargetFunction;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +39,8 @@ public class MapManagerImpl implements MapManager {
 
     public static Model createLibraryModel() {
         UnionGraph g = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
+        // note: this graph is not included to the owl:imports
+        g.addGraph(SystemModels.graphs().get(SystemModels.Resources.AVC.getURI()));
         return SpinModelConfig.createModel(g);
     }
 
@@ -44,9 +48,16 @@ public class MapManagerImpl implements MapManager {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
                 .filter(s -> s.canAs(Function.class) || s.canAs(TargetFunction.class))
                 .map(s -> s.as(Function.class))
-                //.filter(f -> !f.isPrivate())
-                .map(SpinMapFunctionImpl::new)
-                .collect(Collectors.toMap(SpinMapFunctionImpl::name, java.util.function.Function.identity()));
+                // skip private:
+                .filter(f -> !f.isPrivate())
+                // skip abstract:
+                .filter(f -> !f.isAbstract())
+                // skip deprecated:
+                .filter(f -> !f.hasProperty(RDF.type, OWL.DeprecatedClass))
+                // skip hidden:
+                .filter(f -> !f.hasProperty(AVC.hidden))
+                .map(MapFunctionImpl::new)
+                .collect(Collectors.toMap(MapFunctionImpl::name, java.util.function.Function.identity()));
     }
 
     @Override
@@ -64,13 +75,16 @@ public class MapManagerImpl implements MapManager {
         return MapJenaException.notNull(spinFunctions.get(name), "Can't find function " + name);
     }
 
-    public static class SpinMapFunctionImpl implements MapFunction {
+    /**
+     * A spin based implementation of {@link MapFunction}.
+     */
+    public static class MapFunctionImpl implements MapFunction {
 
         public static final String VOID = "void";
         public static final String UNDEFINED = "?";
         private final Module func;
 
-        public SpinMapFunctionImpl(Function func) {
+        public MapFunctionImpl(Function func) {
             this.func = Objects.requireNonNull(func, "Null " + Function.class.getName());
         }
 

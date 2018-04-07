@@ -1,0 +1,16 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sp:    <http://spinrdf.org/sp#> .
+@prefix avc:   <http://avc.ru/spin#> .
+
+<http://avc.ru/spin>  a  owl:Ontology ;
+        rdfs:comment     "This is an addition to the spin-family in order to customize spin-function behaviour in GUI." ;
+        owl:versionIRI   <http://avc.ru/spin/1.0> ;
+        owl:versionInfo  "version 1.0" .
+
+sp:abs  avc:hidden  "Duplicates the function fn:abs, which is preferable, since it has information about return types." .
+
+avc:hidden  a       owl:DatatypeProperty ;
+        rdfs:range  xsd:string .
