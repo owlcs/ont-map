@@ -1,4 +1,4 @@
-package ru.avicomp.map;
+package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
@@ -12,7 +12,8 @@ import ru.avicomp.ontapi.jena.vocabulary.XSD;
 import java.util.Objects;
 
 /**
- * Sugar.
+ * A sugar helper to work with {@link OntObject} (mostly with {@link OntEntity}).
+ *
  * Created by @szuev on 04.04.2018.
  */
 public class OntObjects {

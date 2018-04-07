@@ -3,7 +3,7 @@ package ru.avicomp.map.data;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDFS;
-import ru.avicomp.map.OntObjects;
+import ru.avicomp.map.utils.OntObjects;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 /**
  * Created by @szuev on 02.04.2018.
+ * TODO: updated copy-paste from old ont-map version.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class TestModels {

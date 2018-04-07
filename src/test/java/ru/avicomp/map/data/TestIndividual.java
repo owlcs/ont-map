@@ -7,7 +7,7 @@ import org.apache.jena.datatypes.xsd.XSDDateTime;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
-import ru.avicomp.map.OntObjects;
+import ru.avicomp.map.utils.OntObjects;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
  * Java representation of OWL Named ({@code owl:NamedIndividual}) and Anonymous individual.
  * This class allows to read/write from/to {@link ru.avicomp.ontapi.jena.model.OntGraphModel Jena OWL2 model}.
  * For tests purposes only.
+ * TODO: updated copy-paste from old ont-map version.
  * <p>
  * Created by @szuev on 15.07.2016.
  */
