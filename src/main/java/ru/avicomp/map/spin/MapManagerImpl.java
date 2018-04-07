@@ -12,6 +12,7 @@ import org.topbraid.spin.model.Module;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
+import ru.avicomp.map.spin.model.TargetFunction;
 import ru.avicomp.map.spin.vocabulary.SP;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.utils.Graphs;
@@ -43,7 +44,7 @@ public class MapManagerImpl implements MapManager {
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(Function.class))
+                .filter(s -> s.canAs(Function.class) || s.canAs(TargetFunction.class))
                 .map(s -> s.as(Function.class))
                 //.filter(f -> !f.isPrivate())
                 .map(SpinMapFunctionImpl::new)
@@ -89,6 +90,11 @@ public class MapManagerImpl implements MapManager {
         @Override
         public Stream<Arg> args() {
             return func.getArguments(true).stream().map(ArgImpl::new);
+        }
+
+        @Override
+        public boolean isTarget() {
+            return func.canAs(TargetFunction.class);
         }
 
         public Model getModel() {

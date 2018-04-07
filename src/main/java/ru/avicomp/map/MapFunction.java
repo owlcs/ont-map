@@ -18,6 +18,8 @@ public interface MapFunction {
 
     Stream<Arg> args();
 
+    boolean isTarget();
+
     interface Arg {
         String name();
 

@@ -11,7 +11,6 @@ import ru.avicomp.ontapi.jena.utils.Graphs;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Created by @szuev on 05.04.2018.
@@ -29,13 +28,8 @@ public class SystemModelsTest {
     @Test
     public void testListFunctions() {
         Managers.getMapManager().functions()
-                .sorted(Comparator.comparing(MapFunction::returnType).thenComparing(MapFunction::name))
-                .forEach(new Consumer<MapFunction>() {
-                    @Override
-                    public void accept(MapFunction func) {
-                        System.out.println(func);
-                    }
-                });
+                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
+                .forEach(System.out::println);
         System.out.println(Managers.getMapManager().functions().count());
     }
 

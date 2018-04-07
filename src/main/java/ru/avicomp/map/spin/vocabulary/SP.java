@@ -14,6 +14,8 @@ import org.topbraid.spin.util.SimpleImplementation2;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.impl.TargetFunctionImpl;
+import ru.avicomp.map.spin.model.TargetFunction;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 
 /**
@@ -24,7 +26,6 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
  */
 @SuppressWarnings({"WeakerAccess", "unused", "deprecation"})
 public class SP {
-    public static final String SPIN_URI = "http://spinrdf.org";
     public static final String BASE_URI = SystemModels.Resources.SP.getURI(); //SPIN_URI + "/sp";
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "sp";
@@ -182,6 +183,7 @@ public class SP {
         p.add(ElementList.class, new SimpleImplementation(RDF.List.asNode(), ElementListImpl.class));
         p.add(org.topbraid.spin.model.Exists.class, new SimpleImplementation(Exists.asNode(), ExistsImpl.class));
         p.add(Function.class, new SimpleImplementation(SPIN.Function.asNode(), FunctionImpl.class));
+        p.add(TargetFunction.class, new SimpleImplementation(SPINMAP.TargetFunction.asNode(), TargetFunctionImpl.class));
         p.add(FunctionCall.class, new SimpleImplementation(SPIN.Function.asNode(), FunctionCallImpl.class));
         p.add(Filter.class, new SimpleImplementation(Filter.asNode(), FilterImpl.class));
         p.add(org.topbraid.spin.model.update.Insert.class, new SimpleImplementation(Insert.asNode(), InsertImpl.class));
