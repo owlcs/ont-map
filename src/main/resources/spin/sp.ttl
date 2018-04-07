@@ -753,7 +753,7 @@ sp:where
   rdfs:label "where"^^xsd:string ;
   rdfs:range sp:ElementList ;
   rdfs:subPropertyOf sp:systemProperty ;
-.
+. 
 sp:with
   rdf:type rdf:Property ;
   rdfs:domain sp:Modify ;
