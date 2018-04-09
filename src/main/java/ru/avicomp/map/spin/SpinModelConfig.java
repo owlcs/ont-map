@@ -1,10 +1,8 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.enhanced.Personality;
-import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.model.*;
@@ -28,10 +26,6 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
  */
 public class SpinModelConfig {
     public static Personality<RDFNode> SPIN_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
-
-    public static Model createModel(Graph graph) {
-        return new ModelCom(graph, SPIN_PERSONALITY);
-    }
 
     /**
      * @param p {@link Personality} to modify

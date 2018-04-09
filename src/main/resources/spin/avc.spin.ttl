@@ -5,6 +5,9 @@
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix avc:   <http://avc.ru/spin#> .
 
+sp:UUID  a            <http://spinrdf.org/spinmap#TargetFunction> ;
+        rdfs:comment  "Also, it can be used as target function to produce anonymous individuals." .
+
 <http://avc.ru/spin>  a  owl:Ontology ;
         rdfs:comment     "This is an addition to the spin-family in order to customize spin-function behaviour in GUI." ;
         owl:versionIRI   <http://avc.ru/spin/1.0> ;

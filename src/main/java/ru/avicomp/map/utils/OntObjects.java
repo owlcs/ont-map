@@ -30,18 +30,22 @@ public class OntObjects {
         return model.createOntEntity(OntNOP.class, uri);
     }
 
+    @Deprecated // move or delete
     public static String getLabel(OntObject obj) {
         return getFirstStringLiteralValue(obj, RDFS.label);
     }
 
+    @Deprecated // move or delete
     public static String getComment(OntObject obj) {
         return getFirstStringLiteralValue(obj, RDFS.comment);
     }
 
+    @Deprecated // move or delete
     public static <O extends OntObject> O setLabel(O obj, String label) {
         return setFirstStringLiteralValue(obj, RDFS.label, label);
     }
 
+    @Deprecated // move or delete
     public static <O extends OntObject> O setComment(O obj, String comment) {
         return setFirstStringLiteralValue(obj, RDFS.comment, comment);
     }

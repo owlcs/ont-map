@@ -37,14 +37,14 @@ public class SystemModels implements JenaSubsystemLifecycle {
 
     @Override
     public void start() {
-        LOGGER.info("START");
+        LOGGER.debug("START");
         //noinspection ResultOfMethodCallIgnored
         graphs();
     }
 
     @Override
     public void stop() {
-        LOGGER.info("STOP");
+        LOGGER.debug("STOP");
     }
 
     private static class Loader {
@@ -59,7 +59,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
                 } catch (IOException e) {
                     throw new UncheckedIOException("Can't load " + f.path, e);
                 }
-                LOGGER.info("Graph {} is loaded, size: {}", f.uri, g.size());
+                LOGGER.debug("Graph {} is loaded, size: {}", f.uri, g.size());
                 res.put(f.uri, new UnmodifiableGraph(g));
             }
             return Collections.unmodifiableMap(res);

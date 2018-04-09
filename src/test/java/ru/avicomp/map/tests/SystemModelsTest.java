@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.vocabulary.SP;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.transforms.vocabulary.AVC;
@@ -31,7 +33,7 @@ public class SystemModelsTest {
         graphs.forEach((expected, g) -> Assert.assertEquals(expected, Graphs.getURI(g)));
         OntModelFactory.init();
         Assert.assertSame(graphs, SystemModels.graphs());
-        Model lib = (Model) Managers.getMapManager().prefixes();
+        Model lib = ((MapManagerImpl) Managers.getMapManager()).library();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);
         Assert.assertEquals(28, tree.split("\n").length);
@@ -47,6 +49,10 @@ public class SystemModelsTest {
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
                 .forEach(System.out::println);
         System.out.println(Managers.getMapManager().functions().count());
+        MapFunction f = Managers.getMapManager().getFunction(SP.resource("UUID").getURI());
+        Assert.assertNotNull(f);
+        System.out.println(f.getComment());
+        System.out.println(f.getComment("ru"));
     }
 
 }
