@@ -53,6 +53,8 @@ public class SystemModelsTest {
         Assert.assertNotNull(f);
         System.out.println(f.getComment());
         System.out.println(f.getComment("ru"));
+        System.out.println(f.getLabel());
+        System.out.println(f.getLabel("ru"));
     }
 
 }

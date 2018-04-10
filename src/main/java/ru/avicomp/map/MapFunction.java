@@ -12,7 +12,7 @@ import java.util.stream.Stream;
  * <p>
  * Created by @szuev on 06.04.2018.
  */
-public interface MapFunction {
+public interface MapFunction extends Description {
 
     /**
      * Gets a name of function.
@@ -23,31 +23,21 @@ public interface MapFunction {
 
     /**
      * Gets a return type of function.
+     *
      * @return String, iri.
      */
     String returnType();
 
     /**
      * Returns a list of function arguments
+     *
      * @return Stream of {@link Arg}s.
      */
     Stream<Arg> args();
 
     boolean isTarget();
 
-    Builder createFunctionCall();
-
-    /**
-     * Returns a {@code rdfs:comment} concatenated for the specified lang with symbol '\n'.
-     *
-     * @param lang String or null to get default
-     * @return String comment
-     */
-    String getComment(String lang);
-
-    default String getComment() {
-        return getComment(null);
-    }
+    FunctionBuilder createFunctionCall();
 
     /**
      * Finds an argument by predicate iri
@@ -66,31 +56,12 @@ public interface MapFunction {
     /**
      * Function argument.
      */
-    interface Arg {
+    interface Arg extends Description {
         String name();
 
         String type();
 
         boolean isOptional();
-
-        /**
-         * Returns string comment.
-         *
-         * @param lang String lang, null to get default
-         * @return String
-         * @see MapFunction#getComment(String)
-         */
-        String getComment(String lang);
-
-        default String getComment() {
-            return getComment(null);
-        }
-    }
-
-    interface Builder {
-        Builder add(Arg arg, Object value);
-
-        Call build();
     }
 
     interface Call {

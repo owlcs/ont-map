@@ -1,14 +1,18 @@
 package ru.avicomp.map.spin;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.graph.Factory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
+import org.topbraid.spin.inference.SPINInferences;
 import org.topbraid.spin.model.Function;
+import org.topbraid.spin.system.SPINModuleRegistry;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
+import ru.avicomp.map.ModelBuilder;
 import ru.avicomp.map.spin.model.TargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -32,13 +36,20 @@ public class MapManagerImpl implements MapManager {
     public MapManagerImpl() {
         this.library = createLibraryModel();
         this.spinFunctions = loadFunctions(library);
+        registerALL(library);
+    }
+
+    private static void registerALL(Model library) {
+        // todo: check it
+        SPINModuleRegistry.get().init();
+        SPINModuleRegistry.get().registerAll(library, null);
     }
 
     public static Model createLibraryModel() {
         UnionGraph g = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
         // note: this graph is not included to the owl:imports
         g.addGraph(SystemModels.graphs().get(SystemModels.Resources.AVC.getURI()));
-        return ModelFactory.createModel(g);
+        return new ModelCom(g, SpinModelConfig.SPIN_PERSONALITY);
     }
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
@@ -76,20 +87,19 @@ public class MapManagerImpl implements MapManager {
         return MapJenaException.notNull(spinFunctions.get(name), "Can't find function " + name);
     }
 
-    public static String getLangValue(Resource resource, Property predicate, String lang) {
-        return Iter.asStream(resource.listProperties(predicate))
-                .map(Statement::getObject)
-                .filter(RDFNode::isLiteral)
-                .map(RDFNode::asLiteral)
-                .filter(l -> filterByLang(l, lang))
-                .map(Literal::getString)
-                .collect(Collectors.joining("\n"));
+    @Override
+    public ModelBuilder getModelBuilder() {
+        return new ModelBuilderImpl(this);
     }
 
-    private static boolean filterByLang(Literal literal, String lang) {
-        String other = literal.getLanguage();
-        if (StringUtils.isEmpty(lang))
-            return StringUtils.isEmpty(other);
-        return lang.trim().equalsIgnoreCase(other);
+    @Override
+    public InferenceEngine getInferenceEngine() {
+        return (mapping, source, target) -> {
+            UnionGraph g = new UnionGraph(Factory.createGraphMem());
+            Graphs.flat(mapping.getGraph()).forEach(g::addGraph);
+            g.addGraph(library.getGraph()); // todo: exclude avc?
+            SPINInferences.run(new ModelCom(g, SpinModelConfig.SPIN_PERSONALITY), new ModelCom(target), null, null, false, null);
+        };
     }
+
 }

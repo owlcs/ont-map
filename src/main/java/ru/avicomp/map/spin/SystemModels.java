@@ -24,7 +24,6 @@ import java.util.Map;
 public class SystemModels implements JenaSubsystemLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemModels.class);
 
-
     /**
      * Returns all spin models from system resources.
      * Singleton.

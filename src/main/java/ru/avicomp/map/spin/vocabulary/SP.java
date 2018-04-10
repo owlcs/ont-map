@@ -14,7 +14,7 @@ import ru.avicomp.map.spin.SystemModels;
  */
 @SuppressWarnings({"WeakerAccess", "unused", "deprecation"})
 public class SP {
-    public static final String BASE_URI = SystemModels.Resources.SP.getURI(); //SPIN_URI + "/sp";
+    public static final String BASE_URI = SystemModels.Resources.SP.getURI();
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "sp";
 

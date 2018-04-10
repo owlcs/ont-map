@@ -7,8 +7,10 @@ import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.model.Argument;
 import org.topbraid.spin.model.Function;
 import org.topbraid.spin.model.Module;
+import ru.avicomp.map.FunctionBuilder;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.spin.model.TargetFunction;
+import ru.avicomp.map.utils.Models;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -56,7 +58,12 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public String getComment(String lang) {
-        return MapManagerImpl.getLangValue(func, RDFS.comment, lang);
+        return Models.getLangValue(func, RDFS.comment, lang);
+    }
+
+    @Override
+    public String getLabel(String lang) {
+        return Models.getLangValue(func, RDFS.label, lang);
     }
 
     public Model getModel() {
@@ -102,7 +109,12 @@ public class MapFunctionImpl implements MapFunction {
 
         @Override
         public String getComment(String lang) {
-            return MapManagerImpl.getLangValue(arg, RDFS.comment, lang);
+            return Models.getLangValue(arg, RDFS.comment, lang);
+        }
+
+        @Override
+        public String getLabel(String lang) {
+            return Models.getLangValue(arg, RDFS.label, lang);
         }
 
         public String toString(PrefixMapping pm) {
