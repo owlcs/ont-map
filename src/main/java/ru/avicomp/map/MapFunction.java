@@ -42,19 +42,19 @@ public interface MapFunction extends Description {
     /**
      * Finds an argument by predicate iri
      *
-     * @param name String, predicate iri
+     * @param predicate String, predicate iri
      * @return {@link Arg}
      * @throws MapJenaException in case no
      */
-    default Arg getArg(String name) throws MapJenaException {
+    default Arg getArg(String predicate) throws MapJenaException {
         return args()
-                .filter(f -> Objects.equals(name, f.name()))
+                .filter(f -> Objects.equals(predicate, f.name()))
                 .findFirst()
-                .orElseThrow(() -> new MapJenaException("Function (" + name() + ") argument " + name + " not found."));
+                .orElseThrow(() -> new MapJenaException("Function (" + name() + ") argument " + predicate + " not found."));
     }
 
     /**
-     * Function argument.
+     * A function argument.
      */
     interface Arg extends Description {
         String name();

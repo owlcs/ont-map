@@ -12,6 +12,8 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.spin.model.TargetFunction;
 import ru.avicomp.map.utils.Models;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,8 +54,8 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     @Override
-    public Builder createFunctionCall() {
-        throw new UnsupportedOperationException("TODO");
+    public FunctionBuilder createFunctionCall() {
+        return new BuilderImpl();
     }
 
     @Override
@@ -119,6 +121,35 @@ public class MapFunctionImpl implements MapFunction {
 
         public String toString(PrefixMapping pm) {
             return String.format("%s%s=%s", pm.shortForm(name()), isOptional() ? "(*)" : "", pm.shortForm(type()));
+        }
+    }
+
+    public class BuilderImpl implements FunctionBuilder {
+        private final Map<Arg, Object> args = new HashMap<>();
+
+        @Override
+        public FunctionBuilder add(Arg arg, Object value) {
+            // todo:
+            throw new UnsupportedOperationException("TODO");
+        }
+
+        @Override
+        public Call build() {
+            // todo:
+            return new CallImpl(this.args);
+        }
+    }
+
+    public class CallImpl implements Call {
+        private final Map<Arg, Object> args;
+
+        private CallImpl(Map<Arg, Object> args) {
+            this.args = args;
+        }
+
+        @Override
+        public MapFunctionImpl getFunction() {
+            return MapFunctionImpl.this;
         }
     }
 }
