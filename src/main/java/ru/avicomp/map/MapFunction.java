@@ -40,11 +40,11 @@ public interface MapFunction extends Description {
     FunctionBuilder createFunctionCall();
 
     /**
-     * Finds an argument by predicate iri
+     * Gets an argument by predicate iri.
      *
      * @param predicate String, predicate iri
      * @return {@link Arg}
-     * @throws MapJenaException in case no
+     * @throws MapJenaException in case no arg found.
      */
     default Arg getArg(String predicate) throws MapJenaException {
         return args()
@@ -57,14 +57,60 @@ public interface MapFunction extends Description {
      * A function argument.
      */
     interface Arg extends Description {
+        /**
+         * Returns an argument name (an iri of predicate currently).
+         *
+         * @return String
+         */
         String name();
 
+        /**
+         * Returns an argument type.
+         *
+         * @return String
+         */
         String type();
 
+        /**
+         * Answers whether the argument must have an assigned value on the function call.
+         *
+         * @return boolean, true if it is optional argument
+         */
         boolean isOptional();
+
+        /**
+         * Answers iff this argument is available to assign value.
+         *
+         * @return boolean
+         */
+        default boolean isAssignable() {
+            return true;
+        }
     }
 
+    /**
+     * A Function Call,
+     * i.e. a container which contains function with assigned arguments ready for writing to graph.
+     * Cannot be modified.
+     */
     interface Call {
-        MapFunction getFunction();
+
+        /**
+         * @param arg
+         * @return
+         */
+        String getValue(Arg arg);
+
+        /**
+         * Presents a call as unmodifiable builder instance.
+         * To use in default methods.
+         *
+         * @return {@link FunctionBuilder}
+         */
+        FunctionBuilder asUnmodifiableBuilder();
+
+        default MapFunction getFunction() {
+            return asUnmodifiableBuilder().getFunction();
+        }
     }
 }

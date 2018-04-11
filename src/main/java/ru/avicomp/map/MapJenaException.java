@@ -29,4 +29,14 @@ public class MapJenaException extends JenaException {
             throw message == null ? new MapJenaException() : new MapJenaException(message);
         return obj;
     }
+
+    public static class Unsupported extends MapJenaException {
+        public Unsupported() {
+            super();
+        }
+
+        public Unsupported(String message) {
+            super(message);
+        }
+    }
 }

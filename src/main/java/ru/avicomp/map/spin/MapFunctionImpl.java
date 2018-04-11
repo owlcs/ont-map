@@ -9,12 +9,13 @@ import org.topbraid.spin.model.Function;
 import org.topbraid.spin.model.Module;
 import ru.avicomp.map.FunctionBuilder;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.TargetFunction;
+import ru.avicomp.map.spin.vocabulary.SPIN;
+import ru.avicomp.map.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.utils.Models;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,6 +28,7 @@ public class MapFunctionImpl implements MapFunction {
     public static final String VOID = "void";
     public static final String UNDEFINED = "?";
     private final Module func;
+    private List<Arg> arguments;
 
     public MapFunctionImpl(Function func) {
         this.func = Objects.requireNonNull(func, "Null " + Function.class.getName());
@@ -43,9 +45,17 @@ public class MapFunctionImpl implements MapFunction {
         return r == null ? VOID : r.getURI();
     }
 
+    public List<Arg> getArguments() {
+        return arguments == null ? arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
+    }
+
     @Override
     public Stream<Arg> args() {
-        return func.getArguments(true).stream().map(ArgImpl::new);
+        return getArguments().stream();
+    }
+
+    public Optional<Arg> arg(String predicate) {
+        return args().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
     }
 
     @Override
@@ -110,6 +120,21 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         @Override
+        public boolean isAssignable() {
+            return !isInherit();
+        }
+
+        /**
+         * Checks if it is a direct argument or it goes from superclass.
+         * Direct arguments can be used to make function call, inherited should be ignored.
+         *
+         * @return false if it is normal argument, i.e. it is ready to use.
+         */
+        public boolean isInherit() {
+            return !func.hasProperty(SPIN.constraint, arg);
+        }
+
+        @Override
         public String getComment(String lang) {
             return Models.getLangValue(arg, RDFS.comment, lang);
         }
@@ -120,30 +145,56 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         public String toString(PrefixMapping pm) {
-            return String.format("%s%s=%s", pm.shortForm(name()), isOptional() ? "(*)" : "", pm.shortForm(type()));
+            return String.format("%s%s=%s", pm.shortForm(name()), info(), pm.shortForm(type()));
+        }
+
+        private String info() {
+            List<String> res = new ArrayList<>(2);
+            if (isOptional()) res.add("*");
+            if (isInherit()) res.add("i");
+            return res.isEmpty() ? "" : res.stream().collect(Collectors.joining(",", "(", ")"));
         }
     }
 
     public class BuilderImpl implements FunctionBuilder {
-        private final Map<Arg, Object> args = new HashMap<>();
+        private final Map<String, String> args = new HashMap<>();
 
         @Override
-        public FunctionBuilder add(Arg arg, Object value) {
-            // todo:
+        public FunctionBuilder add(Arg arg, String value) {
+            if (!arg.isAssignable()) // todo: add strict exception mechanism
+                throw new MapJenaException();
+            // todo: check type.
+            args.put(arg.name(), value);
+            return this;
+        }
+
+        @Override
+        public FunctionBuilder add(Arg arg, FunctionBuilder other) {
+            // todo: check type.
             throw new UnsupportedOperationException("TODO");
         }
 
         @Override
+        public MapFunction getFunction() {
+            return MapFunctionImpl.this;
+        }
+
+        @Override
         public Call build() {
-            // todo:
+            if (MapFunctionImpl.this.isTarget()) {
+                // Most of spin-map target function calls should have spin:_source variable assigned on this argument,
+                // although it does not seem it is really needed.
+                MapFunctionImpl.this.arg(SPINMAP.source.getURI())
+                        .ifPresent(a -> args.put(a.name(), SPINMAP.sourceVariable.getURI()));
+            }
             return new CallImpl(this.args);
         }
     }
 
     public class CallImpl implements Call {
-        private final Map<Arg, Object> args;
+        private final Map<String, String> args;
 
-        private CallImpl(Map<Arg, Object> args) {
+        private CallImpl(Map<String, String> args) {
             this.args = args;
         }
 
@@ -151,5 +202,36 @@ public class MapFunctionImpl implements MapFunction {
         public MapFunctionImpl getFunction() {
             return MapFunctionImpl.this;
         }
+
+        @Override
+        public String getValue(Arg arg) {
+            return args.get(arg.name());
+        }
+
+        @Override
+        public FunctionBuilder asUnmodifiableBuilder() {
+            return new FunctionBuilder() {
+                @Override
+                public FunctionBuilder add(Arg arg, String value) {
+                    throw new MapJenaException.Unsupported();
+                }
+
+                @Override
+                public FunctionBuilder add(Arg arg, FunctionBuilder other) {
+                    throw new MapJenaException.Unsupported();
+                }
+
+                @Override
+                public MapFunction getFunction() {
+                    return MapFunctionImpl.this;
+                }
+
+                @Override
+                public Call build() throws MapJenaException {
+                    return CallImpl.this;
+                }
+            };
+        }
+
     }
 }

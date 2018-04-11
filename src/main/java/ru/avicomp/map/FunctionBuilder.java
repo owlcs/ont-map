@@ -5,8 +5,15 @@ package ru.avicomp.map;
  * <p>
  * Created by @szuev on 10.04.2018.
  */
-public interface FunctionBuilder {
-    FunctionBuilder add(MapFunction.Arg arg, Object value);
+public interface FunctionBuilder extends Builder<MapFunction.Call> {
 
-    MapFunction.Call build();
+    FunctionBuilder add(MapFunction.Arg arg, String value) throws MapJenaException;
+
+    FunctionBuilder add(MapFunction.Arg arg, FunctionBuilder other) throws MapJenaException;
+
+    MapFunction getFunction();
+
+    default FunctionBuilder add(MapFunction.Arg arg, MapFunction.Call function) throws MapJenaException {
+        return add(arg, function.asUnmodifiableBuilder());
+    }
 }

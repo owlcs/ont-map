@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * <p>
  * Created by @szuev on 10.04.2018.
  */
-public class Models {
+public class Models extends ru.avicomp.ontapi.jena.utils.Models {
 
     public static final String STRING_VALUE_SEPARATOR = "\n";
 
