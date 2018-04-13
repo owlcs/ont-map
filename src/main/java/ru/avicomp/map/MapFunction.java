@@ -29,7 +29,7 @@ public interface MapFunction extends Description {
     String returnType();
 
     /**
-     * Returns a list of function arguments
+     * Returns a list of function arguments.
      *
      * @return Stream of {@link Arg}s.
      */

@@ -1,6 +1,7 @@
 package ru.avicomp.map;
 
 import org.apache.jena.rdf.model.Model;
+import ru.avicomp.ontapi.jena.model.OntID;
 
 /**
  * An extended {@link Model jena model} with mapping instructions.
@@ -11,6 +12,15 @@ import org.apache.jena.rdf.model.Model;
  */
 public interface MapModel extends Model {
 
+    OntID getID();
+
+    OntID setID(String uri);
+
+    /**
+     * TODO: do we need it here?
+     *
+     * @return
+     */
     MapManager getManager();
 
     default void runInferences(Model source, Model target) throws MapJenaException {

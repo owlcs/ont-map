@@ -46,17 +46,32 @@ public class MapManagerImpl implements MapManager {
         this.mapFunctions = loadFunctions(library);
     }
 
-    private static void registerALL(Model library) {
-        // todo: check it
-        SPINModuleRegistry.get().init();
+    public static void registerALL(Model library) {
+        // todo: check it and replace with own impl
+        FunctionRegistry.get().put(SPIN.ask.getURI(), new AskFunction());
+        FunctionRegistry.get().put(SPIN.eval.getURI(), new EvalFunction());
+        FunctionRegistry.get().put(SPIN.evalInGraph.getURI(), new EvalInGraphFunction());
+        FunctionRegistry.get().put(SPIN.violatesConstraints.getURI(), new ViolatesConstraintsFunction());
+        PropertyFunctionRegistry.get().put(SPIN.construct.getURI(), ConstructPFunction.class);
+        PropertyFunctionRegistry.get().put(SPIN.constructViolations.getURI(), ConstructViolationsPFunction.class);
+        PropertyFunctionRegistry.get().put(SPIN.select.getURI(), SelectPFunction.class);
+        PropertyFunctionRegistry.get().put("http://topbraid.org/spin/owlrl#propertyChainHelper", PropertyChainHelperPFunction.class);
         SPINModuleRegistry.get().registerAll(library, null);
     }
 
-    public static Model createLibraryModel() {
-        UnionGraph g = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
-        // note: this graph is not included to the owl:imports
-        g.addGraph(SystemModels.graphs().get(SystemModels.Resources.AVC.getURI()));
-        return new ModelCom(g, SpinModelConfig.SPIN_PERSONALITY);
+    public static Model createLibraryModel(boolean withInclusion) {
+        UnionGraph map = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
+        if (withInclusion) {
+            // note: this graph is not included to the owl:imports
+            UnionGraph avc = new UnionGraph(SystemModels.graphs().get(SystemModels.Resources.AVC.getURI()));
+            avc.addGraph(map);
+            map = avc;
+        }
+        return SpinModelConfig.createSpinModel(map);
+    }
+
+    public Graph getMapLibraryGraph() throws IllegalStateException {
+        return ((UnionGraph) library.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
     }
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
@@ -97,6 +112,30 @@ public class MapManagerImpl implements MapManager {
     @Override
     public ModelBuilder getModelBuilder() {
         return new ModelBuilderImpl(this);
+    }
+
+    @Override
+    public MapModelImpl createModel() { // todo:
+        UnionGraph g = new UnionGraph(Factory.createGraphMem());
+        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.MAP_PERSONALITY) {
+            @Override
+            public MapManager getManager() {
+                return MapManagerImpl.this;
+            }
+        };
+        Graph map = getMapLibraryGraph();
+        g.addGraph(map);
+        configurePrefixes(g);
+        res.setID(null).addImport(Graphs.getURI(map));
+        return res;
+    }
+
+    protected void configurePrefixes(Graph g) {
+        g.getEventManager().register(new PrefixedGraphListener(g.getPrefixMapping(), getNodePrefixMapper()));
+    }
+
+    public NodePrefixMapper getNodePrefixMapper() {
+        return new NodePrefixMapper();
     }
 
     @Override

@@ -1,15 +1,16 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.enhanced.Personality;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
+import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -18,17 +19,24 @@ import java.util.Optional;
 /**
  * Created by @szuev on 10.04.2018.
  */
-public abstract class MapModelImpl extends ModelCom implements MapModel {
+public abstract class MapModelImpl extends OntGraphModelImpl implements MapModel {
     private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
 
-    public MapModelImpl(UnionGraph base, Personality<RDFNode> personality) {
+    public MapModelImpl(UnionGraph base, OntPersonality personality) {
         super(base, personality);
     }
 
     @Override
-    public UnionGraph getGraph() {
-        return (UnionGraph) super.getGraph();
+    public OntID getID() {
+        return getNodeAs(Graphs.ontologyNode(getBaseGraph())
+                .orElseGet(() -> createResource().addProperty(RDF.type, OWL.Ontology).asNode()), OntID.class);
     }
+
+    @Override
+    public OntID setID(String uri) {
+        return getNodeAs(OntGraphModelImpl.createOntologyID(getBaseModel(), uri).asNode(), OntID.class);
+    }
+
 
     public Resource getOntology(String iri) {
         return createResource(iri).addProperty(RDF.type, OWL.Ontology);

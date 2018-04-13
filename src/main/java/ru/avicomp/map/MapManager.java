@@ -45,6 +45,8 @@ public interface MapManager {
     @Deprecated
     ModelBuilder getModelBuilder();
 
+    MapModel createModel();
+
     /**
      * @return {@link InferenceEngine}
      */

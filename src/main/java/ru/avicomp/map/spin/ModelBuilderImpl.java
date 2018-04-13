@@ -3,13 +3,10 @@ package ru.avicomp.map.spin;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.shared.PrefixMapping;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.SP;
-import ru.avicomp.map.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
-import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -33,12 +30,6 @@ public class ModelBuilderImpl implements ModelBuilder {
     private final MapManagerImpl manager;
     private Map<String, ClassBridge> contexts = new HashMap<>();
     private String iri;
-    private static final String MAPPING_PREFIX = "mapping";
-    private static final PrefixMapping PREFIXES = PrefixMapping.Factory.create()
-            .setNsPrefixes(OntModelFactory.STANDARD)
-            .setNsPrefix(SP.PREFIX, SP.NS)
-            .setNsPrefix(SPINMAP.PREFIX, SPINMAP.NS)
-            .lock();
 
     public ModelBuilderImpl(MapManagerImpl manager) {
         this.manager = Objects.requireNonNull(manager);
@@ -47,16 +38,16 @@ public class ModelBuilderImpl implements ModelBuilder {
     @Override
     public MapModel build() throws MapJenaException {
         UnionGraph g = new UnionGraph(Factory.createGraphMem());
-        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.SPIN_PERSONALITY) {
+        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.MAP_PERSONALITY) {
 
             @Override
             public MapManager getManager() {
                 return manager;
             }
         };
-        res.setNsPrefixes(PREFIXES);
+        res.setNsPrefixes(NodePrefixMapper.LIBRARY);
         String ns = (iri == null ? AVC.BASE_URI : iri) + "#";
-        res.setNsPrefix(MAPPING_PREFIX, ns);
+        res.setNsPrefix(NodePrefixMapper.MAPPING_PREFIX, ns);
         res.getOntology(iri);
         res.addImport(SPINMAPL.BASE_URI);
 

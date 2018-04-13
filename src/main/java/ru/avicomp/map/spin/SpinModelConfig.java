@@ -19,6 +19,12 @@ import ru.avicomp.map.spin.impl.TargetFunctionImpl;
 import ru.avicomp.map.spin.model.TargetFunction;
 import ru.avicomp.ontapi.jena.impl.OntIDImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
+import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
+import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
+
+import java.lang.reflect.Field;
+import java.util.Map;
 
 /**
  * Settings and personalities for a {@link Model jena model} which contain spin rules and other stuff.
@@ -27,7 +33,11 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
  * @see OntModelConfig
  */
 public class SpinModelConfig {
-    public static Personality<RDFNode> SPIN_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
+    public static Personality<RDFNode> LIB_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
+
+    // ont personality to reuse OntID impl: the mapping rdf-ontology should also have a single id
+    public static OntPersonality MAP_PERSONALITY = new OntPersonality(OntModelConfig.STANDARD_PERSONALITY.copy()
+            .add(OntID.class, new SimpleImplementation(OWL.Ontology.asNode(), OntIDImpl.class)));
 
     /**
      * see org.topbraid.spin.vocabulary.SP#init(Personality)
