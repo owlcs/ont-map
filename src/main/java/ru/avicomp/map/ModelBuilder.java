@@ -9,6 +9,7 @@ import ru.avicomp.ontapi.jena.model.OntPE;
  * TODO: developing.
  * Created by @szuev on 10.04.2018.
  */
+@Deprecated
 public interface ModelBuilder extends Builder<MapModel> {
 
     /**

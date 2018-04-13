@@ -1,9 +1,15 @@
 package ru.avicomp.map.tests;
 
+import org.apache.jena.vocabulary.RDF;
+import org.junit.Assert;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -14,18 +20,17 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
  * Created by @szuev on 09.04.2018.
  */
 public class DevelopExample1 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DevelopExample1.class);
 
-    public static void main(String... args) {
+    @Test
+    public void testProcess() {
         OntGraphModel src = assembleSource();
-        src.write(System.out, "ttl");
-        System.out.println("==========");
+        LOGGER.debug("\n{}\n==========", TestUtils.asString(src));
         OntGraphModel dst = assembleTarget();
-        dst.write(System.out, "ttl");
-        System.out.println("==========");
+        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
 
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
-
 
         MapManager manager = Managers.getMapManager();
         MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
@@ -34,17 +39,16 @@ public class DevelopExample1 {
                 // topbraid has difficulties with anonymous ontologies:
                 .addName("http://example.com.map")
                 .build();
-        res.write(System.out, "ttl");
 
-        System.out.println("==========");
-        res.runInferences(src, dst);
-        System.out.println("==========");
-        dst.write(System.out, "ttl"); // 2
+        LOGGER.debug("\n{}\n==========", TestUtils.asString(res));
 
-        System.out.println("==========");
         res.runInferences(src, dst);
-        System.out.println("==========");
-        dst.write(System.out, "ttl"); // 4
+        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
+        Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
+
+        res.runInferences(src, dst);
+        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
+        Assert.assertEquals(4, dst.statements(null, RDF.type, dstClass).count());
     }
 
     public static OntGraphModel assembleSource() {

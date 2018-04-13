@@ -4,6 +4,8 @@ import org.apache.jena.rdf.model.Model;
 
 /**
  * An extended {@link Model jena model} with mapping instructions.
+ * Note: it does not have to be OWL2 ontology.
+ * Moreover, a spin implementation is not OWL2-, but RDFS-ontology.
  * <p>
  * Created by @szuev on 10.04.2018.
  */

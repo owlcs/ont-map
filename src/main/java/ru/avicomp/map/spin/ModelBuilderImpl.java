@@ -28,6 +28,7 @@ import java.util.stream.Stream;
  * TODO: developing now.
  * Created by @szuev on 10.04.2018.
  */
+@Deprecated
 public class ModelBuilderImpl implements ModelBuilder {
     private final MapManagerImpl manager;
     private Map<String, ClassBridge> contexts = new HashMap<>();

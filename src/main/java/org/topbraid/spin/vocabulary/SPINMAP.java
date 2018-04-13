@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin.vocabulary;
+package org.topbraid.spin.vocabulary;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -7,10 +7,8 @@ import ru.avicomp.map.spin.SystemModels;
 
 /**
  * Vocabulary for http://spinrdf.org/spinmap
- * <p>
  * Created by @szuev on 07.04.2018.
- *
- * @see org.topbraid.spin.vocabulary.SPINMAP
+ * @see SP description about reasons of copy-pasting
  */
 public class SPINMAP {
 

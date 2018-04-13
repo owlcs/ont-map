@@ -30,8 +30,8 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.jena>3.6.0</version.jena>
-        <version.ontapi>1.2.0-SNAPSHOT</version.ontapi>
+        <version.jena>3.7.0</version.jena>
+        <version.ontapi>1.2.1-SNAPSHOT</version.ontapi>
         <version.slf4j>1.7.25</version.slf4j>
     </properties>
 
@@ -63,13 +63,6 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>ru.avicomp</groupId>
-            <artifactId>ontapi</artifactId>
-            <version>${version.ontapi}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>

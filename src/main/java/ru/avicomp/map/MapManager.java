@@ -40,7 +40,9 @@ public interface MapManager {
      * Provides a builder to build mapping instructions.
      *
      * @return {@link ModelBuilder}
+     * @deprecated todo: going to deal with a model directly.
      */
+    @Deprecated
     ModelBuilder getModelBuilder();
 
     /**

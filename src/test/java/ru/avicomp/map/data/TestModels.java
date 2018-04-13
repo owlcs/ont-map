@@ -1,14 +1,17 @@
 package ru.avicomp.map.data;
 
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.avicomp.map.utils.OntObjects;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
-import ru.avicomp.ontapi.utils.ReadWriteUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -517,14 +520,18 @@ public class TestModels {
         }
     }
 
-    public static void main(String... args) {
-        ReadWriteUtils.print(BEING_ONTOLOGY);
-        System.out.println("================");
-        ReadWriteUtils.print(PERSON_ONTOLOGY);
-        System.out.println("================");
-        ReadWriteUtils.print(CITIZEN_ONTOLOGY);
-        System.out.println("================");
-        ReadWriteUtils.print(USER_ONTOLOGY);
-    }
+    public static class TmpPrint {
+        public static final Logger LOGGER = LoggerFactory.getLogger(TmpPrint.class);
 
+        public static void main(String... args) {
+            print(BEING_ONTOLOGY);
+            print(PERSON_ONTOLOGY);
+            print(CITIZEN_ONTOLOGY);
+            print(USER_ONTOLOGY);
+        }
+
+        private static void print(Model m) {
+            LOGGER.debug("\n{}\b=============", TestUtils.asString(m));
+        }
+    }
 }

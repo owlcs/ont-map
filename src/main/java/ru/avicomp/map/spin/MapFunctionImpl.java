@@ -7,12 +7,12 @@ import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.model.Argument;
 import org.topbraid.spin.model.Function;
 import org.topbraid.spin.model.Module;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.FunctionBuilder;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.TargetFunction;
-import ru.avicomp.map.spin.vocabulary.SPIN;
-import ru.avicomp.map.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.utils.Models;
 
 import java.util.*;

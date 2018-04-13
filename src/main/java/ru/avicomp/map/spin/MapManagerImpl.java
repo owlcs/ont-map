@@ -1,14 +1,20 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.enhanced.BuiltinPersonalities;
 import org.apache.jena.graph.Factory;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.vocabulary.RDF;
+import org.topbraid.spin.arq.PropertyChainHelperPFunction;
+import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.inference.SPINInferences;
-import org.topbraid.spin.model.Function;
 import org.topbraid.spin.system.SPINModuleRegistry;
+import org.topbraid.spin.vocabulary.SPIN;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
@@ -20,6 +26,7 @@ import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,12 +38,12 @@ import java.util.stream.Stream;
 public class MapManagerImpl implements MapManager {
 
     private final Model library;
-    private Map<String, MapFunction> spinFunctions;
+    private Map<String, MapFunction> mapFunctions;
 
     public MapManagerImpl() {
-        this.library = createLibraryModel();
-        this.spinFunctions = loadFunctions(library);
+        this.library = createLibraryModel(true);
         registerALL(library);
+        this.mapFunctions = loadFunctions(library);
     }
 
     private static void registerALL(Model library) {
@@ -54,8 +61,8 @@ public class MapManagerImpl implements MapManager {
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(Function.class) || s.canAs(TargetFunction.class))
-                .map(s -> s.as(Function.class))
+                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(TargetFunction.class))
+                .map(s -> s.as(org.topbraid.spin.model.Function.class))
                 // skip private:
                 .filter(f -> !f.isPrivate())
                 // skip abstract:
@@ -65,12 +72,12 @@ public class MapManagerImpl implements MapManager {
                 // skip hidden:
                 .filter(f -> !f.hasProperty(AVC.hidden))
                 .map(MapFunctionImpl::new)
-                .collect(Collectors.toMap(MapFunctionImpl::name, java.util.function.Function.identity()));
+                .collect(Collectors.toMap(MapFunctionImpl::name, Function.identity()));
     }
 
     @Override
     public Stream<MapFunction> functions() {
-        return spinFunctions.values().stream();
+        return mapFunctions.values().stream();
     }
 
     @Override
@@ -84,7 +91,7 @@ public class MapManagerImpl implements MapManager {
 
     @Override
     public MapFunction getFunction(String name) throws MapJenaException {
-        return MapJenaException.notNull(spinFunctions.get(name), "Can't find function " + name);
+        return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 
     @Override
@@ -95,11 +102,23 @@ public class MapManagerImpl implements MapManager {
     @Override
     public InferenceEngine getInferenceEngine() {
         return (mapping, source, target) -> {
-            UnionGraph g = new UnionGraph(Factory.createGraphMem());
-            Graphs.flat(mapping.getGraph()).forEach(g::addGraph);
-            g.addGraph(library.getGraph()); // todo: exclude avc?
-            SPINInferences.run(new ModelCom(g, SpinModelConfig.SPIN_PERSONALITY), new ModelCom(target), null, null, false, null);
+            // a hack.
+            // Jena stupidly allows to modify global personality,
+            // what does SPIN API and implicitly requires a patched version everywhere.
+            // It may be dangerous and increases the load on the system.
+            Map<?, ?> init = SpinModelConfig.getPersonalityMap(BuiltinPersonalities.model);
+            try {
+                SpinModelConfig.init(BuiltinPersonalities.model);
+
+                UnionGraph g = new UnionGraph(Factory.createGraphMem());
+                Graphs.flat(mapping.getGraph()).forEach(g::addGraph);
+                g.addGraph(library.getGraph()); // todo: exclude avc?
+                SPINInferences.run(SpinModelConfig.createSpinModel(g), new ModelCom(target), null, null, false, null);
+            } finally {
+                SpinModelConfig.setPersonalityMap(BuiltinPersonalities.model, init);
+            }
         };
     }
+
 
 }

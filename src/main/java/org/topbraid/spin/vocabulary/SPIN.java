@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin.vocabulary;
+package org.topbraid.spin.vocabulary;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -9,8 +9,7 @@ import ru.avicomp.map.spin.SystemModels;
  * Vocabulary of the SPIN Modeling Vocabulary.
  * Copy-pasted to avoid patching builtin personalities.
  * Created by @szuev on 11.04.2018.
- *
- * @see org.topbraid.spin.vocabulary.SPIN
+ * @see SP description about reasons of copy-pasting
  */
 public class SPIN {
 

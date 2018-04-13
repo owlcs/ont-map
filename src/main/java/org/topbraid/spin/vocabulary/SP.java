@@ -1,16 +1,22 @@
-package ru.avicomp.map.spin.vocabulary;
+package org.topbraid.spin.vocabulary;
 
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SystemModels;
 
 /**
- * A copy-paste from {@link org.topbraid.spin.vocabulary.SP}.
- * The difference: it does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personalities}.
+ * A modified copy-paste from a org.topbraid.spin.vocabulary.SP.
+ * Two major differences:
+ * <ul>
+ *     <li>It does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personality}.</li>
+ *     <li>Method {@link SP#getModel()}, which is called everywhere in spin, does not dive into the Internet if no /etc/sp.ttl resource found.</li>
+ * </ul>
+ * TODO: it seems using the same namespaces is dirty and dangerous solution.
  * <p>
  * Created by @szuev on 05.04.2018.
- * @see org.topbraid.spin.vocabulary.SP
  */
 @SuppressWarnings({"WeakerAccess", "unused", "deprecation"})
 public class SP {
@@ -142,5 +148,11 @@ public class SP {
     public static Property property(String local) {
         return ResourceFactory.createProperty(NS + local);
     }
+
+    public static Model getModel() {
+        return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
+    }
+
+
 
 }

@@ -2,9 +2,9 @@ package ru.avicomp.map;
 
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.SP;
-import ru.avicomp.map.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.utils.OntObjects;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -13,11 +13,11 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 /**
+ * todo: it is temporary and will be removed
  * Created by @szuev on 07.04.2018.
  *
  * @see AVC
  */
-@Deprecated // todo: it is temporary and will be remove
 public class AVCLibraryBulder {
 
     public static void main(String... args) {
