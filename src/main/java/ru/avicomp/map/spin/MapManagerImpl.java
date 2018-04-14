@@ -101,7 +101,9 @@ public class MapManagerImpl implements MapManager {
 
     @Override
     public PrefixMapping prefixes() {
-        return library;
+        PrefixMapping res = PrefixMapping.Factory.create();
+        SystemModels.graphs().values().forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
+        return res.lock();
     }
 
     public Model library() {

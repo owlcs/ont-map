@@ -12,4 +12,12 @@ public interface Context {
     OntCE getTarget();
 
     Context addExpression(MapFunction.Call func) throws MapJenaException;
+
+    /**
+     * Validates a function-call against contains.
+     *
+     * @param func {@link MapFunction.Call} an expression.
+     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     */
+    void validate(MapFunction.Call func) throws MapJenaException;
 }

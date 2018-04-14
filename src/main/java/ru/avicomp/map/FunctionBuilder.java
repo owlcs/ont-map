@@ -7,21 +7,15 @@ package ru.avicomp.map;
  */
 public interface FunctionBuilder extends Builder<MapFunction.Call> {
 
-    FunctionBuilder add(MapFunction.Arg arg, String value) throws MapJenaException;
+    FunctionBuilder add(String predicate, String value) throws MapJenaException;
 
-    FunctionBuilder add(MapFunction.Arg arg, FunctionBuilder other) throws MapJenaException;
+    FunctionBuilder add(String predicate, FunctionBuilder other) throws MapJenaException;
 
     MapFunction getFunction();
 
     default FunctionBuilder add(MapFunction.Arg arg, MapFunction.Call function) throws MapJenaException {
-        return add(arg, function.asUnmodifiableBuilder());
+        return add(arg.name(), function.asUnmodifiableBuilder());
     }
 
-    default FunctionBuilder add(String arg, String value) throws MapJenaException {
-        return add(getFunction().getArg(arg), value);
-    }
 
-    default FunctionBuilder add(String arg, FunctionBuilder other) throws MapJenaException {
-        return add(getFunction().getArg(arg), other);
-    }
 }

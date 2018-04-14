@@ -2,6 +2,7 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import ru.avicomp.ontapi.transforms.vocabulary.AVC;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 05.04.2018.
@@ -55,6 +57,15 @@ public class SystemModelsTest {
         System.out.println(f.getComment("ru"));
         System.out.println(f.getLabel());
         System.out.println(f.getLabel("ru"));
+        System.out.println("-----");
+        PrefixMapping pm = Managers.getMapManager().prefixes();
+        pm.getNsPrefixMap().forEach((p, u) -> System.out.println(p + "=> " + u));
+        Managers.getMapManager().functions()
+                .flatMap(x -> Stream.concat(Stream.of(x.returnType()), x.args().map(MapFunction.Arg::type)))
+                .map(u -> Managers.getMapManager().prefixes().shortForm(u))
+                .sorted()
+                .distinct()
+                .forEach(System.out::println);
     }
 
 }

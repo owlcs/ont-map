@@ -16,10 +16,13 @@ public class SPINMAPL {
     public final static String PREFIX = "sinmapl";
 
     public static final String SMF_URI = "http://topbraid.org/functions-smf";
-    public static final String AFN_URI = "http://topbraid.org/functions-afn";
+    public static final String AFN_NS = "http://jena.hpl.hp.com/ARQ/function#";
+    public static final String AFN_PREFIX = "afn";
     public static final String FN_URI = "http://topbraid.org/functions-fn";
     public static final String FN_NS = "http://www.w3.org/2005/xpath-functions#";
-    public static final String SMF_BASE = "http://topbraid.org/sparqlmotionfunctions";
+    public static final String FN_PREFIX = "fn";
+    public static final String SMF_NS = "http://topbraid.org/sparqlmotionfunctions#";
+    public static final String SMF_PREFIX = "smf";
 
     public static final String OWL_RL_PROPERTY_CHAIN_HELPER = "http://topbraid.org/spin/owlrl#propertyChainHelper";
 

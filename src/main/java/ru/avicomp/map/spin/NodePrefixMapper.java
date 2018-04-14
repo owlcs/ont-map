@@ -21,6 +21,10 @@ public class NodePrefixMapper {
             .setNsPrefix(SPIF.PREFIX, SPIF.NS)
             .setNsPrefix(SPINMAP.PREFIX, SPINMAP.NS)
             .setNsPrefix(SPINMAPL.PREFIX, SPINMAPL.NS)
+            .setNsPrefix(SPINMAPL.AFN_PREFIX, SPINMAPL.AFN_NS)
+            .setNsPrefix(SPIF.ARG_PREFIX, SPIF.ARG_NS)
+            .setNsPrefix(SPINMAPL.FN_PREFIX, SPINMAPL.FN_NS)
+            .setNsPrefix(SPINMAPL.SMF_PREFIX, SPINMAPL.SMF_NS)
             .lock();
 
     /**

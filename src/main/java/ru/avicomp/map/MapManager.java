@@ -25,6 +25,7 @@ public interface MapManager {
 
     /**
      * TODO: do we need it here?
+     * Returns all prefixes from whole library.
      *
      * @return {@link PrefixMapping}
      */

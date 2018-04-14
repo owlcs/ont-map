@@ -33,6 +33,10 @@ public class DevelopExample2 extends AbstractMapTest {
         MapManager manager = Managers.getMapManager();
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(LOGGER, mapping);
+
+        manager.getInferenceEngine().run(mapping, src, dst);
+        TestUtils.debug(LOGGER, dst);
+        //Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
     }
 
     @Override
@@ -47,8 +51,8 @@ public class DevelopExample2 extends AbstractMapTest {
                 .add(SP.arg2.getURI(), props.get(1).getURI())
                 .add(SPINMAPL.template.getURI(), "target:Individual-{?1}-{?2}")
                 .build();
+
         MapModel res = manager.createModel();
-        // topbraid has difficulties with anonymous ontologies:
         res.setID(getNameSpace() + "/map");
         res.createContext(srcClass, dstClass).addExpression(targetFunction);
         Assert.assertEquals(1, res.contexts().count());
@@ -59,9 +63,12 @@ public class DevelopExample2 extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleSource() {
-        return assemblePrimitiveOntology(this, "source", "CL1",
+        OntGraphModel res = assemblePrimitiveOntology(this, "source", "CL1",
                 Stream.of("i1", "i2").collect(Collectors.toList()),
                 Stream.of("DP1", "DP2").collect(Collectors.toList()));
+        // data-property assertions:
+        res.listNamedIndividuals().forEach(i -> res.listDataProperties().forEach(p -> i.addProperty(p, i.getLocalName() + "-" + p.getLocalName())));
+        return res;
     }
 
     @Override

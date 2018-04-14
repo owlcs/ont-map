@@ -20,6 +20,7 @@ public class SPIF {
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spif";
     public static final String ARG_NS = "http://spinrdf.org/arg#";
+    public static final String ARG_PREFIX = "arg";
 
     public static final String BUILD_STRING_FROM_RDF_LIST_MEMBER_VAR_REF = "{?member}";
 

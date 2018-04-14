@@ -17,24 +17,34 @@ import java.util.stream.Stream;
  */
 public interface MapModel extends Model {
 
+    /**
+     * Returns an ontology id
+     *
+     * @return {@link OntID}, not null
+     * @see ru.avicomp.ontapi.jena.model.OntGraphModel#getID()
+     */
     OntID getID();
 
+    /**
+     * Sets a new ontology iri
+     *
+     * @param uri String iri or null for anonymous ontology
+     * @return {@link OntID}, not null
+     * @see ru.avicomp.ontapi.jena.model.OntGraphModel#setID(String)
+     */
     OntID setID(String uri);
 
-    Stream<Context> contexts();
-
     /**
-     * Validates a function-call against this model.
+     * Lists all contexts.
      *
-     * @param func {@link MapFunction.Call} an expression.
-     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     * @return Stream of {@link Context}
      */
-    void validate(MapFunction.Call func) throws MapJenaException;
+    Stream<Context> contexts();
 
     /**
      * Creates or finds context.
      * Specified class expressions can be anonymous,
-     * since OWL2 allows individuals to be attached on any class expression.
+     * since OWL2 allows individuals to be attached to any class expression.
      *
      * @param source {@link OntCE} a source class expression
      * @param target {@link OntCE} a target class expression

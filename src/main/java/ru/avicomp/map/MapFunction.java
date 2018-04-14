@@ -1,5 +1,6 @@
 package ru.avicomp.map;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -57,6 +58,7 @@ public interface MapFunction extends Description {
      * A function argument.
      */
     interface Arg extends Description {
+
         /**
          * Returns an argument name (an iri of predicate currently).
          *
@@ -70,6 +72,13 @@ public interface MapFunction extends Description {
          * @return String
          */
         String type();
+
+        /**
+         * Gets a default value as string.
+         *
+         * @return String (iri) or null
+         */
+        String defaultValue();
 
         /**
          * Answers whether the argument must have an assigned value on the function call.
@@ -92,14 +101,11 @@ public interface MapFunction extends Description {
      * A Function Call,
      * i.e. a container which contains function with assigned arguments ready for writing to graph.
      * Cannot be modified.
+     * Note: it is not a {@link org.apache.jena.rdf.model.Resource jena resorce}.
      */
     interface Call {
 
-        /**
-         * @param arg
-         * @return
-         */
-        String getValue(Arg arg);
+        Map<Arg, Object> asMap();
 
         /**
          * Presents a call as unmodifiable builder instance.

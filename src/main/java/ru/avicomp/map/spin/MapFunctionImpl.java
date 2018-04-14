@@ -1,12 +1,10 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
-import org.topbraid.spin.model.Argument;
-import org.topbraid.spin.model.Function;
-import org.topbraid.spin.model.Module;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.FunctionBuilder;
@@ -27,11 +25,11 @@ public class MapFunctionImpl implements MapFunction {
 
     public static final String VOID = "void";
     public static final String UNDEFINED = "?";
-    private final Module func;
+    private final org.topbraid.spin.model.Module func;
     private List<Arg> arguments;
 
-    public MapFunctionImpl(Function func) {
-        this.func = Objects.requireNonNull(func, "Null " + Function.class.getName());
+    public MapFunctionImpl(org.topbraid.spin.model.Function func) {
+        this.func = Objects.requireNonNull(func, "Null " + org.topbraid.spin.model.Function.class.getName());
     }
 
     @Override
@@ -41,7 +39,7 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public String returnType() {
-        Resource r = func instanceof Function ? ((Function) func).getReturnType() : null;
+        Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
         return r == null ? VOID : r.getURI();
     }
 
@@ -93,13 +91,13 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public String toString() {
-        return toString(func.getModel());
+        return toString(NodePrefixMapper.LIBRARY);
     }
 
     public class ArgImpl implements Arg {
-        private final Argument arg;
+        private final org.topbraid.spin.model.Argument arg;
 
-        public ArgImpl(Argument arg) {
+        public ArgImpl(org.topbraid.spin.model.Argument arg) {
             this.arg = arg;
         }
 
@@ -112,6 +110,12 @@ public class MapFunctionImpl implements MapFunction {
         public String type() {
             Resource t = arg.getValueType();
             return t == null ? UNDEFINED : t.getURI();
+        }
+
+        @Override
+        public String defaultValue() {
+            RDFNode r = arg.getDefaultValue();
+            return r == null ? null : r.toString();
         }
 
         @Override
@@ -157,21 +161,38 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     public class BuilderImpl implements FunctionBuilder {
-        private final Map<String, String> args = new HashMap<>();
+        // either string or builder
+        private final Map<String, Object> input = new HashMap<>();
 
         @Override
-        public FunctionBuilder add(Arg arg, String value) {
-            if (!arg.isAssignable()) // todo: add strict exception mechanism
-                throw new MapJenaException();
-            // todo: check type.
-            args.put(arg.name(), value);
-            return this;
+        public FunctionBuilder add(String arg, String value) {
+            return put(arg, value);
         }
 
         @Override
-        public FunctionBuilder add(Arg arg, FunctionBuilder other) {
-            // todo: check type.
-            throw new UnsupportedOperationException("TODO");
+        public FunctionBuilder add(String arg, FunctionBuilder other) {
+            return put(arg, other);
+        }
+
+        private FunctionBuilder put(String predicate, Object val) {
+            Arg arg = getFunction().getArg(predicate);
+            if (!arg.isAssignable()) // todo: add strict exception mechanism
+                throw new MapJenaException();
+            if (val == null) {
+                throw new MapJenaException("null val");
+            }
+
+            if (!(val instanceof String)) {
+                if (val instanceof FunctionBuilder) {
+                    if (VOID.equals(((FunctionBuilder) val).getFunction().returnType())) {
+                        throw new MapJenaException("Void");
+                    }
+                } else {
+                    throw new IllegalStateException("Wrong value: " + val);
+                }
+            }
+            input.put(arg.name(), val);
+            return this;
         }
 
         @Override
@@ -180,23 +201,47 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public Call build() {
+        public Call build() throws MapJenaException {
+            Map<String, Object> map = input.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey,
+                            e -> e.getValue() instanceof FunctionBuilder ? ((FunctionBuilder) e.getValue()).build() : e.getValue()));
             if (MapFunctionImpl.this.isTarget()) {
                 // Most of spin-map target function calls should have spin:_source variable assigned on this argument,
                 // although it does not seem it is really needed.
                 MapFunctionImpl.this.arg(SPINMAP.source.getURI())
-                        .ifPresent(a -> args.put(a.name(), SPINMAP.sourceVariable.getURI()));
+                        .ifPresent(a -> map.put(a.name(), SPINMAP.sourceVariable.getURI()));
             }
-            return new CallImpl(this.args);
+            // check all required arguments are assigned
+            getFunction().args().forEach(a -> {
+                if (map.containsKey(a.name()) || a.isOptional())
+                    return;
+                String def = a.defaultValue();
+                if (def == null) {
+                    // todo: exception mechanism
+                    throw new MapJenaException();
+                }
+                // set default:
+                map.put(a.name(), def);
+
+            });
+            return new CallImpl(map);
         }
     }
 
     public class CallImpl implements Call {
-        private final Map<String, String> args;
+        // either string or another function calls
+        private final Map<String, Object> parameters;
 
-        private CallImpl(Map<String, String> args) {
-            this.args = args;
+        private CallImpl(Map<String, Object> args) {
+            this.parameters = args;
         }
+
+        @Override
+        public Map<Arg, Object> asMap() {
+            return parameters.entrySet().stream()
+                    .collect(Collectors.toMap(e -> getFunction().getArg(e.getKey()), Map.Entry::getValue));
+        }
+
 
         @Override
         public MapFunctionImpl getFunction() {
@@ -204,20 +249,15 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public String getValue(Arg arg) {
-            return args.get(arg.name());
-        }
-
-        @Override
         public FunctionBuilder asUnmodifiableBuilder() {
             return new FunctionBuilder() {
                 @Override
-                public FunctionBuilder add(Arg arg, String value) {
+                public FunctionBuilder add(String arg, String value) {
                     throw new MapJenaException.Unsupported();
                 }
 
                 @Override
-                public FunctionBuilder add(Arg arg, FunctionBuilder other) {
+                public FunctionBuilder add(String arg, FunctionBuilder other) {
                     throw new MapJenaException.Unsupported();
                 }
 

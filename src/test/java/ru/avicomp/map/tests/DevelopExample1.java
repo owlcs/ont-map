@@ -51,7 +51,7 @@ public class DevelopExample1 extends AbstractMapTest {
         MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
         MapFunction.Call targetFunction = func.createFunctionCall().build();
         MapModel res = manager.createModel();
-        // topbraid has difficulties with anonymous ontologies:
+        // topbraid (gui, not spinmap) has difficulties with anonymous ontologies:
         res.setID(getNameSpace() + "/map");
         res.createContext(srcClass, dstClass).addExpression(targetFunction);
         Assert.assertEquals(1, res.contexts().count());
