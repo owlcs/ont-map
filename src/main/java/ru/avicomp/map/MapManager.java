@@ -38,17 +38,13 @@ public interface MapManager {
     }
 
     /**
-     * Provides a builder to build mapping instructions.
-     *
-     * @return {@link ModelBuilder}
-     * @deprecated todo: going to deal with a model directly.
+     * Creates a fresh mapping model.
+     * @return {@link MapModel}
      */
-    @Deprecated
-    ModelBuilder getModelBuilder();
-
     MapModel createModel();
 
     /**
+     * Creates an engine to inference mappings.
      * @return {@link InferenceEngine}
      */
     InferenceEngine getInferenceEngine();

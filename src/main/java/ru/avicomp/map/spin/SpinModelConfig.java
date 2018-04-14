@@ -42,7 +42,7 @@ public class SpinModelConfig {
             .add(MapContext.class, new SimpleImplementation(SPINMAP.Context.asNode(), MapContextImpl.class)));
 
     /**
-     * see org.topbraid.spin.vocabulary.SP#init(Personality)
+     * See org.topbraid.spin.vocabulary.SP#init(Personality)
      * @param p {@link Personality} to modify
      * @return {@link Personality} the same instance
      */

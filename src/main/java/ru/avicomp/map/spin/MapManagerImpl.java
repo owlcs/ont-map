@@ -18,7 +18,6 @@ import org.topbraid.spin.vocabulary.SPIN;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
-import ru.avicomp.map.ModelBuilder;
 import ru.avicomp.map.spin.model.MapTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -26,6 +25,7 @@ import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,11 +63,15 @@ public class MapManagerImpl implements MapManager {
         UnionGraph map = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
         if (withInclusion) {
             // note: this graph is not included to the owl:imports
-            UnionGraph avc = new UnionGraph(SystemModels.graphs().get(SystemModels.Resources.AVC.getURI()));
+            UnionGraph avc = new UnionGraph(getInclusionGraph());
             avc.addGraph(map);
             map = avc;
         }
         return SpinModelConfig.createSpinModel(map);
+    }
+
+    private static Graph getInclusionGraph() {
+        return SystemModels.graphs().get(SystemModels.Resources.AVC.getURI());
     }
 
     public Graph getMapLibraryGraph() throws IllegalStateException {
@@ -110,19 +114,9 @@ public class MapManagerImpl implements MapManager {
     }
 
     @Override
-    public ModelBuilder getModelBuilder() {
-        return new ModelBuilderImpl(this);
-    }
-
-    @Override
-    public MapModelImpl createModel() { // todo:
+    public MapModelImpl createModel() {
         UnionGraph g = new UnionGraph(Factory.createGraphMem());
-        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.MAP_PERSONALITY) {
-            @Override
-            public MapManager getManager() {
-                return MapManagerImpl.this;
-            }
-        };
+        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.MAP_PERSONALITY);
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         configurePrefixes(g);
@@ -130,10 +124,21 @@ public class MapManagerImpl implements MapManager {
         return res;
     }
 
+    /**
+     * Configures prefixes for a graph.
+     * Protected, to have a possibility to override
+     *
+     * @param g {@link Graph}
+     */
     protected void configurePrefixes(Graph g) {
         g.getEventManager().register(new PrefixedGraphListener(g.getPrefixMapping(), getNodePrefixMapper()));
     }
 
+    /**
+     * Returns a graph prefix manager.
+     *
+     * @return {@link NodePrefixMapper}
+     */
     public NodePrefixMapper getNodePrefixMapper() {
         return new NodePrefixMapper();
     }
@@ -141,18 +146,25 @@ public class MapManagerImpl implements MapManager {
     @Override
     public InferenceEngine getInferenceEngine() {
         return (mapping, source, target) -> {
+            // Reassembly a union graph (just in case, it should already contain everything needed):
+            UnionGraph union = new UnionGraph(Factory.createGraphMem());
+            // all from mapping:
+            Graphs.flat(mapping.getGraph()).forEach(union::addGraph);
+            // all from source:
+            Graphs.flat(source).forEach(union::addGraph);
+            // all from library with except of avc (also, just in case):
+            Graphs.flat(library.getGraph())
+                    .filter(g -> !Objects.equals(g, getInclusionGraph()))
+                    .forEach(union::addGraph);
             // a hack.
             // Jena stupidly allows to modify global personality,
-            // what does SPIN API and implicitly requires a patched version everywhere.
-            // It may be dangerous and increases the load on the system.
+            // what does SPIN API, which, also, implicitly requires that patched version everywhere.
+            // It may be dangerous and increases the load on the system,
+            // so better to reset global personality to its original state after this procedure.
             Map<?, ?> init = SpinModelConfig.getPersonalityMap(BuiltinPersonalities.model);
             try {
                 SpinModelConfig.init(BuiltinPersonalities.model);
-
-                UnionGraph g = new UnionGraph(Factory.createGraphMem());
-                Graphs.flat(mapping.getGraph()).forEach(g::addGraph);
-                g.addGraph(library.getGraph()); // todo: exclude avc?
-                SPINInferences.run(SpinModelConfig.createSpinModel(g), new ModelCom(target), null, null, false, null);
+                SPINInferences.run(SpinModelConfig.createSpinModel(union), new ModelCom(target), null, null, false, null);
             } finally {
                 SpinModelConfig.setPersonalityMap(BuiltinPersonalities.model, init);
             }
