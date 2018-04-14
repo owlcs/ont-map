@@ -11,6 +11,7 @@ import org.topbraid.spin.vocabulary.*;
  * <p>
  * Created by @szuev on 13.04.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class NodePrefixMapper {
     public static final PrefixMapping LIBRARY = PrefixMapping.Factory.create()
             .setNsPrefixes(PrefixMapping.Extended)
@@ -21,8 +22,6 @@ public class NodePrefixMapper {
             .setNsPrefix(SPINMAP.PREFIX, SPINMAP.NS)
             .setNsPrefix(SPINMAPL.PREFIX, SPINMAPL.NS)
             .lock();
-    @Deprecated
-    public static final String MAPPING_PREFIX = "mapping";
 
     /**
      * Gets a namespace from a node.
@@ -57,6 +56,6 @@ public class NodePrefixMapper {
         //if (ns.endsWith("/")) return null;
         res = NodeFactory.createURI(ns).getLocalName();
         if (StringUtils.isEmpty(res)) return null;
-        return res.replace(".", "-");
+        return res.replace(".", "-").toLowerCase();
     }
 }

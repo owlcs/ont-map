@@ -72,7 +72,6 @@ public class SPINMAP {
     public static final Property value2 = property("value2");
     public static final Property condition = property("condition");
 
-
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

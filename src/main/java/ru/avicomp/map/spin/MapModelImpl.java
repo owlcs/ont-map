@@ -3,6 +3,8 @@ package ru.avicomp.map.spin;
 import org.apache.jena.rdf.model.Resource;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.model.MapContext;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -47,6 +49,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .filter(s -> s.hasProperty(SPINMAP.targetClass))
                 .filter(s -> s.hasProperty(SPINMAP.sourceClass))
                 .map(s -> s.as(MapContext.class));
+    }
+
+    @Override
+    public void validate(MapFunction.Call func) throws MapJenaException {
+        throw new UnsupportedOperationException("TODO");
     }
 
     @Override

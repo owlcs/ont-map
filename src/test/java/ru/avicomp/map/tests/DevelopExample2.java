@@ -1,25 +1,28 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.vocabulary.RDF;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntNDP;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * TODO: Not ready. For developing.
- * Created by @szuev on 09.04.2018.
+ * TODO: For developing. Will be moved/renamed
+ * Created by @szuev on 14.04.2018.
  */
-public class DevelopExample1 extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DevelopExample1.class);
+public class DevelopExample2 extends AbstractMapTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DevelopExample2.class);
 
     @Test
     public void testProcess() {
@@ -27,29 +30,23 @@ public class DevelopExample1 extends AbstractMapTest {
         TestUtils.debug(LOGGER, src);
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(LOGGER, dst);
-
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
-
         MapManager manager = Managers.getMapManager();
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(LOGGER, mapping);
-
-        manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(LOGGER, dst);
-        Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
-
-        manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(LOGGER, dst);
-        Assert.assertEquals(4, dst.statements(null, RDF.type, dstClass).count());
     }
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        List<OntNDP> props = src.listDataProperties().collect(Collectors.toList());
 
-        MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
-        MapFunction.Call targetFunction = func.createFunctionCall().build();
+        MapFunction func = manager.getFunction(SPINMAPL.buildURI2.getURI());
+        MapFunction.Call targetFunction = func.createFunctionCall()
+                .add(SP.arg1.getURI(), props.get(0).getURI())
+                .add(SP.arg2.getURI(), props.get(1).getURI())
+                .add(SPINMAPL.template.getURI(), "target:Individual-{?1}-{?2}")
+                .build();
         MapModel res = manager.createModel();
         // topbraid has difficulties with anonymous ontologies:
         res.setID(getNameSpace() + "/map");
@@ -73,5 +70,4 @@ public class DevelopExample1 extends AbstractMapTest {
                 Collections.emptyList(),
                 Collections.singletonList("T_DP2"));
     }
-
 }

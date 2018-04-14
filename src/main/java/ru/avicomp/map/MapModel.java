@@ -24,6 +24,14 @@ public interface MapModel extends Model {
     Stream<Context> contexts();
 
     /**
+     * Validates a function-call against this model.
+     *
+     * @param func {@link MapFunction.Call} an expression.
+     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     */
+    void validate(MapFunction.Call func) throws MapJenaException;
+
+    /**
      * Creates or finds context.
      * Specified class expressions can be anonymous,
      * since OWL2 allows individuals to be attached on any class expression.

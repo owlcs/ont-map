@@ -16,4 +16,12 @@ public interface FunctionBuilder extends Builder<MapFunction.Call> {
     default FunctionBuilder add(MapFunction.Arg arg, MapFunction.Call function) throws MapJenaException {
         return add(arg, function.asUnmodifiableBuilder());
     }
+
+    default FunctionBuilder add(String arg, String value) throws MapJenaException {
+        return add(getFunction().getArg(arg), value);
+    }
+
+    default FunctionBuilder add(String arg, FunctionBuilder other) throws MapJenaException {
+        return add(getFunction().getArg(arg), other);
+    }
 }
