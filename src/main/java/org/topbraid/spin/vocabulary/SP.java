@@ -15,6 +15,8 @@ import ru.avicomp.map.spin.SystemModels;
  *     <li>Method {@link SP#getModel()}, which is called everywhere in spin, does not dive into the Internet if no /etc/sp.ttl resource found.</li>
  * </ul>
  * TODO: it seems using the same namespaces is dirty and dangerous solution.
+ * TODO: need to exclude corresponding topbraid classes from a final jar by assembly plugin or somehow else,
+ * TODO: or use jena's location mapper. first solution is preferable.
  * <p>
  * Created by @szuev on 05.04.2018.
  */

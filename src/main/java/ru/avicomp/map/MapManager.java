@@ -1,6 +1,7 @@
 package ru.avicomp.map;
 
 import org.apache.jena.graph.Graph;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
 
 import java.util.Objects;
@@ -62,6 +63,10 @@ public interface MapManager {
          * @throws MapJenaException in case of something is wrong.
          */
         void run(MapModel mapping, Graph source, Graph target) throws MapJenaException;
+
+        default void run(MapModel mapping, Model source, Model target) throws MapJenaException {
+            run(mapping, source.getGraph(), target.getGraph());
+        }
     }
 
 }

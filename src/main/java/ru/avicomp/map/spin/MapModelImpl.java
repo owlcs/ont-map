@@ -3,23 +3,30 @@ package ru.avicomp.map.spin;
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.rdf.model.Resource;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.model.MapContext;
 import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.model.OntObject;
+import ru.avicomp.ontapi.jena.model.OntStatement;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 10.04.2018.
  */
-public abstract class MapModelImpl extends OntGraphModelImpl implements MapModel {
+public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
 
     public MapModelImpl(UnionGraph base, OntPersonality personality) {
@@ -35,6 +42,52 @@ public abstract class MapModelImpl extends OntGraphModelImpl implements MapModel
     @Override
     public OntID setID(String uri) {
         return getNodeAs(OntGraphModelImpl.createOntologyID(getBaseModel(), uri).asNode(), OntID.class);
+    }
+
+    @Override
+    public Stream<Context> contexts() {
+        return statements(null, RDF.type, SPINMAP.Context)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.hasProperty(SPINMAP.targetClass))
+                .filter(s -> s.hasProperty(SPINMAP.sourceClass))
+                .map(s -> s.as(MapContext.class));
+    }
+
+    @Override
+    public MapContext createContext(OntCE source, OntCE target) {
+        return contexts()
+                .filter(s -> Objects.equals(s.getSource(), source))
+                .filter(s -> Objects.equals(s.getTarget(), target))
+                .map(MapContext.class::cast)
+                .findFirst().orElseGet(() -> makeContext(source, target));
+    }
+
+    public MapContext makeContext(OntCE source, OntCE target) {
+        // ensue all related models are imported:
+        Stream.of(source, target)
+                .map(OntObject::getModel)
+                .forEach(MapModelImpl.this::addImport);
+
+        String iri = getID().getURI();
+        Resource res = null;
+        if (iri != null && !iri.contains("#")) {
+            res = createResource(iri + "#" + String.format(CONTEXT_TEMPLATE, getLocalName(source), getLocalName(target)));
+            if (containsResource(res)) { // found different resource with the same local name
+                res = null;
+            }
+        }
+        if (res == null) { // anonymous context
+            res = createResource();
+        }
+        res.addProperty(RDF.type, SPINMAP.Context);
+        res.addProperty(SPINMAP.sourceClass, source);
+        res.addProperty(SPINMAP.targetClass, target);
+        return res.as(MapContext.class);
+    }
+
+    @Override
+    public MapManager getManager() {
+        throw new UnsupportedOperationException();
     }
 
 
@@ -75,6 +128,7 @@ public abstract class MapModelImpl extends OntGraphModelImpl implements MapModel
      * @param dst {@link OntCE}
      * @return {@link Resource}
      */
+    @Deprecated
     public Resource getContext(OntCE src, OntCE dst) {
         Optional<Resource> res = Iter.asStream(listResourcesWithProperty(SPINMAP.sourceClass, src))
                 .filter(s -> s.hasProperty(SPINMAP.targetClass, dst))

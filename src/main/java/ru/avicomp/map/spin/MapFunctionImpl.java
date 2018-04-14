@@ -12,7 +12,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.FunctionBuilder;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.model.TargetFunction;
+import ru.avicomp.map.spin.model.MapTargetFunction;
 import ru.avicomp.map.utils.Models;
 
 import java.util.*;
@@ -60,7 +60,7 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public boolean isTarget() {
-        return func.canAs(TargetFunction.class);
+        return func.canAs(MapTargetFunction.class);
     }
 
     @Override

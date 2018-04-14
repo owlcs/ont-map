@@ -7,5 +7,5 @@ import org.topbraid.spin.model.Function;
  * <p>
  * Created by @szuev on 07.04.2018.
  */
-public interface TargetFunction extends Function {
+public interface MapTargetFunction extends Function {
 }

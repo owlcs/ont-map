@@ -1,7 +1,10 @@
 package ru.avicomp.map;
 
 import org.apache.jena.rdf.model.Model;
+import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntID;
+
+import java.util.stream.Stream;
 
 /**
  * An extended {@link Model jena model} with mapping instructions.
@@ -16,11 +19,16 @@ public interface MapModel extends Model {
 
     OntID setID(String uri);
 
+    Stream<Context> contexts();
+
+    Context createContext(OntCE source, OntCE target);
+
     /**
      * TODO: do we need it here?
      *
      * @return
      */
+    @Deprecated
     MapManager getManager();
 
     default void runInferences(Model source, Model target) throws MapJenaException {

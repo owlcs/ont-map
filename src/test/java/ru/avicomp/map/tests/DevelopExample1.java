@@ -5,10 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.avicomp.map.Managers;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
+import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntClass;
@@ -25,9 +22,9 @@ public class DevelopExample1 {
     @Test
     public void testProcess() {
         OntGraphModel src = assembleSource();
-        LOGGER.debug("\n{}\n==========", TestUtils.asString(src));
+        TestUtils.debug(LOGGER, src);
         OntGraphModel dst = assembleTarget();
-        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
+        TestUtils.debug(LOGGER, dst);
 
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
@@ -35,19 +32,22 @@ public class DevelopExample1 {
         MapManager manager = Managers.getMapManager();
         MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
         MapFunction.Call targetFunction = func.createFunctionCall().build();
-        MapModel res = manager.getModelBuilder().addClassBridge(srcClass, dstClass, targetFunction).back()
-                // topbraid has difficulties with anonymous ontologies:
-                .addName("http://example.com.map")
-                .build();
+        MapModel res = manager.createModel();
+        // topbraid has difficulties with anonymous ontologies:
+        res.setID("http://example.com.map");
+        res.createContext(srcClass, dstClass).addExpression(targetFunction);
+        Assert.assertEquals(1, res.contexts().count());
+        Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
 
-        LOGGER.debug("\n{}\n==========", TestUtils.asString(res));
+        TestUtils.debug(LOGGER, res);
 
-        res.runInferences(src, dst);
-        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
+        manager.getInferenceEngine().run(res, src, dst);
+        TestUtils.debug(LOGGER, dst);
         Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
 
-        res.runInferences(src, dst);
-        LOGGER.debug("\n{}\n==========", TestUtils.asString(dst));
+        manager.getInferenceEngine().run(res, src, dst);
+        TestUtils.debug(LOGGER, dst);
         Assert.assertEquals(4, dst.statements(null, RDF.type, dstClass).count());
     }
 

@@ -19,7 +19,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.ModelBuilder;
-import ru.avicomp.map.spin.model.TargetFunction;
+import ru.avicomp.map.spin.model.MapTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.utils.Graphs;
@@ -76,7 +76,7 @@ public class MapManagerImpl implements MapManager {
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(TargetFunction.class))
+                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(MapTargetFunction.class))
                 .map(s -> s.as(org.topbraid.spin.model.Function.class))
                 // skip private:
                 .filter(f -> !f.isPrivate())
