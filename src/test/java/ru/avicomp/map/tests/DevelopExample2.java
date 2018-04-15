@@ -11,6 +11,7 @@ import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,9 @@ public class DevelopExample2 extends AbstractMapTest {
 
         manager.getInferenceEngine().run(mapping, src, dst);
         TestUtils.debug(LOGGER, dst);
-        //Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
+        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        // one individual is skipped from inferincing:
+        Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
     }
 
     @Override
@@ -64,10 +67,13 @@ public class DevelopExample2 extends AbstractMapTest {
     @Override
     public OntGraphModel assembleSource() {
         OntGraphModel res = assemblePrimitiveOntology(this, "source", "CL1",
-                Stream.of("i1", "i2").collect(Collectors.toList()),
+                Stream.of("i1", "i2", "i3").collect(Collectors.toList()),
                 Stream.of("DP1", "DP2").collect(Collectors.toList()));
         // data-property assertions:
-        res.listNamedIndividuals().forEach(i -> res.listDataProperties().forEach(p -> i.addProperty(p, i.getLocalName() + "-" + p.getLocalName())));
+        res.listNamedIndividuals()
+                .filter(i -> !i.getLocalName().equals("i3")) // two individuals to map
+                .forEach(i -> res.listDataProperties()
+                        .forEach(p -> i.addProperty(p, i.getLocalName() + "-" + p.getLocalName())));
         return res;
     }
 

@@ -1,10 +1,10 @@
 package ru.avicomp.map.spin;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.shared.PrefixMapping;
-import org.topbraid.spin.vocabulary.*;
 
 /**
  * A helper to handle graph (node) prefixes.
@@ -13,19 +13,7 @@ import org.topbraid.spin.vocabulary.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class NodePrefixMapper {
-    public static final PrefixMapping LIBRARY = PrefixMapping.Factory.create()
-            .setNsPrefixes(PrefixMapping.Extended)
-            .setNsPrefix(SP.PREFIX, SP.NS)
-            .setNsPrefix(SPIN.PREFIX, SPIN.NS)
-            .setNsPrefix(SPL.PREFIX, SPL.NS)
-            .setNsPrefix(SPIF.PREFIX, SPIF.NS)
-            .setNsPrefix(SPINMAP.PREFIX, SPINMAP.NS)
-            .setNsPrefix(SPINMAPL.PREFIX, SPINMAPL.NS)
-            .setNsPrefix(SPINMAPL.AFN_PREFIX, SPINMAPL.AFN_NS)
-            .setNsPrefix(SPIF.ARG_PREFIX, SPIF.ARG_NS)
-            .setNsPrefix(SPINMAPL.FN_PREFIX, SPINMAPL.FN_NS)
-            .setNsPrefix(SPINMAPL.SMF_PREFIX, SPINMAPL.SMF_NS)
-            .lock();
+    public static final PrefixMapping LIBRARY = collectPrefixes(SystemModels.graphs().values());
 
     /**
      * Gets a namespace from a node.
@@ -61,5 +49,11 @@ public class NodePrefixMapper {
         res = NodeFactory.createURI(ns).getLocalName();
         if (StringUtils.isEmpty(res)) return null;
         return res.replace(".", "-").toLowerCase();
+    }
+
+    public static PrefixMapping collectPrefixes(Iterable<Graph> graphs) {
+        PrefixMapping res = PrefixMapping.Factory.create();
+        graphs.forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
+        return res.lock();
     }
 }

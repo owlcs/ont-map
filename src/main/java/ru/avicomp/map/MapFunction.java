@@ -36,9 +36,21 @@ public interface MapFunction extends Description {
      */
     Stream<Arg> args();
 
+    /**
+     * Answers if it is a target function.
+     * A target function allows to bind two class-expressions in one context.
+     * Non-target function is used to bind property expressions.
+     *
+     * @return boolean
+     */
     boolean isTarget();
 
-    FunctionBuilder createFunctionCall();
+    /**
+     * Creates a new function call builder.
+     *
+     * @return {@link Builder}
+     */
+    Builder createFunctionCall();
 
     /**
      * Gets an argument by predicate iri.
@@ -108,15 +120,63 @@ public interface MapFunction extends Description {
         Map<Arg, Object> asMap();
 
         /**
-         * Presents a call as unmodifiable builder instance.
+         * Represents a call as unmodifiable builder instance.
          * To use in default methods.
          *
-         * @return {@link FunctionBuilder}
+         * @return {@link Builder}
          */
-        FunctionBuilder asUnmodifiableBuilder();
+        Builder asUnmodifiableBuilder();
 
         default MapFunction getFunction() {
             return asUnmodifiableBuilder().getFunction();
         }
+    }
+
+    /**
+     * A builder to create {@link Call function-call}.
+     * <p>
+     * Created by @szuev on 10.04.2018.
+     */
+    interface Builder {
+
+        /**
+         * Adds an argument value to a future function call.
+         *
+         * @param predicate String, iri, not null
+         * @param value     String, value, not null.
+         * @return this builder
+         * @throws MapJenaException if wrong input
+         */
+        Builder add(String predicate, String value) throws MapJenaException;
+
+        /**
+         * Adds another function-call as argument to this function call, which will be available after building
+         *
+         * @param predicate String, iri, not null
+         * @param other     {@link Builder}, not null
+         * @return this builder
+         * @throws MapJenaException if wrong input
+         */
+        Builder add(String predicate, Builder other) throws MapJenaException;
+
+        /**
+         * Answers a reference to function.
+         *
+         * @return {@link MapFunction}
+         */
+        MapFunction getFunction();
+
+        default Builder add(Arg arg, Call function) throws MapJenaException {
+            return add(arg.name(), function.asUnmodifiableBuilder());
+        }
+
+        /**
+         * Builds a function call.
+         *
+         * @return {@link Call}, ready to use result.
+         * @throws MapJenaException if building is not possible
+         */
+        Call build() throws MapJenaException;
+
     }
 }

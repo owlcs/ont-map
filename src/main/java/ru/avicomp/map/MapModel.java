@@ -1,5 +1,6 @@
 package ru.avicomp.map;
 
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntID;
@@ -51,4 +52,13 @@ public interface MapModel extends Model {
      * @return {@link Context} existing or fresh context.
      */
     Context createContext(OntCE source, OntCE target);
+
+
+    /**
+     * Answer the Graph which this Model is presenting.
+     *
+     * @return {@link Graph}
+     */
+    @Override
+    Graph getGraph();
 }

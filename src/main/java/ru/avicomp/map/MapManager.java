@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 /**
  * A Map Manager.
  * This should be the only place to provide everything that required to build and conduct OWL2 mapping
- * including spin-inferencing and class-properties hierarchy.
+ * including map inferencing, functions, and tools to create new functions.
  * TODO: not ready: everything can change
  * Created by @szuev on 06.04.2018.
  */
@@ -24,13 +24,20 @@ public interface MapManager {
     Stream<MapFunction> functions();
 
     /**
-     * TODO: do we need it here?
-     * Returns all prefixes from whole library.
+     * Returns a collection of all know prefixes, which may relate to OWL2-mapping somehow.
+     * This method is just for convenience.
      *
      * @return {@link PrefixMapping}
      */
     PrefixMapping prefixes();
 
+    /**
+     * Gets function by name, which is an iri in our single implementation.
+     *
+     * @param name String, not null
+     * @return {@link MapFunction}
+     * @throws MapJenaException if no function found.
+     */
     default MapFunction getFunction(String name) throws MapJenaException {
         return functions()
                 .filter(f -> Objects.equals(name, f.name()))
@@ -50,7 +57,12 @@ public interface MapManager {
      */
     InferenceEngine getInferenceEngine();
 
+    /**
+     * An inference engine.
+     * In our (currently single) implementation it is SPIN.
+     */
     interface InferenceEngine {
+
         /**
          * Runs inference process.
          *

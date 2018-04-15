@@ -7,7 +7,6 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.FunctionBuilder;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.MapTargetFunction;
@@ -62,7 +61,7 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     @Override
-    public FunctionBuilder createFunctionCall() {
+    public Builder createFunctionCall() {
         return new BuilderImpl();
     }
 
@@ -160,21 +159,21 @@ public class MapFunctionImpl implements MapFunction {
         }
     }
 
-    public class BuilderImpl implements FunctionBuilder {
+    public class BuilderImpl implements Builder {
         // either string or builder
         private final Map<String, Object> input = new HashMap<>();
 
         @Override
-        public FunctionBuilder add(String arg, String value) {
+        public Builder add(String arg, String value) {
             return put(arg, value);
         }
 
         @Override
-        public FunctionBuilder add(String arg, FunctionBuilder other) {
+        public Builder add(String arg, Builder other) {
             return put(arg, other);
         }
 
-        private FunctionBuilder put(String predicate, Object val) {
+        private Builder put(String predicate, Object val) {
             Arg arg = getFunction().getArg(predicate);
             if (!arg.isAssignable()) // todo: add strict exception mechanism
                 throw new MapJenaException();
@@ -183,8 +182,11 @@ public class MapFunctionImpl implements MapFunction {
             }
 
             if (!(val instanceof String)) {
-                if (val instanceof FunctionBuilder) {
-                    if (VOID.equals(((FunctionBuilder) val).getFunction().returnType())) {
+                if (val instanceof Builder) {
+                    if (this.equals(val)) { // todo:
+                        throw new MapJenaException("Self calling");
+                    }
+                    if (VOID.equals(((Builder) val).getFunction().returnType())) {
                         throw new MapJenaException("Void");
                     }
                 } else {
@@ -204,7 +206,7 @@ public class MapFunctionImpl implements MapFunction {
         public Call build() throws MapJenaException {
             Map<String, Object> map = input.entrySet().stream()
                     .collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> e.getValue() instanceof FunctionBuilder ? ((FunctionBuilder) e.getValue()).build() : e.getValue()));
+                            e -> e.getValue() instanceof Builder ? ((Builder) e.getValue()).build() : e.getValue()));
             if (MapFunctionImpl.this.isTarget()) {
                 // Most of spin-map target function calls should have spin:_source variable assigned on this argument,
                 // although it does not seem it is really needed.
@@ -249,15 +251,15 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public FunctionBuilder asUnmodifiableBuilder() {
-            return new FunctionBuilder() {
+        public Builder asUnmodifiableBuilder() {
+            return new Builder() {
                 @Override
-                public FunctionBuilder add(String arg, String value) {
+                public Builder add(String arg, String value) {
                     throw new MapJenaException.Unsupported();
                 }
 
                 @Override
-                public FunctionBuilder add(String arg, FunctionBuilder other) {
+                public Builder add(String arg, Builder other) {
                     throw new MapJenaException.Unsupported();
                 }
 
