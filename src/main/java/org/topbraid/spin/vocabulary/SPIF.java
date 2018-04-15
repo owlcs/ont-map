@@ -24,18 +24,30 @@ public class SPIF {
 
     public static final String BUILD_STRING_FROM_RDF_LIST_MEMBER_VAR_REF = "{?member}";
 
-    // functions:
-    public static final Resource regex = ResourceFactory.createResource(NS + "regex");
-    public static final Resource buildUniqueURI = ResourceFactory.createProperty(NS + "buildUniqueURI");
-    public static final Resource buildURI = ResourceFactory.createProperty(NS + "buildURI");
-    public static final Resource parseDate = ResourceFactory.createProperty(NS + "parseDate");
-    public static final Resource dateFormat = ResourceFactory.createProperty(NS + "dateFormat");
-    public static final Resource cast = ResourceFactory.createResource(NS + "cast");
-    public static final Resource buildStringFromRDFList = ResourceFactory.createResource(NS + "buildStringFromRDFList");
+    public static final Resource regex = resource("regex");
+    public static final Resource buildUniqueURI = resource("buildUniqueURI");
+    public static final Resource buildURI = resource("buildURI");
+    public static final Resource parseDate = resource("parseDate");
+    public static final Resource dateFormat = resource("dateFormat");
+    public static final Resource cast = resource("cast");
+    public static final Resource buildStringFromRDFList = resource("buildStringFromRDFList");
+    public static final Property range = property("range");
 
-    // properties:
-    public static final Property argDatatype = ResourceFactory.createProperty(ARG_NS + "datatype");
-    public static final Property argDate = ResourceFactory.createProperty(ARG_NS + "date");
-    public static final Property argNumber = ResourceFactory.createProperty(ARG_NS + "number");
-    public static final Property argPattern = ResourceFactory.createProperty(ARG_NS + "pattern");
+    public static final Property argDatatype = argProperty("datatype");
+    public static final Property argDate = argProperty("date");
+    public static final Property argNumber = argProperty("number");
+    public static final Property argPattern = argProperty("pattern");
+
+
+    public static Resource resource(String local) {
+        return ResourceFactory.createResource(NS + local);
+    }
+
+    public static Property property(String local) {
+        return ResourceFactory.createProperty(NS + local);
+    }
+
+    public static Property argProperty(String local) {
+        return ResourceFactory.createProperty(ARG_NS + local);
+    }
 }

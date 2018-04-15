@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public interface MapModel extends Model {
 
     /**
-     * Returns an ontology id
+     * Returns an ontology id.
      *
      * @return {@link OntID}, not null
      * @see ru.avicomp.ontapi.jena.model.OntGraphModel#getID()
@@ -27,7 +27,7 @@ public interface MapModel extends Model {
     OntID getID();
 
     /**
-     * Sets a new ontology iri
+     * Sets a new ontology iri.
      *
      * @param uri String iri or null for anonymous ontology
      * @return {@link OntID}, not null

@@ -24,6 +24,10 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>spin-functions-repo</id>
+            <url>file:///${basedir}/src/main/resources/lib</url>
+        </repository>
     </repositories>
 
     <properties>
@@ -51,6 +55,7 @@
             <artifactId>ontapi</artifactId>
             <version>${version.ontapi}</version>
         </dependency>
+        <!-- the last available spin-api (now it is replaced by shacl)-->
         <dependency>
             <groupId>org.topbraid</groupId>
             <artifactId>shacl</artifactId>
@@ -62,11 +67,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- from tbcfe-5.2.2 -->
+        <dependency>
+            <groupId>org.topbraid</groupId>
+            <artifactId>spin.functions</artifactId>
+            <version>5.2.2.v20170123-2101B</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.25</version>
+            <version>${version.slf4j}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

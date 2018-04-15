@@ -7,14 +7,9 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.shared.PrefixMapping;
-import org.apache.jena.sparql.function.FunctionRegistry;
-import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.vocabulary.RDF;
-import org.topbraid.spin.arq.PropertyChainHelperPFunction;
-import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.inference.SPINInferences;
 import org.topbraid.spin.system.SPINModuleRegistry;
-import org.topbraid.spin.vocabulary.SPIN;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
@@ -47,15 +42,8 @@ public class MapManagerImpl implements MapManager {
     }
 
     public static void registerALL(Model library) {
-        // todo: check it and replace with own impl
-        FunctionRegistry.get().put(SPIN.ask.getURI(), new AskFunction());
-        FunctionRegistry.get().put(SPIN.eval.getURI(), new EvalFunction());
-        FunctionRegistry.get().put(SPIN.evalInGraph.getURI(), new EvalInGraphFunction());
-        FunctionRegistry.get().put(SPIN.violatesConstraints.getURI(), new ViolatesConstraintsFunction());
-        PropertyFunctionRegistry.get().put(SPIN.construct.getURI(), ConstructPFunction.class);
-        PropertyFunctionRegistry.get().put(SPIN.constructViolations.getURI(), ConstructViolationsPFunction.class);
-        PropertyFunctionRegistry.get().put(SPIN.select.getURI(), SelectPFunction.class);
-        PropertyFunctionRegistry.get().put("http://topbraid.org/spin/owlrl#propertyChainHelper", PropertyChainHelperPFunction.class);
+        SPINRegistry.initSPIN();
+        SPINRegistry.initSPIF();
         SPINModuleRegistry.get().registerAll(library, null);
     }
 
