@@ -16,7 +16,8 @@ import ru.avicomp.map.spin.SystemModels;
  * </ul>
  * TODO: it seems using the same namespaces is dirty and dangerous solution.
  * TODO: need to exclude corresponding topbraid classes from a final jar by assembly plugin or somehow else,
- * TODO: or use jena's location mapper. first solution is preferable.
+ * TODO: or move these classes to another place and use jena's location mapper to be used invoked inside #getModel methods.
+ * TODO: First solution seems to be preferable.
  * <p>
  * Created by @szuev on 05.04.2018.
  */
@@ -80,11 +81,11 @@ public class SP {
 
     public final static Property all = property("all");
     public final static Property arg = property("arg");
-    public final static Property arg1 = property("arg1");
-    public final static Property arg2 = property("arg2");
-    public final static Property arg3 = property("arg3");
-    public final static Property arg4 = property("arg4");
-    public final static Property arg5 = property("arg5");
+    public final static Property arg1 = arg(1);
+    public final static Property arg2 = arg(2);
+    public final static Property arg3 = arg(3);
+    public final static Property arg4 = arg(4);
+    public final static Property arg5 = arg(5);
     public final static Property as = property("as");
     public final static Property bindings = property("bindings");
     public final static Property data = property("data");
@@ -142,6 +143,11 @@ public class SP {
     public final static Resource regex = resource("regex");
     public final static Resource sub = resource("sub");
     public final static Resource unaryMinus = resource("unaryMinus");
+
+    public static Property arg(int i) {
+        if (i <= 0) throw new IllegalArgumentException();
+        return property("arg" + i);
+    }
 
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);

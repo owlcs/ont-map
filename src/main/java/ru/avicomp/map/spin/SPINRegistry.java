@@ -30,7 +30,7 @@ import org.topbraid.spin.vocabulary.SPINMAPL;
  * @see SPIN
  * @see SPINMAPL
  */
-public class SPINRegistry {
+class SPINRegistry {
 
     static void initSPIF() {
         // from org.topbraid.spin.arq.functions:

@@ -48,11 +48,17 @@ public class DevelopExample2 extends AbstractMapTest {
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
         List<OntNDP> props = src.listDataProperties().collect(Collectors.toList());
 
-        MapFunction func = manager.getFunction(SPINMAPL.buildURI2.getURI());
-        MapFunction.Call targetFunction = func.createFunctionCall()
+        MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.buildURI2.getURI())
+                .createFunctionCall()
                 .add(SP.arg1.getURI(), props.get(0).getURI())
                 .add(SP.arg2.getURI(), props.get(1).getURI())
                 .add(SPINMAPL.template.getURI(), "target:Individual-{?1}-{?2}")
+                .build();
+        MapFunction.Call propertyFunction = manager.getFunction(SPINMAPL.concatWithSeparator.getURI())
+                .createFunctionCall()
+                .add(SP.arg1.getURI(), props.get(0).getURI())
+                .add(SP.arg2.getURI(), props.get(1).getURI())
+                .add(SPINMAPL.separator.getURI(), "=")
                 .build();
 
         MapModel res = manager.createModel();

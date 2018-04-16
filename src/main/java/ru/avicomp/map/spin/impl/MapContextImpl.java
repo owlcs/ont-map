@@ -131,7 +131,7 @@ public class MapContextImpl extends ResourceImpl implements MapContext {
 
     private void validateArg(MapFunction.Arg arg, Object value) {
         String argType = arg.type();
-        if (MapFunctionImpl.UNDEFINED.equals(argType))
+        if (MapFunctionImpl.UNDEFINED.equals(argType)) // todo: undefined means xsd:string or uri-resource
             throw new MapJenaException("TODO");
         if (value instanceof String) {
             createRDFNode(argType, (String) value);
