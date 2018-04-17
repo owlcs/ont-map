@@ -1,7 +1,9 @@
 package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
+import ru.avicomp.map.MapFunction;
 
 import java.io.StringWriter;
 
@@ -18,5 +20,13 @@ public class TestUtils {
 
     public static void debug(Logger logger, Model m) {
         logger.debug("\n{}\n==========", TestUtils.asString(m));
+    }
+
+    public static void debug(Logger logger, MapFunction.Call func, PrefixMapping pm) {
+        logger.debug("Function: {}", pm.shortForm(func.getFunction().name()));
+        func.asMap().forEach((arg, o) -> {
+            String val = o instanceof String ? (String) o : ((MapFunction.Call) o).getFunction().name();
+            logger.debug("Argument: {} => '{}'", pm.shortForm(arg.name()), pm.shortForm(val));
+        });
     }
 }

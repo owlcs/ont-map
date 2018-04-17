@@ -3,8 +3,11 @@ package ru.avicomp.map.spin;
 import org.apache.jena.rdf.model.Resource;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
+import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.impl.MapContextImpl;
 import ru.avicomp.map.spin.model.MapContext;
+import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -46,7 +49,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .map(OntStatement::getSubject)
                 .filter(s -> s.hasProperty(SPINMAP.targetClass))
                 .filter(s -> s.hasProperty(SPINMAP.sourceClass))
-                .map(s -> s.as(MapContext.class));
+                .map(this::asContext);
     }
 
 
@@ -57,7 +60,17 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .filter(s -> Objects.equals(s.getTarget(), target))
                 .map(MapContext.class::cast)
                 .findFirst()
-                .orElseGet(() -> makeContext(source, target).as(MapContext.class));
+                .orElseGet(() -> asContext(makeContext(source, target)));
+    }
+
+    private MapContextImpl asContext(Resource context) {
+        return new MapContextImpl(context.asNode(), this);
+    }
+
+    @Override
+    public MapModel removeContext(Context context) {
+        Models.getAssociatedStatements(((MapContextImpl) MapJenaException.notNull(context, "Null context"))).forEach(this::remove);
+        return this;
     }
 
     /**

@@ -102,6 +102,7 @@ class SPINRegistry {
     }
 
     private static void registerFunction(String localName, Class functionClass) {
+        // todo: we don't need sparqlmotionfunctions functions. all of them (from the list above) are deprecated.
         FunctionRegistry.get().put(SPIF.NS + localName, functionClass);
         FunctionRegistry.get().put(SPINMAPL.SMF_NS + localName, functionClass); //?
     }

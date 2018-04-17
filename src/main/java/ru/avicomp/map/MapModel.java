@@ -13,6 +13,7 @@ import java.util.stream.Stream;
  * Moreover, a spin implementation is not OWL2-, but rather a RDFS-ontology.
  * Nevertheless it have to be compatible with OWL2 as possible,
  * e.g. ontology id must be the only one as it is required by OWL2.
+ * todo: it seems we don't need to allow everything possible - jena-model extending is better to be removed.
  * <p>
  * Created by @szuev on 10.04.2018.
  */
@@ -52,6 +53,15 @@ public interface MapModel extends Model {
      * @return {@link Context} existing or fresh context.
      */
     Context createContext(OntCE source, OntCE target);
+
+
+    /**
+     * Removes specified context and all related triples including property bindings.
+     *
+     * @param context {@link Context}
+     * @return this model
+     */
+    MapModel removeContext(Context context);
 
 
     /**

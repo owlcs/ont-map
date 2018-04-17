@@ -134,11 +134,15 @@ public class MapManagerImpl implements MapManager {
     @Override
     public InferenceEngine getInferenceEngine() {
         return (mapping, source, target) -> {
+            // todo: add logging
+
             // Reassembly a union graph (just in case, it should already contain everything needed):
             UnionGraph union = new UnionGraph(Factory.createGraphMem());
-            // all from mapping:
+            // pass prefixes:
+            union.getPrefixMapping().setNsPrefixes(mapping.getGraph().getPrefixMapping());
+            // add everything from mapping:
             Graphs.flat(mapping.getGraph()).forEach(union::addGraph);
-            // all from source:
+            // add everything from source:
             Graphs.flat(source).forEach(union::addGraph);
             // all from library with except of avc (also, just in case):
             Graphs.flat(library.getGraph())
@@ -147,12 +151,14 @@ public class MapManagerImpl implements MapManager {
             // a hack.
             // Jena stupidly allows to modify global personality,
             // what does SPIN API, which, also, implicitly requires that patched version everywhere.
-            // It may be dangerous and increases the load on the system,
+            // It may be dangerous and increases the load of the system,
             // so better to reset global personality to its original state after this procedure.
             Map<?, ?> init = SpinModelConfig.getPersonalityMap(BuiltinPersonalities.model);
             try {
                 SpinModelConfig.init(BuiltinPersonalities.model);
-                SPINInferences.run(SpinModelConfig.createSpinModel(union), new ModelCom(target), null, null, false, null);
+                Model s = SpinModelConfig.createSpinModel(union);
+                Model t = new ModelCom(target);
+                SPINInferences.run(s, t, null, null, false, null);
             } finally {
                 SpinModelConfig.setPersonalityMap(BuiltinPersonalities.model, init);
             }

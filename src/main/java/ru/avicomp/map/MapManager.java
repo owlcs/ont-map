@@ -12,6 +12,7 @@ import java.util.stream.Stream;
  * This should be the only place to provide everything that required to build and conduct OWL2 mapping
  * including map inferencing, functions, and tools to create new functions.
  * TODO: not ready: everything can change
+ * TODO: include class-property hierarchy provider (function ?)
  * Created by @szuev on 06.04.2018.
  */
 public interface MapManager {

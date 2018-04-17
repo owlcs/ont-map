@@ -19,10 +19,6 @@ public class SPINMAP {
     public static final Resource Conditional_Mapping_1 = resource("Conditional-Mapping-1");
     public static final Resource Conditional_Mapping_1_1 = resource("Conditional-Mapping-1-1");
 
-    public static final String TARGET_PREDICATE = "targetPredicate";
-
-    public static final String SOURCE_PREDICATE = "sourcePredicate";
-
     public static final Resource Context = resource("Context");
     public static final Resource Mapping = resource("Mapping");
     public static final Resource Mapping_0_1 = mapping(0, 1);
@@ -51,17 +47,17 @@ public class SPINMAP {
     public static final Property source = property("source");
     public static final Property sourceClass = property("sourceClass");
     public static final Property sourcePath = property("sourcePath");
-    public static final Property sourcePredicate1 = property(SOURCE_PREDICATE + "1");
-    public static final Property sourcePredicate2 = property(SOURCE_PREDICATE + "2");
-    public static final Property sourcePredicate3 = property(SOURCE_PREDICATE + "3");
+    public static final Property sourcePredicate1 = sourcePredicate(1);
+    public static final Property sourcePredicate2 = sourcePredicate(2);
+    public static final Property sourcePredicate3 = sourcePredicate(3);
     public static final Resource sourceVariable = resource("_source");
     public static final Property suggestion_0_1 = property("suggestion-0-1");
     public static final Property suggestion_1_1 = property("suggestion-1-1");
     public static final Property suggestionScore = property("suggestionScore");
     public static final Property target = property("target");
     public static final Property targetClass = property("targetClass");
-    public static final Property targetPredicate1 = property(TARGET_PREDICATE + "1");
-    public static final Property targetPredicate2 = property(TARGET_PREDICATE + "2");
+    public static final Property targetPredicate1 = targetPredicate(1);
+    public static final Property targetPredicate2 = targetPredicate(2);
 
     public static final Resource targetResource = resource("targetResource");
 
@@ -83,6 +79,16 @@ public class SPINMAP {
     public static Resource mapping(int i, int j) {
         if (i < 0 || j <= 0) throw new IllegalArgumentException();
         return resource(String.format("Mapping-%d-%d", i, j));
+    }
+
+    public static Property targetPredicate(int i) {
+        if (i <= 0) throw new IllegalArgumentException();
+        return property("targetPredicate" + i);
+    }
+
+    public static Property sourcePredicate(int i) {
+        if (i <= 0) throw new IllegalArgumentException();
+        return property("sourcePredicate" + i);
     }
 
 }

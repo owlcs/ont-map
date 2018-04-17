@@ -51,11 +51,11 @@ public class SPIN {
     public final static Resource UpdateTemplate = resource("UpdateTemplate");
     public final static Resource violatesConstraints = resource("violatesConstraints");
     public final static Resource Warning = resource("Warning");
-    public final static Resource _arg1 = resource("_arg1");
-    public final static Resource _arg2 = resource("_arg2");
-    public final static Resource _arg3 = resource("_arg3");
-    public final static Resource _arg4 = resource("_arg4");
-    public final static Resource _arg5 = resource("_arg5");
+    public final static Resource _arg1 = _arg(1);
+    public final static Resource _arg2 = _arg(2);
+    public final static Resource _arg3 = _arg(3);
+    public final static Resource _arg4 = _arg(4);
+    public final static Resource _arg5 = _arg(5);
     public final static Resource _this = resource("_this");
 
     public final static Property abstract_ = property("abstract");
@@ -94,5 +94,10 @@ public class SPIN {
 
     public static Property property(String local) {
         return ResourceFactory.createProperty(NS + local);
+    }
+
+    public static Resource _arg(int i) {
+        if (i <= 0) throw new IllegalArgumentException();
+        return resource("_arg" + i);
     }
 }

@@ -15,9 +15,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.spin.impl.MapContextImpl;
 import ru.avicomp.map.spin.impl.MapTargetFunctionImpl;
-import ru.avicomp.map.spin.model.MapContext;
 import ru.avicomp.map.spin.model.MapTargetFunction;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -28,18 +26,16 @@ import java.util.Map;
 /**
  * Settings and personalities for a {@link Model jena model} which contain spin rules and other stuff.
  * Created by @szuev on 07.04.2018.
- *
  * @see OntModelConfig
  */
 public class SpinModelConfig {
     public static Personality<RDFNode> LIB_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
 
-    // use ont personality for a mapping, which is a rdf-ontology, to reuse some owl2 resources
+    // use ont personality for a mapping (which is a rdf-ontology) in order to reuse some owl2 resources
     // such as ontology id (ru.avicomp.ontapi.jena.model.OntID),
     // ont class expression (ru.avicomp.ontapi.jena.model.OntCE),
     // ont property expression (ru.avicomp.ontapi.jena.model.OntPE)
-    public static OntPersonality MAP_PERSONALITY = new OntPersonality(OntModelConfig.ONT_PERSONALITY_LAX.copy()
-            .add(MapContext.class, new SimpleImplementation(SPINMAP.Context.asNode(), MapContextImpl.class)));
+    public static OntPersonality MAP_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     /**
      * See org.topbraid.spin.vocabulary.SP#init(Personality)
