@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ru.avicomp.map.spin.Exceptions.*;
+
 /**
  * A spin based implementation of {@link MapFunction}.
  * Created by @szuev on 09.04.2018.
@@ -54,6 +56,12 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     @Override
+    public Arg getArg(String predicate) throws MapJenaException {
+        return arg(predicate)
+                .orElseThrow(() -> exception(FUNCTION_NONEXISTENT_ARGUMENT).add(Key.ARG, predicate).build());
+    }
+
+    @Override
     public boolean isTarget() {
         return func.canAs(MapTargetFunction.class);
     }
@@ -84,6 +92,10 @@ public class MapFunctionImpl implements MapFunction {
                         .map(ArgImpl.class::cast)
                         .map(a -> a.toString(pm))
                         .collect(Collectors.joining(", ")));
+    }
+
+    private Exceptions.Builder exception(Exceptions code) {
+        return code.create().add(Key.FUNCTION, name());
     }
 
     @Override
@@ -172,23 +184,21 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         private Builder put(String predicate, Object val) {
+            MapJenaException.notNull(val, "Null argument value");
             Arg arg = getFunction().getArg(predicate);
-            if (!arg.isAssignable()) // todo: add strict exception mechanism
-                throw new MapJenaException();
-            if (val == null) {
-                throw new MapJenaException("null val");
-            }
+            if (!arg.isAssignable())
+                throw exception(FUNCTION_WRONG_ARGUMENT).add(Key.ARG, predicate).build();
 
             if (!(val instanceof String)) {
                 if (val instanceof Builder) {
-                    if (this.equals(val)) { // todo:
-                        throw new MapJenaException("Self calling");
+                    if (this.equals(val)) {
+                        throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
                     }
                     if (UNDEFINED.equals(((Builder) val).getFunction().returnType())) {
                         throw new MapJenaException("Void");
                     }
                 } else {
-                    throw new IllegalStateException("Wrong value: " + val);
+                    throw new IllegalArgumentException("Wrong argument type: " + val.getClass().getName() + ", " + val);
                 }
             }
             input.put(arg.name(), val);
@@ -217,8 +227,7 @@ public class MapFunctionImpl implements MapFunction {
                     return;
                 String def = a.defaultValue();
                 if (def == null) {
-                    // todo: exception mechanism
-                    throw new MapJenaException();
+                    throw exception(FUNCTION_NO_REQUIRED_ARG).add(Key.ARG, a.name()).build();
                 }
                 // set default:
                 map.put(a.name(), def);

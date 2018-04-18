@@ -67,7 +67,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public MapModel removeContext(Context context) {
+    public MapModelImpl removeContext(Context context) {
         Models.getAssociatedStatements(((MapContextImpl) MapJenaException.notNull(context, "Null context"))).forEach(this::remove);
         return this;
     }
@@ -86,7 +86,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public Resource makeContext(OntCE source, OntCE target) {
         // ensue all related models are imported:
-        Stream.of(source, target)
+        Stream.of(MapJenaException.notNull(source, "Null source CE"), MapJenaException.notNull(target, "Null target CE"))
                 .map(OntObject::getModel)
                 .forEach(MapModelImpl.this::addImport);
 
@@ -110,4 +110,5 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public static String getLocalName(Resource resource) {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
+
 }

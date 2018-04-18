@@ -16,6 +16,7 @@ import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.PropertyBridge;
+import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
 import ru.avicomp.map.utils.Models;
@@ -31,9 +32,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ru.avicomp.map.spin.Exceptions.*;
+
 /**
  * Implementation of class context (for resource with type {@code spinmap:Context}).
- *
+ * <p>
  * Created by @szuev on 14.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
@@ -69,9 +72,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public Context addExpression(MapFunction.Call func) throws MapJenaException {
-        if (!func.getFunction().isTarget()) {
-            // TODO: exception mechanism
-            throw new MapJenaException();
+        if (!MapJenaException.notNull(func, "Null function call").getFunction().isTarget()) {
+            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, func.getFunction().name()).build();
         }
         validate(func);
         Resource expr = createExpression(func);
@@ -100,7 +102,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
         Predicate<Resource> isProperty = ARG_RESOURCE_MAPPING.get(RDF.Property.getURI());
         if (!isProperty.test(target)) {
-            throw new MapJenaException("TODO");
+            throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         validate(func);
         Resource expr = createExpression(func);
@@ -194,7 +196,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
         func.asMap().forEach((arg, value) -> {
             if (!(value instanceof String)) // todo: handle nested function call
                 throw new UnsupportedOperationException("TODO");
-            // todo:
             Property predicate = model.createResource(arg.name()).as(Property.class);
             res.addProperty(predicate, createArgRDFNode(arg.type(), (String) value));
         });
@@ -212,14 +213,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
         func.asMap().forEach(this::validateArg);
     }
 
-    private void validateArg(MapFunction.Arg arg, Object value) {
+    private void validateArg(MapFunction.Arg arg, Object value) throws MapJenaException {
         String argType = arg.type();
         if (value instanceof String) {
             createArgRDFNode(argType, (String) value);
             return;
         }
         if (MapFunctionImpl.UNDEFINED.equals(argType)) // todo: undefined means xsd:string or uri-resource
-            throw new MapJenaException("TODO"); // todo: exception mechanism
+            throw new UnsupportedOperationException("TODO"); // todo: exception mechanism
         if (value instanceof MapFunction.Call) {
             String funcType = ((MapFunction.Call) value).getFunction().returnType();
             validateFuncReturnType(argType, funcType);
@@ -254,6 +255,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (ARG_RESOURCE_MAPPING.getOrDefault(type, r -> false).test(uri)) {
             return uri;
         }
-        throw new MapJenaException("TODO"); // todo: exception mechanism
+        throw exception(CONTEXT_WRONG_EXPRESSION_ARGUMENT)
+                .add(Key.ARG_TYPE, type)
+                .add(Key.ARG_VALUE, value).build();
+    }
+
+    private Exceptions.Builder exception(Exceptions code) {
+        return code.create()
+                .add(Key.CONTEXT_SOURCE, getSource().asNode().toString())
+                .add(Key.CONTEXT_TARGET, getTarget().asNode().toString());
     }
 }
