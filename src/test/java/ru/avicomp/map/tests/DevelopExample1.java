@@ -9,7 +9,9 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntNDP;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,6 +74,19 @@ public class DevelopExample1 extends AbstractMapTest {
         return assemblePrimitiveOntology(this, "target", "T_CL1",
                 Collections.emptyList(),
                 Collections.singletonList("T_DP2"));
+    }
+
+    protected static OntGraphModel assemblePrimitiveOntology(AbstractMapTest base,
+                                                             String name,
+                                                             String className,
+                                                             Collection<String> individuals,
+                                                             Collection<String> dataProperties) {
+        OntGraphModel m = base.createModel(name);
+        String ns = m.getID().getURI() + "#";
+        OntClass clazz = m.createOntEntity(OntClass.class, ns + className);
+        dataProperties.forEach(s -> m.createOntEntity(OntNDP.class, ns + s).addDomain(clazz));
+        individuals.forEach(s -> clazz.createIndividual(ns + s));
+        return m;
     }
 
 }

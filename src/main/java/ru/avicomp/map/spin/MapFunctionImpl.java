@@ -21,9 +21,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 09.04.2018.
  */
 public class MapFunctionImpl implements MapFunction {
-
-    public static final String VOID = "void";
-    public static final String UNDEFINED = "?";
+    public static final String UNDEFINED = "undefined";
     private final org.topbraid.spin.model.Module func;
     private List<Arg> arguments;
 
@@ -39,7 +37,7 @@ public class MapFunctionImpl implements MapFunction {
     @Override
     public String returnType() {
         Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
-        return r == null ? VOID : r.getURI();
+        return r == null ? UNDEFINED : r.getURI();
     }
 
     public List<Arg> getArguments() {
@@ -186,7 +184,7 @@ public class MapFunctionImpl implements MapFunction {
                     if (this.equals(val)) { // todo:
                         throw new MapJenaException("Self calling");
                     }
-                    if (VOID.equals(((Builder) val).getFunction().returnType())) {
+                    if (UNDEFINED.equals(((Builder) val).getFunction().returnType())) {
                         throw new MapJenaException("Void");
                     }
                 } else {

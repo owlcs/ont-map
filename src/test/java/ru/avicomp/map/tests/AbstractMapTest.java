@@ -3,11 +3,7 @@ package ru.avicomp.map.tests;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntNDP;
-
-import java.util.Collection;
 
 /**
  * Created by @szuev on 14.04.2018.
@@ -33,16 +29,4 @@ public abstract class AbstractMapTest {
         return res;
     }
 
-    protected static OntGraphModel assemblePrimitiveOntology(AbstractMapTest base,
-                                                             String name,
-                                                             String className,
-                                                             Collection<String> individuals,
-                                                             Collection<String> dataProperties) {
-        OntGraphModel m = base.createModel(name);
-        String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + className);
-        dataProperties.forEach(s -> m.createOntEntity(OntNDP.class, ns + s).addDomain(clazz));
-        individuals.forEach(s -> clazz.createIndividual(ns + s));
-        return m;
-    }
 }

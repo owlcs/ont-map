@@ -6,7 +6,6 @@ import ru.avicomp.map.Context;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.impl.MapContextImpl;
-import ru.avicomp.map.spin.model.MapContext;
 import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
@@ -54,11 +53,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
 
     @Override
-    public MapContext createContext(OntCE source, OntCE target) {
+    public MapContextImpl createContext(OntCE source, OntCE target) {
         return contexts()
                 .filter(s -> Objects.equals(s.getSource(), source))
                 .filter(s -> Objects.equals(s.getTarget(), target))
-                .map(MapContext.class::cast)
+                .map(MapContextImpl.class::cast)
                 .findFirst()
                 .orElseGet(() -> asContext(makeContext(source, target)));
     }

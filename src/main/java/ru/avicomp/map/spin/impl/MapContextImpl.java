@@ -18,7 +18,6 @@ import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
-import ru.avicomp.map.spin.model.MapContext;
 import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntDT;
@@ -33,11 +32,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Implementation of class context.
+ * Implementation of class context (for resource with type {@code spinmap:Context}).
+ *
  * Created by @szuev on 14.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapContextImpl extends ResourceImpl implements MapContext {
+public class MapContextImpl extends ResourceImpl implements Context {
     private static final Map<String, Predicate<Resource>> ARG_RESOURCE_MAPPING = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
