@@ -10,12 +10,14 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.inference.SPINInferences;
 import org.topbraid.spin.system.SPINModuleRegistry;
+import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.model.MapTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
@@ -62,8 +64,27 @@ public class MapManagerImpl implements MapManager {
         return SystemModels.graphs().get(SystemModels.Resources.AVC.getURI());
     }
 
-    public Graph getMapLibraryGraph() throws IllegalStateException {
-        return ((UnionGraph) library.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
+    /**
+     * Creates a class-properties mapping with cache which is attached to the specified graph.
+     *
+     * @param g         {@link UnionGraph} to attache listener
+     * @param withCache boolean if false just return a base no-cache implementation, which will collect mapping every time on calling
+     * @return {@link ClassPropertyMap} object, not null.
+     */
+    public static ClassPropertyMap createClassPropertyMap(UnionGraph g, boolean withCache) {
+        ClassPropertyMap noCache = new ClassPropertyMapImpl();
+        if (!withCache)
+            return noCache;
+        UnionGraph.OntEventManager manager = g.getEventManager();
+        return manager.listeners()
+                .filter(l -> ClassPropertyMapListener.class.equals(l.getClass()))
+                .map(ClassPropertyMapListener.class::cast)
+                .findFirst()
+                .orElseGet(() -> {
+                    ClassPropertyMapListener res = new ClassPropertyMapListener(noCache);
+                    manager.register(res);
+                    return res;
+                }).get();
     }
 
     public static Map<String, MapFunction> loadFunctions(Model model) {
@@ -80,6 +101,10 @@ public class MapManagerImpl implements MapManager {
                 .filter(f -> !f.hasProperty(AVC.hidden))
                 .map(MapFunctionImpl::new)
                 .collect(Collectors.toMap(MapFunctionImpl::name, Function.identity()));
+    }
+
+    public Graph getMapLibraryGraph() throws IllegalStateException {
+        return ((UnionGraph) library.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
     }
 
     @Override
@@ -110,6 +135,18 @@ public class MapManagerImpl implements MapManager {
         configurePrefixes(g);
         res.setID(null).addImport(Graphs.getURI(map));
         return res;
+    }
+
+    /**
+     * Note: this method is not used during validation of input arguments,
+     * since SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
+     *
+     * @param model {@link OntGraphModel OWL model}
+     * @return {@link ClassPropertyMap mapping}
+     */
+    @Override
+    public ClassPropertyMap getClassProperties(OntGraphModel model) {
+        return createClassPropertyMap((UnionGraph) model.getGraph(), true);
     }
 
     /**

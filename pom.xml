@@ -73,6 +73,12 @@
             <artifactId>spin.functions</artifactId>
             <version>5.2.2.v20170123-2101B</version>
         </dependency>
+        <!-- used for class-properties map -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>2.5.6</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>

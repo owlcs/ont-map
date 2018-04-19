@@ -3,6 +3,7 @@ package ru.avicomp.map;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -51,6 +52,19 @@ public interface MapManager {
      * @return {@link MapModel}
      */
     MapModel createModel();
+
+
+    /**
+     * Provides a class-properties mapping.
+     * For convenience.
+     * Basically, this is for GUI's drawing and there is no direct usage in the API.
+     * Please note: spin-map (an API default implementation) does not require a property to be "belonged" to a class,
+     * i.e. it allows to perform mapping even a property has no domain with a class from a context.
+     *
+     * @param model {@link OntGraphModel OWL model}
+     * @return {@link ClassPropertyMap class properties mapping object}
+     */
+    ClassPropertyMap getClassProperties(OntGraphModel model);
 
     /**
      * Creates an engine to inference mappings.

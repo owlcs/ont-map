@@ -1,34 +1,41 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.graph.Factory;
+import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.Property;
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.vocabulary.OWL;
+import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.avicomp.map.ClassPropertyMap;
+import ru.avicomp.map.Managers;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntOPE;
 import ru.avicomp.ontapi.jena.model.OntPE;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 18.04.2018.
  */
 public class ClassPropertiesTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClassPropertiesTest.class);
 
     private OntGraphModel load(String file, Lang format) throws IOException {
         Graph g = Factory.createGraphMem();
@@ -43,85 +50,82 @@ public class ClassPropertiesTest {
         OntGraphModel m = load("/pizza.ttl", Lang.TURTLE);
         m.setNsPrefix("pizza", m.getID().getURI() + "#");
         m.removeNsPrefix("");
-        print(m);
+        doPrint(m);
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("pizza:SweetPepperTopping", 5);
+        expected.put("pizza:Napoletana", 6);
+        expected.put("pizza:SundriedTomatoTopping", 5);
+        expected.put("pizza:DeepPanBase", 4);
+        expected.put("pizza:Food", 3);
+        expected.put("pizza:VegetarianPizzaEquivalent1", 2);
+        expected.put("pizza:Medium", 1);
+        expected.put("pizza:SpicyPizzaEquivalent", 2);
+        expected.put("pizza:CheeseyPizza", 2);
+        validateClasses(m, expected);
     }
 
     @Test
     public void testFoaf() throws Exception {
         OntGraphModel m = load("/foaf.rdf", Lang.RDFXML);
         m.setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/");
-        print(m);
+        doPrint(m);
+        TestUtils.debug(LOGGER, m);
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("foaf:Person", 38);
+        expected.put("foaf:Organization", 21);
+        expected.put("foaf:PersonalProfileDocument", 4);
+        expected.put("foaf:LabelProperty", 1);
+        validateClasses(m, expected);
     }
 
     @Test
     public void testGoodrelations() throws Exception {
         OntGraphModel m = load("/goodrelations.rdf", Lang.RDFXML);
-        m.write(System.out, "ttl");
-        System.out.println("=============\n\n");
-        m.getOWLThing().subClassOf().forEach(System.out::println);
-        print(m);
+        m.setNsPrefix("schema", "http://schema.org/");
+        doPrint(m);
+        TestUtils.debug(LOGGER, m);
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("gr:QuantitativeValueInteger", 11);
+        expected.put("schema:Product", 23);
+        expected.put("gr:ProductOrService", 23);
+        expected.put("gr:Offering", 32);
+        validateClasses(m, expected);
     }
 
-    public void print(OntGraphModel m) {
-        ClassPropertiesMap c = new ClassPropertiesMap(m);
-        m.ontObjects(OntCE.class).forEach(ce -> {
-            System.out.println("[" + ((OntObjectImpl) ce).getActualClass().getSimpleName() + "]" + m.shortForm(ce.asNode().toString()));
-            c.apply(ce)
-                    .sorted(Comparator.comparing(Resource::getURI))
-                    .forEach(property -> System.out.println("\t" + m.shortForm(property.getURI())));
+    private static void validateClasses(OntGraphModel m, Map<String, Integer> expected) {
+        ClassPropertyMap map = Managers.getMapManager().getClassProperties(m);
+        expected.forEach((c, v) -> {
+            OntClass clazz = m.getOntEntity(OntClass.class, m.expandPrefix(c));
+            Assert.assertNotNull("Can't find class " + c, clazz);
+            Assert.assertEquals("Wrong properties count for " + c, v.longValue(), map.properties(clazz).count());
         });
     }
 
-    public static class ClassPropertiesMap implements Function<OntCE, Stream<Property>> {
-        private final OntGraphModel model;
-
-        private ClassPropertiesMap(OntGraphModel model) {
-            this.model = model;
-        }
-
-        private static Property toNamed(OntPE p) {
-            return (p.isAnon() ? p.as(OntOPE.class).getInverseOf() : p).as(Property.class);
-        }
-
-        @Override
-        public Stream<Property> apply(OntCE ce) {
-            return collect(ce, new HashSet<>());
-        }
-
-        public Stream<Property> collect(OntCE ce, Set<OntCE> visited) {
-            if (visited.contains(checkCE(ce))) {
-                return Stream.empty();
-            }
-            visited.add(ce);
-            if (Objects.equals(ce, OWL.Thing)) {
-                return Stream.of(model.getRDFSLabel());
-            }
-            Stream<OntCE> superClasses = ce.isAnon() ? ce.subClassOf() : Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
-            Stream<OntCE> equivalentClasses = ce.equivalentClass();
-            Stream<OntCE> unionClasses = model.ontObjects(OntCE.UnionOf.class)
-                    .filter(c -> c.components().anyMatch(_c -> Objects.equals(_c, ce))).map(OntCE.class::cast);
-
-            Stream<OntCE> classes = Stream.of(superClasses, equivalentClasses, unionClasses).flatMap(Function.identity());
-            classes = classes.distinct().filter(c -> !Objects.equals(c, ce));
-
-            Stream<Property> properties = ce.properties().map(ClassPropertiesMap::toNamed);
-            if (ce instanceof OntCE.ONProperty) {
-                Property p = toNamed(((OntCE.ONProperty) ce).getOnProperty());
-                properties = Stream.concat(properties, Stream.of(p));
-            }
-            if (ce instanceof OntCE.ONProperties) {
-                Stream<? extends OntPE> props = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
-                properties = Stream.concat(properties, props.map(ClassPropertiesMap::toNamed));
-            }
-            return Stream.concat(classes.flatMap(c -> collect(c, visited)), properties)
-                    .distinct();
-        }
-
-        private OntCE checkCE(OntCE ce) {
-            if (Objects.requireNonNull(ce, "Null ce").getModel() != model) {
-                throw new IllegalArgumentException("Wrong ce: " + ce);
-            }
-            return ce;
-        }
+    private static void doPrint(OntGraphModel m) {
+        m.ontObjects(OntCE.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
+        LOGGER.debug("=============");
+        m.ontObjects(OntPE.class).map(ClassPropertiesTest::propertyClasses).forEach(x -> LOGGER.debug("{}", x));
     }
+
+    private static String classProperties(OntCE ce) {
+        OntGraphModel m = ce.getModel();
+        return Stream.concat(Stream.of("[" + ((OntObjectImpl) ce).getActualClass().getSimpleName() + "]" + m.shortForm(ce.asNode().toString())),
+                Managers.getMapManager().getClassProperties(m)
+                        .properties(ce)
+                        .sorted(Comparator.comparing(Resource::getURI))
+                        .map(p -> m.shortForm(p.getURI())))
+                .collect(Collectors.joining("\n\t"));
+    }
+
+    private static String propertyClasses(OntPE pe) {
+        OntGraphModel m = pe.getModel();
+        return Stream.concat(Stream.of("[" + ((OntObjectImpl) pe).getActualClass().getSimpleName() + "]" + m.shortForm(pe.asNode().toString())),
+                Managers.getMapManager().getClassProperties(m)
+                        .classes(pe)
+                        .map(FrontsNode::asNode)
+                        .sorted(Comparator.comparing(Node::isURI).thenComparing((Function<Node, String>) Node::toString))
+                        .map(c -> m.shortForm(c.toString())))
+                .collect(Collectors.joining("\n\t"));
+    }
+
 }
