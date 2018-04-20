@@ -17,13 +17,11 @@ import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
-import ru.avicomp.ontapi.jena.model.OntCE;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntPE;
+import ru.avicomp.ontapi.jena.model.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -75,6 +73,8 @@ public class ClassPropertiesTest {
         expected.put("foaf:Organization", 21);
         expected.put("foaf:PersonalProfileDocument", 4);
         expected.put("foaf:LabelProperty", 1);
+        expected.put("foaf:Agent", 21);
+        expected.put("foaf:OnlineAccount", 3);
         validateClasses(m, expected);
     }
 
@@ -82,6 +82,9 @@ public class ClassPropertiesTest {
     public void testGoodrelations() throws Exception {
         OntGraphModel m = load("/goodrelations.rdf", Lang.RDFXML);
         m.setNsPrefix("schema", "http://schema.org/");
+        OntClass c = m.getOntEntity(OntClass.class, m.expandPrefix("gr:QuantitativeValue"));
+        Assert.assertNotNull(c);
+
         doPrint(m);
         TestUtils.debug(LOGGER, m);
         Map<String, Integer> expected = new LinkedHashMap<>();
@@ -89,6 +92,41 @@ public class ClassPropertiesTest {
         expected.put("schema:Product", 23);
         expected.put("gr:ProductOrService", 23);
         expected.put("gr:Offering", 32);
+        expected.put("gr:SomeItems", 26);
+        expected.put("gr:BusinessEntityType", 3);
+        expected.put("gr:License", 7);
+        expected.put("gr:ProductOrServiceModel", 28);
+        expected.put("gr:WarrantyPromise", 5);
+        expected.put("schema:Place", 5);
+        validateClasses(m, expected);
+    }
+
+    @Test
+    public void testCustom() {
+        String uri = "http://ex.com";
+        String ns = uri + "#";
+        OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX);
+        m.setID(uri);
+        m.setNsPrefix("e", ns);
+        m.setNsPrefixes(OntModelFactory.STANDARD);
+
+        OntNOP o1 = m.createOntEntity(OntNOP.class, ns + "o1");
+        OntClass c1 = m.createOntEntity(OntClass.class, ns + "C1");
+        m.createOntEntity(OntNDP.class, ns + "d1").addDomain(c1);
+        m.createOntEntity(OntNDP.class, ns + "d2").addDomain(c1);
+        OntClass c2 = m.createOntEntity(OntClass.class, ns + "C2");
+        OntCE ce1 = m.createIntersectionOf(Arrays.asList(c1, m.createObjectAllValuesFrom(o1, c2)));
+
+        OntClass c3 = m.createOntEntity(OntClass.class, ns + "C3");
+        c3.addEquivalentClass(ce1);
+
+        TestUtils.debug(LOGGER, m);
+        m.ontObjects(OntClass.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
+
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("e:C1", 3);
+        expected.put("e:C2", 1);
+        expected.put("e:C3", 2);
         validateClasses(m, expected);
     }
 
