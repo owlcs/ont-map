@@ -1,5 +1,7 @@
 package ru.avicomp.map.tests;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
@@ -10,7 +12,6 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -25,7 +26,7 @@ public class PrefixesTest {
     @Test
     public void testPrefixes() {
         MapManager manager = Managers.getMapManager();
-        MapModel m = manager.createModel();
+        Model m = ModelFactory.createModelForGraph(manager.createModel().getGraph());
         LOGGER.debug("\n{}", TestUtils.asString(m));
         // owl:imports:
         Assert.assertEquals(1, m.numPrefixes());

@@ -4,6 +4,8 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapModel;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 import java.io.StringWriter;
 
@@ -20,6 +22,10 @@ public class TestUtils {
 
     public static void debug(Logger logger, Model m) {
         logger.debug("\n{}\n==========", TestUtils.asString(m));
+    }
+
+    public static void debug(Logger logger, MapModel m) {
+        debug(logger, (OntGraphModel) m);
     }
 
     public static void debug(Logger logger, MapFunction.Call func, PrefixMapping pm) {

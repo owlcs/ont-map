@@ -1,8 +1,10 @@
 package org.topbraid.spin.vocabulary;
 
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SystemModels;
 
 /**
@@ -99,5 +101,9 @@ public class SPIN {
     public static Resource _arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();
         return resource("_arg" + i);
+    }
+
+    public static Model getModel() {
+        return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
     }
 }

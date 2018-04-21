@@ -39,6 +39,9 @@ public class SystemModels implements JenaSubsystemLifecycle {
         LOGGER.debug("START");
         //noinspection ResultOfMethodCallIgnored
         graphs();
+        // todo: for a case add http->resource entity to org.apache.jena.riot.system.stream.LocationMapper
+        // todo: add org.apache.jena.riot.system.stream.Locator for spin resource.
+        // todo: move spin -> etc
     }
 
     @Override

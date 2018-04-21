@@ -1,7 +1,6 @@
 package ru.avicomp.map.spin;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.shared.PrefixMapping;
@@ -13,13 +12,33 @@ import org.apache.jena.shared.PrefixMapping;
  */
 @SuppressWarnings("WeakerAccess")
 public class NodePrefixMapper {
-    public static final PrefixMapping LIBRARY = collectPrefixes(SystemModels.graphs().values());
+    private final PrefixMapping library;
 
     /**
-     * Gets a namespace from a node.
+     * Constructor.
+     * An external prefix mapping is used as a library to search most suitable prefixes.
+     * In case there is no prefix in library the class will try to create it.
+     *
+     * @param library {@link PrefixMapping}
+     */
+    public NodePrefixMapper(PrefixMapping library) {
+        this.library = PrefixMapping.Factory.create().setNsPrefixes(library);
+    }
+
+    /**
+     * Adds prefixes to the internal collection.
+     *
+     * @param prefixes {@link PrefixMapping}
+     */
+    public void addPrefixes(PrefixMapping prefixes) {
+        this.library.setNsPrefixes(prefixes);
+    }
+
+    /**
+     * Gets a namespace for a node.
      *
      * @param node {@link Node}
-     * @return String or null.
+     * @return String or null
      */
     public String getNameSpace(Node node) {
         if (node.isLiteral()) {
@@ -41,7 +60,7 @@ public class NodePrefixMapper {
     public String extract(Node node) {
         String ns = getNameSpace(node);
         if (StringUtils.isEmpty(ns)) return null;
-        String res = LIBRARY.getNsURIPrefix(ns);
+        String res = library.getNsURIPrefix(ns);
         if (!StringUtils.isEmpty(res)) return res;
         ns = ns.replaceFirst("#$", "");
         //if (ns.contains("#")) return null;
@@ -51,9 +70,4 @@ public class NodePrefixMapper {
         return res.replace(".", "-").toLowerCase();
     }
 
-    public static PrefixMapping collectPrefixes(Iterable<Graph> graphs) {
-        PrefixMapping res = PrefixMapping.Factory.create();
-        graphs.forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
-        return res.lock();
-    }
 }

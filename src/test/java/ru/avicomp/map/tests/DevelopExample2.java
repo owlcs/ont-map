@@ -114,6 +114,7 @@ public class DevelopExample2 extends AbstractMapTest {
         res.setID(getNameSpace() + "/map");
         res.createContext(srcClass, dstClass).addExpression(targetFunction).addPropertyBridge(propertyFunction, dstProp);
         Assert.assertEquals(1, res.contexts().count());
+        Assert.assertEquals(2, res.imports().count());
         Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;

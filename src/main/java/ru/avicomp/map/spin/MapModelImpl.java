@@ -10,10 +10,7 @@ import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
-import ru.avicomp.ontapi.jena.model.OntCE;
-import ru.avicomp.ontapi.jena.model.OntID;
-import ru.avicomp.ontapi.jena.model.OntObject;
-import ru.avicomp.ontapi.jena.model.OntStatement;
+import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -40,6 +37,15 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     @Override
     public OntID setID(String uri) {
         return getNodeAs(OntGraphModelImpl.createOntologyID(getBaseModel(), uri).asNode(), OntID.class);
+    }
+
+    @Override
+    public Stream<OntGraphModel> imports(OntPersonality personality) {
+        return imports(personality, false);
+    }
+
+    public Stream<OntGraphModel> imports(OntPersonality personality, boolean withLibrary) {
+        return super.imports(personality).filter(model -> withLibrary || !SystemModels.graphs().keySet().contains(model.getID().getURI()));
     }
 
     @Override

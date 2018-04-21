@@ -1,23 +1,22 @@
 package ru.avicomp.map;
 
-import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.Model;
+import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
 
 import java.util.stream.Stream;
 
 /**
- * An extended {@link Model jena model} with mapping instructions.
+ * A graph model with mapping instructions to perform data transfer from one OWL2 ontology to another.
  * Note: it does not have to be OWL2 ontology.
  * Moreover, a spin implementation is not OWL2-, but rather a RDFS-ontology.
  * Nevertheless it have to be compatible with OWL2 as possible,
  * e.g. ontology id must be the only one as it is required by OWL2.
- * todo: it seems we don't need to allow everything possible - jena-model extending is better to be removed.
  * <p>
  * Created by @szuev on 10.04.2018.
  */
-public interface MapModel extends Model {
+public interface MapModel {
 
     /**
      * Returns an ontology id.
@@ -35,6 +34,14 @@ public interface MapModel extends Model {
      * @see ru.avicomp.ontapi.jena.model.OntGraphModel#setID(String)
      */
     OntID setID(String uri);
+
+    /**
+     * Lists all actual imports with exclusion of library.
+     * Note: the result models have {@link ru.avicomp.ontapi.jena.impl.conf.OntModelConfig#ONT_PERSONALITY_LAX} inside.
+     *
+     * @return Stream of imports in form of {@link OntGraphModel OWL2 jena model}.
+     */
+    Stream<OntGraphModel> imports();
 
     /**
      * Lists all contexts.
@@ -67,8 +74,7 @@ public interface MapModel extends Model {
     /**
      * Answer the Graph which this Model is presenting.
      *
-     * @return {@link Graph}
+     * @return {@link UnionGraph}
      */
-    @Override
-    Graph getGraph();
+    UnionGraph getGraph();
 }

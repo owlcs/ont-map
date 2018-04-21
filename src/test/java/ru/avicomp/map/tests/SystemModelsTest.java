@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.SystemModels;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -47,22 +48,23 @@ public class SystemModelsTest {
 
     @Test
     public void testListFunctions() {
-        Managers.getMapManager().functions()
+        MapManager manager = Managers.getMapManager();
+        manager.functions()
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
                 .forEach(System.out::println);
-        System.out.println(Managers.getMapManager().functions().count());
-        MapFunction f = Managers.getMapManager().getFunction(SP.resource("UUID").getURI());
+        System.out.println(manager.functions().count());
+        MapFunction f = manager.getFunction(SP.resource("UUID").getURI());
         Assert.assertNotNull(f);
         System.out.println(f.getComment());
         System.out.println(f.getComment("ru"));
         System.out.println(f.getLabel());
         System.out.println(f.getLabel("ru"));
         System.out.println("-----");
-        PrefixMapping pm = Managers.getMapManager().prefixes();
+        PrefixMapping pm = manager.prefixes();
         pm.getNsPrefixMap().forEach((p, u) -> System.out.println(p + "=> " + u));
-        Managers.getMapManager().functions()
+        manager.functions()
                 .flatMap(x -> Stream.concat(Stream.of(x.returnType()), x.args().map(MapFunction.Arg::type)))
-                .map(u -> Managers.getMapManager().prefixes().shortForm(u))
+                .map(u -> manager.prefixes().shortForm(u))
                 .sorted()
                 .distinct()
                 .forEach(System.out::println);

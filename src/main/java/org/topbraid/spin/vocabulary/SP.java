@@ -161,6 +161,4 @@ public class SP {
         return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
     }
 
-
-
 }

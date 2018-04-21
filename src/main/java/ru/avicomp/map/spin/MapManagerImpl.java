@@ -10,11 +10,8 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.inference.SPINInferences;
 import org.topbraid.spin.system.SPINModuleRegistry;
-import ru.avicomp.map.ClassPropertyMap;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.spin.model.MapTargetFunction;
+import ru.avicomp.map.*;
+import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -22,7 +19,6 @@ import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,16 +27,23 @@ import java.util.stream.Stream;
  * A spin based implementation of {@link MapManager}.
  * <p>
  * Created by @szuev on 06.04.2018.
+ *
+ * @see ru.avicomp.map.Managers
  */
+@SuppressWarnings("WeakerAccess")
 public class MapManagerImpl implements MapManager {
 
-    private final Model library;
-    private Map<String, MapFunction> mapFunctions;
+    private final PrefixMapping prefixLibrary;
+    private final Model graphLibrary;
+    private final Map<String, MapFunction> mapFunctions;
 
     public MapManagerImpl() {
-        this.library = createLibraryModel(true);
-        registerALL(library);
-        this.mapFunctions = loadFunctions(library);
+        this.graphLibrary = createLibraryModel();
+        this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
+        registerALL(graphLibrary);
+        this.mapFunctions = listSpinFunctions(graphLibrary)
+                .map(f -> makeFunction(f, prefixLibrary))
+                .collect(Collectors.toMap(MapFunction::name, Function.identity()));
     }
 
     public static void registerALL(Model library) {
@@ -49,47 +52,47 @@ public class MapManagerImpl implements MapManager {
         SPINModuleRegistry.get().registerAll(library, null);
     }
 
-    public static Model createLibraryModel(boolean withInclusion) {
-        UnionGraph map = Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
-        if (withInclusion) {
-            // note: this graph is not included to the owl:imports
-            UnionGraph avc = new UnionGraph(getInclusionGraph());
-            avc.addGraph(map);
-            map = avc;
-        }
-        return SpinModelConfig.createSpinModel(map);
+    private static Model createLibraryModel() {
+        UnionGraph map = getSpinLibraryGraph();
+        // note: this graph is not included to the owl:imports
+        UnionGraph avc = new UnionGraph(getInclusionGraph());
+        avc.addGraph(map);
+        return SpinModelConfig.createSpinModel(avc);
     }
 
-    private static Graph getInclusionGraph() {
+    public static Graph getInclusionGraph() {
         return SystemModels.graphs().get(SystemModels.Resources.AVC.getURI());
     }
 
-    /**
-     * Creates a class-properties mapping with cache which is attached to the specified graph.
-     *
-     * @param g         {@link UnionGraph} to attache listener
-     * @param withCache boolean if false just return a base no-cache implementation, which will collect mapping every time on calling
-     * @return {@link ClassPropertyMap} object, not null.
-     */
-    public static ClassPropertyMap createClassPropertyMap(UnionGraph g, boolean withCache) {
-        ClassPropertyMap noCache = new ClassPropertyMapImpl();
-        if (!withCache)
-            return noCache;
-        UnionGraph.OntEventManager manager = g.getEventManager();
-        return manager.listeners()
-                .filter(l -> ClassPropertyMapListener.class.equals(l.getClass()))
-                .map(ClassPropertyMapListener.class::cast)
-                .findFirst()
-                .orElseGet(() -> {
-                    ClassPropertyMapListener res = new ClassPropertyMapListener(noCache);
-                    manager.register(res);
-                    return res;
-                }).get();
+    public static UnionGraph getSpinLibraryGraph() {
+        return Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
     }
 
-    public static Map<String, MapFunction> loadFunctions(Model model) {
+    /**
+     * Collects a prefixes library from a collection of graphs.
+     * todo: move to Graphs ont-api utils?
+     *
+     * @param graphs {@link Iterable} a collection of graphs
+     * @return unmodifiable {@link PrefixMapping prefix mapping}
+     */
+    public static PrefixMapping collectPrefixes(Iterable<Graph> graphs) {
+        PrefixMapping res = PrefixMapping.Factory.create();
+        graphs.forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
+        return res.lock();
+    }
+
+    /**
+     * Lists all spin functions with exclusion private, abstract, deprecated and hidden
+     * (the last one using info from avc supplement graph).
+     * Spin templates are not included also.
+     * Auxiliary method.
+     *
+     * @param model {@link Model} with spin-personalities
+     * @return Stream of {@link org.topbraid.spin.model.Function topbraid spin function}s.
+     */
+    public static Stream<org.topbraid.spin.model.Function> listSpinFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(MapTargetFunction.class))
+                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(SpinTargetFunction.class))
                 .map(s -> s.as(org.topbraid.spin.model.Function.class))
                 // skip private:
                 .filter(f -> !f.isPrivate())
@@ -98,13 +101,17 @@ public class MapManagerImpl implements MapManager {
                 // skip deprecated:
                 .filter(f -> !f.hasProperty(RDF.type, OWL.DeprecatedClass))
                 // skip hidden:
-                .filter(f -> !f.hasProperty(AVC.hidden))
-                .map(MapFunctionImpl::new)
-                .collect(Collectors.toMap(MapFunctionImpl::name, Function.identity()));
+                .filter(f -> !f.hasProperty(AVC.hidden));
     }
 
-    public Graph getMapLibraryGraph() throws IllegalStateException {
-        return ((UnionGraph) library.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
+    private static MapFunction makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {
+        return new MapFunctionImpl(func) {
+
+            @Override
+            public String toString() {
+                return toString(pm);
+            }
+        };
     }
 
     @Override
@@ -114,11 +121,21 @@ public class MapManagerImpl implements MapManager {
 
     @Override
     public PrefixMapping prefixes() {
-        return NodePrefixMapper.LIBRARY;
+        return prefixLibrary;
     }
 
     public Model library() {
-        return library;
+        return graphLibrary;
+    }
+
+    /**
+     * Gets a library graph without any inclusion (i.e. without avc addition).
+     *
+     * @return {@link UnionGraph}
+     * @throws IllegalStateException wrong state
+     */
+    public Graph getMapLibraryGraph() throws IllegalStateException {
+        return ((UnionGraph) graphLibrary.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
     }
 
     @Override
@@ -133,20 +150,9 @@ public class MapManagerImpl implements MapManager {
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         configurePrefixes(g);
+        // add spinmapl (a root of library) to owl:imports:
         res.setID(null).addImport(Graphs.getURI(map));
         return res;
-    }
-
-    /**
-     * Note: this method is not used during validation of input arguments,
-     * since SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
-     *
-     * @param model {@link OntGraphModel OWL model}
-     * @return {@link ClassPropertyMap mapping}
-     */
-    @Override
-    public ClassPropertyMap getClassProperties(OntGraphModel model) {
-        return createClassPropertyMap((UnionGraph) model.getGraph(), true);
     }
 
     /**
@@ -165,12 +171,43 @@ public class MapManagerImpl implements MapManager {
      * @return {@link NodePrefixMapper}
      */
     public NodePrefixMapper getNodePrefixMapper() {
-        return new NodePrefixMapper();
+        return new NodePrefixMapper(prefixes());
+    }
+
+    /**
+     * Note: this method is not used during validation of input arguments,
+     * since SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
+     *
+     * @param model {@link OntGraphModel OWL model}
+     * @return {@link ClassPropertyMap mapping}
+     */
+    @Override
+    public ClassPropertyMap getClassProperties(OntGraphModel model) {
+        return ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) model.getGraph(), ClassPropertyMapImpl::new);
     }
 
     @Override
     public InferenceEngine getInferenceEngine() {
-        return (mapping, source, target) -> {
+        return new InferenceEngineImpl(this);
+    }
+
+    public static class InferenceEngineImpl implements InferenceEngine {
+        static {
+            // Warning: Jena stupidly allows to modify global personality (org.apache.jena.enhanced.BuiltinPersonalities#model),
+            // what does SPIN API, which, also, implicitly requires that patched version everywhere.
+            // It may be dangerous, increases the system load and may impact other jena-based tools.
+            // but I don't think there is an easy good workaround, so it's better to put up with that modifying.
+            SpinModelConfig.init(BuiltinPersonalities.model);
+        }
+
+        private final MapManagerImpl manager;
+
+        public InferenceEngineImpl(MapManagerImpl manager) {
+            this.manager = manager;
+        }
+
+        @Override
+        public void run(MapModel mapping, Graph source, Graph target) throws MapJenaException {
             // todo: add logging
 
             // Reassembly a union graph (just in case, it should already contain everything needed):
@@ -182,25 +219,12 @@ public class MapManagerImpl implements MapManager {
             // add everything from source:
             Graphs.flat(source).forEach(union::addGraph);
             // all from library with except of avc (also, just in case):
-            Graphs.flat(library.getGraph())
-                    .filter(g -> !Objects.equals(g, getInclusionGraph()))
-                    .forEach(union::addGraph);
-            // a hack.
-            // Jena stupidly allows to modify global personality,
-            // what does SPIN API, which, also, implicitly requires that patched version everywhere.
-            // It may be dangerous and increases the load of the system,
-            // so better to reset global personality to its original state after this procedure.
-            Map<?, ?> init = SpinModelConfig.getPersonalityMap(BuiltinPersonalities.model);
-            try {
-                SpinModelConfig.init(BuiltinPersonalities.model);
-                Model s = SpinModelConfig.createSpinModel(union);
-                Model t = new ModelCom(target);
-                SPINInferences.run(s, t, null, null, false, null);
-            } finally {
-                SpinModelConfig.setPersonalityMap(BuiltinPersonalities.model, init);
-            }
-        };
-    }
+            Graphs.flat(manager.getMapLibraryGraph()).forEach(union::addGraph);
 
+            Model s = SpinModelConfig.createSpinModel(union);
+            Model t = new ModelCom(target);
+            SPINInferences.run(s, t, null, null, false, null);
+        }
+    }
 
 }

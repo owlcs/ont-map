@@ -9,7 +9,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.model.MapTargetFunction;
+import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.utils.Models;
 
 import java.util.*;
@@ -63,7 +63,7 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public boolean isTarget() {
-        return func.canAs(MapTargetFunction.class);
+        return func.canAs(SpinTargetFunction.class);
     }
 
     @Override
@@ -96,11 +96,6 @@ public class MapFunctionImpl implements MapFunction {
 
     private Exceptions.Builder exception(Exceptions code) {
         return code.create().add(Key.FUNCTION, name());
-    }
-
-    @Override
-    public String toString() {
-        return toString(NodePrefixMapper.LIBRARY);
     }
 
     public class ArgImpl implements Arg {

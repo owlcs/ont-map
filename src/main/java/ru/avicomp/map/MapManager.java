@@ -13,10 +13,17 @@ import java.util.stream.Stream;
  * This should be the only place to provide everything that required to build and conduct OWL2 mapping
  * including map inferencing, functions, and tools to create new functions.
  * TODO: not ready: everything can change
- * TODO: include class-property hierarchy provider (function ?)
  * Created by @szuev on 06.04.2018.
  */
 public interface MapManager {
+
+    /**
+     * Returns a collection of all know prefixes from an underling library.
+     * This method is just for convenience.
+     *
+     * @return Unmodifiable {@link PrefixMapping PrefixMapping}
+     */
+    PrefixMapping prefixes();
 
     /**
      * Returns all available functions.
@@ -24,14 +31,6 @@ public interface MapManager {
      * @return Stream of {@link MapFunction}s
      */
     Stream<MapFunction> functions();
-
-    /**
-     * Returns a collection of all know prefixes, which may relate to OWL2-mapping somehow.
-     * This method is just for convenience.
-     *
-     * @return {@link PrefixMapping}
-     */
-    PrefixMapping prefixes();
 
     /**
      * Gets function by name, which is an iri in our single implementation.
@@ -49,6 +48,7 @@ public interface MapManager {
 
     /**
      * Creates a fresh mapping model.
+     *
      * @return {@link MapModel}
      */
     MapModel createModel();
@@ -56,7 +56,7 @@ public interface MapManager {
 
     /**
      * Provides a class-properties mapping.
-     * For convenience.
+     *
      * Basically, this is for GUI's drawing and there is no direct usage in the API.
      * Please note: spin-map (an API default implementation) does not require a property to be "belonged" to a class,
      * i.e. it allows to perform mapping even a property has no domain with a class from a context.
@@ -68,6 +68,7 @@ public interface MapManager {
 
     /**
      * Creates an engine to inference mappings.
+     *
      * @return {@link InferenceEngine}
      */
     InferenceEngine getInferenceEngine();
