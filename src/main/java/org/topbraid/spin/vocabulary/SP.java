@@ -1,9 +1,7 @@
 package org.topbraid.spin.vocabulary;
 
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.*;
+import org.apache.jena.vocabulary.RDF;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SystemModels;
 
@@ -11,13 +9,11 @@ import ru.avicomp.map.spin.SystemModels;
  * A modified copy-paste from a org.topbraid.spin.vocabulary.SP.
  * Two major differences:
  * <ul>
- *     <li>It does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personality}.</li>
- *     <li>Method {@link SP#getModel()}, which is called everywhere in spin, does not dive into the Internet if no /etc/sp.ttl resource found.</li>
+ * <li>It does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personality}.</li>
+ * <li>Method {@link SP#getModel()}, which is called everywhere in spin, does not dive into the Internet if no /etc/sp.ttl resource found or reload data everytime from resources</li>
  * </ul>
- * TODO: it seems using the same namespaces is dirty and dangerous solution.
- * TODO: need to exclude corresponding topbraid classes from a final jar by assembly plugin or somehow else,
- * TODO: or move these classes to another place and use jena's location mapper to be used invoked inside #getModel methods.
- * TODO: First solution seems to be preferable.
+ * WARNING: need to make sure that this class goes before than corresponding topbraid class in classpath
+ * (or - better - exclude topbraid variant from final jar).
  * <p>
  * Created by @szuev on 05.04.2018.
  */
@@ -147,6 +143,27 @@ public class SP {
     public static Property arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();
         return property("arg" + i);
+    }
+
+    public static Integer getArgPropertyIndex(String varName) {
+        if (varName == null) return null;
+        if (varName.startsWith("arg")) {
+            return Integer.getInteger(varName.substring(3));
+        }
+        return null;
+    }
+
+    /**
+     * Checks whether the SP ontology is used in a given Model.
+     * This is true if the model defines the SP namespace prefix  and also has sp:Query defined with an rdf:type.
+     * The goal of this call is to be very fast when SP is not imported,
+     * i.e. it checks the namespace first and can then omit the type query.
+     *
+     * @param model the Model to check
+     * @return true if SP exists in model
+     */
+    public static boolean exists(Model model) {
+        return model != null && SP.NS.equals(model.getNsPrefixURI(SP.PREFIX)) && model.contains(SP.Query, RDF.type, (RDFNode) null);
     }
 
     public static Resource resource(String local) {

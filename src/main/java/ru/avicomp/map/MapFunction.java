@@ -5,11 +5,10 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * This is going to be a wrapper for {@link org.topbraid.spin.model.Function} and
- * common interface for any possible functions used while OWL2 -> OWL2 mappings.
+ * A wrapper for {@link org.topbraid.spin.model.Function} and
+ * common interface for any possible functions used while OWL2 -&gt; OWL2 mappings.
  * It is not a part of jena model graph system (i.e. not a {@link org.apache.jena.rdf.model.RDFNode rdf-node}).
- * Currently, the methods result are assumed to be a full IRIs.
- * TODO: not ready. Implement creation of function-call
+ * At the moment it is assumed that any string methods return absolute IRIs.
  * <p>
  * Created by @szuev on 06.04.2018.
  */
@@ -18,14 +17,14 @@ public interface MapFunction extends Description {
     /**
      * Gets a name of function.
      *
-     * @return String, iri
+     * @return String, absolute iri
      */
     String name();
 
     /**
      * Gets a return type of function.
      *
-     * @return String, iri.
+     * @return String, absolute iri.
      */
     String returnType();
 

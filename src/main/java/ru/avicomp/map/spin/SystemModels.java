@@ -4,6 +4,8 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.mem.GraphMem;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.system.stream.LocationMapper;
+import org.apache.jena.riot.system.stream.StreamManager;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
 import org.apache.jena.system.JenaSubsystemLifecycle;
 import org.slf4j.Logger;
@@ -39,9 +41,15 @@ public class SystemModels implements JenaSubsystemLifecycle {
         LOGGER.debug("START");
         //noinspection ResultOfMethodCallIgnored
         graphs();
-        // todo: for a case add http->resource entity to org.apache.jena.riot.system.stream.LocationMapper
-        // todo: add org.apache.jena.riot.system.stream.Locator for spin resource.
-        // todo: move spin -> etc
+
+        // This is just in case.
+        // E.g. to prevent possible calls of "model.read(http:..)" or something like that in the depths of topbraid API.
+        // A standard jena Locator (org.apache.jena.riot.system.stream.LocatorClassLoader) is used implicitly here.
+        LocationMapper mapper = StreamManager.get().getLocationMapper();
+        for (Resources r : Resources.values()) {
+            // the resource name should not begin with '/' if java.lang.ClassLoader#getResourceAsStream is called
+            mapper.addAltEntry(r.uri, r.path.replaceFirst("^/", ""));
+        }
     }
 
     @Override
@@ -69,17 +77,17 @@ public class SystemModels implements JenaSubsystemLifecycle {
     }
 
     public enum Resources {
-        AVC("/spin/avc.spin.ttl", "http://avc.ru/spin"),
-        SP("/spin/sp.ttl", "http://spinrdf.org/sp"),
-        SPIN("/spin/spin.ttl", "http://spinrdf.org/spin"),
-        SPL("/spin/spl.spin.ttl", "http://spinrdf.org/spl"),
-        SPIF("/spin/spif.ttl", "http://spinrdf.org/spif"),
-        SPINMAP("/spin/spinmap.spin.ttl", "http://spinrdf.org/spinmap"),
-        SMF("/spin/functions-smf.ttl", "http://topbraid.org/functions-smf"),
-        FN("/spin/functions-fn.ttl", "http://topbraid.org/functions-fn"),
-        AFN("/spin/functions-afn.ttl", "http://topbraid.org/functions-afn"),
-        SMF_BASE("/spin/sparqlmotionfunctions.ttl", "http://topbraid.org/sparqlmotionfunctions"),
-        SPINMAPL("/spin/spinmapl.spin.ttl", "http://topbraid.org/spin/spinmapl");
+        AVC("/etc/avc.spin.ttl", "http://avc.ru/spin"),
+        SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
+        SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
+        SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),
+        SPIF("/etc/spif.ttl", "http://spinrdf.org/spif"),
+        SPINMAP("/etc/spinmap.spin.ttl", "http://spinrdf.org/spinmap"),
+        SMF("/etc/functions-smf.ttl", "http://topbraid.org/functions-smf"),
+        FN("/etc/functions-fn.ttl", "http://topbraid.org/functions-fn"),
+        AFN("/etc/functions-afn.ttl", "http://topbraid.org/functions-afn"),
+        SMF_BASE("/etc/sparqlmotionfunctions.ttl", "http://topbraid.org/sparqlmotionfunctions"),
+        SPINMAPL("/etc/spinmapl.spin.ttl", "http://topbraid.org/spin/spinmapl");
 
         private final String path;
         private final String uri;

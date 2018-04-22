@@ -36,7 +36,7 @@ public interface MapModel {
     OntID setID(String uri);
 
     /**
-     * Lists all actual imports with exclusion of library.
+     * Lists all linked ontologies, i.e. actual imports with exclusion of library.
      * Note: the result models have {@link ru.avicomp.ontapi.jena.impl.conf.OntModelConfig#ONT_PERSONALITY_LAX} inside.
      *
      * @return Stream of imports in form of {@link OntGraphModel OWL2 jena model}.
@@ -63,7 +63,7 @@ public interface MapModel {
 
 
     /**
-     * Removes specified context and all related triples including property bindings.
+     * Removes the specified context and all related triples including property bindings.
      *
      * @param context {@link Context}
      * @return this model
@@ -72,7 +72,7 @@ public interface MapModel {
 
 
     /**
-     * Answer the Graph which this Model is presenting.
+     * Answers the Graph which this Model is presenting.
      *
      * @return {@link UnionGraph}
      */
