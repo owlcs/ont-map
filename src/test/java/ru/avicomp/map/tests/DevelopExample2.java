@@ -4,18 +4,17 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntIndividual;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Comparator;
@@ -31,6 +30,7 @@ public class DevelopExample2 extends AbstractMapTest {
 
     private static final String SEPARATOR = "=&=";
     private static final String TEMPLATE = "Individual-%s-%s";
+    private static final String DST_INDIVIDUAL_LABEL = "Created by spin";
 
     @Test
     public void testProcess() {
@@ -71,6 +71,8 @@ public class DevelopExample2 extends AbstractMapTest {
 
         assertDataPropertyAssertion(dst, i1, dstProp, v1);
         assertDataPropertyAssertion(dst, i2, dstProp, v2);
+        assertIndividualLabel(dst, i1);
+        assertIndividualLabel(dst, i2);
     }
 
     private static String getDataPropertyAssertionStringValue(OntIndividual.Named individual, OntNDP property) {
@@ -79,6 +81,13 @@ public class DevelopExample2 extends AbstractMapTest {
 
     private static void assertDataPropertyAssertion(OntGraphModel m, Resource i, OntNDP p, Literal v) {
         Assert.assertTrue("Can't find [" + m.shortForm(i.getURI()) + " " + m.shortForm(p.getURI()) + " '" + m.shortForm(v.toString()) + "']", m.contains(i, p, v));
+    }
+
+    private static void assertIndividualLabel(OntGraphModel m, Resource i) {
+        List<OntStatement> annotations = i.inModel(m).as(OntObject.class).annotations().collect(Collectors.toList());
+        Assert.assertEquals(1, annotations.size());
+        Assert.assertEquals(RDFS.label, annotations.get(0).getPredicate());
+        Assert.assertEquals(DST_INDIVIDUAL_LABEL, annotations.get(0).getObject().asLiteral().getString());
     }
 
     @Override
@@ -95,11 +104,15 @@ public class DevelopExample2 extends AbstractMapTest {
                 .add(SP.arg2.getURI(), props.get(1).getURI())
                 .add(SPINMAPL.template.getURI(), "target:" + String.format(TEMPLATE, "{?1}", "{?2}"))
                 .build();
-        MapFunction.Call propertyFunction = manager.getFunction(SPINMAPL.concatWithSeparator.getURI())
+        MapFunction.Call propertyFunction1 = manager.getFunction(SPINMAPL.concatWithSeparator.getURI())
                 .createFunctionCall()
                 .add(SP.arg1.getURI(), props.get(1).getURI())
                 .add(SP.arg2.getURI(), props.get(0).getURI())
                 .add(SPINMAPL.separator.getURI(), SEPARATOR)
+                .build();
+        MapFunction.Call propertyFunction2 = manager.getFunction(SPINMAP.equals.getURI())
+                .createFunctionCall()
+                .add(SP.arg1.getURI(), DST_INDIVIDUAL_LABEL)
                 .build();
 
         PrefixMapping pm = PrefixMapping.Factory.create()
@@ -108,11 +121,14 @@ public class DevelopExample2 extends AbstractMapTest {
                 .setNsPrefixes(dstClass.getModel()).lock();
 
         TestUtils.debug(LOGGER, targetFunction, pm);
-        TestUtils.debug(LOGGER, propertyFunction, pm);
+        TestUtils.debug(LOGGER, propertyFunction1, pm);
+        TestUtils.debug(LOGGER, propertyFunction2, pm);
 
-        MapModel res = manager.createModel();
+        MapModel res = manager.createMapModel();
         res.setID(getNameSpace() + "/map");
-        res.createContext(srcClass, dstClass).addExpression(targetFunction).addPropertyBridge(propertyFunction, dstProp);
+        res.createContext(srcClass, dstClass, targetFunction)
+                .addPropertyBridge(propertyFunction1, dstProp).getContext()
+                .addPropertyBridge(propertyFunction2, dst.getRDFSLabel());
         Assert.assertEquals(1, res.contexts().count());
         Assert.assertEquals(2, res.imports().count());
         Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));

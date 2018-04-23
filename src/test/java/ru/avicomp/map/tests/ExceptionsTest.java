@@ -28,7 +28,7 @@ public class ExceptionsTest {
         OntClass src = m.createOntEntity(OntClass.class, ns + "src");
         OntClass dst = m.createOntEntity(OntClass.class, ns + "dst");
         MapManager manager = Managers.getMapManager();
-        MapModel map = manager.createModel();
+        MapModel map = manager.createMapModel();
         Context context = map.createContext(src, dst);
         Assert.assertNotNull(context);
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("smf:currentUserName"));

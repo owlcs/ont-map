@@ -23,9 +23,11 @@ import java.util.stream.Stream;
  */
 public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
+    private final MapManagerImpl manager;
 
-    public MapModelImpl(UnionGraph base, OntPersonality personality) {
+    public MapModelImpl(UnionGraph base, OntPersonality personality, MapManagerImpl manager) {
         super(base, personality);
+        this.manager = manager;
     }
 
     @Override
@@ -68,7 +70,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .orElseGet(() -> asContext(makeContext(source, target)));
     }
 
-    private MapContextImpl asContext(Resource context) {
+    public MapContextImpl asContext(Resource context) {
         return new MapContextImpl(context.asNode(), this);
     }
 
@@ -115,6 +117,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     public static String getLocalName(Resource resource) {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
+    }
+
+    public MapManagerImpl manager() {
+        return manager;
     }
 
 }

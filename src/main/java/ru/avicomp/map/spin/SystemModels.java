@@ -43,7 +43,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
         graphs();
 
         // This is just in case.
-        // E.g. to prevent possible calls of "model.read(http:..)" or something like that in the depths of topbraid API.
+        // E.g. to prevent possible internet trips from calls of "model.read(http:..)" or something like that in the depths of topbraid API.
         // A standard jena Locator (org.apache.jena.riot.system.stream.LocatorClassLoader) is used implicitly here.
         LocationMapper mapper = StreamManager.get().getLocationMapper();
         for (Resources r : Resources.values()) {

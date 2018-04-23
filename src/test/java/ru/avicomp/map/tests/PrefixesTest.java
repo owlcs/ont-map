@@ -26,7 +26,7 @@ public class PrefixesTest {
     @Test
     public void testPrefixes() {
         MapManager manager = Managers.getMapManager();
-        Model m = OntModelFactory.createModel(manager.createModel().getGraph());
+        Model m = OntModelFactory.createModel(manager.createMapModel().getGraph());
         LOGGER.debug("\n{}", TestUtils.asString(m));
         // owl:imports:
         Assert.assertEquals(1, m.numPrefixes());

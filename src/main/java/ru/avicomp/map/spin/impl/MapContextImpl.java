@@ -10,6 +10,7 @@ import org.apache.jena.rdf.model.impl.ResourceImpl;
 import org.apache.jena.shared.JenaException;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
+import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
@@ -76,7 +77,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, func.getFunction().name()).build();
         }
         validate(func);
-        Resource expr = createExpression(func);
+        RDFNode expr = createExpression(func);
         // collects statements for existing expression to be deleted :
         List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
                 .map(Statement::getObject)
@@ -105,11 +106,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         validate(func);
-        Resource expr = createExpression(func);
-        List<Property> props = Iter.asStream(expr.listProperties()).map(Statement::getObject)
+        RDFNode expr = createExpression(func);
+        List<Property> props = expr.isResource() ? Iter.asStream(expr.asResource().listProperties()).map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
                 .filter(p -> isProperty.test(p.asResource()))
-                .map(p -> p.as(Property.class)).collect(Collectors.toList());
+                .map(p -> p.as(Property.class)).collect(Collectors.toList()) :
+                Collections.emptyList();
         // as a fix:
         Resource mapping = addMapping(expr, props, Collections.singletonList(target));
         return asProperties(mapping);
@@ -123,13 +125,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
      * @param targets    List of target properties
      * @return a mapping resource inside graph
      */
-    protected Resource addMapping(Resource expression, List<Property> sources, List<Property> targets) {
+    protected Resource addMapping(RDFNode expression, List<Property> sources, List<Property> targets) {
         Resource mapping = createMapping(expression, sources, targets);
         getSource().addProperty(SPINMAP.rule, mapping);
         return mapping;
     }
 
-    public Resource createMapping(Resource expression, List<Property> sources, List<Property> targets) {
+    public Resource createMapping(RDFNode expression, List<Property> sources, List<Property> targets) {
         // todo: if no library Mapping template available - create it
         Resource res = getModel().createResource().addProperty(RDF.type, SPINMAP.mapping(sources.size(), targets.size()));
         res.addProperty(SPINMAP.context, this);
@@ -139,16 +141,17 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return res;
     }
 
-    protected void processProperties(Resource mapping, Resource expression, List<Property> properties, IntFunction<Property> predicate) {
+    protected void processProperties(Resource mapping, RDFNode expression, List<Property> properties, IntFunction<Property> predicate) {
         for (int i = 0; i < properties.size(); i++) {
             Property src = properties.get(i);
             // todo: need to create these resources if they absent in library graph
             Property mapPredicate = predicate.apply(i + 1);
             Resource var = SPIN._arg(i + 1);
-            // replace with variable
-            List<Statement> res = Iter.asStream(expression.listProperties())
+            // replace with variable (spin:_arg*):
+            List<Statement> res = expression.isResource() ? Iter.asStream(expression.asResource().listProperties())
                     .filter(s -> Objects.equals(s.getObject(), src))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()) :
+                    Collections.emptyList();
             res.forEach(s -> {
                 getModel().remove(s);
                 getModel().add(s.getSubject(), s.getPredicate(), var);
@@ -174,7 +177,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     /**
-     * todo: not fully ready.
+     * Creates an expression resource.
      * Example of expression:
      * <pre>{@code
      * [ a  spinmapl:buildURI2 ;
@@ -185,15 +188,24 @@ public class MapContextImpl extends ResourceImpl implements Context {
      *  ] ;
      *  }</pre>
      *
-     * @param func {@link MapFunction.Call} function call to write
+     * @param call {@link MapFunction.Call} function call to write
      * @return {@link Resource}
      */
-    public Resource createExpression(MapFunction.Call func) {
+    public RDFNode createExpression(MapFunction.Call call) {
         Model model = getModel();
+        MapFunction func = call.getFunction();
+        // special case of spinmap:equial (alternative way to record)
+        if (SPINMAP.equals.getURI().equals(func.name())) {
+            MapFunction.Arg arg = func.getArg(SP.arg1.getURI());
+            Object val = call.asMap().get(arg);
+            if (val instanceof String) {
+                return createArgRDFNode(arg.type(), (String) val);
+            }
+        }
         Resource res = model.createResource();
-        Resource function = model.createResource(func.getFunction().name());
+        Resource function = model.createResource(func.name());
         res.addProperty(RDF.type, function);
-        func.asMap().forEach((arg, value) -> {
+        call.asMap().forEach((arg, value) -> {
             if (!(value instanceof String)) // todo: handle nested function call
                 throw new UnsupportedOperationException("TODO");
             Property predicate = model.createResource(arg.name()).as(Property.class);

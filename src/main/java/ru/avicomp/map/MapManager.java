@@ -51,7 +51,7 @@ public interface MapManager {
      *
      * @return {@link MapModel}
      */
-    MapModel createModel();
+    MapModel createMapModel();
 
 
     /**

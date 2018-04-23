@@ -38,6 +38,7 @@ public interface MapModel {
     /**
      * Lists all linked ontologies, i.e. actual imports with exclusion of library.
      * Note: the result models have {@link ru.avicomp.ontapi.jena.impl.conf.OntModelConfig#ONT_PERSONALITY_LAX} inside.
+     * TODO: rename: should return not only imports, but mapping itself in case it contains (owl) entities for map inference.
      *
      * @return Stream of imports in form of {@link OntGraphModel OWL2 jena model}.
      */
@@ -72,9 +73,22 @@ public interface MapModel {
 
 
     /**
-     * Answers the Graph which this Model is presenting.
+     * Answers the graph which this Model is presenting.
      *
      * @return {@link UnionGraph}
      */
     UnionGraph getGraph();
+
+    /**
+     * Creates a ready to use context, i.e. a class expression binding with an target rule expression.
+     *
+     * @param source             {@link OntCE} a source class expression
+     * @param target             {@link OntCE} a target class expression
+     * @param targetFunctionCall {@link ru.avicomp.map.MapFunction.Call}
+     * @return {@link Context} a new context instance.
+     * @throws MapJenaException if something goes wrong (e.g. not target function specified)
+     */
+    default Context createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
+        return createContext(source, target).addExpression(targetFunctionCall);
+    }
 }

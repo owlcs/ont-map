@@ -6,13 +6,34 @@ import ru.avicomp.ontapi.jena.model.OntCE;
 import java.util.stream.Stream;
 
 /**
+ * A class expression binding, a primary component of mapping.
+ * <p>
  * Created by @szuev on 14.04.2018.
  */
 public interface Context {
 
+    /**
+     * Returns a source class expression.
+     *
+     * @return {@link OntCE}
+     */
     OntCE getSource();
 
+    /**
+     * Returns a target class expression.
+     *
+     * @return {@link OntCE}
+     */
     OntCE getTarget();
+
+    /**
+     * Answers a context' expression in form of function-call object.
+     * A valid (ready to use) context must have one and only one target expression
+     * (i.e {@code MapFunction#isTarget() == true}).
+     *
+     * @return {@link MapFunction.Call} or null in case context are not fully completed
+     */
+    MapFunction.Call getExpression();
 
     /**
      * Adds a primary rule to bind two class expressions.
@@ -23,12 +44,6 @@ public interface Context {
      * @throws MapJenaException if something goes wrong (e.g. incompatible function specified)
      */
     Context addExpression(MapFunction.Call func) throws MapJenaException;
-
-    /**
-     * Answers a expression in form of function-call object.
-     * @return {@link MapFunction.Call} or null
-     */
-    MapFunction.Call getExpression();
 
     /**
      * Adds a properties bridge. Source properties are specified by function call, the target goes explicitly.
@@ -65,4 +80,13 @@ public interface Context {
      * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
      */
     void validate(MapFunction.Call func) throws MapJenaException;
+
+    /**
+     * Answers iff this context is valid for (SPIN-)inference.
+     *
+     * @return boolean
+     */
+    default boolean isValid() {
+        return getExpression() != null;
+    }
 }

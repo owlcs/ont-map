@@ -52,7 +52,7 @@ public class DevelopExample1 extends AbstractMapTest {
 
         MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
         MapFunction.Call targetFunction = func.createFunctionCall().build();
-        MapModel res = manager.createModel();
+        MapModel res = manager.createMapModel();
         // topbraid (gui, not spinmap) has difficulties with anonymous ontologies:
         res.setID(getNameSpace() + "/map");
         res.createContext(srcClass, dstClass).addExpression(targetFunction);

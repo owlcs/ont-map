@@ -20,4 +20,6 @@ public interface PropertyBridge {
 
     MapFunction.Call getExpression();
 
+    Context getContext();
+
 }

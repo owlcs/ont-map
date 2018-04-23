@@ -18,7 +18,6 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.impl.SpinTargetFunctionImpl;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
-import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -30,12 +29,6 @@ import java.util.Map;
  */
 public class SpinModelConfig {
     public static Personality<RDFNode> LIB_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
-
-    // use ont personality for a mapping (which is a rdf-ontology) in order to reuse some owl2 resources
-    // such as ontology id (ru.avicomp.ontapi.jena.model.OntID),
-    // ont class expression (ru.avicomp.ontapi.jena.model.OntCE),
-    // ont property expression (ru.avicomp.ontapi.jena.model.OntPE)
-    public static OntPersonality MAP_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     /**
      * See org.topbraid.spin.vocabulary.SP#init(Personality)

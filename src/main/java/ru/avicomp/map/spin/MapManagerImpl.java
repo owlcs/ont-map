@@ -14,6 +14,8 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
+import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -36,6 +38,7 @@ public class MapManagerImpl implements MapManager {
     private final PrefixMapping prefixLibrary;
     private final Model graphLibrary;
     private final Map<String, MapFunction> mapFunctions;
+    private final OntPersonality mapPersonality = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel();
@@ -143,10 +146,23 @@ public class MapManagerImpl implements MapManager {
         return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 
+    /**
+     * Creates a (SPIN-) mapping model in form of a rdf-ontology.
+     * Uses {@link OntPersonality ont-personality} in order to reuse some owl2 resources
+     * such as {@link ru.avicomp.ontapi.jena.model.OntID ontology id},
+     * {@link ru.avicomp.ontapi.jena.model.OntCE ont class expression},
+     * {@link ru.avicomp.ontapi.jena.model.OntPE ont property expression}.
+     *
+     * @return {@link MapModel mapping model}
+     */
     @Override
-    public MapModelImpl createModel() {
-        UnionGraph g = new UnionGraph(Factory.createGraphMem());
-        MapModelImpl res = new MapModelImpl(g, SpinModelConfig.MAP_PERSONALITY);
+    public MapModelImpl createMapModel() {
+        return createMapModel(Factory.createGraphMem(), mapPersonality);
+    }
+
+    public MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
+        UnionGraph g = new UnionGraph(base);
+        MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         configurePrefixes(g);
