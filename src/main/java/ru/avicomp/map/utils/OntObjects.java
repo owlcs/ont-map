@@ -16,6 +16,7 @@ import java.util.Objects;
  *
  * Created by @szuev on 04.04.2018.
  */
+@Deprecated // todo: will be removed
 public class OntObjects {
 
     public static OntClass createOWLClass(OntGraphModel model, String uri) {

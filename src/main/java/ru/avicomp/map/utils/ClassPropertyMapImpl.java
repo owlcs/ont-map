@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin;
+package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.vocabulary.OWL;

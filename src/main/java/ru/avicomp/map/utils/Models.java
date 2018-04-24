@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 /**
  * An utility to work with any {@link Model Jena Model}.
+ * todo: remove somewhere ? 
  * <p>
  * Created by @szuev on 10.04.2018.
  */

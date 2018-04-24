@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin;
+package ru.avicomp.map.utils;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;

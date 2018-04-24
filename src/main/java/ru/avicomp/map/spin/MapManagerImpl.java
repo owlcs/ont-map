@@ -13,6 +13,9 @@ import org.topbraid.spin.system.SPINModuleRegistry;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.utils.AutoPrefixListener;
+import ru.avicomp.map.utils.ClassPropertyMapImpl;
+import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -165,29 +168,10 @@ public class MapManagerImpl implements MapManager {
         MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
-        configurePrefixes(g);
+        AutoPrefixListener.addAutoPrefixListener(g, prefixes());
         // add spinmapl (a root of library) to owl:imports:
         res.setID(null).addImport(Graphs.getURI(map));
         return res;
-    }
-
-    /**
-     * Configures prefixes for a graph.
-     * Protected, to have a possibility to override
-     *
-     * @param g {@link Graph}
-     */
-    protected void configurePrefixes(Graph g) {
-        g.getEventManager().register(new PrefixedGraphListener(g.getPrefixMapping(), getNodePrefixMapper()));
-    }
-
-    /**
-     * Returns a graph prefix manager.
-     *
-     * @return {@link NodePrefixMapper}
-     */
-    public NodePrefixMapper getNodePrefixMapper() {
-        return new NodePrefixMapper(prefixes());
     }
 
     /**
