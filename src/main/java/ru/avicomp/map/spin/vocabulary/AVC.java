@@ -18,6 +18,9 @@ public class AVC {
 
     public static final Property hidden = property("hidden");
 
+    // additional no-arg target function
+    public static final Resource UUID = resource("UUID");
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

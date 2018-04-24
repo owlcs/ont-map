@@ -10,6 +10,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.Models;
 
 import java.util.*;
@@ -64,6 +65,25 @@ public class MapFunctionImpl implements MapFunction {
     @Override
     public boolean isTarget() {
         return func.canAs(SpinTargetFunction.class);
+    }
+
+    /**
+     * Answers iff this function is custom, i.e. does not belong to the original spin family.
+     * Custom functions must be directly added to the final mapping graph for compatibility with Topbraid Composer.
+     *
+     * @return boolean
+     */
+    public boolean isCustom() {
+        return Objects.equals(AVC.NS, func.getNameSpace());
+    }
+
+    /**
+     * Returns resource attached to the library model
+     *
+     * @return {@link Resource}
+     */
+    public Resource asResource() {
+        return func;
     }
 
     @Override

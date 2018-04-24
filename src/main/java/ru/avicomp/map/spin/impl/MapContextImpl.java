@@ -90,6 +90,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         addProperty(SPINMAP.target, expr);
         addMapping(getTarget(), Collections.emptyList(), Collections.singletonList(RDF.type));
         getModel().remove(prev);
+        processFunction(func);
         return this;
     }
 
@@ -100,7 +101,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     @Override
-    public PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
+    public MapPropertiesImpl addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
         Predicate<Resource> isProperty = ARG_RESOURCE_MAPPING.get(RDF.Property.getURI());
         if (!isProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
@@ -114,7 +115,24 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 Collections.emptyList();
         // as a fix:
         Resource mapping = addMapping(expr, props, Collections.singletonList(target));
-        return asProperties(mapping);
+        MapPropertiesImpl res = asProperties(mapping);
+        processFunction(func);
+        return res;
+    }
+
+    private void processFunction(MapFunction.Call call) {
+        MapFunctionImpl f = (MapFunctionImpl) call.getFunction();
+        if (f.isCustom()) addFunctionBody(f);
+    }
+
+    /**
+     * Adds function as is to the graph.
+     *
+     * @param function {@link MapFunctionImpl}
+     */
+    protected void addFunctionBody(MapFunctionImpl function) {
+        Model m = getModel();
+        Models.getAssociatedStatements(function.asResource()).forEach(m::add);
     }
 
     /**
@@ -172,7 +190,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         throw new UnsupportedOperationException("TODO");
     }
 
-    private PropertyBridge asProperties(Resource resource) {
+    private MapPropertiesImpl asProperties(Resource resource) {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }
 

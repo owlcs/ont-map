@@ -5,14 +5,19 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.utils.Models;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.OntStatement;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,8 +46,7 @@ public class DevelopExample1 extends AbstractMapTest {
         Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
 
         manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(LOGGER, dst);
-        Assert.assertEquals(4, dst.statements(null, RDF.type, dstClass).count());
+        Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
     }
 
     @Override
@@ -50,7 +54,7 @@ public class DevelopExample1 extends AbstractMapTest {
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
 
-        MapFunction func = manager.getFunction(manager.prefixes().expandPrefix("sp:UUID"));
+        MapFunction func = manager.getFunction(AVC.UUID.getURI());
         MapFunction.Call targetFunction = func.createFunctionCall().build();
         MapModel res = manager.createMapModel();
         // topbraid (gui, not spinmap) has difficulties with anonymous ontologies:
@@ -60,6 +64,12 @@ public class DevelopExample1 extends AbstractMapTest {
         Assert.assertEquals(2, res.imports().count());
         Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
+        // validate the graph has function body (svc:UUID) inside:
+        List<OntStatement> statements = ((OntGraphModel) res).statements(AVC.UUID, RDF.type, SPINMAP.TargetFunction)
+                .filter(OntStatement::isLocal)
+                .collect(Collectors.toList());
+        Assert.assertEquals(1, statements.size());
+        Assert.assertEquals(40, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
         return res;
     }
 
