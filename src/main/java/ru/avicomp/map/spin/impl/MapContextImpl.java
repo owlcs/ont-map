@@ -8,6 +8,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.ResourceImpl;
 import org.apache.jena.shared.JenaException;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
@@ -21,10 +22,7 @@ import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
 import ru.avicomp.map.utils.Models;
-import ru.avicomp.ontapi.jena.model.OntCE;
-import ru.avicomp.ontapi.jena.model.OntDT;
-import ru.avicomp.ontapi.jena.model.OntNAP;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
@@ -68,11 +66,21 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public OntCE getTarget() throws JenaException {
-        return getRequiredProperty(SPINMAP.targetClass).getObject().as(OntCE.class);
+        return target().as(OntCE.class);
+    }
+
+    /**
+     * Returns a target class resource, which may not be {@link OntCE} in special case of {@code owl:NamedIndividual} mapping.
+     *
+     * @return {@link Resource}
+     * @throws JenaException illegal state - no resource found
+     */
+    public Resource target() throws JenaException {
+        return getRequiredProperty(SPINMAP.targetClass).getObject().asResource();
     }
 
     @Override
-    public Context addExpression(MapFunction.Call func) throws MapJenaException {
+    public MapContextImpl addExpression(MapFunction.Call func) throws MapJenaException {
         if (!MapJenaException.notNull(func, "Null function call").getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, func.getFunction().name()).build();
         }
@@ -88,10 +96,18 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .collect(Collectors.toList());
 
         addProperty(SPINMAP.target, expr);
-        addMapping(getTarget(), Collections.emptyList(), Collections.singletonList(RDF.type));
+        addMapping(target(), Collections.emptyList(), Collections.singletonList(RDF.type));
         getModel().remove(prev);
-        processFunction(func);
+        printFunction(func);
         return this;
+    }
+
+    public Stream<Statement> listRules() {
+        MapModelImpl m = getModel();
+        return m.statements(null, SPINMAP.context, this)
+                .map(OntStatement::getSubject)
+                .filter(RDFNode::isAnon)
+                .flatMap(r -> m.statements(getSource(), SPINMAP.rule, r));
     }
 
     @Override
@@ -116,13 +132,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
         // as a fix:
         Resource mapping = addMapping(expr, props, Collections.singletonList(target));
         MapPropertiesImpl res = asProperties(mapping);
-        processFunction(func);
+        printFunction(func);
         return res;
     }
 
-    private void processFunction(MapFunction.Call call) {
-        MapFunctionImpl f = (MapFunctionImpl) call.getFunction();
-        if (f.isCustom()) addFunctionBody(f);
+    private void printFunction(MapFunction.Call call) {
+        MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
+        if (function.isCustom()) addFunctionBody(function);
     }
 
     /**
@@ -294,5 +310,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return code.create()
                 .add(Key.CONTEXT_SOURCE, getSource().asNode().toString())
                 .add(Key.CONTEXT_TARGET, getTarget().asNode().toString());
+    }
+
+    @Override
+    public String toString() {
+        return toString(getModel().getManager().prefixes());
+    }
+
+    public String toString(PrefixMapping pm) {
+        return String.format("Context{%s => %s}", pm.shortForm(getSource().getURI()), pm.shortForm(target().getURI()));
     }
 }

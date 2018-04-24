@@ -13,6 +13,7 @@ import ru.avicomp.map.spin.SystemModels;
  *
  * @see SP description about reasons of copy-pasting
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class SPL {
     public final static String BASE_URI = SystemModels.Resources.SPL.getURI();
     public final static String NS = BASE_URI + "#";

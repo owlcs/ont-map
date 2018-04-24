@@ -8,7 +8,7 @@ import ru.avicomp.map.spin.SystemModels;
 /**
  * The vocabulary which describes http://avc.ru/spin.
  * An addition to the spin-family in order to customize spin-function behaviour.
- * See file://resources/spin/avc.spin.ttl
+ * See file://resources/etc/avc.spin.ttl
  * <p>
  * Created by @szuev on 07.04.2018.
  */

@@ -1,8 +1,11 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.impl.MapContextImpl;
@@ -16,11 +19,14 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 10.04.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
     private final MapManagerImpl manager;
@@ -52,13 +58,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     @Override
     public Stream<Context> contexts() {
-        return statements(null, RDF.type, SPINMAP.Context)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.hasProperty(SPINMAP.targetClass))
-                .filter(s -> s.hasProperty(SPINMAP.sourceClass))
-                .map(this::asContext);
+        return listContexts().map(Context.class::cast);
     }
 
+    public Stream<MapContextImpl> listContexts() {
+        return statements(null, RDF.type, SPINMAP.Context)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.objects(SPINMAP.targetClass, OntClass.class).findAny().isPresent())
+                .filter(s -> s.objects(SPINMAP.sourceClass, OntClass.class).findAny().isPresent())
+                .map(this::asContext);
+    }
 
     @Override
     public MapContextImpl createContext(OntCE source, OntCE target) {
@@ -76,8 +85,28 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     @Override
     public MapModelImpl removeContext(Context context) {
-        Models.getAssociatedStatements(((MapContextImpl) MapJenaException.notNull(context, "Null context"))).forEach(this::remove);
+        MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
+        if (getManager().generateNamedIndividuals()) {
+            statements(null, RDF.type, SPINMAP.Context)
+                    .map(OntStatement::getSubject)
+                    .filter(s -> s.hasProperty(SPINMAP.targetClass, OWL.NamedIndividual))
+                    .filter(s -> s.hasProperty(SPINMAP.sourceClass, c.getTarget()))
+                    .map(this::asContext)
+                    .findFirst().ifPresent(this::deleteContext);
+        }
+        deleteContext(c);
+        // todo: remove also custom functions
         return this;
+    }
+
+    public void deleteContext(MapContextImpl context) {
+        // delete rules:
+        Set<Statement> rules = context.listRules()
+                .flatMap(s -> Stream.concat(Stream.of(s), Models.getAssociatedStatements(s.getObject().asResource()).stream()))
+                .collect(Collectors.toSet());
+        rules.forEach(this::remove);
+        // delete declaration:
+        Models.getAssociatedStatements(context).forEach(this::remove);
     }
 
     /**
@@ -94,10 +123,19 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public Resource makeContext(OntCE source, OntCE target) {
         // ensue all related models are imported:
-        Stream.of(MapJenaException.notNull(source, "Null source CE"), MapJenaException.notNull(target, "Null target CE"))
+        Stream.of(MapJenaException.notNull(source, "Null source CE"),
+                MapJenaException.notNull(target, "Null target CE"))
                 .map(OntObject::getModel)
                 .forEach(MapModelImpl.this::addImport);
+        Resource res = makeContext(source.asResource(), target.asResource());
+        if (getManager().generateNamedIndividuals()) {
+            MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).createFunctionCall().build();
+            asContext(makeContext(target.asResource(), OWL.NamedIndividual)).addExpression(expr);
+        }
+        return res;
+    }
 
+    protected Resource makeContext(Resource source, Resource target) {
         String iri = getID().getURI();
         Resource res = null;
         if (iri != null && !iri.contains("#")) {
@@ -119,7 +157,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
-    public MapManagerImpl manager() {
+    public MapManagerImpl getManager() {
         return manager;
     }
 

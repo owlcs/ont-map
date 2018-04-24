@@ -25,15 +25,15 @@ import java.util.stream.Collectors;
  * TODO: For developing. Will be moved/renamed
  * Created by @szuev on 14.04.2018.
  */
-public class DevelopExample2 extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DevelopExample2.class);
+public class BuildURIMapTest extends AbstractMapTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BuildURIMapTest.class);
 
     private static final String SEPARATOR = "=&=";
     private static final String TEMPLATE = "Individual-%s-%s";
     private static final String DST_INDIVIDUAL_LABEL = "Created by spin";
 
     @Test
-    public void testProcess() {
+    public void testInference() {
         OntGraphModel src = assembleSource();
         TestUtils.debug(LOGGER, src);
         List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
@@ -73,6 +73,25 @@ public class DevelopExample2 extends AbstractMapTest {
         assertDataPropertyAssertion(dst, i2, dstProp, v2);
         assertIndividualLabel(dst, i1);
         assertIndividualLabel(dst, i2);
+
+        OntIndividual in2 = i2.inModel(dst).as(OntIndividual.Named.class);
+        OntIndividual in1 = i1.inModel(dst).as(OntIndividual.Named.class);
+        Assert.assertEquals(dstClass, in2.classes().findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, in1.classes().findFirst().orElseThrow(AssertionError::new));
+    }
+
+    @Test
+    public void testDeleteContext() {
+        OntGraphModel src = assembleSource();
+        OntGraphModel dst = assembleTarget();
+        MapManager manager = Managers.getMapManager();
+        MapModel mapping = assembleMapping(manager, src, dst);
+        List<Context> contexts = mapping.contexts().collect(Collectors.toList());
+        Assert.assertEquals(1, contexts.size());
+        mapping = mapping.removeContext(contexts.get(0));
+        TestUtils.debug(LOGGER, mapping);
+        Assert.assertEquals(0, mapping.contexts().count());
+        Assert.assertEquals(4, mapping.getGraph().getBaseGraph().size());
     }
 
     private static String getDataPropertyAssertionStringValue(OntIndividual.Named individual, OntNDP property) {

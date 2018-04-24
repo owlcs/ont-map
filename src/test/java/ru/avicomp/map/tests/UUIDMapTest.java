@@ -25,11 +25,11 @@ import java.util.stream.Stream;
  * TODO: Not ready. For developing.
  * Created by @szuev on 09.04.2018.
  */
-public class DevelopExample1 extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DevelopExample1.class);
+public class UUIDMapTest extends AbstractMapTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UUIDMapTest.class);
 
     @Test
-    public void testProcess() {
+    public void testInference() {
         OntGraphModel src = assembleSource();
         TestUtils.debug(LOGGER, src);
         OntGraphModel dst = assembleTarget();
@@ -47,6 +47,8 @@ public class DevelopExample1 extends AbstractMapTest {
 
         manager.getInferenceEngine().run(mapping, src, dst);
         Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
+        Assert.assertEquals(2, dst.listNamedIndividuals().count());
+        Assert.assertEquals(2, dstClass.individuals().count());
     }
 
     @Override

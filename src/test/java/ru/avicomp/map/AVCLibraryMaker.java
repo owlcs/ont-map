@@ -25,8 +25,8 @@ import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 /**
  * An utility class to produce avc.spin.ttl (see resources/etc directory).
- * Just for convenience and demonstration,
- * it can be removed.
+ * For developing and demonstration.
+ * Can be removed.
  *
  * Created by @szuev on 07.04.2018.
  *
@@ -50,9 +50,10 @@ public class AVCLibraryMaker {
         OntNDP hidden = m.createOntEntity(OntNDP.class, AVC.hidden.getURI());
         hidden.addRange(m.getOntEntity(OntDT.class, XSD.xstring));
 
+        // SP:abs
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
-
+        // AVC:UUID
         Resource uuid = m.createResource(AVC.UUID.getURI()).addProperty(RDF.type, SPINMAP.TargetFunction);
         uuid.addProperty(SPIN.returnType, RDFS.Resource);
         uuid.addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions);

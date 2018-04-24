@@ -154,6 +154,8 @@ public class SP {
     }
 
     /**
+     * Not used by ONT-MAP api, but used by composer SPIN-API.
+     * Copy-pasted description:
      * Checks whether the SP ontology is used in a given Model.
      * This is true if the model defines the SP namespace prefix  and also has sp:Query defined with an rdf:type.
      * The goal of this call is to be very fast when SP is not imported,

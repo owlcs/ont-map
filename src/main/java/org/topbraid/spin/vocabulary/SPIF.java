@@ -15,6 +15,7 @@ import ru.avicomp.map.spin.SystemModels;
  * <p>
  * Created by @szuev on 13.04.2018.
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class SPIF {
     public static final String BASE_URI = SystemModels.Resources.SPIF.getURI();
     public static final String NS = BASE_URI + "#";

@@ -66,10 +66,20 @@ public class MapManagerImpl implements MapManager {
         return SpinModelConfig.createSpinModel(avc);
     }
 
+    /**
+     * Gets graph for avc.spin.ttl
+     *
+     * @return unmodified {@link Graph}
+     */
     public static Graph getInclusionGraph() {
         return SystemModels.graphs().get(SystemModels.Resources.AVC.getURI());
     }
 
+    /**
+     * Gets spin library union graph without addition
+     *
+     * @return {@link UnionGraph}
+     */
     public static UnionGraph getSpinLibraryGraph() {
         return Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
     }
@@ -120,6 +130,15 @@ public class MapManagerImpl implements MapManager {
         };
     }
 
+    /**
+     * Answers iff target individuals must be {@code owl:NamedIndividuals} also.
+     *
+     * @return boolean
+     */
+    public boolean generateNamedIndividuals() {
+        return true;
+    }
+
     @Override
     public Stream<MapFunction> functions() {
         return mapFunctions.values().stream();
@@ -166,10 +185,11 @@ public class MapManagerImpl implements MapManager {
     public MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
         UnionGraph g = new UnionGraph(base);
         MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
+        // do not add avc.spin.ttl addition to the final graph
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         AutoPrefixListener.addAutoPrefixListener(g, prefixes());
-        // add spinmapl (a root of library) to owl:imports:
+        // add spinmapl (a top of library) to owl:imports:
         res.setID(null).addImport(Graphs.getURI(map));
         return res;
     }
@@ -191,6 +211,9 @@ public class MapManagerImpl implements MapManager {
         return new InferenceEngineImpl(this);
     }
 
+    /**
+     * Impl of inference-engine.
+     */
     public static class InferenceEngineImpl implements InferenceEngine {
         static {
             // Warning: Jena stupidly allows to modify global personality (org.apache.jena.enhanced.BuiltinPersonalities#model),

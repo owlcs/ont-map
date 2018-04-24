@@ -13,6 +13,7 @@ import ru.avicomp.map.spin.SystemModels;
  * Created by @szuev on 11.04.2018.
  * @see SP description about reasons of copy-pasting
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class SPIN {
 
     public final static String BASE_URI = SystemModels.Resources.SPIN.getURI();
