@@ -210,7 +210,7 @@ public class MapFunctionImpl implements MapFunction {
                     if (this.equals(val)) {
                         throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
                     }
-                    if (UNDEFINED.equals(((Builder) val).getFunction().returnType())) {
+                    if (UNDEFINED.equals(((Builder) val).getFunction().returnType())) { // todo: undefined should be fixed in avc and allowed
                         throw new MapJenaException("Void");
                     }
                 } else {
@@ -238,17 +238,19 @@ public class MapFunctionImpl implements MapFunction {
                         .ifPresent(a -> map.put(a.name(), SPINMAP.sourceVariable.getURI()));
             }
             // check all required arguments are assigned
+            Exceptions.Builder error = exception(FUNCTION_NO_REQUIRED_ARG);
             getFunction().args().forEach(a -> {
                 if (map.containsKey(a.name()) || a.isOptional())
                     return;
                 String def = a.defaultValue();
                 if (def == null) {
-                    throw exception(FUNCTION_NO_REQUIRED_ARG).add(Key.ARG, a.name()).build();
+                    error.add(Key.ARG, a.name());
+                } else {
+                    map.put(a.name(), def);
                 }
-                // set default:
-                map.put(a.name(), def);
-
             });
+            if (error.has(Key.ARG))
+                throw error.build();
             return new CallImpl(map);
         }
     }

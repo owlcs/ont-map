@@ -2,9 +2,7 @@ package ru.avicomp.map.spin;
 
 import ru.avicomp.map.MapJenaException;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An exception builder.
@@ -30,15 +28,19 @@ public enum Exceptions {
     }
 
     public class Builder {
-        private final EnumMap<Key, Object> map;
+        private final EnumMap<Key, List<String>> map;
 
         Builder() {
             this.map = new EnumMap<>(Key.class);
         }
 
-        public Builder add(Key k, String v) {
-            map.put(k, v);
+        public Builder add(Key key, String v) {
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
             return this;
+        }
+
+        public boolean has(Key key) {
+            return map.containsKey(key);
         }
 
         public SpinMapException build() {
@@ -61,16 +63,24 @@ public enum Exceptions {
     }
 
     public final class SpinMapException extends MapJenaException {
-        private final Map<Key, Object> map;
+        private final Map<Key, List<String>> map;
         private final Exceptions code;
 
-        SpinMapException(Exceptions code, Map<Key, Object> map, String message, Throwable cause) {
+        SpinMapException(Exceptions code, Map<Key, List<String>> map, String message, Throwable cause) {
             super(message, cause);
             this.code = code;
             this.map = Collections.unmodifiableMap(map);
         }
 
-        public Map<Key, Object> getInfo() {
+        public String getString(Key k) {
+            return map.isEmpty() ? null : map.get(k).get(0);
+        }
+
+        public List<String> getList(Key k) {
+            return map.get(k);
+        }
+
+        public Map<Key, List<String>> getInfo() {
             return map;
         }
 

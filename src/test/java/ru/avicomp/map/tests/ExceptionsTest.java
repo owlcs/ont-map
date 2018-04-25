@@ -39,9 +39,40 @@ public class ExceptionsTest {
         } catch (Exceptions.SpinMapException e) {
             LOGGER.debug("Exception: {}", e.getMessage());
             Assert.assertSame(CONTEXT_REQUIRE_TARGET_FUNCTION, e.getCode());
-            Assert.assertEquals(f.name(), e.getInfo().get(Key.FUNCTION));
-            Assert.assertEquals(src.getURI(), e.getInfo().get(Key.CONTEXT_SOURCE));
-            Assert.assertEquals(dst.getURI(), e.getInfo().get(Key.CONTEXT_TARGET));
+            Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
+            Assert.assertEquals(src.getURI(), e.getString(Key.CONTEXT_SOURCE));
+            Assert.assertEquals(dst.getURI(), e.getString(Key.CONTEXT_TARGET));
+        }
+    }
+
+    @Test
+    public void testBuildFunction() {
+        MapManager m = Managers.getMapManager();
+        MapFunction f = m.getFunction(m.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
+        try {
+            f.createFunctionCall().build();
+            Assert.fail("Expected error");
+        } catch (MapJenaException j) {
+            LOGGER.debug("Exception: {}", j.getMessage());
+            Assert.assertEquals(3, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
+            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
+        }
+        try {
+            f.createFunctionCall().add(m.prefixes().expandPrefix("sp:arg1"), "x").build();
+            Assert.fail("Expected error");
+        } catch (MapJenaException j) {
+            LOGGER.debug("Exception: {}", j.getMessage());
+            Assert.assertEquals(2, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
+            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
+        }
+        String p = "http://unknown-prefix.org";
+        try {
+            f.createFunctionCall().add(p, "xxx");
+            Assert.fail("Expected error");
+        } catch (Exceptions.SpinMapException e) {
+            LOGGER.debug("Exception: {}", e.getMessage());
+            Assert.assertEquals(p, e.getString(Key.ARG));
+            Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
         }
     }
 }
