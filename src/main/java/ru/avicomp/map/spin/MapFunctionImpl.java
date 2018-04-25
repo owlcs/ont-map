@@ -11,7 +11,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.utils.Models;
+import ru.avicomp.ontapi.jena.utils.Models;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +25,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 public class MapFunctionImpl implements MapFunction {
     public static final String UNDEFINED = "undefined";
+    public static final String STRING_VALUE_SEPARATOR = "\n";
     private final org.topbraid.spin.model.Module func;
     private List<Arg> arguments;
 
@@ -93,12 +94,12 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public String getComment(String lang) {
-        return Models.getLangValue(func, RDFS.comment, lang);
+        return Models.langValues(func, RDFS.comment, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
     }
 
     @Override
     public String getLabel(String lang) {
-        return Models.getLangValue(func, RDFS.label, lang);
+        return Models.langValues(func, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
     }
 
     public Model getModel() {
@@ -164,12 +165,12 @@ public class MapFunctionImpl implements MapFunction {
 
         @Override
         public String getComment(String lang) {
-            return Models.getLangValue(arg, RDFS.comment, lang);
+            return Models.langValues(arg, RDFS.comment, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
         }
 
         @Override
         public String getLabel(String lang) {
-            return Models.getLangValue(arg, RDFS.label, lang);
+            return Models.langValues(arg, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
         }
 
         public String toString(PrefixMapping pm) {

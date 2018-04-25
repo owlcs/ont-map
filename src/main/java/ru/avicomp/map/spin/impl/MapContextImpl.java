@@ -21,8 +21,8 @@ import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
-import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;

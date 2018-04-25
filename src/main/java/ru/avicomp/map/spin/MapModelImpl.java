@@ -9,12 +9,12 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.impl.MapContextImpl;
-import ru.avicomp.map.utils.Models;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -101,12 +101,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     public void deleteContext(MapContextImpl context) {
         // delete rules:
-        Set<Statement> rules = context.listRules()
-                .flatMap(s -> Stream.concat(Stream.of(s), Models.getAssociatedStatements(s.getObject().asResource()).stream()))
-                .collect(Collectors.toSet());
-        rules.forEach(this::remove);
+        Set<Statement> rules = context.listRules().collect(Collectors.toSet());
+        rules.forEach(s -> {
+            Models.deleteAll(s.getObject().asResource());
+            remove(s);
+        });
         // delete declaration:
-        Models.getAssociatedStatements(context).forEach(this::remove);
+        Models.deleteAll(context);
     }
 
     /**
