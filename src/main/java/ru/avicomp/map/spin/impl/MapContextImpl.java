@@ -240,10 +240,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
         Resource function = model.createResource(func.name());
         res.addProperty(RDF.type, function);
         call.asMap().forEach((arg, value) -> {
-            if (!(value instanceof String)) // todo: handle nested function call
-                throw new UnsupportedOperationException("TODO");
+            RDFNode param = null;
+            if (value instanceof MapFunction.Call) {
+                if (Objects.equals(value, call)) throw new IllegalArgumentException("Self call");
+                param = createExpression((MapFunction.Call) value);
+            }
+            if (value instanceof String) {
+                param = createArgRDFNode(arg.type(), (String) value);
+            }
+            if (param == null)
+                throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
             Property predicate = model.createResource(arg.name()).as(Property.class);
-            res.addProperty(predicate, createArgRDFNode(arg.type(), (String) value));
+            res.addProperty(predicate, param);
+
         });
         return res;
     }
@@ -266,11 +275,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
             return;
         }
         if (MapFunctionImpl.UNDEFINED.equals(argType)) // todo: undefined means xsd:string or uri-resource
-            throw new UnsupportedOperationException("TODO"); // todo: exception mechanism
+            throw new UnsupportedOperationException("TODO");
         if (value instanceof MapFunction.Call) {
             String funcType = ((MapFunction.Call) value).getFunction().returnType();
             validateFuncReturnType(argType, funcType);
             validate((MapFunction.Call) value);
+            return;
         }
         throw new IllegalStateException("??");
     }
@@ -314,7 +324,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public String toString() {
-        return toString(getModel().getManager().prefixes());
+        return toString(getModel());
     }
 
     public String toString(PrefixMapping pm) {

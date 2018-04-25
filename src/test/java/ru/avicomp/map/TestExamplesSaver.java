@@ -3,6 +3,7 @@ package ru.avicomp.map;
 import org.apache.jena.rdf.model.Model;
 import ru.avicomp.map.tests.AbstractMapTest;
 import ru.avicomp.map.tests.BuildURIMapTest;
+import ru.avicomp.map.tests.ChangeNSMapTest;
 import ru.avicomp.map.tests.UUIDMapTest;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
@@ -30,7 +31,7 @@ public class TestExamplesSaver {
             Files.createDirectory(dir);
         }
         MapManager manager = Managers.getMapManager();
-        Collection<AbstractMapTest> mapTests = Arrays.asList(new UUIDMapTest(), new BuildURIMapTest());
+        Collection<AbstractMapTest> mapTests = Arrays.asList(new UUIDMapTest(), new BuildURIMapTest(), new ChangeNSMapTest());
         for (AbstractMapTest mapTest : mapTests) {
             String file = mapTest.getClass().getSimpleName() + "-%s.ttl";
             OntGraphModel src = mapTest.assembleSource();

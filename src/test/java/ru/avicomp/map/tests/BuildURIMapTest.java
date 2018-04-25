@@ -6,7 +6,6 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -25,33 +24,33 @@ import java.util.stream.Collectors;
  * TODO: For developing. Will be moved/renamed
  * Created by @szuev on 14.04.2018.
  */
-public class BuildURIMapTest extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BuildURIMapTest.class);
+public class BuildURIMapTest extends SimpleMapTest {
+    private final Logger LOGGER = LoggerFactory.getLogger(BuildURIMapTest.class);
 
     private static final String SEPARATOR = "=&=";
     private static final String TEMPLATE = "Individual-%s-%s";
     private static final String DST_INDIVIDUAL_LABEL = "Created by spin";
 
-    @Test
+    @Override
     public void testInference() {
         OntGraphModel src = assembleSource();
-        TestUtils.debug(LOGGER, src);
+        TestUtils.debug(src);
         List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         List<OntIndividual.Named> individuals = src.listNamedIndividuals().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        Assert.assertEquals(2, props.size());
+        Assert.assertEquals(3, props.size());
         Assert.assertEquals(3, individuals.size());
 
         OntGraphModel dst = assembleTarget();
-        TestUtils.debug(LOGGER, dst);
+        TestUtils.debug(dst);
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapManager manager = Managers.getMapManager();
         MapModel mapping = assembleMapping(manager, src, dst);
-        TestUtils.debug(LOGGER, mapping);
+        TestUtils.debug(mapping);
 
         LOGGER.info("Run inference.");
         manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(LOGGER, dst);
+        TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
@@ -80,20 +79,6 @@ public class BuildURIMapTest extends AbstractMapTest {
         Assert.assertEquals(dstClass, in1.classes().findFirst().orElseThrow(AssertionError::new));
     }
 
-    @Test
-    public void testDeleteContext() {
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
-        MapManager manager = Managers.getMapManager();
-        MapModel mapping = assembleMapping(manager, src, dst);
-        List<Context> contexts = mapping.contexts().collect(Collectors.toList());
-        Assert.assertEquals(1, contexts.size());
-        mapping = mapping.removeContext(contexts.get(0));
-        TestUtils.debug(LOGGER, mapping);
-        Assert.assertEquals(0, mapping.contexts().count());
-        Assert.assertEquals(4, mapping.getGraph().getBaseGraph().size());
-    }
-
     private static String getDataPropertyAssertionStringValue(OntIndividual.Named individual, OntNDP property) {
         return individual.objects(property, Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
     }
@@ -114,7 +99,7 @@ public class BuildURIMapTest extends AbstractMapTest {
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
         List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        Assert.assertEquals(2, props.size());
+        Assert.assertEquals(3, props.size());
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.buildURI2.getURI())
@@ -139,9 +124,9 @@ public class BuildURIMapTest extends AbstractMapTest {
                 .setNsPrefixes(srcClass.getModel())
                 .setNsPrefixes(dstClass.getModel()).lock();
 
-        TestUtils.debug(LOGGER, targetFunction, pm);
-        TestUtils.debug(LOGGER, propertyFunction1, pm);
-        TestUtils.debug(LOGGER, propertyFunction2, pm);
+        TestUtils.debug(targetFunction, pm);
+        TestUtils.debug(propertyFunction1, pm);
+        TestUtils.debug(propertyFunction2, pm);
 
         MapModel res = manager.createMapModel();
         res.setID(getNameSpace() + "/map");
@@ -155,33 +140,5 @@ public class BuildURIMapTest extends AbstractMapTest {
         return res;
     }
 
-    @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createModel("source");
-        String ns = m.getID().getURI() + "#";
-        OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "SourceDataProperty1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "SourceDataProperty2");
-        prop1.addDomain(class1);
-        prop2.addDomain(class1);
-        OntIndividual.Named individual1 = class1.createIndividual(ns + "a");
-        OntIndividual.Named individual2 = class1.createIndividual(ns + "b");
-        class1.createIndividual(ns + "c");
-        // data property assertions:
-        individual1.addProperty(prop1, "x y z", "e");
-        individual1.addProperty(prop2, ResourceFactory.createTypedLiteral(2));
 
-        individual2.addProperty(prop1, "A");
-        individual2.addProperty(prop2, "B");
-        return m;
-    }
-
-    @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createModel("target");
-        String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
-        m.createOntEntity(OntNDP.class, ns + "TargetDataProperty2").addDomain(clazz);
-        return m;
-    }
 }

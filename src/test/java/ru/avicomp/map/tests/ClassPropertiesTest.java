@@ -67,7 +67,7 @@ public class ClassPropertiesTest {
         OntGraphModel m = load("/foaf.rdf", Lang.RDFXML);
         m.setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/");
         doPrint(m);
-        TestUtils.debug(LOGGER, m);
+        TestUtils.debug(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("foaf:Person", 38);
         expected.put("foaf:Organization", 21);
@@ -86,7 +86,7 @@ public class ClassPropertiesTest {
         Assert.assertNotNull(c);
 
         doPrint(m);
-        TestUtils.debug(LOGGER, m);
+        TestUtils.debug(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("gr:QuantitativeValueInteger", 11);
         expected.put("schema:Product", 23);
@@ -120,7 +120,7 @@ public class ClassPropertiesTest {
         OntClass c3 = m.createOntEntity(OntClass.class, ns + "C3");
         c3.addEquivalentClass(ce1);
 
-        TestUtils.debug(LOGGER, m);
+        TestUtils.debug(m);
         m.ontObjects(OntClass.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
 
         Map<String, Integer> expected = new LinkedHashMap<>();

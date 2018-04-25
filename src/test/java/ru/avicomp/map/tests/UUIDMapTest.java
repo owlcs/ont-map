@@ -31,18 +31,18 @@ public class UUIDMapTest extends AbstractMapTest {
     @Test
     public void testInference() {
         OntGraphModel src = assembleSource();
-        TestUtils.debug(LOGGER, src);
+        TestUtils.debug(src);
         OntGraphModel dst = assembleTarget();
-        TestUtils.debug(LOGGER, dst);
+        TestUtils.debug(dst);
 
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
 
         MapManager manager = Managers.getMapManager();
         MapModel mapping = assembleMapping(manager, src, dst);
-        TestUtils.debug(LOGGER, mapping);
+        TestUtils.debug(mapping);
 
         manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(LOGGER, dst);
+        TestUtils.debug(dst);
         Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
 
         manager.getInferenceEngine().run(mapping, src, dst);
