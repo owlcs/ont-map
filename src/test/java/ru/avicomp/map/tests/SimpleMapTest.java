@@ -19,16 +19,16 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 25.04.2018.
  */
-public abstract class SimpleMapTest extends AbstractMapTest {
+abstract class SimpleMapTest extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleSource() {
         OntGraphModel m = createModel("source");
         String ns = m.getID().getURI() + "#";
         OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "SourceDataProperty1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "SourceDataProperty2");
-        OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "SourceDataProperty3");
+        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty1");
+        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty2");
+        OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty3");
         prop1.addDomain(class1);
         prop2.addDomain(class1);
         OntIndividual.Named individual1 = class1.createIndividual(ns + "a");
@@ -50,7 +50,7 @@ public abstract class SimpleMapTest extends AbstractMapTest {
         OntGraphModel m = createModel("target");
         String ns = m.getID().getURI() + "#";
         OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
-        m.createOntEntity(OntNDP.class, ns + "TargetDataProperty2").addDomain(clazz);
+        m.createOntEntity(OntNDP.class, ns + "targetDataProperty2").addDomain(clazz);
         return m;
     }
 
@@ -68,6 +68,14 @@ public abstract class SimpleMapTest extends AbstractMapTest {
         mapping = mapping.removeContext(contexts.get(0));
         TestUtils.debug(mapping);
         Assert.assertEquals(0, mapping.contexts().count());
-        Assert.assertEquals(4, mapping.getGraph().getBaseGraph().size());
+        Assert.assertEquals(5, mapping.getGraph().getBaseGraph().size());
+    }
+
+    MapModel createFreshMapping(MapManager manager, String comment) {
+        MapModel res = manager.createMapModel();
+        // TopBraid Composer (gui, not spin) has difficulties with anonymous ontologies:
+        res.setID(getNameSpace() + "/map")
+                .addComment(comment, null);
+        return res;
     }
 }

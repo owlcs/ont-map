@@ -1,9 +1,12 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.topbraid.spin.vocabulary.SPINMAP;
-import org.topbraid.spin.vocabulary.SPINMAPL;
+import org.apache.jena.vocabulary.RDFS;
+import org.topbraid.spin.arq.ARQ2SPIN;
+import org.topbraid.spin.vocabulary.*;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
@@ -21,6 +24,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -34,6 +38,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl(UnionGraph base, OntPersonality personality, MapManagerImpl manager) {
         super(base, personality);
         this.manager = manager;
+    }
+
+    public static String getLocalName(Resource resource) {
+        return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
     @Override
@@ -95,8 +103,35 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     .findFirst().ifPresent(this::deleteContext);
         }
         deleteContext(c);
-        // todo: remove also custom functions
+        clearUnused();
         return this;
+    }
+
+    /**
+     * Deletes unused anymore things, which is appeared in the base graph.
+     * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
+     */
+    public void clearUnused() {
+        // delete expressions:
+        Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
+                .flatMap(type -> statements(null, RDF.type, type)
+                        .map(OntStatement::getSubject)
+                        .filter(OntObject::isLocal)
+                        .filter(s -> !getBaseModel().contains(null, RDF.type, s)))
+                .collect(Collectors.toSet());
+        found.forEach(Models::deleteAll);
+        // delete properties and variables:
+        found = Stream.concat(statements(null, RDFS.subPropertyOf, SP.arg)
+                        .map(OntStatement::getSubject)
+                        .filter(OntObject::isLocal)
+                        .map(s -> s.as(Property.class))
+                        .filter(s -> !getBaseModel().contains(null, s)),
+                statements(null, RDF.type, SP.Variable)
+                        .map(OntStatement::getSubject)
+                        .filter(OntObject::isLocal)
+                        .filter(s -> !getBaseModel().contains(null, null, s)))
+                .collect(Collectors.toSet());
+        found.forEach(Models::deleteAll);
     }
 
     public void deleteContext(MapContextImpl context) {
@@ -111,18 +146,17 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Creates a {@code spinmap:Context} resource for specified {@link OntCE OWL Class Expression}s.
-     * <pre>{@code
-     * _:x rdf:type spinmap:Context ;
-     *   spinmap:sourceClass <src> ;
-     *   spinmap:targetClass <dst> ;
-     * }</pre>
+     * Creates a {@code spinmap:Context} which binds specified class-expressions.
+     * It also adds imports for ontologies where arguments are declared in.
+     * In case {@link MapManagerImpl#generateNamedIndividuals()}{@code == true}
+     * an additional hidden contexts to generate {@code owl:NamedIndividuals} is created.
      *
      * @param source {@link OntCE}
      * @param target {@link OntCE}
      * @return {@link Resource}
+     * @throws MapJenaException something goes wrong
      */
-    public Resource makeContext(OntCE source, OntCE target) {
+    public Resource makeContext(OntCE source, OntCE target) throws MapJenaException {
         // ensue all related models are imported:
         Stream.of(MapJenaException.notNull(source, "Null source CE"),
                 MapJenaException.notNull(target, "Null target CE"))
@@ -136,6 +170,18 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res;
     }
 
+    /**
+     * Creates a {@code spinmap:Context} resource for specified source and target resources.
+     * <pre>{@code
+     * _:x rdf:type spinmap:Context ;
+     *   spinmap:sourceClass <src> ;
+     *   spinmap:targetClass <dst> ;
+     * }</pre>
+     *
+     * @param source {@link Resource}
+     * @param target {@link Resource}
+     * @return {@link Resource}
+     */
     protected Resource makeContext(Resource source, Resource target) {
         String iri = getID().getURI();
         Resource res = null;
@@ -154,12 +200,116 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res;
     }
 
-    public static String getLocalName(Resource resource) {
-        return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
-    }
-
+    /**
+     * Returns a map-manager to which this model is associated.
+     *
+     * @return {@link MapManagerImpl}
+     */
     public MapManagerImpl getManager() {
         return manager;
     }
 
+    /**
+     * Finds or creates a mapping {@code spinmap:Mapping-$i-$j}, where {@code i >=0}, {@code j = 1}.
+     * This mapping template is added directly to the base graph it is absent in the library.
+     *
+     * @param sources int
+     * @param targets int
+     * @return {@link Resource}
+     * @throws IllegalArgumentException incorrect input
+     * @throws MapJenaException         something goes wrong
+     */
+    public Resource getCommonMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
+        Resource res = SPINMAP.mapping(sources, targets).inModel(this);
+        if (!contains(res, RDF.type, SPIN.ConstructTemplate)) {
+            if (targets != 1) {
+                throw new MapJenaException.Unsupported("Targets count != 1");
+            }
+            Model m = SpinModelConfig.createSpinModel(getGraph());
+            res.addProperty(RDF.type, SPIN.ConstructTemplate)
+                    .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
+                    .addProperty(SPIN.body, ARQ2SPIN.parseQuery(makeMappingConstructQuery(sources), m));
+            res.addProperty(SPIN.constraint, createResource()
+                    .addProperty(RDF.type, SPL.Argument)
+                    .addProperty(SPL.predicate, SPINMAP.expression));
+            IntStream.rangeClosed(1, sources)
+                    .forEach(i -> res.addProperty(SPIN.constraint, createResource()
+                            .addProperty(RDF.type, SPL.Argument).addProperty(SPL.predicate, getSourcePredicate(i))));
+        }
+        return res;
+    }
+
+    /**
+     * Makes an inner spin select query to be used inside {@code spinmap:Mapping-i-j} template.
+     *
+     * @param argumentNum int
+     * @return String
+     */
+    public static String makeMappingConstructQuery(int argumentNum) {
+        StringBuilder query = new StringBuilder("CONSTRUCT {\n\t")
+                .append("?target ?targetPredicate1 ?newValue")
+                .append(" .\n}\nWHERE {\n");
+        StringBuilder evalArgs = new StringBuilder("?expression");
+        for (int i = 1; i <= argumentNum; i++) {
+            query.append("\t?this ?sourcePredicate").append(i).append(" ?oldValue").append(i).append(" .\n");
+            evalArgs.append(", sp:arg").append(i).append(", ?oldValue").append(i);
+        }
+        query.append("\tBIND (spin:eval(").append(evalArgs).append(") AS ?newValue) .\n" +
+                "\tBIND (spinmap:targetResource(?this, ?context) AS ?target) .\n}");
+        return query.toString();
+    }
+
+    /**
+     * Returns {@code spinmap:sourcePredicate$i} argument property.
+     *
+     * @param i int
+     * @return {@link Property}
+     */
+    public Property getSourcePredicate(int i) {
+        return createArgProperty(SPINMAP.sourcePredicate(i).getURI());
+    }
+
+    /**
+     * Returns {@code spinmap:targetPredicate$i} argument property.
+     *
+     * @param i int
+     * @return {@link Property}
+     */
+    public Property getTargetPredicate(int i) {
+        return createArgProperty(SPINMAP.targetPredicate(i).getURI());
+    }
+
+    /**
+     * Returns {@code spin:_arg$i} argument variable.
+     *
+     * @param i int
+     * @return {@link Resource}
+     */
+    public Resource getArgVariable(int i) {
+        return createVariable(SPIN._arg(i).getURI());
+    }
+
+    /**
+     * Creates or finds sp:variable.
+     *
+     * @param url String
+     * @return {@link Resource}
+     */
+    public Resource createVariable(String url) {
+        return createResource(url, SP.Variable);
+    }
+
+    /**
+     * Creates or finds a property which has {@code rdfs:subPropertyOf == sp:arg}.
+     *
+     * @param url String
+     * @return {@link Property}
+     */
+    public Property createArgProperty(String url) {
+        Property res = getProperty(url);
+        if (!contains(res, RDF.type, RDF.Property)) {
+            createResource(url, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
+        }
+        return res;
+    }
 }

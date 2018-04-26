@@ -6,6 +6,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -31,6 +32,7 @@ public class BuildURIMapTest extends SimpleMapTest {
     private static final String TEMPLATE = "Individual-%s-%s";
     private static final String DST_INDIVIDUAL_LABEL = "Created by spin";
 
+    @Test
     @Override
     public void testInference() {
         OntGraphModel src = assembleSource();
@@ -128,8 +130,8 @@ public class BuildURIMapTest extends SimpleMapTest {
         TestUtils.debug(propertyFunction1, pm);
         TestUtils.debug(propertyFunction2, pm);
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map");
+        MapModel res = createFreshMapping(manager, "Used functions: spinmapl:buildURI2, spinmapl:concatWithSeparator, spinmap:equals");
+
         res.createContext(srcClass, dstClass, targetFunction)
                 .addPropertyBridge(propertyFunction1, dstProp).getContext()
                 .addPropertyBridge(propertyFunction2, dst.getRDFSLabel());

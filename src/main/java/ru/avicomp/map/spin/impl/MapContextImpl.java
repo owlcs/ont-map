@@ -12,7 +12,6 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
-import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
@@ -124,11 +123,17 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
         validate(func);
         RDFNode expr = createExpression(func);
-        List<Property> props = expr.isResource() ? Iter.asStream(expr.asResource().listProperties()).map(Statement::getObject)
-                .filter(RDFNode::isURIResource)
-                .filter(p -> isProperty.test(p.asResource()))
-                .map(p -> p.as(Property.class)).collect(Collectors.toList()) :
-                Collections.emptyList();
+        List<Property> props;
+        if (expr.isAnon()) {
+            props = //Iter.asStream(expr.asResource().listProperties())
+                    properties(expr.asResource())
+                            .map(Statement::getObject)
+                            .filter(RDFNode::isURIResource)
+                            .filter(p -> isProperty.test(p.asResource()))
+                            .map(p -> p.as(Property.class)).collect(Collectors.toList());
+        } else {
+            props = Collections.emptyList();
+        }
         // as a fix:
         Resource mapping = addMapping(expr, props, Collections.singletonList(target));
         MapPropertiesImpl res = asProperties(mapping);
@@ -166,32 +171,39 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     public Resource createMapping(RDFNode expression, List<Property> sources, List<Property> targets) {
-        // todo: if no library Mapping template available - create it
-        Resource res = getModel().createResource().addProperty(RDF.type, SPINMAP.mapping(sources.size(), targets.size()));
+        Resource template = getModel().getCommonMappingTemplate(sources.size(), targets.size());
+        Resource res = getModel().createResource().addProperty(RDF.type, template);
         res.addProperty(SPINMAP.context, this);
         res.addProperty(SPINMAP.expression, expression);
-        processProperties(res, expression, sources, SPINMAP::sourcePredicate);
-        processProperties(res, expression, targets, SPINMAP::targetPredicate);
+        MapModelImpl m = getModel();
+        processProperties(res, expression, sources, m::getSourcePredicate);
+        processProperties(res, expression, targets, m::getTargetPredicate);
         return res;
     }
 
     protected void processProperties(Resource mapping, RDFNode expression, List<Property> properties, IntFunction<Property> predicate) {
         for (int i = 0; i < properties.size(); i++) {
             Property src = properties.get(i);
-            // todo: need to create these resources if they absent in library graph
             Property mapPredicate = predicate.apply(i + 1);
-            Resource var = SPIN._arg(i + 1);
-            // replace with variable (spin:_arg*):
-            List<Statement> res = expression.isResource() ? Iter.asStream(expression.asResource().listProperties())
-                    .filter(s -> Objects.equals(s.getObject(), src))
-                    .collect(Collectors.toList()) :
-                    Collections.emptyList();
-            res.forEach(s -> {
-                getModel().remove(s);
-                getModel().add(s.getSubject(), s.getPredicate(), var);
-            });
+            if (expression.isAnon()) {
+                // replace with variable (spin:_arg*):
+                Resource var = getModel().getArgVariable(i + 1);
+                List<Statement> res = //Iter.asStream(expression.asResource().listProperties())
+                        properties(expression.asResource())
+                                .filter(s -> Objects.equals(s.getObject(), src))
+                                .collect(Collectors.toList());
+                res.forEach(s -> {
+                    getModel().add(s.getSubject(), s.getPredicate(), var);
+                    getModel().remove(s);
+                });
+            }
             mapping.addProperty(mapPredicate, src);
         }
+    }
+
+    public static Stream<Statement> properties(Resource subject) { // todo: possible recursion
+        return Iter.asStream(subject.listProperties())
+                .flatMap(s -> s.getObject().isAnon() ? properties(s.getObject().asResource()) : Stream.of(s));
     }
 
     @Override
@@ -250,7 +262,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             }
             if (param == null)
                 throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
-            Property predicate = model.createResource(arg.name()).as(Property.class);
+            Property predicate = getModel().createArgProperty(arg.name());
             res.addProperty(predicate, param);
 
         });
@@ -274,8 +286,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
             createArgRDFNode(argType, (String) value);
             return;
         }
-        if (MapFunctionImpl.UNDEFINED.equals(argType)) // todo: undefined means xsd:string or uri-resource
-            throw new UnsupportedOperationException("TODO");
         if (value instanceof MapFunction.Call) {
             String funcType = ((MapFunction.Call) value).getFunction().returnType();
             validateFuncReturnType(argType, funcType);
@@ -286,12 +296,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     private void validateFuncReturnType(String argType, String funcType) {
-        if (argType.equals(funcType)) return;
+        if (argType.equals(funcType)) {
+            return;
+        }
+        if (MapFunctionImpl.UNDEFINED.equals(argType) || MapFunctionImpl.UNDEFINED.equals(funcType)) {
+            // seems it is okay
+            return;
+        }
         RDFDatatype literalType = rdfTypes.getTypeByName(funcType);
-        if (literalType != null)
-            throw new MapJenaException("TODO");
+        if (literalType != null) // todo:
+            throw new MapJenaException("TODO:" + literalType);
         if (RDFS.Resource.getURI().equals(argType))
             return;
+        // todo:
         throw new MapJenaException("TODO");
     }
 
