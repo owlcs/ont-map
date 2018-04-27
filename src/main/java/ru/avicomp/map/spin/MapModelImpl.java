@@ -1,17 +1,19 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDFS;
-import org.topbraid.spin.arq.ARQ2SPIN;
-import org.topbraid.spin.vocabulary.*;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.impl.MapContextImpl;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -24,7 +26,6 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -220,43 +221,20 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @throws MapJenaException         something goes wrong
      */
     public Resource getCommonMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
-        Resource res = SPINMAP.mapping(sources, targets).inModel(this);
-        if (!contains(res, RDF.type, SPIN.ConstructTemplate)) {
-            if (targets != 1) {
-                throw new MapJenaException.Unsupported("Targets count != 1");
-            }
-            Model m = SpinModelConfig.createSpinModel(getGraph());
-            res.addProperty(RDF.type, SPIN.ConstructTemplate)
-                    .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
-                    .addProperty(SPIN.body, ARQ2SPIN.parseQuery(makeMappingConstructQuery(sources), m));
-            res.addProperty(SPIN.constraint, createResource()
-                    .addProperty(RDF.type, SPL.Argument)
-                    .addProperty(SPL.predicate, SPINMAP.expression));
-            IntStream.rangeClosed(1, sources)
-                    .forEach(i -> res.addProperty(SPIN.constraint, createResource()
-                            .addProperty(RDF.type, SPL.Argument).addProperty(SPL.predicate, getSourcePredicate(i))));
-        }
-        return res;
+        return ConstructBuilder.createMappingTemplate(this, SPINMAP.mapping(sources, targets), null, sources);
     }
 
     /**
-     * Makes an inner spin select query to be used inside {@code spinmap:Mapping-i-j} template.
-     *
-     * @param argumentNum int
-     * @return String
+     * Finds or creates a conditional mapping template, which accepts expression to filter,
+     * Note: this functionality is absent in the standard spin-library supply/
+     * @param sources int
+     * @param targets int
+     * @return {@link Resource}
+     * @throws IllegalArgumentException incorrect input
+     * @throws MapJenaException         something goes wrong
      */
-    public static String makeMappingConstructQuery(int argumentNum) {
-        StringBuilder query = new StringBuilder("CONSTRUCT {\n\t")
-                .append("?target ?targetPredicate1 ?newValue")
-                .append(" .\n}\nWHERE {\n");
-        StringBuilder evalArgs = new StringBuilder("?expression");
-        for (int i = 1; i <= argumentNum; i++) {
-            query.append("\t?this ?sourcePredicate").append(i).append(" ?oldValue").append(i).append(" .\n");
-            evalArgs.append(", sp:arg").append(i).append(", ?oldValue").append(i);
-        }
-        query.append("\tBIND (spin:eval(").append(evalArgs).append(") AS ?newValue) .\n" +
-                "\tBIND (spinmap:targetResource(?this, ?context) AS ?target) .\n}");
-        return query.toString();
+    public Resource getConditionalMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
+        return ConstructBuilder.createMappingTemplate(this, AVC.mapping(sources, targets), AVC.filter, sources);
     }
 
     /**

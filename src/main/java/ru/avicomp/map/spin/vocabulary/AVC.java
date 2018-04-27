@@ -21,6 +21,21 @@ public class AVC {
     // additional no-arg target function
     public static final Resource UUID = resource("UUID");
 
+    // expression predicate to use in conditional templates as a filter
+    public static final Property filter = property("filter");
+
+    /**
+     * The analogue of spinmap:Conditional-Mapping-1-1 but accepting expression (function call), not ask-query.
+     *
+     * @param i int
+     * @param j int
+     * @return Resource
+     */
+    public static Resource mapping(int i, int j) {
+        if (i < 0 || j <= 0) throw new IllegalArgumentException();
+        return resource(String.format("Conditional-Mapping-%d-%d", i, j));
+    }
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

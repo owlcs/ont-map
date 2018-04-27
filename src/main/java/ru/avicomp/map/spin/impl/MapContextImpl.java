@@ -117,27 +117,39 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
+        return addPropertyBridge(null, func, target);
+    }
+
+    public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
+                                               MapFunction.Call mappingFunction,
+                                               Property target) throws MapJenaException {
+        if (filterFunction != null) {
+            MapFunctionImpl f = (MapFunctionImpl) filterFunction.getFunction();
+            if (!f.isBoolean()) {
+                throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
+            }
+            // todo:
+        }
         Predicate<Resource> isProperty = ARG_RESOURCE_MAPPING.get(RDF.Property.getURI());
         if (!isProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
-        validate(func);
-        RDFNode expr = createExpression(func);
+        validate(mappingFunction);
+        RDFNode expr = createExpression(mappingFunction);
         List<Property> props;
         if (expr.isAnon()) {
-            props = //Iter.asStream(expr.asResource().listProperties())
-                    properties(expr.asResource())
-                            .map(Statement::getObject)
-                            .filter(RDFNode::isURIResource)
-                            .filter(p -> isProperty.test(p.asResource()))
-                            .map(p -> p.as(Property.class)).collect(Collectors.toList());
+            props = properties(expr.asResource())
+                    .map(Statement::getObject)
+                    .filter(RDFNode::isURIResource)
+                    .filter(p -> isProperty.test(p.asResource()))
+                    .map(p -> p.as(Property.class)).collect(Collectors.toList());
         } else {
             props = Collections.emptyList();
         }
         // as a fix:
         Resource mapping = addMapping(expr, props, Collections.singletonList(target));
         MapPropertiesImpl res = asProperties(mapping);
-        printFunction(func);
+        printFunction(mappingFunction);
         return res;
     }
 

@@ -5,6 +5,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
@@ -66,6 +67,15 @@ public class MapFunctionImpl implements MapFunction {
     @Override
     public boolean isTarget() {
         return func.canAs(SpinTargetFunction.class);
+    }
+
+    /**
+     * TODO: will be moved to interface (as types enum?)
+     *
+     * @return boolean
+     */
+    public boolean isBoolean() {
+        return XSD.xboolean.getURI().equals(returnType());
     }
 
     /**
