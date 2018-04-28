@@ -1,10 +1,17 @@
 package ru.avicomp.map.tests;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.XSD;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.*;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -14,7 +21,33 @@ import java.util.stream.Stream;
 public class ConditionalMapTest extends AbstractMapTest {
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        throw new UnsupportedOperationException("TODO");
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "Contact");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "User");
+        Map<OntDT, OntNDP> propsMap = src.listDatatypes()
+                .map(Resource::getLocalName)
+                .collect(Collectors.toMap(
+                        s -> TestUtils.findOntEntity(src, OntDT.class, s),
+                        s -> TestUtils.findOntEntity(dst, OntNDP.class, s)));
+        OntNDP sourceProperty = TestUtils.findOntEntity(src, OntNDP.class, "info");
+
+        MapFunction.Call targetFunctionCall = manager.getFunction(SPINMAPL.composeURI.getURI())
+                .createFunctionCall()
+                .add(SPINMAPL.template.getURI(), dst.getID().getURI() + "#res-{?1}")
+                .build();
+        MapFunction eq = manager.getFunction(SP.eq.getURI());
+        MapFunction datatype = manager.getFunction(SP.resource("datatype").getURI());
+        MapFunction equals = manager.getFunction(SPINMAP.equals.getURI());
+
+        MapModel res = manager.createMapModel();
+        res.setID(getNameSpace() + "/map");
+        Context context = res.createContext(srcClass, dstClass, targetFunctionCall);
+        propsMap.forEach((sourceDatatype, targetProperty) -> {
+            MapFunction.Call filter = eq.createFunctionCall().add(SP.arg1.getURI(), sourceDatatype.getURI())
+                    .add(SP.arg2.getURI(), datatype.createFunctionCall().add(SP.arg1.getURI(), sourceProperty.getURI())).build();
+            MapFunction.Call mapping = equals.createFunctionCall().add(SP.arg1.getURI(), sourceProperty.getURI()).build();
+            context.addPropertyBridge(filter, mapping, targetProperty);
+        });
+        return res;
     }
 
     @Override
@@ -43,12 +76,13 @@ public class ConditionalMapTest extends AbstractMapTest {
         // data:
         OntIndividual.Named bobContacts = contact.createIndividual(dataNS + "bobs");
         bobContacts.addAssertion(contactInfo, email.createLiteral("bob@x-email.com"));
-        bobContacts.addAssertion(contactInfo, phone.createLiteral("+96 32 0943 03454"));
+        bobContacts.addAssertion(contactInfo, phone.createLiteral(96_322_09_43_034L));
         person.createIndividual(dataNS + "Bob").addAssertion(hasContact, bobContacts);
 
         person.createIndividual(dataNS + "Jhon").addAssertion(hasContact,
-                contact.createIndividual(dataNS + "jhons").addAssertion(contactInfo,
-                        skype.createLiteral("jhon-skype")));
+                contact.createIndividual(dataNS + "jhons")
+                        .addAssertion(contactInfo, skype.createLiteral("jhon-skype"))
+                        .addAssertion(contactInfo, email.createLiteral("jhon-doe-xxxx@x-x-x.mail.org")));
         System.out.println(m.statements().count());
         return m;
     }
@@ -68,9 +102,14 @@ public class ConditionalMapTest extends AbstractMapTest {
     }
 
     public static void main(String... args) {
-        ConditionalMapTest t = new ConditionalMapTest();
-        t.assembleSource().write(System.out, "ttl");
+        ConditionalMapTest engine = new ConditionalMapTest();
+        OntGraphModel s = engine.assembleSource();
+        s.write(System.out, "ttl");
         System.out.println("-----------");
-        t.assembleTarget().write(System.out, "ttl");
+        OntGraphModel t = engine.assembleTarget();
+        t.write(System.out, "ttl");
+        System.out.println("-----------");
+        MapModel m = engine.assembleMapping(Managers.getMapManager(), s, t);
+        ((Model) m).write(System.out, "ttl");
     }
 }

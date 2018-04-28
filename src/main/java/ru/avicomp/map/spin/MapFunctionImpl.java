@@ -159,6 +159,11 @@ public class MapFunctionImpl implements MapFunction {
             return !isInherit();
         }
 
+        @Override
+        public MapFunction getFunction() {
+            return MapFunctionImpl.this;
+        }
+
         /**
          * Checks if it is a direct argument or it goes from superclass.
          * Direct arguments can be used to make function call, inherited should be ignored.

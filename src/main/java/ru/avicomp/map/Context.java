@@ -46,16 +46,20 @@ public interface Context {
     Context addExpression(MapFunction.Call func) throws MapJenaException;
 
     /**
-     * Adds a properties bridge. Source properties are specified by function call, the target goes explicitly.
-     * All input properties must be an OWL2 entities with possible to assign data on individual,
-     * i.e. named annotation and datatype property expressions.
+     * Adds a properties bridge.
+     * Source properties are specified by mapping and filter function calls, the target goes explicitly.
+     * All input properties must be an OWL2 entities with possible to assign data on individual:
+     * {@link ru.avicomp.ontapi.jena.model.OntNAP named annotation property} and
+     * {@link ru.avicomp.ontapi.jena.model.OntNDP datatype property},
+     * while {@link ru.avicomp.ontapi.jena.model.OntNOP object property} is used to bind contexts together, not to inference data.
      *
-     * @param func   {@link ru.avicomp.map.MapFunction.Call}, expression
-     * @param target property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
+     * @param filterFunctionCall  {@link MapFunction.Call} function call to filter data
+     * @param mappingFunctionCall {@link MapFunction.Call} function call to map data
+     * @param target              property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
      * @return {@link PropertyBridge} a container with all input settings.
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
      */
-    PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException;
+    PropertyBridge addPropertyBridge(MapFunction.Call filterFunctionCall, MapFunction.Call mappingFunctionCall, Property target) throws MapJenaException;
 
     /**
      * Lists all property bindings.
@@ -72,6 +76,19 @@ public interface Context {
      * @return this context
      */
     Context removeProperties(PropertyBridge properties);
+
+    /**
+     * Adds a properties bridge without filtering.
+     * This is commonly used method, while its overloaded companion is used less frequently to build specific ontology mappings.
+     *
+     * @param func   {@link ru.avicomp.map.MapFunction.Call}, expression
+     * @param target property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
+     * @return {@link PropertyBridge} a container with all input settings.
+     * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
+     */
+    default PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
+        return addPropertyBridge(null, func, target);
+    }
 
     /**
      * Validates a function-call against this contains.

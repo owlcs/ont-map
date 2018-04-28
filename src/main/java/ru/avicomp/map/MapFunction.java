@@ -113,6 +113,13 @@ public interface MapFunction extends Description {
         default boolean isAssignable() {
             return true;
         }
+
+        /**
+         * Returns a function to which this argument belongs.
+         *
+         * @return {@link MapFunction}
+         */
+        MapFunction getFunction();
     }
 
     /**

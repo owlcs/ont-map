@@ -2,10 +2,12 @@ package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.ontapi.jena.model.OntEntity;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 import java.io.StringWriter;
@@ -36,5 +38,12 @@ public class TestUtils {
             String val = o instanceof String ? (String) o : ((MapFunction.Call) o).getFunction().name();
             LOGGER.debug("Argument: {} => '{}'", pm.shortForm(arg.name()), pm.shortForm(val));
         });
+    }
+
+    public static <E extends OntEntity> E findOntEntity(OntGraphModel m, Class<E> type, String localName) {
+        String uri = m.getID().getURI() + "#" + localName;
+        E res = m.getOntEntity(type, uri);
+        Assert.assertNotNull("Can't find <" + uri + ">", res);
+        return res;
     }
 }

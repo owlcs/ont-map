@@ -20,6 +20,7 @@ import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -95,7 +96,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .collect(Collectors.toList());
 
         addProperty(SPINMAP.target, expr);
-        addMapping(target(), Collections.emptyList(), Collections.singletonList(RDF.type));
+        addMappingRule(target(), null, Collections.emptyList(), Collections.singletonList(RDF.type));
         getModel().remove(prev);
         printFunction(func);
         return this;
@@ -116,38 +117,35 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     @Override
-    public MapPropertiesImpl addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
-        return addPropertyBridge(null, func, target);
-    }
-
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        if (filterFunction != null) {
-            MapFunction f = filterFunction.getFunction();
-            if (!f.isBoolean()) {
-                throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
-            }
-            // todo:
-        }
         Predicate<Resource> isProperty = ARG_RESOURCE_MAPPING.get(RDF.Property.getURI());
         if (!isProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         validate(mappingFunction);
-        RDFNode expr = createExpression(mappingFunction);
-        List<Property> props;
-        if (expr.isAnon()) {
-            props = properties(expr.asResource())
-                    .map(Statement::getObject)
-                    .filter(RDFNode::isURIResource)
-                    .filter(p -> isProperty.test(p.asResource()))
-                    .map(p -> p.as(Property.class)).collect(Collectors.toList());
-        } else {
-            props = Collections.emptyList();
+        RDFNode filterExpression = null;
+        if (filterFunction != null) {
+            MapFunction f = filterFunction.getFunction();
+            if (!f.isBoolean()) {
+                throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
+            }
+            validate(filterFunction);
+            filterExpression = createExpression(filterFunction);
         }
-        // as a fix:
-        Resource mapping = addMapping(expr, props, Collections.singletonList(target));
+        RDFNode mappingExpression = createExpression(mappingFunction);
+
+        // collect properties from expressions:
+        List<Property> props = Stream.of(filterExpression, mappingExpression)
+                .filter(Objects::nonNull)
+                .flatMap(MapContextImpl::properties)
+                .map(Statement::getObject)
+                .filter(RDFNode::isURIResource)
+                .filter(p -> isProperty.test(p.asResource()))
+                .map(p -> p.as(Property.class)).collect(Collectors.toList());
+
+        Resource mapping = addMappingRule(mappingExpression, filterExpression, props, Collections.singletonList(target));
         MapPropertiesImpl res = asProperties(mapping);
         printFunction(mappingFunction);
         return res;
@@ -169,27 +167,38 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     /**
-     * Adds a mapping to the graph
+     * Adds a mapping to the graph as {@code spinmap:rule}.
      *
-     * @param expression resource
+     * @param mappingExpression resource describing mapping expression
+     * @param filterExpression resource describing filter expression
      * @param sources    List of source properties
      * @param targets    List of target properties
      * @return a mapping resource inside graph
      */
-    protected Resource addMapping(RDFNode expression, List<Property> sources, List<Property> targets) {
-        Resource mapping = createMapping(expression, sources, targets);
+    protected Resource addMappingRule(RDFNode mappingExpression, RDFNode filterExpression, List<Property> sources, List<Property> targets) {
+        Resource mapping = createMapping(mappingExpression, filterExpression, sources, targets);
         getSource().addProperty(SPINMAP.rule, mapping);
         return mapping;
     }
 
-    public Resource createMapping(RDFNode expression, List<Property> sources, List<Property> targets) {
-        Resource template = getModel().getCommonMappingTemplate(sources.size(), targets.size());
-        Resource res = getModel().createResource().addProperty(RDF.type, template);
-        res.addProperty(SPINMAP.context, this);
-        res.addProperty(SPINMAP.expression, expression);
+    public Resource createMapping(RDFNode mappingExpression, RDFNode filterExpression, List<Property> sources, List<Property> targets) {
         MapModelImpl m = getModel();
-        processProperties(res, expression, sources, m::getSourcePredicate);
-        processProperties(res, expression, targets, m::getTargetPredicate);
+        Resource template = filterExpression != null ?
+                m.getConditionalMappingTemplate(sources.size(), targets.size()) :
+                m.getCommonMappingTemplate(sources.size(), targets.size());
+        Resource res = m.createResource().addProperty(RDF.type, template);
+        res.addProperty(SPINMAP.context, this);
+        res.addProperty(SPINMAP.expression, mappingExpression);
+        if (filterExpression != null) {
+            res.addProperty(AVC.filter, filterExpression);
+        }
+        // replace properties with variables:
+        processProperties(res, mappingExpression, sources, m::getSourcePredicate);
+        processProperties(res, mappingExpression, targets, m::getTargetPredicate);
+        if (filterExpression != null) {
+            processProperties(res, filterExpression, sources, m::getSourcePredicate);
+            processProperties(res, filterExpression, targets, m::getTargetPredicate);
+        }
         return res;
     }
 
@@ -213,8 +222,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
     }
 
-    public static Stream<Statement> properties(Resource subject) { // todo: possible recursion
-        return Iter.asStream(subject.listProperties())
+    public static Stream<Statement> properties(RDFNode subject) { // todo: possible recursion
+        if (subject == null || !subject.isAnon()) return Stream.empty();
+        return Iter.asStream(subject.asResource().listProperties())
                 .flatMap(s -> s.getObject().isAnon() ? properties(s.getObject().asResource()) : Stream.of(s));
     }
 
@@ -321,7 +331,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (RDFS.Resource.getURI().equals(argType))
             return;
         // todo:
-        throw new MapJenaException("TODO");
+        throw new MapJenaException("TODO: " + argType + "|" + funcType);
     }
 
     public RDFNode createArgRDFNode(String type, String value) throws MapJenaException {

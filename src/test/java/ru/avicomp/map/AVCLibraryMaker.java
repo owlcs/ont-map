@@ -43,14 +43,13 @@ public class AVCLibraryMaker {
         id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
                         "Also it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\n" +
                         "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
-                        "and all listed custom  functions can be considered as templates.",
-                null);
+                "and all listed custom  functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
 
         OntNDP hidden = m.createOntEntity(OntNDP.class, AVC.hidden.getURI());
         hidden.addRange(m.getOntEntity(OntDT.class, XSD.xstring));
 
-        // SP:abs
+        // SP:abs (todo: right now not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
         // AVC:UUID
