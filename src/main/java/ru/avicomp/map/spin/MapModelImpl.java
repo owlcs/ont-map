@@ -162,6 +162,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         Stream.of(MapJenaException.notNull(source, "Null source CE"),
                 MapJenaException.notNull(target, "Null target CE"))
                 .map(OntObject::getModel)
+                .filter(m -> MapModelImpl.this.imports().noneMatch(i -> Objects.equals(i.getID(), m.getID())))
                 .forEach(MapModelImpl.this::addImport);
         Resource res = makeContext(source.asResource(), target.asResource());
         if (getManager().generateNamedIndividuals()) {

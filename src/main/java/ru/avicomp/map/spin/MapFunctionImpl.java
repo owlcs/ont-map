@@ -69,11 +69,7 @@ public class MapFunctionImpl implements MapFunction {
         return func.canAs(SpinTargetFunction.class);
     }
 
-    /**
-     * TODO: will be moved to interface (as types enum?)
-     *
-     * @return boolean
-     */
+    @Override
     public boolean isBoolean() {
         return XSD.xboolean.getURI().equals(returnType());
     }

@@ -45,6 +45,13 @@ public interface MapFunction extends Description {
     boolean isTarget();
 
     /**
+     * Answers if it is a boolean function and therefore can be used as filter.
+     *
+     * @return boolean
+     */
+    boolean isBoolean();
+
+    /**
      * Creates a new function call builder.
      *
      * @return {@link Builder}

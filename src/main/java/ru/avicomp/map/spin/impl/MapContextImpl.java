@@ -124,7 +124,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
         if (filterFunction != null) {
-            MapFunctionImpl f = (MapFunctionImpl) filterFunction.getFunction();
+            MapFunction f = filterFunction.getFunction();
             if (!f.isBoolean()) {
                 throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
             }
