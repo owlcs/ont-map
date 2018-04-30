@@ -5,8 +5,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * A wrapper for {@link org.topbraid.spin.model.Function} and
- * common interface for any possible functions used while OWL2 -&gt; OWL2 mappings.
+ * A common interface for functions used while OWL2 -&gt; OWL2 mappings.
  * It is not a part of jena model graph system (i.e. not a {@link org.apache.jena.rdf.model.RDFNode rdf-node}).
  * At the moment it is assumed that any string methods return absolute IRIs.
  * <p>
@@ -124,7 +123,7 @@ public interface MapFunction extends Description {
 
     /**
      * A Function Call,
-     * i.e. a container which contains function with assigned arguments ready for writing to graph.
+     * i.e. a container which contains function with assigned arguments ready for writing to a graph.
      * Cannot be modified.
      * Note: it is not a {@link org.apache.jena.rdf.model.Resource jena resorce}.
      */

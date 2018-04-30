@@ -26,7 +26,7 @@ sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                         ] .
 
 avc:UUID  a                 spinmap:TargetFunction ;
-        rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC.UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;
+        rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;
         rdfs:label          "MD5 UUID" ;
         rdfs:seeAlso        <https://www.w3.org/TR/sparql11-query/#func-uuid> , sp:UUID ;
         rdfs:subClassOf     spinmap:TargetFunctions ;

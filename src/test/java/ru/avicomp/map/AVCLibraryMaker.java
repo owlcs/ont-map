@@ -53,7 +53,7 @@ public class AVCLibraryMaker {
         // SP:abs (todo: right now not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
-        // SP:eq
+        // SP:eq can accept any resource, not only boolean literal
         SP.eq.inModel(m)
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg2).addProperty(SPL.valueType, AVC.undefined));
@@ -68,7 +68,7 @@ public class AVCLibraryMaker {
         uuid.addProperty(RDFS.label, "MD5 UUID");
         uuid.addProperty(RDFS.comment, "A target function.\n" +
                 "Generates an IRI from the UUID URN scheme based on source individual MD5 sum.\n" +
-                "Each call of AVC.UUID returns the same UUID IRI.\n" +
+                "Each call of AVC:UUID returns the same UUID IRI.\n" +
                 "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.");
         uuid.addProperty(SPIN.body,
                 ARQ2SPIN.parseQuery("SELECT (IRI(?uri) AS ?result)\n" +

@@ -53,8 +53,8 @@ public interface Context {
      * {@link ru.avicomp.ontapi.jena.model.OntNDP datatype property},
      * while {@link ru.avicomp.ontapi.jena.model.OntNOP object property} is used to bind contexts together, not to inference data.
      *
-     * @param filterFunctionCall  {@link MapFunction.Call} function call to filter data
-     * @param mappingFunctionCall {@link MapFunction.Call} function call to map data
+     * @param filterFunctionCall  {@link MapFunction.Call} function-call to filter data
+     * @param mappingFunctionCall {@link MapFunction.Call} function-call to map data
      * @param target              property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
      * @return {@link PropertyBridge} a container with all input settings.
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
@@ -91,7 +91,7 @@ public interface Context {
     }
 
     /**
-     * Validates a function-call against this contains.
+     * Validates a function-call against this context.
      *
      * @param func {@link MapFunction.Call} an expression.
      * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
