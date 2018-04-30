@@ -40,7 +40,8 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapContextImpl extends ResourceImpl implements Context {
-    private static final Map<String, Predicate<Resource>> ARG_RESOURCE_MAPPING = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
+    private final TypeMapper rdfTypes = TypeMapper.getInstance();
+    private final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
             put(RDF.Property.getURI(), r -> r.canAs(OntNAP.class) || r.canAs(OntNDP.class));
@@ -48,7 +49,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
             put(RDFS.Datatype.getURI(), r -> r.canAs(OntDT.class));
         }
     });
-    private final TypeMapper rdfTypes = TypeMapper.getInstance();
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -120,7 +120,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        Predicate<Resource> isProperty = ARG_RESOURCE_MAPPING.get(RDF.Property.getURI());
+        Predicate<Resource> isProperty = argResourceMapping.get(RDF.Property.getURI());
         if (!isProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
@@ -143,7 +143,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
                 .filter(p -> isProperty.test(p.asResource()))
-                .map(p -> p.as(Property.class)).collect(Collectors.toList());
+                .map(p -> p.as(Property.class))
+                .distinct()
+                .collect(Collectors.toList());
 
         Resource mapping = addMappingRule(mappingExpression, filterExpression, props, Collections.singletonList(target));
         MapPropertiesImpl res = asProperties(mapping);
@@ -188,18 +190,25 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 m.getCommonMappingTemplate(sources.size(), targets.size());
         Resource res = m.createResource().addProperty(RDF.type, template);
         res.addProperty(SPINMAP.context, this);
-        res.addProperty(SPINMAP.expression, mappingExpression);
+        res.addProperty(SPINMAP.expression, processExpression(res, mappingExpression, sources, targets));
         if (filterExpression != null) {
-            res.addProperty(AVC.filter, filterExpression);
-        }
-        // replace properties with variables:
-        processProperties(res, mappingExpression, sources, m::getSourcePredicate);
-        processProperties(res, mappingExpression, targets, m::getTargetPredicate);
-        if (filterExpression != null) {
-            processProperties(res, filterExpression, sources, m::getSourcePredicate);
-            processProperties(res, filterExpression, targets, m::getTargetPredicate);
+            res.addProperty(AVC.filter, processExpression(res, filterExpression, sources, targets));
         }
         return res;
+    }
+
+    protected RDFNode processExpression(Resource mapping, RDFNode expression, List<Property> sources, List<Property> targets) {
+        MapModelImpl m = getModel();
+        // replace properties with variables:
+        processProperties(mapping, expression, sources, m::getSourcePredicate);
+        processProperties(mapping, expression, targets, m::getTargetPredicate);
+        // simplify special case of spinmap:equial (this is alternative way to record without anon root)
+        if (expression.isAnon() && SPINMAP.equals.equals(expression.asResource().getPropertyResourceValue(RDF.type))) {
+            RDFNode arg = expression.asResource().getProperty(SP.arg1).getObject();
+            Models.deleteAll(expression.asResource());
+            expression = arg;
+        }
+        return expression;
     }
 
     protected void processProperties(Resource mapping, RDFNode expression, List<Property> properties, IntFunction<Property> predicate) {
@@ -262,14 +271,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public RDFNode createExpression(MapFunction.Call call) {
         Model model = getModel();
         MapFunction func = call.getFunction();
-        // special case of spinmap:equial (alternative way to record)
-        if (SPINMAP.equals.getURI().equals(func.name())) {
-            MapFunction.Arg arg = func.getArg(SP.arg1.getURI());
-            Object val = call.asMap().get(arg);
-            if (val instanceof String) {
-                return createArgRDFNode(arg.type(), (String) val);
-            }
-        }
         Resource res = model.createResource();
         Resource function = model.createResource(func.name());
         res.addProperty(RDF.type, function);
@@ -280,7 +281,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 param = createExpression((MapFunction.Call) value);
             }
             if (value instanceof String) {
-                param = createArgRDFNode(arg.type(), (String) value);
+                param = makeArgRDFNode(func.name(), arg.type(), (String) value);
             }
             if (param == null)
                 throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
@@ -292,7 +293,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     /**
-     * Validates a function-call against the context.
+     * Validates a function-call against this context.
      *
      * @param func {@link MapFunction.Call} an expression.
      * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
@@ -305,7 +306,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     private void validateArg(MapFunction.Arg arg, Object value) throws MapJenaException {
         String argType = arg.type();
         if (value instanceof String) {
-            createArgRDFNode(argType, (String) value);
+            makeArgRDFNode(arg.getFunction().name(), argType, (String) value);
             return;
         }
         if (value instanceof MapFunction.Call) {
@@ -321,7 +322,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (argType.equals(funcType)) {
             return;
         }
-        if (MapFunctionImpl.UNDEFINED.equals(argType) || MapFunctionImpl.UNDEFINED.equals(funcType)) {
+        if (AVC.undefined.getURI().equals(argType) || AVC.undefined.getURI().equals(funcType)) {
             // seems it is okay
             return;
         }
@@ -334,31 +335,43 @@ public class MapContextImpl extends ResourceImpl implements Context {
         throw new MapJenaException("TODO: " + argType + "|" + funcType);
     }
 
-    public RDFNode createArgRDFNode(String type, String value) throws MapJenaException {
-        Resource uri = getModel().createResource(value);
-        if (MapFunctionImpl.UNDEFINED.equals(type)) {
-            if (getModel().containsResource(uri)) { // todo: what kind of property?
-                type = RDF.Property.getURI();
+    public RDFNode makeArgRDFNode(final String function, final String type, final String value) throws MapJenaException {
+        Resource uri = null;
+        if (getModel().containsResource(ResourceFactory.createResource(value))) {
+            uri = getModel().createResource(value);
+        }
+        // clarify type:
+        String foundType;
+        if (AVC.undefined.getURI().equals(type)) {
+            if (uri != null) {
+                foundType = RDFS.Resource.getURI();
             } else {
-                type = XSD.xstring.getURI();
+                foundType = XSD.xstring.getURI();
+            }
+        } else {
+            foundType = type;
+        }
+        RDFDatatype literalType = rdfTypes.getTypeByName(foundType);
+        if (literalType != null) {
+            if (uri == null) {
+                return getModel().createTypedLiteral(value, literalType);
+            } else { // data or annotation property with literal assertion
+                foundType = RDF.Property.getURI();
             }
         }
-        RDFDatatype literalType = rdfTypes.getTypeByName(type);
-        if (literalType != null) {
-            return getModel().createTypedLiteral(value, literalType);
-        }
-        if (ARG_RESOURCE_MAPPING.getOrDefault(type, r -> false).test(uri)) {
+        if (argResourceMapping.getOrDefault(foundType, r -> false).test(uri)) {
             return uri;
         }
         throw exception(CONTEXT_WRONG_EXPRESSION_ARGUMENT)
+                .add(Key.FUNCTION, function)
                 .add(Key.ARG_TYPE, type)
                 .add(Key.ARG_VALUE, value).build();
     }
 
-    private Exceptions.Builder exception(Exceptions code) {
+    protected Exceptions.Builder exception(Exceptions code) {
         return code.create()
                 .add(Key.CONTEXT_SOURCE, getSource().asNode().toString())
-                .add(Key.CONTEXT_TARGET, getTarget().asNode().toString());
+                .add(Key.CONTEXT_TARGET, target().asNode().toString());
     }
 
     @Override

@@ -21,13 +21,14 @@ public class AVC {
     // additional no-arg target function
     public static final Resource UUID = resource("UUID");
 
+    // resource, which is used as return type of function or argument
+    public static final Resource undefined = resource("undefined");
+
     // expression predicate to use in conditional templates as a filter
     public static final Property filter = property("filter");
 
     // to customise spin:constraint arguments, sometimes they are wrong in the standard spin library
     public final static Property constraint = property("constraint");
-    public final static Property predicate = property("predicate");
-    public final static Property valueType = property("valueType");
 
     /**
      * The analogue of spinmap:Conditional-Mapping-1-1 but accepting expression (function call), not ask-query.

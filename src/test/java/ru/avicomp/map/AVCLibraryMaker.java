@@ -8,6 +8,7 @@ import org.topbraid.spin.arq.ARQ2SPIN;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -27,7 +28,7 @@ import ru.avicomp.ontapi.jena.vocabulary.XSD;
  * An utility class to produce avc.spin.ttl (see resources/etc directory).
  * For developing and demonstration.
  * Can be removed.
- *
+ * <p>
  * Created by @szuev on 07.04.2018.
  *
  * @see AVC
@@ -41,8 +42,8 @@ public class AVCLibraryMaker {
         OntID id = m.setID(AVC.BASE_URI);
         id.setVersionIRI(AVC.NS + "1.0");
         id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
-                        "Also it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\n" +
-                        "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
+                "Also it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\n" +
+                "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
                 "and all listed custom  functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
 
@@ -51,6 +52,11 @@ public class AVCLibraryMaker {
 
         // SP:abs (todo: right now not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
+
+        // SP:eq
+        SP.eq.inModel(m)
+                .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
+                .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg2).addProperty(SPL.valueType, AVC.undefined));
 
         // AVC:UUID
         Resource uuid = m.createResource(AVC.UUID.getURI()).addProperty(RDF.type, SPINMAP.TargetFunction);

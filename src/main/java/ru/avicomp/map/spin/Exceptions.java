@@ -24,10 +24,6 @@ public enum Exceptions {
         return new Builder();
     }
 
-    private String message() {
-        return name();
-    }
-
     public class Builder {
         private final EnumMap<Key, List<String>> map;
 
@@ -49,7 +45,11 @@ public enum Exceptions {
         }
 
         public SpinMapException build(Throwable cause) {
-            return new SpinMapException(Exceptions.this, map, Exceptions.this.message(), cause);
+            return new SpinMapException(Exceptions.this, map, message(), cause);
+        }
+
+        public String message() {
+            return name() + ": " + map;
         }
     }
 

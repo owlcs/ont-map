@@ -1,13 +1,16 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
@@ -25,7 +28,6 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Created by @szuev on 09.04.2018.
  */
 public class MapFunctionImpl implements MapFunction {
-    public static final String UNDEFINED = "undefined";
     public static final String STRING_VALUE_SEPARATOR = "\n";
     private final org.topbraid.spin.model.Module func;
     private List<Arg> arguments;
@@ -42,7 +44,7 @@ public class MapFunctionImpl implements MapFunction {
     @Override
     public String returnType() {
         Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
-        return r == null ? UNDEFINED : r.getURI();
+        return (r == null ? AVC.undefined : r).getURI();
     }
 
     public List<Arg> getArguments() {
@@ -139,8 +141,29 @@ public class MapFunctionImpl implements MapFunction {
 
         @Override
         public String type() {
-            Resource t = arg.getValueType();
-            return t == null ? UNDEFINED : t.getURI();
+            return getValueType().getURI();
+        }
+
+        public Resource getValueType() {
+            Optional<Resource> r = refinedConstraints()
+                    .filter(s -> Objects.equals(s.getPredicate(), SPL.valueType))
+                    .map(Statement::getObject)
+                    .filter(RDFNode::isURIResource)
+                    .map(RDFNode::asResource)
+                    .findFirst();
+            if (r.isPresent()) return r.get();
+            Resource res = arg.getValueType();
+            return res == null ? AVC.undefined : res;
+        }
+
+        public Stream<Statement> refinedConstraints() {
+            return Iter.asStream(func.listProperties(AVC.constraint))
+                    .map(Statement::getObject)
+                    .filter(RDFNode::isAnon)
+                    .map(RDFNode::asResource)
+                    .filter(r -> r.hasProperty(SPL.predicate, arg.getPredicate()))
+                    .map(Resource::listProperties)
+                    .flatMap(Iter::asStream);
         }
 
         @Override
@@ -221,7 +244,7 @@ public class MapFunctionImpl implements MapFunction {
                     if (this.equals(val)) {
                         throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
                     }
-                    if (UNDEFINED.equals(((Builder) val).getFunction().returnType())) { // todo: undefined should be fixed in avc and allowed
+                    if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) { // todo: undefined should be fixed in avc and allowed
                         throw new MapJenaException("Void");
                     }
                 } else {

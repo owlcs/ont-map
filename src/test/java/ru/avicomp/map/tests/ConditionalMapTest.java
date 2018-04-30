@@ -1,8 +1,11 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.XSD;
+import org.junit.Assert;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPINMAPL;
@@ -19,6 +22,25 @@ import java.util.stream.Stream;
  * Created by @szuev on 26.04.2018.
  */
 public class ConditionalMapTest extends AbstractMapTest {
+    private final Logger LOGGER = LoggerFactory.getLogger(ConditionalMapTest.class);
+
+    @Test
+    public void testInference() {
+        OntGraphModel s = assembleSource();
+        TestUtils.debug(s);
+        OntGraphModel t = assembleTarget();
+        TestUtils.debug(t);
+        MapManager manager = Managers.getMapManager();
+        MapModel m = assembleMapping(manager, s, t);
+        TestUtils.debug(m);
+
+        LOGGER.info("Run inference.");
+        manager.getInferenceEngine().run(m, s, t);
+        TestUtils.debug(t);
+
+        Assert.assertEquals(3, t.listNamedIndividuals().count());
+    }
+
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "Contact");
@@ -83,6 +105,9 @@ public class ConditionalMapTest extends AbstractMapTest {
                 contact.createIndividual(dataNS + "jhons")
                         .addAssertion(contactInfo, skype.createLiteral("jhon-skype"))
                         .addAssertion(contactInfo, email.createLiteral("jhon-doe-xxxx@x-x-x.mail.org")));
+
+        person.createIndividual(dataNS + "Jane").addAssertion(hasContact,
+                contact.createIndividual(dataNS + "jane-contacts").addAssertion(contactInfo, email.createLiteral("Jeanette@SuperMail.ts")));
         System.out.println(m.statements().count());
         return m;
     }
@@ -101,15 +126,4 @@ public class ConditionalMapTest extends AbstractMapTest {
         return m;
     }
 
-    public static void main(String... args) {
-        ConditionalMapTest engine = new ConditionalMapTest();
-        OntGraphModel s = engine.assembleSource();
-        s.write(System.out, "ttl");
-        System.out.println("-----------");
-        OntGraphModel t = engine.assembleTarget();
-        t.write(System.out, "ttl");
-        System.out.println("-----------");
-        MapModel m = engine.assembleMapping(Managers.getMapManager(), s, t);
-        ((Model) m).write(System.out, "ttl");
-    }
 }
