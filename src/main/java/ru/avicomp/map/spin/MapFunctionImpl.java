@@ -16,6 +16,8 @@ import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * A spin based implementation of {@link MapFunction}.
  * Created by @szuev on 09.04.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
     private final org.topbraid.spin.model.Module func;
@@ -84,6 +87,22 @@ public class MapFunctionImpl implements MapFunction {
      */
     public boolean isCustom() {
         return Objects.equals(AVC.NS, func.getNameSpace());
+    }
+
+    public boolean isPrivate() {
+        return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isPrivate();
+    }
+
+    public boolean isAbstract() {
+        return func.isAbstract();
+    }
+
+    public boolean isDeprecated() {
+        return func.hasProperty(RDF.type, OWL.DeprecatedClass);
+    }
+
+    public boolean isHidden() {
+        return func.hasProperty(AVC.hidden);
     }
 
     /**
@@ -244,7 +263,8 @@ public class MapFunctionImpl implements MapFunction {
                     if (this.equals(val)) {
                         throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
                     }
-                    if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) { // todo: undefined should be fixed in avc and allowed
+                    if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
+                        // todo: undefined should be allowed
                         throw new MapJenaException("Void");
                     }
                 } else {

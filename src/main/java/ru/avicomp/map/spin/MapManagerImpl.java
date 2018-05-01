@@ -12,7 +12,6 @@ import org.topbraid.spin.inference.SPINInferences;
 import org.topbraid.spin.system.SPINModuleRegistry;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapImpl;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
@@ -21,7 +20,6 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -40,7 +38,7 @@ public class MapManagerImpl implements MapManager {
 
     private final PrefixMapping prefixLibrary;
     private final Model graphLibrary;
-    private final Map<String, MapFunction> mapFunctions;
+    private final Map<String, MapFunctionImpl> mapFunctions;
     private final OntPersonality mapPersonality = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     public MapManagerImpl() {
@@ -98,9 +96,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Lists all spin functions with exclusion private, abstract, deprecated and hidden
-     * (the last one using info from avc supplement graph).
-     * Spin templates are not included also.
+     * Lists all spin-api functions.
      * Auxiliary method.
      *
      * @param model {@link Model} with spin-personalities
@@ -109,18 +105,10 @@ public class MapManagerImpl implements MapManager {
     public static Stream<org.topbraid.spin.model.Function> listSpinFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
                 .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(SpinTargetFunction.class))
-                .map(s -> s.as(org.topbraid.spin.model.Function.class))
-                // skip private:
-                .filter(f -> !f.isPrivate())
-                // skip abstract:
-                .filter(f -> !f.isAbstract())
-                // skip deprecated:
-                .filter(f -> !f.hasProperty(RDF.type, OWL.DeprecatedClass))
-                // skip hidden:
-                .filter(f -> !f.hasProperty(AVC.hidden));
+                .map(s -> s.as(org.topbraid.spin.model.Function.class));
     }
 
-    private static MapFunction makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {
+    private static MapFunctionImpl makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {
         return new MapFunctionImpl(func) {
 
             @Override
@@ -139,9 +127,30 @@ public class MapManagerImpl implements MapManager {
         return true;
     }
 
+    /**
+     * Lists all spin functions with exclusion private, abstract, deprecated and hidden
+     * (the last property is calculated using info provided by avc supplement graph).
+     * Spin templates are not included also.
+     *
+     * @return Stream of {@link MapFunction}s.
+     */
     @Override
     public Stream<MapFunction> functions() {
-        return mapFunctions.values().stream();
+        return mapFunctions.values().stream()
+                // skip private:
+                .filter(f -> !f.isPrivate())
+                // skip abstract:
+                .filter(f -> !f.isAbstract())
+                // skip deprecated:
+                .filter(f -> !f.isDeprecated())
+                // skip hidden:
+                .filter(f -> !f.isHidden())
+                .map(Function.identity());
+    }
+
+    @Override
+    public MapFunction getFunction(String name) throws MapJenaException {
+        return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 
     @Override
@@ -161,11 +170,6 @@ public class MapManagerImpl implements MapManager {
      */
     public Graph getMapLibraryGraph() throws IllegalStateException {
         return ((UnionGraph) graphLibrary.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
-    }
-
-    @Override
-    public MapFunction getFunction(String name) throws MapJenaException {
-        return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 
     /**

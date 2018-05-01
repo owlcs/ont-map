@@ -19,7 +19,24 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 25.04.2018.
  */
-abstract class SimpleMapTest extends AbstractMapTest {
+abstract class SimpleMapData1 extends AbstractMapTest {
+
+    @Test
+    public abstract void testInference();
+
+    @Test
+    public void testDeleteContext() {
+        OntGraphModel src = assembleSource();
+        OntGraphModel dst = assembleTarget();
+        MapManager manager = Managers.getMapManager();
+        MapModel mapping = assembleMapping(manager, src, dst);
+        List<Context> contexts = mapping.contexts().collect(Collectors.toList());
+        Assert.assertEquals(1, contexts.size());
+        mapping = mapping.removeContext(contexts.get(0));
+        TestUtils.debug(mapping);
+        Assert.assertEquals(0, mapping.contexts().count());
+        Assert.assertEquals(5, mapping.getGraph().getBaseGraph().size());
+    }
 
     @Override
     public OntGraphModel assembleSource() {
@@ -52,23 +69,6 @@ abstract class SimpleMapTest extends AbstractMapTest {
         OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
         m.createOntEntity(OntNDP.class, ns + "targetDataProperty2").addDomain(clazz);
         return m;
-    }
-
-    @Test
-    public abstract void testInference();
-
-    @Test
-    public void testDeleteContext() {
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
-        MapManager manager = Managers.getMapManager();
-        MapModel mapping = assembleMapping(manager, src, dst);
-        List<Context> contexts = mapping.contexts().collect(Collectors.toList());
-        Assert.assertEquals(1, contexts.size());
-        mapping = mapping.removeContext(contexts.get(0));
-        TestUtils.debug(mapping);
-        Assert.assertEquals(0, mapping.contexts().count());
-        Assert.assertEquals(5, mapping.getGraph().getBaseGraph().size());
     }
 
     MapModel createFreshMapping(MapManager manager, String comment) {

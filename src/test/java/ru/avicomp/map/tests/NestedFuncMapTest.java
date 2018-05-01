@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 25.04.2018.
  */
-public class NestedMapTest extends SimpleMapTest {
-    private final Logger LOGGER = LoggerFactory.getLogger(NestedMapTest.class);
+public class NestedFuncMapTest extends SimpleMapData1 {
+    private final Logger LOGGER = LoggerFactory.getLogger(NestedFuncMapTest.class);
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {

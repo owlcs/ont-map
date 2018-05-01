@@ -140,6 +140,7 @@ public class ClassPropertiesTest {
     }
 
     private static void doPrint(OntGraphModel m) {
+        TestUtils.debug(m);
         m.ontObjects(OntCE.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
         LOGGER.debug("=============");
         m.ontObjects(OntPE.class).map(ClassPropertiesTest::propertyClasses).forEach(x -> LOGGER.debug("{}", x));

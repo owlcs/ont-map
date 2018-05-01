@@ -38,7 +38,7 @@ public interface MapModel {
     /**
      * Lists all linked ontologies, i.e. actual imports with exclusion of library.
      * Note: the result models have {@link ru.avicomp.ontapi.jena.impl.conf.OntModelConfig#ONT_PERSONALITY_LAX} inside.
-     * TODO: rename: should return not only imports, but mapping itself in case it contains (owl) entities for map inference.
+     * TODO: rename + should return not only imports, but mapping itself in case it contains (owl) entities for map inference.
      *
      * @return Stream of imports in form of {@link OntGraphModel OWL2 jena model}.
      */
@@ -62,7 +62,6 @@ public interface MapModel {
      */
     Context createContext(OntCE source, OntCE target);
 
-
     /**
      * Removes the specified context and all related triples including property bindings.
      *
@@ -73,7 +72,23 @@ public interface MapModel {
 
 
     /**
+     * Binds contexts together.
+     * Both contexts must have the same source class expression,
+     * context target class expressions should be linked together using an object property (i.e. through domain/range relation).
+     * Bound contexts will produce object property assertions between individuals on inference.
+     * If contexts target classes are not linked to each other or contexts sources classes are different, an exception are expected.
+     *
+     * @param left  {@link Context}
+     * @param right {@link Context}
+     * @return this model
+     * @throws MapJenaException if something goes wrong
+     * @see Context#createRelatedContext(OntCE)
+     */
+    MapModel bindContexts(Context left, Context right) throws MapJenaException;
+
+    /**
      * Answers the graph which this Model is presenting.
+     * todo: maybe it is better to return OntGraphModel interface ?
      *
      * @return {@link UnionGraph}
      */

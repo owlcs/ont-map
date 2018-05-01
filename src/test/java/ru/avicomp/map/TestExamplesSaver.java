@@ -28,7 +28,7 @@ public class TestExamplesSaver {
             Files.createDirectory(dir);
         }
         MapManager manager = Managers.getMapManager();
-        Collection<AbstractMapTest> mapTests = Arrays.asList(new UUIDMapTest(), new BuildURIMapTest(), new NestedMapTest(), new ConditionalMapTest());
+        Collection<AbstractMapTest> mapTests = Arrays.asList(new UUIDMapTest(), new BuildURIMapTest(), new NestedFuncMapTest(), new ConditionalMapTest());
         for (AbstractMapTest mapTest : mapTests) {
             String file = mapTest.getClass().getSimpleName() + "-%s.ttl";
             OntGraphModel src = mapTest.assembleSource();

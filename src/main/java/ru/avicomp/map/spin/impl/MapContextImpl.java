@@ -249,6 +249,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
         throw new UnsupportedOperationException("TODO");
     }
 
+    @Override
+    public MapContextImpl createRelatedContext(OntCE source) throws MapJenaException {
+        // todo:
+        throw new UnsupportedOperationException("TODO");
+    }
+
     private MapPropertiesImpl asProperties(Resource resource) {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }

@@ -78,6 +78,22 @@ public interface Context {
     Context removeProperties(PropertyBridge properties);
 
     /**
+     * Creates a context associated with this one through an object property expression.
+     * It means that one class should have object property range axiom {@code P rdfs:domain C1},
+     * and another should have object property domain axiom {@code P rdfs:range C2}.
+     * Where {@code P} is an object property expression,
+     * {@code C1} and {@code C2} - class property expressions.
+     * If {@code C1} is the source of this context, and {@code C2} is the specified class,
+     * then new context will be created with "related subject context" rule, otherwise with "related object context" rule.
+     * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
+     *
+     * @param source {@link OntCE} source for the new context, the target is the same as in this context.
+     * @return <b>new</b> context
+     * @throws MapJenaException unable to make reference context
+     */
+    Context createRelatedContext(OntCE source) throws MapJenaException;
+
+    /**
      * Adds a properties bridge without filtering.
      * This is commonly used method, while its overloaded companion is used less frequently to build specific ontology mappings.
      *

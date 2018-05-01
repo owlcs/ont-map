@@ -108,6 +108,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return this;
     }
 
+    @Override
+    public MapModelImpl bindContexts(Context left, Context right) {
+        // todo:
+        throw new UnsupportedOperationException("TODO");
+    }
+
     /**
      * Deletes unused anymore things, which is appeared in the base graph.
      * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
