@@ -4,6 +4,8 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -33,6 +35,8 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapModelImpl extends OntGraphModelImpl implements MapModel {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapManagerImpl.class);
+
     private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
     private final MapManagerImpl manager;
 
@@ -168,7 +172,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         Stream.of(MapJenaException.notNull(source, "Null source CE"),
                 MapJenaException.notNull(target, "Null target CE"))
                 .map(OntObject::getModel)
+                .filter(m -> !Objects.equals(m, this))
                 .filter(m -> MapModelImpl.this.imports().noneMatch(i -> Objects.equals(i.getID(), m.getID())))
+                .peek(m -> {
+                    if (!LOGGER.isDebugEnabled()) return;
+                    LOGGER.debug("Import {}", m);
+                })
                 .forEach(MapModelImpl.this::addImport);
         Resource res = makeContext(source.asResource(), target.asResource());
         if (getManager().generateNamedIndividuals()) {

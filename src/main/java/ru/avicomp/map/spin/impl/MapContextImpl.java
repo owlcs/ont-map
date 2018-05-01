@@ -13,10 +13,8 @@ import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.PropertyBridge;
+import org.topbraid.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
@@ -44,9 +42,10 @@ public class MapContextImpl extends ResourceImpl implements Context {
     private final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
-            put(RDF.Property.getURI(), r -> r.canAs(OntNAP.class) || r.canAs(OntNDP.class));
+            put(RDF.Property.getURI(), r -> r.canAs(OntPE.class));
             put(RDFS.Class.getURI(), r -> r.canAs(OntCE.class));
             put(RDFS.Datatype.getURI(), r -> r.canAs(OntDT.class));
+            put(SPINMAP.Context.getURI(), r -> r.hasProperty(RDF.type, SPINMAP.Context));
         }
     });
 
@@ -120,7 +119,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        Predicate<Resource> isProperty = argResourceMapping.get(RDF.Property.getURI());
+        // only annotation and data property is allowed for property bridge
+        Predicate<Resource> isProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
         if (!isProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
@@ -172,9 +172,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
      * Adds a mapping to the graph as {@code spinmap:rule}.
      *
      * @param mappingExpression resource describing mapping expression
-     * @param filterExpression resource describing filter expression
-     * @param sources    List of source properties
-     * @param targets    List of target properties
+     * @param filterExpression  resource describing filter expression
+     * @param sources           List of source properties
+     * @param targets           List of target properties
      * @return a mapping resource inside graph
      */
     protected Resource addMappingRule(RDFNode mappingExpression, RDFNode filterExpression, List<Property> sources, List<Property> targets) {
@@ -251,8 +251,39 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapContextImpl createRelatedContext(OntCE source) throws MapJenaException {
-        // todo:
-        throw new UnsupportedOperationException("TODO");
+        if (isAnon()) { // todo: do not allow anonymous context.
+            throw new IllegalStateException("Anon context");
+        }
+        MapFunction.Builder builder = getLinkProperty(getSource(), source)
+                .map(p -> createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, p))
+                .orElseGet(() -> getLinkProperty(source, getSource())
+                        .map(p -> createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, p))
+                        .orElseThrow(() -> exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
+                                .add(Key.CONTEXT_SOURCE, toString(source)).build()));
+        return getModel().createContext(source, getTarget())
+                .addExpression(builder.add(SPINMAPL.context.getURI(), getURI()).build());
+    }
+
+    private MapFunction.Builder createRelatedContextTargetFunction(Resource func, OntOPE p) {
+        return getModel().getManager()
+                .getFunction(func.getURI())
+                .createFunctionCall()
+                .add(SPINMAPL.predicate.getURI(), ClassPropertyMap.toNamed(p).getURI());
+    }
+
+    protected Optional<OntOPE> getLinkProperty(OntCE domain, OntCE range) {
+        List<OntOPE> res = getModel().ontObjects(OntOPE.class)
+                .filter(p -> isLinkProperty(p, domain, range))
+                .collect(Collectors.toList());
+        if (res.isEmpty()) return Optional.empty();
+        if (res.size() == 1) return Optional.ofNullable(res.get(0));
+        throw exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
+                .add(Key.CONTEXT_SOURCE, toString(domain))
+                .add(Key.CONTEXT_SOURCE, toString(range)).build();
+    }
+
+    public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
+        return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
     }
 
     private MapPropertiesImpl asProperties(Resource resource) {
@@ -287,7 +318,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 param = createExpression((MapFunction.Call) value);
             }
             if (value instanceof String) {
-                param = makeArgRDFNode(func.name(), arg.type(), (String) value);
+                param = makeArgRDFNode(func, arg.type(), (String) value);
             }
             if (param == null)
                 throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
@@ -312,7 +343,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     private void validateArg(MapFunction.Arg arg, Object value) throws MapJenaException {
         String argType = arg.type();
         if (value instanceof String) {
-            makeArgRDFNode(arg.getFunction().name(), argType, (String) value);
+            makeArgRDFNode(arg.getFunction(), argType, (String) value);
             return;
         }
         if (value instanceof MapFunction.Call) {
@@ -341,7 +372,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         throw new MapJenaException("TODO: " + argType + "|" + funcType);
     }
 
-    public RDFNode makeArgRDFNode(final String function, final String type, final String value) throws MapJenaException {
+    public RDFNode makeArgRDFNode(MapFunction function, final String type, final String value) throws MapJenaException {
         Resource uri = null;
         if (getModel().containsResource(ResourceFactory.createResource(value))) {
             uri = getModel().createResource(value);
@@ -369,15 +400,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
             return uri;
         }
         throw exception(CONTEXT_WRONG_EXPRESSION_ARGUMENT)
-                .add(Key.FUNCTION, function)
+                .add(Key.FUNCTION, function.name())
                 .add(Key.ARG_TYPE, type)
                 .add(Key.ARG_VALUE, value).build();
     }
 
     protected Exceptions.Builder exception(Exceptions code) {
         return code.create()
-                .add(Key.CONTEXT_SOURCE, getSource().asNode().toString())
-                .add(Key.CONTEXT_TARGET, target().asNode().toString());
+                .add(Key.CONTEXT_SOURCE, toString(getSource()))
+                .add(Key.CONTEXT_TARGET, toString(target()));
+    }
+
+    protected static String toString(Resource r) {
+        return r.asNode().toString();
     }
 
     @Override
