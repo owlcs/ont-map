@@ -58,10 +58,11 @@ abstract class SimpleMapData2 extends AbstractMapTest {
         OntIndividual.Named bobContacts = contact.createIndividual(dataNS + "bobs");
         bobContacts.addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_BOB));
         bobContacts.addAssertion(contactInfo, phone.createLiteral(DATA_PHONE_BOB_LONG));
+        bobContacts.addAssertion(address, m.createLiteral("1313 Disneyland Dr, Anaheim, CA 92802, USA"));
         person.createIndividual(dataNS + "Bob")
                 .addAssertion(hasContact, bobContacts)
-                .addAssertion(firstName, m.createLiteral("Mr. Bob"))
-                .addAssertion(address, m.createLiteral("1313 Disneyland Dr, Anaheim, CA 92802, USA"));
+                .addAssertion(firstName, m.createLiteral("Mr. Bob"));
+
 
         person.createIndividual(dataNS + "Jhon")
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jhons")
@@ -83,7 +84,7 @@ abstract class SimpleMapData2 extends AbstractMapTest {
         String ns = m.getID().getURI() + "#";
         OntClass user = m.createOntEntity(OntClass.class, ns + "User");
         OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
-        Stream.of("email", "phone", "skype", "user-name").forEach(s -> {
+        Stream.of("user-name", "user-address", "email", "phone", "skype").forEach(s -> {
             OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
             p.addRange(string);
             p.addDomain(user);

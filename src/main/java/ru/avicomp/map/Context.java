@@ -2,6 +2,7 @@ package ru.avicomp.map;
 
 import org.apache.jena.rdf.model.Property;
 import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntOPE;
 
 import java.util.stream.Stream;
 
@@ -78,20 +79,35 @@ public interface Context {
     Context removeProperties(PropertyBridge properties);
 
     /**
-     * Creates a context associated with this one through an object property expression.
-     * It means that one class should have object property range axiom {@code P rdfs:domain C1},
-     * and another should have object property domain axiom {@code P rdfs:range C2}.
-     * Where {@code P} is an object property expression,
-     * {@code C1} and {@code C2} - class property expressions.
-     * If {@code C1} is the source of this context, and {@code C2} is the specified class,
-     * then new context will be created with "related subject context" rule, otherwise with "related object context" rule.
-     * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
+     * Creates a context with the same target class expression and with source linked to the source of this context.
+     * Classes can be linked to each other through object property range and domain axioms,
+     * see description for {@link #createRelatedContext(OntOPE, OntCE)}.
+     * Throws an exception in the case the link (object property) does not exist or it can not be uniquely determined.
      *
      * @param source {@link OntCE} source for the new context, the target is the same as in this context.
      * @return <b>new</b> context
      * @throws MapJenaException unable to make reference context
      */
     Context createRelatedContext(OntCE source) throws MapJenaException;
+
+
+    /**
+     * Creates a context associated with this one through the specified object property expression.
+     * The object property acts as a link between source class expressions from this context and the returned new context.
+     * This means that one class should have object property range axiom {@code P rdfs:domain C1},
+     * and another should have object property domain axiom {@code P rdfs:range C2}.
+     * Here {@code P} is an object property expression and {@code C1} and {@code C2} - class expressions.
+     * If {@code C1} is the source of this context, and {@code C2} is the specified class,
+     * then new context will be created with "related subject context" rule,
+     * otherwise with "related object context" rule.
+     * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
+     *
+     * @param property {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
+     * @param source   {@link OntCE} class expression, source for result context
+     * @return <b>new</b> context with specified class as source and {@link #getTarget()} as target.
+     * @throws MapJenaException unable to make reference context
+     */
+    Context createRelatedContext(OntOPE property, OntCE source) throws MapJenaException;
 
     /**
      * Adds a properties bridge without filtering.

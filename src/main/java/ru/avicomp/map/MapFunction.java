@@ -52,6 +52,7 @@ public interface MapFunction extends Description {
 
     /**
      * Creates a new function call builder.
+     * TODO: rename
      *
      * @return {@link Builder}
      */

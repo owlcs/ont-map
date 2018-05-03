@@ -263,10 +263,10 @@ public class MapFunctionImpl implements MapFunction {
                     if (this.equals(val)) {
                         throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
                     }
-                    if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
+                    /*if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
                         // todo: undefined should be allowed
-                        throw new MapJenaException("Void");
-                    }
+                        throw new MapJenaException("Void: " + ((Builder) val).getFunction());
+                    }*/
                 } else {
                     throw new IllegalArgumentException("Wrong argument type: " + val.getClass().getName() + ", " + val);
                 }

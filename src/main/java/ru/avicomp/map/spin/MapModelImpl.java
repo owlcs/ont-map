@@ -26,7 +26,9 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -82,6 +84,15 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .map(this::asContext);
     }
 
+    public Optional<MapContextImpl> findContext(Resource source, Resource target) {
+        return statements(null, RDF.type, SPINMAP.Context)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.hasProperty(SPINMAP.targetClass, target))
+                .filter(s -> s.hasProperty(SPINMAP.sourceClass, source))
+                .map(this::asContext)
+                .findFirst();
+    }
+
     @Override
     public MapContextImpl createContext(OntCE source, OntCE target) {
         return contexts()
@@ -100,12 +111,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl removeContext(Context context) {
         MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
         if (getManager().generateNamedIndividuals()) {
-            statements(null, RDF.type, SPINMAP.Context)
-                    .map(OntStatement::getSubject)
-                    .filter(s -> s.hasProperty(SPINMAP.targetClass, OWL.NamedIndividual))
-                    .filter(s -> s.hasProperty(SPINMAP.sourceClass, c.getTarget()))
-                    .map(this::asContext)
-                    .findFirst().ifPresent(this::deleteContext);
+            findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
         }
         deleteContext(c);
         clearUnused();
@@ -180,7 +186,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 })
                 .forEach(MapModelImpl.this::addImport);
         Resource res = makeContext(source.asResource(), target.asResource());
-        if (getManager().generateNamedIndividuals()) {
+        if (getManager().generateNamedIndividuals() && !findContext(target.asResource(), OWL.NamedIndividual).isPresent()) {
             MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).createFunctionCall().build();
             asContext(makeContext(target.asResource(), OWL.NamedIndividual)).addExpression(expr);
         }
@@ -200,16 +206,17 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return {@link Resource}
      */
     protected Resource makeContext(Resource source, Resource target) {
-        String iri = getID().getURI();
+        String ont = getID().getURI();
         Resource res = null;
-        if (iri != null && !iri.contains("#")) {
-            res = createResource(iri + "#" + String.format(CONTEXT_TEMPLATE, getLocalName(source), getLocalName(target)));
+        if (ont != null && !ont.contains("#")) {
+            String name = String.format(CONTEXT_TEMPLATE, getLocalName(source), getLocalName(target));
+            res = createResource(ont + "#" + name);
             if (containsResource(res)) { // found different resource with the same local name
                 res = null;
             }
         }
-        if (res == null) { // anonymous context
-            res = createResource();
+        if (res == null) { // anonymous contexts are not allowed since them can be used as function call parameter
+            res = createResource("urn:uuid:" + UUID.randomUUID());
         }
         res.addProperty(RDF.type, SPINMAP.Context);
         res.addProperty(SPINMAP.sourceClass, source);

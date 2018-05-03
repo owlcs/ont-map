@@ -60,6 +60,7 @@ public enum Exceptions {
         CONTEXT_TARGET,
         FUNCTION,
         TARGET_PROPERTY,
+        LINK_PROPERTY,
         ARG,
         ARG_TYPE,
         ARG_VALUE,

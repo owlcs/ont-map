@@ -250,16 +250,37 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     @Override
-    public MapContextImpl createRelatedContext(OntCE source) throws MapJenaException {
-        if (isAnon()) { // todo: do not allow anonymous context.
-            throw new IllegalStateException("Anon context");
+    public MapContextImpl createRelatedContext(OntCE src2) throws MapJenaException {
+        OntCE src1 = getSource();
+        List<OntOPE> res = getModel().ontObjects(OntOPE.class)
+                .filter(p -> isLinkProperty(p, src2, src1) || isLinkProperty(p, src1, src2))
+                .distinct()
+                .collect(Collectors.toList());
+        if (res.isEmpty()) {
+            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
+                    .add(Key.CONTEXT_SOURCE, toString(src2)).build();
         }
-        MapFunction.Builder builder = getLinkProperty(getSource(), source)
-                .map(p -> createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, p))
-                .orElseGet(() -> getLinkProperty(source, getSource())
-                        .map(p -> createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, p))
-                        .orElseThrow(() -> exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
-                                .add(Key.CONTEXT_SOURCE, toString(source)).build()));
+        if (res.size() != 1) {
+            Exceptions.Builder err = exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
+                    .add(Key.CONTEXT_SOURCE, toString(src2));
+            res.forEach(p -> err.add(Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
+            throw err.build();
+        }
+        return createRelatedContext(res.get(0), src2);
+    }
+
+    @Override
+    public MapContextImpl createRelatedContext(OntOPE property, OntCE source) throws MapJenaException {
+        MapFunction.Builder builder;
+        if (isLinkProperty(property, getSource(), source)) {
+            builder = createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, property);
+        } else if (isLinkProperty(property, source, getSource())) {
+            builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
+        } else {
+            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
+                    .add(Key.LINK_PROPERTY, toString(property))
+                    .add(Key.CONTEXT_SOURCE, toString(source)).build();
+        }
         return getModel().createContext(source, getTarget())
                 .addExpression(builder.add(SPINMAPL.context.getURI(), getURI()).build());
     }
@@ -269,17 +290,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .getFunction(func.getURI())
                 .createFunctionCall()
                 .add(SPINMAPL.predicate.getURI(), ClassPropertyMap.toNamed(p).getURI());
-    }
-
-    protected Optional<OntOPE> getLinkProperty(OntCE domain, OntCE range) {
-        List<OntOPE> res = getModel().ontObjects(OntOPE.class)
-                .filter(p -> isLinkProperty(p, domain, range))
-                .collect(Collectors.toList());
-        if (res.isEmpty()) return Optional.empty();
-        if (res.size() == 1) return Optional.ofNullable(res.get(0));
-        throw exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
-                .add(Key.CONTEXT_SOURCE, toString(domain))
-                .add(Key.CONTEXT_SOURCE, toString(range)).build();
     }
 
     public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
