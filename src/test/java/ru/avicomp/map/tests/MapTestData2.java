@@ -10,7 +10,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 01.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
-abstract class SimpleMapData2 extends AbstractMapTest {
+abstract class MapTestData2 extends AbstractMapTest {
     // test data:
     static final String DATA_EMAIL_JANE = "Jeanette@SuperMail.ts";
     static final String DATA_EMAIL_JHON = "jhon-doe-xxxx@x-x-x.mail.org";

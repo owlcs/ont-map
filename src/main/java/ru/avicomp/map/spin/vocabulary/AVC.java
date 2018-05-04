@@ -31,13 +31,13 @@ public class AVC {
     public final static Property constraint = property("constraint");
 
     /**
-     * The analogue of spinmap:Conditional-Mapping-1-1 but accepting expression (function call), not ask-query.
+     * The analogue of {@code spinmap:Conditional-Mapping-1-1} but accepting boolean expression (function call), not ask-query.
      *
      * @param i int
      * @param j int
      * @return Resource
      */
-    public static Resource mapping(int i, int j) {
+    public static Resource conditionalMapping(int i, int j) {
         if (i < 0 || j <= 0) throw new IllegalArgumentException();
         return resource(String.format("Conditional-Mapping-%d-%d", i, j));
     }

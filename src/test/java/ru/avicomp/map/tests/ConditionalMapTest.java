@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * TODO: not ready
  * Created by @szuev on 26.04.2018.
  */
-public class ConditionalMapTest extends SimpleMapData2 {
+public class ConditionalMapTest extends MapTestData2 {
     private final Logger LOGGER = LoggerFactory.getLogger(ConditionalMapTest.class);
 
     @Test

@@ -249,7 +249,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Finds or creates a conditional mapping template, which accepts expression to filter,
-     * Note: this functionality is absent in the standard spin-library supply/
+     * Note: this functionality is absent in the standard spin-library supply.
+     *
      * @param sources int
      * @param targets int
      * @return {@link Resource}
@@ -257,7 +258,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @throws MapJenaException         something goes wrong
      */
     public Resource getConditionalMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
-        return ConstructBuilder.createMappingTemplate(this, AVC.mapping(sources, targets), AVC.filter, sources);
+        return ConstructBuilder.createMappingTemplate(this, AVC.conditionalMapping(sources, targets), AVC.filter, sources);
     }
 
     /**

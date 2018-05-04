@@ -285,6 +285,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .addExpression(builder.add(SPINMAPL.context.getURI(), getURI()).build());
     }
 
+    /**
+     * Creates a function call builder for {@code spinmapl:relatedSubjectContext} or {@code spinmapl:relatedObjectContext}
+     *
+     * @param func {@link Resource}
+     * @param p    {@link OntOPE}
+     * @return {@link MapFunction.Builder}
+     */
     private MapFunction.Builder createRelatedContextTargetFunction(Resource func, OntOPE p) {
         return getModel().getManager()
                 .getFunction(func.getURI())
@@ -292,6 +299,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .add(SPINMAPL.predicate.getURI(), ClassPropertyMap.toNamed(p).getURI());
     }
 
+    /**
+     * Answers if specified property links classes together through domain and range axioms.
+     *
+     * @param property {@link OntOPE} property to testg
+     * @param domain   {@link OntCE} domain candidate
+     * @param range    {@link OntCE} range candidate
+     * @return true if it is link property.
+     */
     public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
         return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
     }

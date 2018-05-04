@@ -1,6 +1,50 @@
-# An OWL2 ontology to ontology mapper (A builder and inference engine).
+# An OWL2 ontology to ontology data mapper (builder and inference engine).
 
 ### New version of https://git.avicomp.ru/ontology-editor/ont-map
-### Based on [ONT-API, ver 1.2.0](https://github.com/avicomp/ont-api)
+### Based on [ONT-API, ver 1.2.1](https://github.com/avicomp/ont-api)
 
 # Wait. Currently it is not ready!
+
+### Notes, propositions and examples
+* API should only provide access to the spin functions which acceptable with OWL2 model in mapping terms, all other should be hidden. 
+Examples of reasons of exclusion/hide:
+    - `smf:lastModified` - function to get the file timestamp. Will be excluded since API should not work with the file system. 
+    - `sp:notExists` - function to use as part of SPARQL query. API should not allow explicit queries as functional parameters.  
+    - `spinmap:targetResource` - will be used implicitly to bind two contexts, therefore it is better to prohibit any other usage. 
+    - `spl:primaryKeyURIStart` - a part of a complex and turbid SPIN-API mechanism, right now I do not see any possibility to use this functionality.
+    - etc.
+* All functions should be supplemented with complete information about arguments and types to be used as elements of constructor in gui
+* API can work only with OWL2 entities: the context arrow connects two owl class expressions [OntCE](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntCE.java), 
+to make contexts references owl object property ([OntOPE](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntOPE.java)) is used, 
+and to map data (make a property bridge in Diagram) owl annotation ([OntNAP](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNAP.java)) and owl datatype ([OntNDP](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNDP.java)) properties are used.
+* Mapping inference should produce owl named individuals [OntIndividual.Named](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
+Anonymous individuals are theoretically possible, but currently are not supported due to SPIN-API limitations related to target functions.
+* Although it is not direct part of API, there is also a ru.avicomp.map.ClassPropertyMap to draw class-boxes with all related properties.
+* A simple mapping example with inference:
+
+        // get manager:
+        MapManager manager = Managers.getMapManager();
+        // get built-in prefixes:
+        PrefixMapping pm = manager.prefixes();
+        // get function: 
+        MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
+        // get source class from some ontology:
+        OntCE source = ...
+        // get target class from some ontology:
+        OntCE target = ...
+        // build target function-call:
+        String funcURI = pm.expandPrefix("spinmapl:targetNamespace");
+        MapFunction call = changeNamespace.create().add(funcURI, "http://target-ns.com#").build();
+        // create mappin-model:
+        MapModel mapping = manager.createMapModel();
+        // build simple map-context:
+        mapping.createContext(source, target, call);
+        // run spin-inference:
+        manager.getInferenceEngine().run(mapping, ..., ...);
+        
+* Printing all supported functions:
+
+        MapManager manager = Managers.getMapManager();
+        manager.functions()
+                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
+                .forEach(System.out::println);

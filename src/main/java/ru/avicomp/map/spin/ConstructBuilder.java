@@ -11,9 +11,7 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -26,12 +24,13 @@ import java.util.stream.Stream;
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue", "SameParameterValue"})
 class ConstructBuilder {
     private List<String> sourcePredicates = new ArrayList<>();
+    private Map<String, String> defaultValues = new HashMap<>();
     private List<String> targetPredicates = new ArrayList<>();
     private String expression;
     private String filter;
 
-    static Resource createMappingTemplate(MapModelImpl model, Resource template, Property filter, int sources) throws MapJenaException {
-        Resource res = template.inModel(model);
+    static Resource createMappingTemplate(MapModelImpl model, Resource templateName, Property filter, int sources) throws MapJenaException {
+        Resource res = templateName.inModel(model);
         if (model.contains(res, RDF.type, SPIN.ConstructTemplate)) {
             return res;
         }
@@ -61,13 +60,15 @@ class ConstructBuilder {
         return res;
     }
 
-    ConstructBuilder addSourcePredicate(String localName) {
-        sourcePredicates.add(localName);
+    ConstructBuilder addSourcePredicate(String predicateLocalName, String defaultValueLocalName) {
+        sourcePredicates.add(predicateLocalName);
+        if (defaultValueLocalName != null)
+            defaultValues.put(predicateLocalName, defaultValueLocalName);
         return this;
     }
 
     ConstructBuilder addSourcePredicate(Resource uri) {
-        return addSourcePredicate(uri.getLocalName());
+        return addSourcePredicate(uri.getLocalName(), null);
     }
 
     ConstructBuilder addTargetPredicate(String localName) {
@@ -110,9 +111,19 @@ class ConstructBuilder {
                 .append("?target ?").append(targetPredicates.get(0)).append(" ?newValue")
                 .append(" .\n}\nWHERE {\n");
         for (int i = 0; i < sourcePredicates.size(); i++) {
-            query.append("\t?this ?").append(sourcePredicates.get(i))
-                    .append(" ?oldValue")
-                    .append(i + 1).append(" .\n");
+            String p = sourcePredicates.get(i);
+            String o = "oldValue" + (i + 1);
+            String t = "?this ?" + p + " ?" + o + " .";
+            if (defaultValues.containsKey(p)) { // for OptionalMapping:
+                String r = defaultValues.get(p);
+                query.append("\tOPTIONAL {\n").append("\t\t")
+                        .append(t)
+                        .append(" .\n").append("\t} .\n").append("\tOPTIONAL {\n").append("\t\tBIND (?")
+                        .append(r).append(" AS ?")
+                        .append(o).append(") .\n").append("\t} .\n");
+            } else {
+                query.append("\t").append(t).append("\n");
+            }
         }
         query.append("\tBIND (").append(eval).append(" AS ?newValue) .\n" +
                 "\tBIND (spinmap:targetResource(?this, ?context) AS ?target) .");

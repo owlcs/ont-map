@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * TODO: For developing. Will be moved/renamed
  * Created by @szuev on 14.04.2018.
  */
-public class BuildURIMapTest extends SimpleMapData1 {
+public class BuildURIMapTest extends MapTestData1 {
     private final Logger LOGGER = LoggerFactory.getLogger(BuildURIMapTest.class);
 
     private static final String SEPARATOR = "=&=";

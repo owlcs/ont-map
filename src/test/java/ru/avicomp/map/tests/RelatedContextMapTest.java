@@ -18,7 +18,7 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
 /**
  * Created by @szuev on 01.05.2018.
  */
-public class RelatedContextMapTest extends SimpleMapData2 {
+public class RelatedContextMapTest extends MapTestData2 {
     private final Logger LOGGER = LoggerFactory.getLogger(RelatedContextMapTest.class);
 
     @Test

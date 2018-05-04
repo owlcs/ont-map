@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 09.04.2018.
  */
-public class UUIDMapTest extends SimpleMapData1 {
+public class UUIDMapTest extends MapTestData1 {
 
     @Test
     @Override

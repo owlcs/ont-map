@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 25.04.2018.
  */
-abstract class SimpleMapData1 extends AbstractMapTest {
+abstract class MapTestData1 extends AbstractMapTest {
 
     @Test
     public abstract void testInference();
