@@ -105,19 +105,19 @@ public class BuildURIMapTest extends SimpleMapData1 {
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.buildURI2.getURI())
-                .createFunctionCall()
+                .create()
                 .add(SP.arg1.getURI(), props.get(0).getURI())
                 .add(SP.arg2.getURI(), props.get(1).getURI())
                 .add(SPINMAPL.template.getURI(), "target:" + String.format(TEMPLATE, "{?1}", "{?2}"))
                 .build();
         MapFunction.Call propertyFunction1 = manager.getFunction(SPINMAPL.concatWithSeparator.getURI())
-                .createFunctionCall()
+                .create()
                 .add(SP.arg1.getURI(), props.get(1).getURI())
                 .add(SP.arg2.getURI(), props.get(0).getURI())
                 .add(SPINMAPL.separator.getURI(), SEPARATOR)
                 .build();
         MapFunction.Call propertyFunction2 = manager.getFunction(SPINMAP.equals.getURI())
-                .createFunctionCall()
+                .create()
                 .add(SP.arg1.getURI(), DST_INDIVIDUAL_LABEL)
                 .build();
 

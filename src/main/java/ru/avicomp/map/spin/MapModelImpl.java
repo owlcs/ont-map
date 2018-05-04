@@ -187,7 +187,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .forEach(MapModelImpl.this::addImport);
         Resource res = makeContext(source.asResource(), target.asResource());
         if (getManager().generateNamedIndividuals() && !findContext(target.asResource(), OWL.NamedIndividual).isPresent()) {
-            MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).createFunctionCall().build();
+            MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).create().build();
             asContext(makeContext(target.asResource(), OWL.NamedIndividual)).addExpression(expr);
         }
         return res;

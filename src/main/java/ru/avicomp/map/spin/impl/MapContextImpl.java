@@ -288,7 +288,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     private MapFunction.Builder createRelatedContextTargetFunction(Resource func, OntOPE p) {
         return getModel().getManager()
                 .getFunction(func.getURI())
-                .createFunctionCall()
+                .create()
                 .add(SPINMAPL.predicate.getURI(), ClassPropertyMap.toNamed(p).getURI());
     }
 

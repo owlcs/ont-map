@@ -34,7 +34,7 @@ public class ExceptionsTest {
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("smf:currentUserName"));
         Assert.assertNotNull(f);
         try {
-            context.addExpression(f.createFunctionCall().build());
+            context.addExpression(f.create().build());
             Assert.fail("Expression has been added successfully");
         } catch (Exceptions.SpinMapException e) {
             LOGGER.debug("Exception: {}", e.getMessage());
@@ -50,7 +50,7 @@ public class ExceptionsTest {
         MapManager m = Managers.getMapManager();
         MapFunction f = m.getFunction(m.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
         try {
-            f.createFunctionCall().build();
+            f.create().build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
             LOGGER.debug("Exception: {}", j.getMessage());
@@ -58,7 +58,7 @@ public class ExceptionsTest {
             Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
         }
         try {
-            f.createFunctionCall().add(m.prefixes().expandPrefix("sp:arg1"), "x").build();
+            f.create().add(m.prefixes().expandPrefix("sp:arg1"), "x").build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
             LOGGER.debug("Exception: {}", j.getMessage());
@@ -67,7 +67,7 @@ public class ExceptionsTest {
         }
         String p = "http://unknown-prefix.org";
         try {
-            f.createFunctionCall().add(p, "xxx");
+            f.create().add(p, "xxx");
             Assert.fail("Expected error");
         } catch (Exceptions.SpinMapException e) {
             LOGGER.debug("Exception: {}", e.getMessage());

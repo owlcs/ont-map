@@ -37,19 +37,19 @@ public class NestedFuncMapTest extends SimpleMapData1 {
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.changeNamespace.getURI())
-                .createFunctionCall()
+                .create()
                 .add(SPINMAPL.targetNamespace.getURI(),
                         manager.getFunction(manager.prefixes().expandPrefix("afn:namespace"))
-                                .createFunctionCall().add(SP.arg1.getURI(), dstClass.getURI()))
+                                .create().add(SP.arg1.getURI(), dstClass.getURI()))
                 .build();
         MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator.getURI());
         // concat template: %2, %1--SOME VALUE???%3
         MapFunction.Call propertyFunction1 = concatWithSeparator
-                .createFunctionCall()
+                .create()
                 .add(SP.arg1.getURI(), props.get(1).getURI())
-                .add(SP.arg2.getURI(), concatWithSeparator.createFunctionCall()
+                .add(SP.arg2.getURI(), concatWithSeparator.create()
                         .add(SP.arg1.getURI(), props.get(0).getURI())
-                        .add(SP.arg2.getURI(), concatWithSeparator.createFunctionCall()
+                        .add(SP.arg2.getURI(), concatWithSeparator.create()
                                 .add(SP.arg1.getURI(), "SOME VALUE")
                                 .add(SP.arg2.getURI(), props.get(2).getURI())
                                 .add(SPINMAPL.separator.getURI(), "???"))

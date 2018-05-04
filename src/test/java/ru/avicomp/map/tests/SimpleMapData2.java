@@ -18,6 +18,8 @@ abstract class SimpleMapData2 extends AbstractMapTest {
     static final Long DATA_PHONE_BOB_LONG = 96_322_09_43_034L;
     static final String DATA_PHONE_BOB = DATA_PHONE_BOB_LONG.toString();
     static final String DATA_EMAIL_BOB = "bob@x-email.com";
+    static final String DATA_ADDRESS_BOB = "1313 Disneyland Dr, Anaheim, CA 92802, USA";
+    static final String DATA_ADDRESS_KARL = "Highgate Cemetery, London, UK";
 
     @Test
     public abstract void testInference();
@@ -58,7 +60,7 @@ abstract class SimpleMapData2 extends AbstractMapTest {
         OntIndividual.Named bobContacts = contact.createIndividual(dataNS + "bobs");
         bobContacts.addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_BOB));
         bobContacts.addAssertion(contactInfo, phone.createLiteral(DATA_PHONE_BOB_LONG));
-        bobContacts.addAssertion(address, m.createLiteral("1313 Disneyland Dr, Anaheim, CA 92802, USA"));
+        bobContacts.addAssertion(address, m.createLiteral(DATA_ADDRESS_BOB));
         person.createIndividual(dataNS + "Bob")
                 .addAssertion(hasContact, bobContacts)
                 .addAssertion(firstName, m.createLiteral("Mr. Bob"));
@@ -75,6 +77,10 @@ abstract class SimpleMapData2 extends AbstractMapTest {
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jane-contacts")
                         .addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_JANE)))
                 .addAssertion(firstName, m.createLiteral("Jeanette", "en"));
+
+        person.createIndividual(dataNS + "Karl")
+                .addAssertion(hasContact, contact.createIndividual(dataNS + "karls")
+                        .addAssertion(address, m.createLiteral(DATA_ADDRESS_KARL)));
         return m;
     }
 

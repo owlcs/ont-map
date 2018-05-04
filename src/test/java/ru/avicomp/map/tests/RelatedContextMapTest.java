@@ -1,5 +1,8 @@
 package ru.avicomp.map.tests;
 
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
@@ -9,6 +12,7 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntIndividual;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
 /**
@@ -33,8 +37,31 @@ public class RelatedContextMapTest extends SimpleMapData2 {
         manager.getInferenceEngine().run(m, s, t);
         TestUtils.debug(t);
 
-        // todo:
-        Assert.fail("Not ready");
+        Assert.assertEquals(4, t.listNamedIndividuals().count());
+
+        OntIndividual.Named iBob = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Bob");
+        OntIndividual.Named iJane = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Jane");
+        OntIndividual.Named iJhon = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Jhon");
+        OntIndividual.Named iKarl = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Karl");
+
+        // no address for Jane and Jhon
+        Assert.assertEquals(0, TestUtils.plainAssertions(iJane).count());
+        Assert.assertEquals(0, TestUtils.plainAssertions(iJhon).count());
+
+        // Bob and Karl:
+        Assert.assertEquals(1, TestUtils.plainAssertions(iBob).count());
+        Assert.assertEquals(1, TestUtils.plainAssertions(iKarl).count());
+        Assert.assertEquals(DATA_ADDRESS_BOB, getString(iBob));
+        Assert.assertEquals(DATA_ADDRESS_KARL, getString(iKarl));
+    }
+
+    private static String getString(OntIndividual i) {
+        return TestUtils.plainAssertions(i)
+                .map(Statement::getObject)
+                .filter(RDFNode::isLiteral)
+                .map(RDFNode::asLiteral)
+                .map(Literal::getString).findFirst()
+                .orElseThrow(AssertionError::new);
     }
 
     @Override
@@ -49,31 +76,17 @@ public class RelatedContextMapTest extends SimpleMapData2 {
 
         MapModel res = manager.createMapModel();
         res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace", null);
+                .addComment("Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace, spinmap:equals", null);
 
         Context person2user = res.createContext(person, user);
         Context contact2user = person2user.createRelatedContext(contact);
 
         MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
         person2user.addExpression(changeNamespace
-                .createFunctionCall().add(pm.expandPrefix("spinmapl:targetNamespace"), targetNS).build());
-        MapFunction ifFunc = manager.getFunction(pm.expandPrefix("sp:if"));
-        MapFunction bound = manager.getFunction(pm.expandPrefix("sp:bound"));
-        MapFunction isBound = manager.getFunction(pm.expandPrefix("smf:isBound"));
+                .create().add(pm.expandPrefix("spinmapl:targetNamespace"), targetNS).build());
         MapFunction equals = manager.getFunction(pm.expandPrefix("spinmap:equals"));
         String arg1 = pm.expandPrefix("sp:arg1");
-        String arg2 = pm.expandPrefix("sp:arg2");
-        String arg3 = pm.expandPrefix("sp:arg3");
-        contact2user.addPropertyBridge(
-                equals.createFunctionCall().add(arg1, contactAddress.getURI()).build(),
-//                ifFunc.createFunctionCall()
-//                        .add(arg1,
-//                                bound.createFunctionCall().add(arg1, contactAddress.getURI()))
-//                        .add(arg2, equals.createFunctionCall().add(arg1, contactAddress.getURI()))
-//                        .add(arg3, "Unknown address")
-//                        .build(),
-                userAddress);
-        // todo:
+        contact2user.addPropertyBridge(equals.create().add(arg1, contactAddress.getURI()).build(), userAddress);
         return res;
     }
 }
