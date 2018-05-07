@@ -33,6 +33,7 @@ abstract class MapTestData2 extends AbstractMapTest {
 
         OntNDP firstName = m.createOntEntity(OntNDP.class, schemaNS + "firstName");
         OntNDP secondName = m.createOntEntity(OntNDP.class, schemaNS + "secondName");
+        OntNDP age = m.createOntEntity(OntNDP.class, schemaNS + "age");
         OntNDP address = m.createOntEntity(OntNDP.class, schemaNS + "address");
         OntDT email = m.createOntEntity(OntDT.class, schemaNS + "email");
         OntDT phone = m.createOntEntity(OntDT.class, schemaNS + "phone");
@@ -44,6 +45,8 @@ abstract class MapTestData2 extends AbstractMapTest {
 
         firstName.addDomain(person);
         secondName.addDomain(person);
+        age.addDomain(person);
+        age.addRange(m.getOntEntity(OntDT.class, XSD.xint));
 
         // link between classes
         hasContact.addDomain(person);
@@ -56,29 +59,35 @@ abstract class MapTestData2 extends AbstractMapTest {
         contactInfo.addRange(phone);
         contactInfo.addRange(skype);
 
-        // data:
+        // Bob's data:
         OntIndividual.Named bobContacts = contact.createIndividual(dataNS + "bobs");
         bobContacts.addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_BOB));
         bobContacts.addAssertion(contactInfo, phone.createLiteral(DATA_PHONE_BOB_LONG));
         bobContacts.addAssertion(address, m.createLiteral(DATA_ADDRESS_BOB));
         person.createIndividual(dataNS + "Bob")
+                .addAssertion(age, m.createTypedLiteral(42))
                 .addAssertion(hasContact, bobContacts)
                 .addAssertion(firstName, m.createLiteral("Mr. Bob"));
 
-
+        // Jhon's data
         person.createIndividual(dataNS + "Jhon")
+                .addAssertion(age, m.createTypedLiteral(33))
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jhons")
                         .addAssertion(contactInfo, skype.createLiteral(DATA_SKYPE_JHON))
                         .addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_JHON)))
                 .addAssertion(firstName, m.createLiteral("Jhon"))
                 .addAssertion(secondName, m.createLiteral("Doe"));
 
+        // Jane's data
         person.createIndividual(dataNS + "Jane")
+                .addAssertion(age, m.createTypedLiteral(22))
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jane-contacts")
                         .addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_JANE)))
                 .addAssertion(firstName, m.createLiteral("Jeanette", "en"));
 
+        // Karl's data
         person.createIndividual(dataNS + "Karl")
+                .addAssertion(age, m.createTypedLiteral(120))
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "karls")
                         .addAssertion(address, m.createLiteral(DATA_ADDRESS_KARL)));
         return m;

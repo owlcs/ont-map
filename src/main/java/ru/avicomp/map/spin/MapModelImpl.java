@@ -15,7 +15,6 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.impl.MapContextImpl;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -233,36 +232,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return manager;
     }
 
-    /**
-     * Finds or creates a mapping {@code spinmap:Mapping-$i-$j}, where {@code i >=0}, {@code j = 1}.
-     * This mapping template is added directly to the base graph it is absent in the library.
-     *
-     * @param sources int
-     * @param targets int
-     * @return {@link Resource}
-     * @throws IllegalArgumentException incorrect input
-     * @throws MapJenaException         something goes wrong
-     */
-    public Resource getCommonMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
-        return ConstructBuilder.createMappingTemplate(this, SPINMAP.mapping(sources, targets), null, sources);
-    }
 
     /**
-     * Finds or creates a conditional mapping template, which accepts expression to filter,
-     * Note: this functionality is absent in the standard spin-library supply.
-     *
-     * @param sources int
-     * @param targets int
-     * @return {@link Resource}
-     * @throws IllegalArgumentException incorrect input
-     * @throws MapJenaException         something goes wrong
-     */
-    public Resource getConditionalMappingTemplate(int sources, int targets) throws IllegalArgumentException, MapJenaException {
-        return ConstructBuilder.createMappingTemplate(this, AVC.conditionalMapping(sources, targets), AVC.filter, sources);
-    }
-
-    /**
-     * Returns {@code spinmap:sourcePredicate$i} argument property.
+     * Returns {@code spinmap:sourcePredicate$i} mapping template argument property.
      *
      * @param i int
      * @return {@link Property}
@@ -270,6 +242,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public Property getSourcePredicate(int i) {
         return createArgProperty(SPINMAP.sourcePredicate(i).getURI());
     }
+
 
     /**
      * Returns {@code spinmap:targetPredicate$i} argument property.
@@ -304,13 +277,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Creates or finds a property which has {@code rdfs:subPropertyOf == sp:arg}.
      *
-     * @param url String
+     * @param uri String
      * @return {@link Property}
      */
-    public Property createArgProperty(String url) {
-        Property res = getProperty(url);
+    public Property createArgProperty(String uri) {
+        Property res = getProperty(uri);
         if (!contains(res, RDF.type, RDF.Property)) {
-            createResource(url, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
+            createResource(uri, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
         }
         return res;
     }

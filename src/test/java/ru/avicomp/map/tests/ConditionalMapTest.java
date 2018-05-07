@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * TODO: not ready
  * Created by @szuev on 26.04.2018.
  */
 public class ConditionalMapTest extends MapTestData2 {

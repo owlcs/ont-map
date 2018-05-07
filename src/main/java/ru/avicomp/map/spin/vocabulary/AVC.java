@@ -16,6 +16,8 @@ public class AVC {
     public static final String BASE_URI = SystemModels.Resources.AVC.getURI();
     public static final String NS = BASE_URI + "#";
 
+    public static final String FILTER_PREDICATE_PREFIX = "sourceFilterPredicate";
+
     public static final Property hidden = property("hidden");
 
     // additional no-arg target function
@@ -30,16 +32,12 @@ public class AVC {
     // to customise spin:constraint arguments, sometimes they are wrong in the standard spin library
     public final static Property constraint = property("constraint");
 
-    /**
-     * The analogue of {@code spinmap:Conditional-Mapping-1-1} but accepting boolean expression (function call), not ask-query.
-     *
-     * @param i int
-     * @param j int
-     * @return Resource
-     */
-    public static Resource conditionalMapping(int i, int j) {
-        if (i < 0 || j <= 0) throw new IllegalArgumentException();
-        return resource(String.format("Conditional-Mapping-%d-%d", i, j));
+    public static Resource Mapping(String filters, String sources) {
+        return resource(String.format("Mapping--%s--%s--%d", filters, sources, 1));
+    }
+
+    public static Property sourceDefaultValue(String pref) {
+        return property(pref + "defaultValue");
     }
 
     public static Resource resource(String local) {

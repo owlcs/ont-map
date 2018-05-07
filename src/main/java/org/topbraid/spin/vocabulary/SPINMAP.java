@@ -17,17 +17,19 @@ public class SPINMAP {
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spinmap";
 
+    public static final String SOURCE_PREDICATE_PREFIX = "sourcePredicate";
+
     public static final Resource Conditional_Mapping_1 = resource("Conditional-Mapping-1");
     public static final Resource Conditional_Mapping_1_1 = resource("Conditional-Mapping-1-1");
 
     public static final Resource Context = resource("Context");
     public static final Resource Mapping = resource("Mapping");
-    public static final Resource Mapping_0_1 = mapping(0, 1);
+    public static final Resource Mapping_0_1 = Mapping(0, 1);
     public static final Resource Mapping_1 = resource("Mapping-1");
-    public static final Resource Mapping_1_1 = mapping(1, 1);
+    public static final Resource Mapping_1_1 = Mapping(1, 1);
     public static final Resource Mapping_1_1_Inverse = resource("Mapping-1-1-Inverse");
     public static final Resource Mapping_1_Path_1 = resource("Mapping-1-Path-1");
-    public static final Resource Mapping_2_1 = mapping(2, 1);
+    public static final Resource Mapping_2_1 = Mapping(2, 1);
     public static final Resource SplitMapping_1_1 = resource("SplitMapping-1-1");
     public static final Resource TargetFunction = resource("TargetFunction");
     public static final Resource TargetFunctions = resource("TargetFunctions");
@@ -77,7 +79,7 @@ public class SPINMAP {
         return ResourceFactory.createProperty(NS + local);
     }
 
-    public static Resource mapping(int i, int j) {
+    public static Resource Mapping(int i, int j) {
         if (i < 0 || j <= 0) throw new IllegalArgumentException();
         return resource(String.format("Mapping-%d-%d", i, j));
     }
@@ -89,7 +91,7 @@ public class SPINMAP {
 
     public static Property sourcePredicate(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property("sourcePredicate" + i);
+        return property(SOURCE_PREDICATE_PREFIX + i);
     }
 
 }

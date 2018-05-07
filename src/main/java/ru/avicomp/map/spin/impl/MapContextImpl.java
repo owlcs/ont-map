@@ -18,13 +18,13 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.MapModelImpl;
+import ru.avicomp.map.spin.MappingBuilder;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
-import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,8 +38,8 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapContextImpl extends ResourceImpl implements Context {
-    private final TypeMapper rdfTypes = TypeMapper.getInstance();
-    private final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
+    protected final TypeMapper rdfTypes = TypeMapper.getInstance();
+    protected final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
             put(RDF.Property.getURI(), r -> r.canAs(OntPE.class));
@@ -85,19 +85,20 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
         validate(func);
         RDFNode expr = createExpression(func);
-        // collects statements for existing expression to be deleted :
+        // collects target expression statements to be deleted :
         List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
-                .map(Statement::getObject)
-                .filter(RDFNode::isResource)
-                .map(RDFNode::asResource)
-                .map(Models::getAssociatedStatements)
-                .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-
         addProperty(SPINMAP.target, expr);
-        addMappingRule(target(), null, Collections.emptyList(), Collections.singletonList(RDF.type));
-        getModel().remove(prev);
-        printFunction(func);
+        // add Mapping-0-1 to create individual with type
+        addMappingRule(x -> false, target(), null, RDF.type);
+        // delete old target expressions:
+        prev.forEach(s -> {
+            if (s.getObject().isAnon()) {
+                Models.deleteAll(s.getObject().asResource());
+            }
+            getModel().remove(s);
+        });
+        writeFunctionBody(func);
         return this;
     }
 
@@ -120,8 +121,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
         // only annotation and data property is allowed for property bridge
-        Predicate<Resource> isProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
-        if (!isProperty.test(target)) {
+        Predicate<RDFNode> isAssertionProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
+        if (!isAssertionProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         validate(mappingFunction);
@@ -135,31 +136,26 @@ public class MapContextImpl extends ResourceImpl implements Context {
             filterExpression = createExpression(filterFunction);
         }
         RDFNode mappingExpression = createExpression(mappingFunction);
-
-        // collect properties from expressions:
-        List<Property> props = Stream.of(filterExpression, mappingExpression)
-                .filter(Objects::nonNull)
-                .flatMap(MapContextImpl::properties)
-                .map(Statement::getObject)
-                .filter(RDFNode::isURIResource)
-                .filter(p -> isProperty.test(p.asResource()))
-                .map(p -> p.as(Property.class))
-                .distinct()
-                .collect(Collectors.toList());
-
-        Resource mapping = addMappingRule(mappingExpression, filterExpression, props, Collections.singletonList(target));
+        Resource mapping = addMappingRule(isAssertionProperty, mappingExpression, filterExpression, target);
         MapPropertiesImpl res = asProperties(mapping);
-        printFunction(mappingFunction);
+        writeFunctionBody(mappingFunction);
         return res;
     }
 
-    private void printFunction(MapFunction.Call call) {
+    /**
+     * Writes a custom function "as is" to the mapping graph.
+     *
+     * @param call {@link MapFunction.Call}
+     */
+    protected void writeFunctionBody(MapFunction.Call call) {
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
-        if (function.isCustom()) addFunctionBody(function);
+        if (function.isCustom()) {
+            addFunctionBody(function);
+        }
     }
 
     /**
-     * Adds function as is to the graph.
+     * Adds function "as is" to the graph.
      *
      * @param function {@link MapFunctionImpl}
      */
@@ -169,72 +165,118 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     /**
-     * Adds a mapping to the graph as {@code spinmap:rule}.
+     * Adds a mapping template call to the graph as {@code spinmap:rule}.
      *
+     * @param isProperty        to test that a property can have literal assertions and therefore can be passed to mapping construct.
      * @param mappingExpression resource describing mapping expression
      * @param filterExpression  resource describing filter expression
-     * @param sources           List of source properties
-     * @param targets           List of target properties
-     * @return a mapping resource inside graph
+     * @param target            {@link Property}
+     * @return {@link Resource}
      */
-    protected Resource addMappingRule(RDFNode mappingExpression, RDFNode filterExpression, List<Property> sources, List<Property> targets) {
-        Resource mapping = createMapping(mappingExpression, filterExpression, sources, targets);
+    public Resource addMappingRule(Predicate<RDFNode> isProperty, RDFNode mappingExpression, RDFNode filterExpression, Property target) {
+        MapModelImpl m = getModel();
+        Resource mapping = m.createResource()
+                .addProperty(SPINMAP.context, this)
+                .addProperty(SPINMAP.expression, mappingExpression)
+                .addProperty(m.getTargetPredicate(1), target);
+        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, isProperty);
+        List<Property> filterPredicates = new ArrayList<>();
+        if (filterExpression != null) {
+            mapping.addProperty(AVC.filter, filterExpression);
+            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, isProperty));
+        }
+        Resource template;
+        if (filterExpression == null && mappingPredicates.size() < 3) {
+            // use standard (spinmap) mapping, which does not support filter and default values
+            template = SPINMAP.Mapping(mappingPredicates.size(), 1).inModel(m);
+        } else {
+            // use custom (avc) mapping
+            template = MappingBuilder.createMappingTemplate(m, filterPredicates, mappingPredicates);
+        }
+        mapping.addProperty(RDF.type, template);
         getSource().addProperty(SPINMAP.rule, mapping);
+        simplify(mapping);
         return mapping;
     }
 
-    public Resource createMapping(RDFNode mappingExpression, RDFNode filterExpression, List<Property> sources, List<Property> targets) {
+    /**
+     * Processes mapping template call arguments (predicates).
+     *
+     * @param mapping             {@link Resource}
+     * @param expressionPredicate predicate to find expression
+     * @param isProperty          tester to check that a property can have literal assertions and therefore can be passed to mapping construct.
+     * @return List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}
+     */
+    protected List<Property> setMappingPredicates(Resource mapping, Property expressionPredicate, Predicate<RDFNode> isProperty) {
         MapModelImpl m = getModel();
-        Resource template = filterExpression != null ?
-                m.getConditionalMappingTemplate(sources.size(), targets.size()) :
-                m.getCommonMappingTemplate(sources.size(), targets.size());
-        Resource res = m.createResource().addProperty(RDF.type, template);
-        res.addProperty(SPINMAP.context, this);
-        res.addProperty(SPINMAP.expression, processExpression(res, mappingExpression, sources, targets));
-        if (filterExpression != null) {
-            res.addProperty(AVC.filter, processExpression(res, filterExpression, sources, targets));
+        Statement expression = mapping.getRequiredProperty(expressionPredicate);
+        // properties from expression
+        List<Statement> properties = Stream.concat(Stream.of(expression), listProperties(expression.getObject()))
+                .filter(s -> isProperty.test(s.getObject()))
+                .collect(Collectors.toList());
+
+        // prev property-predicate from mapping
+        Map<Property, Property> prev =
+                Iter.asStream(mapping.listProperties())
+                        .filter(s -> s.getPredicate().getLocalName().startsWith(SPINMAP.SOURCE_PREDICATE_PREFIX))
+                        .filter(s -> isProperty.test(s.getObject()))
+                        .collect(Collectors.toMap(s -> s.getObject().as(Property.class), Statement::getPredicate));
+        List<Property> res = new ArrayList<>();
+        for (int i = 0; i < properties.size(); i++) {
+            Statement s = properties.get(i);
+            // replace with variable, e.g. spin:_arg1
+            Resource variable = m.getArgVariable(i + 1);
+            m.add(s.getSubject(), s.getPredicate(), variable);
+            m.remove(s);
+            Property property = s.getObject().as(Property.class);
+            Property predicate;
+            if (!prev.containsKey(property)) {
+                predicate = m.getSourcePredicate(prev.size() + 1);
+                mapping.addProperty(predicate, property);
+                prev.put(property, predicate);
+            } else {
+                predicate = prev.get(property);
+            }
+            res.add(predicate);
         }
+        // mapping predicates
         return res;
     }
 
-    protected RDFNode processExpression(Resource mapping, RDFNode expression, List<Property> sources, List<Property> targets) {
-        MapModelImpl m = getModel();
-        // replace properties with variables:
-        processProperties(mapping, expression, sources, m::getSourcePredicate);
-        processProperties(mapping, expression, targets, m::getTargetPredicate);
-        // simplify special case of spinmap:equial (this is alternative way to record without anon root)
-        if (expression.isAnon() && SPINMAP.equals.equals(expression.asResource().getPropertyResourceValue(RDF.type))) {
-            RDFNode arg = expression.asResource().getProperty(SP.arg1).getObject();
-            Models.deleteAll(expression.asResource());
-            expression = arg;
-        }
-        return expression;
+    /**
+     * Simplifies mapping by replacing {@code spinmap:equals} function calls with its short form.
+     *
+     * @param mapping {@link Resource}
+     */
+    protected static void simplify(Resource mapping) {
+        Model m = mapping.getModel();
+        Set<Resource> expressions = listProperties(mapping)
+                .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
+                .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
+                .map(Statement::getSubject)
+                .collect(Collectors.toSet());
+        expressions.forEach(expr -> {
+            RDFNode arg = expr.getRequiredProperty(SP.arg1).getObject();
+            Set<Statement> statements = m.listStatements(null, null, expr).toSet();
+            statements.forEach(s -> {
+                m.add(s.getSubject(), s.getPredicate(), arg);
+                m.remove(s);
+                Models.deleteAll(expr);
+            });
+        });
     }
 
-    protected void processProperties(Resource mapping, RDFNode expression, List<Property> properties, IntFunction<Property> predicate) {
-        for (int i = 0; i < properties.size(); i++) {
-            Property src = properties.get(i);
-            Property mapPredicate = predicate.apply(i + 1);
-            if (expression.isAnon()) {
-                // replace with variable (spin:_arg*):
-                Resource var = getModel().getArgVariable(i + 1);
-                List<Statement> res = //Iter.asStream(expression.asResource().listProperties())
-                        properties(expression.asResource())
-                                .filter(s -> Objects.equals(s.getObject(), src))
-                                .collect(Collectors.toList());
-                res.forEach(s -> {
-                    getModel().add(s.getSubject(), s.getPredicate(), var);
-                    getModel().remove(s);
-                });
-            }
-            mapping.addProperty(mapPredicate, src);
-        }
-    }
-
-    public static Stream<Statement> properties(RDFNode subject) { // todo: possible recursion
+    /**
+     * Recursively lists all statements for specified subject.
+     * todo:: StackOverflowError in case graph contains recursion.
+     *
+     * @param subject {@link RDFNode}, nullable
+     * @return Stream of {@link Statement}s
+     */
+    public static Stream<Statement> listProperties(RDFNode subject) {
         if (subject == null || !subject.isAnon()) return Stream.empty();
         return Iter.asStream(subject.asResource().listProperties())
-                .flatMap(s -> s.getObject().isAnon() ? properties(s.getObject().asResource()) : Stream.of(s));
+                .flatMap(s -> s.getObject().isAnon() ? listProperties(s.getObject().asResource()) : Stream.of(s));
     }
 
     @Override
