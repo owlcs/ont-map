@@ -4,7 +4,10 @@ import org.apache.jena.graph.Factory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
-import org.topbraid.spin.vocabulary.*;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -16,7 +19,6 @@ import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.model.OntNDP;
-import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
@@ -93,15 +95,8 @@ public class AVCLibraryMaker {
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, XSD.xstring)
-                        .addProperty(RDFS.comment, "Lexical form of default value"))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SPIF.argDatatype)
-                        .addProperty(SPL.valueType, RDFS.Datatype)
-                        .addProperty(RDFS.comment, "Datatype of default value")
-                        .addProperty(SPL.optional, Models.TRUE))
-        ;
+                        .addProperty(SPL.valueType, RDFS.Literal)
+                        .addProperty(RDFS.comment, "The default value to form a fake assertion on the source individual"));
 
         m.write(System.out, "ttl");
 

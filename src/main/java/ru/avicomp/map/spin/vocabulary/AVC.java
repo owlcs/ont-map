@@ -16,7 +16,7 @@ public class AVC {
     public static final String BASE_URI = SystemModels.Resources.AVC.getURI();
     public static final String NS = BASE_URI + "#";
 
-    public static final String FILTER_PREDICATE_PREFIX = "sourceFilterPredicate";
+    public static final String DEFAULT_PREDICATE_SUFFIX = "DefaultValue";
 
     public static final Property hidden = property("hidden");
 
@@ -40,7 +40,7 @@ public class AVC {
     }
 
     public static Property sourceDefaultValue(String pref) {
-        return property(pref + "defaultValue");
+        return property(pref + DEFAULT_PREDICATE_SUFFIX);
     }
 
     public static Resource resource(String local) {

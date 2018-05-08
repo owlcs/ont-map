@@ -179,14 +179,17 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .addProperty(SPINMAP.context, this)
                 .addProperty(SPINMAP.expression, mappingExpression)
                 .addProperty(m.getTargetPredicate(1), target);
-        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, isProperty);
+        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, true, isProperty);
         List<Property> filterPredicates = new ArrayList<>();
         if (filterExpression != null) {
             mapping.addProperty(AVC.filter, filterExpression);
-            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, isProperty));
+            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, false, isProperty));
         }
+
+        boolean hasDefaults = Iter.asStream(mapping.listProperties())
+                .map(Statement::getPredicate).map(Property::getLocalName).anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
         Resource template;
-        if (filterExpression == null && mappingPredicates.size() < 3) {
+        if (filterExpression == null && !hasDefaults && mappingPredicates.size() < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
             template = SPINMAP.Mapping(mappingPredicates.size(), 1).inModel(m);
         } else {
@@ -204,13 +207,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
      *
      * @param mapping             {@link Resource}
      * @param expressionPredicate predicate to find expression
-     * @param isProperty          tester to check that a property can have literal assertions and therefore can be passed to mapping construct.
-     * @return List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}
+     * @param isProperty          tester to check that a property can have literal assertions and therefore can be passed to mapping construct
+     * @param withDefault         if true and there is {@code avc:withDefault} in call adds also default values from expression to mapping
+     * @return List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}, with possible repetitions
      */
-    protected List<Property> setMappingPredicates(Resource mapping, Property expressionPredicate, Predicate<RDFNode> isProperty) {
+    protected List<Property> setMappingPredicates(Resource mapping, Property expressionPredicate, boolean withDefault, Predicate<RDFNode> isProperty) {
         MapModelImpl m = getModel();
         Statement expression = mapping.getRequiredProperty(expressionPredicate);
-        // properties from expression
+        // properties from expression, not distinct flat list, i.e. with possible repetitions
         List<Statement> properties = Stream.concat(Stream.of(expression), listProperties(expression.getObject()))
                 .filter(s -> isProperty.test(s.getObject()))
                 .collect(Collectors.toList());
@@ -222,13 +226,20 @@ public class MapContextImpl extends ResourceImpl implements Context {
                         .filter(s -> isProperty.test(s.getObject()))
                         .collect(Collectors.toMap(s -> s.getObject().as(Property.class), Statement::getPredicate));
         List<Property> res = new ArrayList<>();
-        for (int i = 0; i < properties.size(); i++) {
-            Statement s = properties.get(i);
-            // replace with variable, e.g. spin:_arg1
-            Resource variable = m.getArgVariable(i + 1);
+        int variableIndex = 1;
+        Map<Property, Resource> replacement = new HashMap<>();
+        for (Statement s : properties) {
+            // replace argument property with variable, e.g. spin:_arg1
+            Property property = s.getObject().as(Property.class);
+            Resource variable;
+            if (replacement.containsKey(property)) {
+                variable = replacement.get(property);
+            } else {
+                replacement.put(property, variable = m.getArgVariable(variableIndex++));
+            }
             m.add(s.getSubject(), s.getPredicate(), variable);
             m.remove(s);
-            Property property = s.getObject().as(Property.class);
+            // add mapping predicate
             Property predicate;
             if (!prev.containsKey(property)) {
                 predicate = m.getSourcePredicate(prev.size() + 1);
@@ -238,20 +249,25 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 predicate = prev.get(property);
             }
             res.add(predicate);
+            Resource expr;
+            if (withDefault && (expr = s.getSubject()).hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
+                Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
+                mapping.addProperty(m.createArgProperty(AVC.sourceDefaultValue(predicate.getLocalName()).getURI()), defaultValue);
+            }
         }
         // mapping predicates
         return res;
     }
 
     /**
-     * Simplifies mapping by replacing {@code spinmap:equals} function calls with its short form.
+     * Simplifies mapping by replacing {@code spinmap:equals} and {@code avc:withDefault} function calls with its short form.
      *
      * @param mapping {@link Resource}
      */
     protected static void simplify(Resource mapping) {
         Model m = mapping.getModel();
         Set<Resource> expressions = listProperties(mapping)
-                .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
+                .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
                 .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
                 .map(Statement::getSubject)
                 .collect(Collectors.toSet());
@@ -268,7 +284,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     /**
      * Recursively lists all statements for specified subject.
-     * todo:: StackOverflowError in case graph contains recursion.
+     * Note: a possibility of StackOverflowError in case graph contains a recursion.
      *
      * @param subject {@link RDFNode}, nullable
      * @return Stream of {@link Statement}s

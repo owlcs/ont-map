@@ -42,15 +42,9 @@ avc:withDefault  a          spin:Function ;
                               spl:valueType  rdf:Property
                             ] ;
         spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "Datatype of default value" ;
-                              spl:optional   true ;
-                              spl:predicate  arg:datatype ;
-                              spl:valueType  rdfs:Datatype
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "Lexical form of default value" ;
+                              rdfs:comment   "The default value to form a fake assertion on the source individual" ;
                               spl:predicate  sp:arg2 ;
-                              spl:valueType  xsd:string
+                              spl:valueType  rdfs:Literal
                             ] ;
         spin:returnType     rdf:Property ;
         spinmap:shortLabel  "withDefault" .
