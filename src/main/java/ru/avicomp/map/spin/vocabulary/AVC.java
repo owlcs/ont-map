@@ -23,6 +23,9 @@ public class AVC {
     // additional no-arg target function
     public static final Resource UUID = resource("UUID");
 
+    // additional property function that is used to provide a mapping mechanism for assertion default values
+    public static final Resource withDefault = resource("withDefault");
+
     // resource, which is used as return type of function or argument
     public static final Resource undefined = resource("undefined");
 

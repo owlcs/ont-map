@@ -1,5 +1,6 @@
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix arg:   <http://spinrdf.org/arg#> .
 @prefix spin:  <http://spinrdf.org/spin#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -9,7 +10,7 @@
 @prefix avc:   <http://avc.ru/spin#> .
 
 <http://avc.ru/spin>  a  owl:Ontology ;
-        rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom functions can be considered as templates." ;
+        rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom  functions can be considered as templates." ;
         owl:versionIRI   avc:1.0 ;
         owl:versionInfo  "version 1.0" .
 
@@ -24,6 +25,35 @@ sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
         avc:constraint  [ spl:predicate  sp:arg1 ;
                           spl:valueType  avc:undefined
                         ] .
+
+avc:withDefault  a          spin:Function ;
+        rdfs:comment        "An ontology function for passing default values into a property mapping.\nIt is used for mapping data/annotation property assertion that absences in a particular source individual.\nLike spinmap:equals it returns the primary input property (?arg1) unchanged." ;
+        rdfs:label          "With Default" ;
+        rdfs:seeAlso        spinmap:equals ;
+        rdfs:subClassOf     spl:OntologyFunctions ;
+        spin:body           [ a                   sp:Select ;
+                              sp:resultVariables  ( [ sp:varName  "arg1" ]
+                                                  ) ;
+                              sp:where            ()
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The property to get assertion value" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  rdf:Property
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Datatype of default value" ;
+                              spl:optional   true ;
+                              spl:predicate  arg:datatype ;
+                              spl:valueType  rdfs:Datatype
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Lexical form of default value" ;
+                              spl:predicate  sp:arg2 ;
+                              spl:valueType  xsd:string
+                            ] ;
+        spin:returnType     rdf:Property ;
+        spinmap:shortLabel  "withDefault" .
 
 avc:UUID  a                 spinmap:TargetFunction ;
         rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;

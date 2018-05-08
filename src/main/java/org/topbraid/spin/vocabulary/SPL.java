@@ -36,6 +36,7 @@ public class SPL {
     public final static Resource subjectCount = resource("subjectCount");
     public final static Resource StringFunctions = resource("StringFunctions");
     public final static Resource ConstraintTemplate = resource("ConstraintTemplate");
+    public final static Resource OntologyFunctions = resource("OntologyFunctions");
 
     public final static Property defaultValue = property("defaultValue");
     public static final Property dynamicEnumRange = property("dynamicEnumRange");

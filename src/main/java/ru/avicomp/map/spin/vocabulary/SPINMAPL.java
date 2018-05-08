@@ -1,4 +1,4 @@
-package org.topbraid.spin.vocabulary;
+package ru.avicomp.map.spin.vocabulary;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -7,7 +7,7 @@ import ru.avicomp.map.spin.SystemModels;
 
 /**
  * Vocabulary of the Topbraid SPINMAPL library.
- *
+ * <p>
  * Created by @szuev on 10.04.2018.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})

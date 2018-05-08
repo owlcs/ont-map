@@ -18,7 +18,7 @@ import org.topbraid.spin.functions.internal.string.*;
 import org.topbraid.spin.functions.internal.uri.IsValidURIFunction;
 import org.topbraid.spin.vocabulary.SPIF;
 import org.topbraid.spin.vocabulary.SPIN;
-import org.topbraid.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 
 /**
  * A helper to register builtin (SPIF) and some common (SPIN) functions.
