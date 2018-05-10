@@ -2,7 +2,6 @@ package ru.avicomp.map.spin.impl;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.enhanced.EnhGraph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
@@ -38,7 +37,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapContextImpl extends ResourceImpl implements Context {
-    protected final TypeMapper rdfTypes = TypeMapper.getInstance();
+
     protected final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
@@ -446,7 +445,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             // seems it is okay
             return;
         }
-        RDFDatatype literalType = rdfTypes.getTypeByName(funcType);
+        RDFDatatype literalType = getModel().getDatatype(funcType);
         if (literalType != null) // todo:
             throw new MapJenaException("TODO:" + literalType);
         if (RDFS.Resource.getURI().equals(argType))
@@ -456,25 +455,33 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     public RDFNode makeArgRDFNode(MapFunction function, final String type, final String value) throws MapJenaException {
+        MapModelImpl m = getModel();
         Resource uri = null;
-        if (getModel().containsResource(ResourceFactory.createResource(value))) {
-            uri = getModel().createResource(value);
+        if (m.containsResource(ResourceFactory.createResource(value))) {
+            uri = m.createResource(value);
         }
         // clarify type:
-        String foundType;
+        String foundType = type;
+        String foundValue = value;
         if (AVC.undefined.getURI().equals(type)) {
             if (uri != null) {
                 foundType = RDFS.Resource.getURI();
             } else {
+                foundType = RDFS.Literal.getURI();
+            }
+        }
+        if (RDFS.Literal.getURI().equals(foundType)) {
+            if (value.contains("^^")) {
+                foundValue = value.replaceFirst("(.+)\\^\\^.+", "$1");
+                foundType = m.expandPrefix(value.replaceFirst(".+\\^\\^(.+)", "$1"));
+            } else {
                 foundType = XSD.xstring.getURI();
             }
-        } else {
-            foundType = type;
         }
-        RDFDatatype literalType = rdfTypes.getTypeByName(foundType);
+        RDFDatatype literalType = m.getDatatype(foundType);
         if (literalType != null) {
             if (uri == null) {
-                return getModel().createTypedLiteral(value, literalType);
+                return m.createTypedLiteral(foundValue, literalType);
             } else { // data or annotation property with literal assertion
                 foundType = RDF.Property.getURI();
             }

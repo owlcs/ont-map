@@ -13,13 +13,17 @@ import java.util.stream.Stream;
 abstract class MapTestData2 extends AbstractMapTest {
     // test data:
     static final String DATA_EMAIL_JANE = "Jeanette@SuperMail.ts";
+    static final String DATA_FIRST_NAME_JANE = "Jaanette";
     static final String DATA_EMAIL_JHON = "jhon-doe-xxxx@x-x-x.mail.org";
     static final String DATA_SKYPE_JHON = "jhon-skype";
+    static final String DATA_FIRST_NAME_JHON = "Jhon";
+    static final String DATA_SECOND_NAME_JHON = "Doe";
     static final Long DATA_PHONE_BOB_LONG = 96_322_09_43_034L;
     static final String DATA_PHONE_BOB = DATA_PHONE_BOB_LONG.toString();
     static final String DATA_EMAIL_BOB = "bob@x-email.com";
     static final String DATA_ADDRESS_BOB = "1313 Disneyland Dr, Anaheim, CA 92802, USA";
     static final String DATA_ADDRESS_KARL = "Highgate Cemetery, London, UK";
+    static final String DATA_FIRST_NAME_BOB = "Mr. Bob";
 
     @Test
     public abstract void testInference();
@@ -67,7 +71,7 @@ abstract class MapTestData2 extends AbstractMapTest {
         person.createIndividual(dataNS + "Bob")
                 .addAssertion(age, m.createTypedLiteral(42))
                 .addAssertion(hasContact, bobContacts)
-                .addAssertion(firstName, m.createLiteral("Mr. Bob"));
+                .addAssertion(firstName, m.createLiteral(DATA_FIRST_NAME_BOB));
 
         // Jhon's data
         person.createIndividual(dataNS + "Jhon")
@@ -75,15 +79,15 @@ abstract class MapTestData2 extends AbstractMapTest {
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jhons")
                         .addAssertion(contactInfo, skype.createLiteral(DATA_SKYPE_JHON))
                         .addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_JHON)))
-                .addAssertion(firstName, m.createLiteral("Jhon"))
-                .addAssertion(secondName, m.createLiteral("Doe"));
+                .addAssertion(firstName, m.createLiteral(DATA_FIRST_NAME_JHON))
+                .addAssertion(secondName, m.createLiteral(DATA_SECOND_NAME_JHON));
 
         // Jane's data
         person.createIndividual(dataNS + "Jane")
                 .addAssertion(age, m.createTypedLiteral(22))
                 .addAssertion(hasContact, contact.createIndividual(dataNS + "jane-contacts")
                         .addAssertion(contactInfo, email.createLiteral(DATA_EMAIL_JANE)))
-                .addAssertion(firstName, m.createLiteral("Jeanette", "en"));
+                .addAssertion(firstName, m.createLiteral(DATA_FIRST_NAME_JANE, "en"));
 
         // Karl's data
         person.createIndividual(dataNS + "Karl")

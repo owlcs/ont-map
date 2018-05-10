@@ -1,5 +1,10 @@
 package ru.avicomp.map;
 
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.ontapi.jena.model.OntNAP;
+import ru.avicomp.ontapi.jena.model.OntNDP;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -178,6 +183,26 @@ public interface MapFunction extends Description {
          */
         MapFunction getFunction();
 
+        default Builder add(Property predicate, OntNDP property) {
+            return add(predicate.getURI(), property.getURI());
+        }
+
+        default Builder add(Property predicate, OntNAP property) {
+            return add(predicate.getURI(), property.getURI());
+        }
+
+        default Builder add(Property predicate, Object literal) {
+            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(literal).toString());
+        }
+
+        /**
+         * TODO: remove or change ?
+         *
+         * @param arg      {@link Arg}
+         * @param function {@link Call}
+         * @return {@link Builder} this builder
+         * @throws MapJenaException something is wrong
+         */
         default Builder add(Arg arg, Call function) throws MapJenaException {
             return add(arg.name(), function.asUnmodifiableBuilder());
         }

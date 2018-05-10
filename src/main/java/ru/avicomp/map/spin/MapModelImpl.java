@@ -1,5 +1,6 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
@@ -286,5 +287,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             createResource(uri, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
         }
         return res;
+    }
+
+    /**
+     * Gets rdf-datatype from a model,
+     * which can be builtin (e.g {@code xsd:int}) or custom if corresponding declaration is present in the model.
+     *
+     * @param uri String, not null.
+     * @return {@link RDFDatatype} or null
+     */
+    public RDFDatatype getDatatype(String uri) {
+        return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype).orElse(null);
     }
 }
