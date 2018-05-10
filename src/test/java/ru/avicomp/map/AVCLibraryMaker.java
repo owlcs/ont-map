@@ -49,7 +49,7 @@ public class AVCLibraryMaker {
         OntNDP hidden = m.createOntEntity(OntNDP.class, AVC.hidden.getURI());
         hidden.addRange(m.getOntEntity(OntDT.class, XSD.xstring));
 
-        // SP:abs (todo: right now not sure this is correct)
+        // SP:abs (todo: currently not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
         // SP:eq can accept any resource, not only boolean literal

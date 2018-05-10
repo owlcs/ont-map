@@ -51,6 +51,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
+
     @Override
     public OntID getID() {
         return getNodeAs(Graphs.ontologyNode(getBaseGraph())
@@ -298,5 +299,17 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public RDFDatatype getDatatype(String uri) {
         return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype).orElse(null);
+    }
+
+    /**
+     * Answers if specified property links classes together through domain and range axioms.
+     *
+     * @param property {@link OntOPE} property to testg
+     * @param domain   {@link OntCE} domain candidate
+     * @param range    {@link OntCE} range candidate
+     * @return true if it is link property.
+     */
+    public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
+        return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
     }
 }

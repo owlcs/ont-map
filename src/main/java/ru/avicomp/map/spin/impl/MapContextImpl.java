@@ -319,7 +319,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapContextImpl createRelatedContext(OntCE src2) throws MapJenaException {
         OntCE src1 = getSource();
         List<OntOPE> res = getModel().ontObjects(OntOPE.class)
-                .filter(p -> isLinkProperty(p, src2, src1) || isLinkProperty(p, src1, src2))
+                .filter(p -> MapModelImpl.isLinkProperty(p, src2, src1) || MapModelImpl.isLinkProperty(p, src1, src2))
                 .distinct()
                 .collect(Collectors.toList());
         if (res.isEmpty()) {
@@ -338,9 +338,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
     @Override
     public MapContextImpl createRelatedContext(OntOPE property, OntCE source) throws MapJenaException {
         MapFunction.Builder builder;
-        if (isLinkProperty(property, getSource(), source)) {
+        if (MapModelImpl.isLinkProperty(property, getSource(), source)) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, property);
-        } else if (isLinkProperty(property, source, getSource())) {
+        } else if (MapModelImpl.isLinkProperty(property, source, getSource())) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
         } else {
             throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
@@ -363,18 +363,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .getFunction(func.getURI())
                 .create()
                 .add(SPINMAPL.predicate.getURI(), ClassPropertyMap.toNamed(p).getURI());
-    }
-
-    /**
-     * Answers if specified property links classes together through domain and range axioms.
-     *
-     * @param property {@link OntOPE} property to testg
-     * @param domain   {@link OntCE} domain candidate
-     * @param range    {@link OntCE} range candidate
-     * @return true if it is link property.
-     */
-    public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
-        return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
     }
 
     private MapPropertiesImpl asProperties(Resource resource) {
