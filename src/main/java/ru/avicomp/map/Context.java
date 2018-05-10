@@ -37,14 +37,16 @@ public interface Context {
     MapFunction.Call getExpression();
 
     /**
-     * Adds a primary rule to bind two class expressions.
-     * If some rule is already present in the context, it will be replaced by the specified one.
-     *
-     * @param func {@link MapFunction.Call} a function call
-     * @return this context object
-     * @throws MapJenaException if something goes wrong (e.g. incompatible function specified)
+     * Creates a bridge between classes using filter and mapping function calls.
+     * The filter function call must be boolean (see {@link MapFunction#isBoolean()}.
+     * The mapping function call must be target (see {@link MapFunction#isTarget()}.
+     * This method deletes any previously added class connections.
+     * @param filter {@link MapFunction.Call}, a boolean function call to filter source individuals. Can be null
+     * @param mapping {@link MapFunction.Call}, a target function call to map source individual to target. Not null
+     * @return this context
+     * @throws MapJenaException if something goes wrong
      */
-    Context addExpression(MapFunction.Call func) throws MapJenaException;
+    Context addClassBridge(MapFunction.Call filter, MapFunction.Call mapping) throws MapJenaException;
 
     /**
      * Adds a properties bridge.
@@ -108,6 +110,18 @@ public interface Context {
      * @throws MapJenaException unable to make reference context
      */
     Context createRelatedContext(OntOPE property, OntCE source) throws MapJenaException;
+
+    /**
+     * Adds a primary rule to bind two class expressions.
+     * If some rule is already present in the context, it will be replaced by the new one.
+     *
+     * @param func {@link MapFunction.Call} a function call
+     * @return this context object
+     * @throws MapJenaException if something goes wrong (e.g. incompatible function specified)
+     */
+    default Context addClassBridge(MapFunction.Call func) throws MapJenaException {
+        return addClassBridge(null, func);
+    }
 
     /**
      * Adds a properties bridge without filtering.

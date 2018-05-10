@@ -2,6 +2,12 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.avicomp.map.Managers;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
 
 import java.util.stream.Stream;
@@ -11,6 +17,7 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 abstract class MapTestData2 extends AbstractMapTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapTestData2.class);
     // test data:
     static final String DATA_EMAIL_JANE = "Jeanette@SuperMail.ts";
     static final String DATA_FIRST_NAME_JANE = "Jaanette";
@@ -26,7 +33,25 @@ abstract class MapTestData2 extends AbstractMapTest {
     static final String DATA_FIRST_NAME_BOB = "Mr. Bob";
 
     @Test
-    public abstract void testInference();
+    public void testInference() {
+        LOGGER.info("Assembly models.");
+        OntGraphModel s = assembleSource();
+        TestUtils.debug(s);
+        OntGraphModel t = assembleTarget();
+        TestUtils.debug(t);
+        MapManager manager = Managers.getMapManager();
+        MapModel m = assembleMapping(manager, s, t);
+        TestUtils.debug(m);
+
+        LOGGER.info("Run inference.");
+        manager.getInferenceEngine().run(m, s, t);
+        TestUtils.debug(t);
+
+        LOGGER.info("Validate.");
+        validate(t);
+    }
+
+    public abstract void validate(OntGraphModel result);
 
     @Override
     public OntGraphModel assembleSource() {
@@ -103,7 +128,7 @@ abstract class MapTestData2 extends AbstractMapTest {
         String ns = m.getID().getURI() + "#";
         OntClass user = m.createOntEntity(OntClass.class, ns + "User");
         OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
-        Stream.of("user-name", "user-address", "email", "phone", "skype").forEach(s -> {
+        Stream.of("user-name", "user-age", "user-address", "email", "phone", "skype").forEach(s -> {
             OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
             p.addRange(string);
             p.addDomain(user);

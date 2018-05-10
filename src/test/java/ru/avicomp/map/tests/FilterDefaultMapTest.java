@@ -4,11 +4,13 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 import org.junit.Assert;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -32,39 +34,24 @@ public class FilterDefaultMapTest extends MapTestData2 {
     private static final String DATA_SECOND_NAME_DEFAULT = "Unknown second name";
     private static final String CONCAT_SEPARATOR = ", ";
 
-    @Test
     @Override
-    public void testInference() {
-        LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
-        TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
-        TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
-        MapModel m = assembleMapping(manager, s, t);
-        TestUtils.debug(m);
-
-        LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
-        TestUtils.debug(t);
-
-        LOGGER.info("Validate.");
+    public void validate(OntGraphModel result) {
         // expected 4 individuals, one of them are naked
-        Assert.assertEquals(4, t.listNamedIndividuals().count());
-        Map<Long, Long> map = t.listNamedIndividuals()
+        Assert.assertEquals(4, result.listNamedIndividuals().count());
+        Map<Long, Long> map = result.listNamedIndividuals()
                 .map(i -> TestUtils.plainAssertions(i).count())
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         Assert.assertEquals(2, map.size());
         Assert.assertTrue("Expected one naked individual", map.containsKey(0L));
         Assert.assertTrue("Expected three individuals with one assertion", map.containsKey(1L));
-        OntNDP name = TestUtils.findOntEntity(t, OntNDP.class, "user-name");
-        List<String> names = t.statements(null, name, null)
+        OntNDP name = TestUtils.findOntEntity(result, OntNDP.class, "user-name");
+        List<String> names = result.statements(null, name, null)
                 .map(Statement::getObject)
                 .map(RDFNode::asLiteral)
                 .map(Literal::getString)
                 .sorted()
                 .collect(Collectors.toList());
-        LOGGER.debug("Names: {}", names.stream().map(str -> "'" + str + "'").collect(Collectors.joining(", ")));
+        LOGGER.debug("Names: {}", names.stream().map(s -> "'" + s + "'").collect(Collectors.joining(", ")));
         Assert.assertEquals(3, names.size());
 
         List<String> expected = Arrays.asList(
@@ -84,13 +71,15 @@ public class FilterDefaultMapTest extends MapTestData2 {
         OntNDP age = TestUtils.findOntEntity(src, OntNDP.class, "age");
         OntNDP resultName = TestUtils.findOntEntity(dst, OntNDP.class, "user-name");
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt", null);
-        Context context = res.createContext(person, user, manager.getFunction(AVC.UUID.getURI()).create().build());
+        MapFunction uuid = manager.getFunction(AVC.UUID.getURI());
         MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator.getURI());
         MapFunction withDefault = manager.getFunction(AVC.withDefault.getURI());
         MapFunction gt = manager.getFunction(manager.prefixes().expandPrefix("sp:gt"));
+
+        MapModel res = manager.createMapModel();
+        res.setID(getNameSpace() + "/map")
+                .addComment("Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt", null);
+        Context context = res.createContext(person, user, uuid.create().build());
         MapFunction.Call propertyMapFunc = concatWithSeparator.create()
                 .add(SP.arg1.getURI(), withDefault.create()
                         .add(SP.arg1, firstName)
@@ -98,7 +87,7 @@ public class FilterDefaultMapTest extends MapTestData2 {
                 .add(SP.arg2.getURI(), withDefault.create()
                         .add(SP.arg1, secondName)
                         .add(SP.arg2, DATA_SECOND_NAME_DEFAULT))
-                .add(SPINMAPL.separator.getURI(), CONCAT_SEPARATOR)
+                .add(SPINMAPL.separator, CONCAT_SEPARATOR)
                 .build();
         MapFunction.Call filterFunction = gt.create().add(SP.arg1, age).add(SP.arg2, 30).build();
         context.addPropertyBridge(

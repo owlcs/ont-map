@@ -33,7 +33,9 @@ public class TestExamplesSaver {
                 new BuildURIMapTest(),
                 new NestedFuncMapTest(),
                 new ConditionalMapTest(),
-                new RelatedContextMapTest()
+                new RelatedContextMapTest(),
+                new FilterDefaultMapTest(),
+                new FilterIndividualsMapTest()
         );
         for (AbstractMapTest mapTest : mapTests) {
             String file = mapTest.getClass().getSimpleName() + "-%s.ttl";

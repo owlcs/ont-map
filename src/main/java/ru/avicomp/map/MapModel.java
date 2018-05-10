@@ -99,11 +99,11 @@ public interface MapModel {
      *
      * @param source             {@link OntCE} a source class expression
      * @param target             {@link OntCE} a target class expression
-     * @param targetFunctionCall {@link ru.avicomp.map.MapFunction.Call}
+     * @param targetFunctionCall {@link MapFunction.Call}
      * @return {@link Context} a new context instance.
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
     default Context createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
-        return createContext(source, target).addExpression(targetFunctionCall);
+        return createContext(source, target).addClassBridge(targetFunctionCall);
     }
 }

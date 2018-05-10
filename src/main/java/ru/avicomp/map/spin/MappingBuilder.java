@@ -112,7 +112,7 @@ public class MappingBuilder {
     }
 
     public static String toPredicateString(Collection<Property> properties) {
-        return properties.stream().map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, "")).collect(Collectors.joining("-"));
+        return properties.isEmpty() ? "0" : properties.stream().map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, "")).collect(Collectors.joining("-"));
     }
 
     public static String asOptional(String expr) {

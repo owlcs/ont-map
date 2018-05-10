@@ -44,15 +44,21 @@ public class ConditionalMapTest extends MapTestData2 {
 
         LOGGER.info("Re-run inference and validate.");
         manager.getInferenceEngine().run(m, s, t);
-        List<OntIndividual.Named> individuals = t.listNamedIndividuals().collect(Collectors.toList());
+
+        validate(t);
+    }
+
+    @Override
+    public void validate(OntGraphModel result) {
+        List<OntIndividual.Named> individuals = result.listNamedIndividuals().collect(Collectors.toList());
         Assert.assertEquals(4, individuals.size());
 
-        OntNDP email = TestUtils.findOntEntity(t, OntNDP.class, "email");
-        OntNDP phone = TestUtils.findOntEntity(t, OntNDP.class, "phone");
-        OntNDP skype = TestUtils.findOntEntity(t, OntNDP.class, "skype");
+        OntNDP email = TestUtils.findOntEntity(result, OntNDP.class, "email");
+        OntNDP phone = TestUtils.findOntEntity(result, OntNDP.class, "phone");
+        OntNDP skype = TestUtils.findOntEntity(result, OntNDP.class, "skype");
 
         // Jane has only email as string
-        OntIndividual.Named iJane = TestUtils.findOntEntity(t, OntIndividual.Named.class, "res-jane-contacts");
+        OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-jane-contacts");
         Assert.assertEquals(1, TestUtils.plainAssertions(iJane).count());
         String janeEmail = iJane.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
@@ -61,7 +67,7 @@ public class ConditionalMapTest extends MapTestData2 {
         Assert.assertEquals(DATA_EMAIL_JANE, janeEmail);
 
         // Jhon has email and skype
-        OntIndividual.Named iJhon = TestUtils.findOntEntity(t, OntIndividual.Named.class, "res-jhons");
+        OntIndividual.Named iJhon = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-jhons");
         Assert.assertEquals(2, TestUtils.plainAssertions(iJhon).count());
         String jhonEmail = iJhon.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
@@ -75,7 +81,7 @@ public class ConditionalMapTest extends MapTestData2 {
         Assert.assertEquals(DATA_SKYPE_JHON, jhonSkype);
 
         // Bob has email and phone
-        OntIndividual.Named iBob = TestUtils.findOntEntity(t, OntIndividual.Named.class, "res-bobs");
+        OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-bobs");
         Assert.assertEquals(2, TestUtils.plainAssertions(iBob).count());
         String bobEmail = iBob.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
@@ -89,8 +95,9 @@ public class ConditionalMapTest extends MapTestData2 {
         Assert.assertEquals(DATA_PHONE_BOB, bobPhone);
 
         // Karl has no contacts:
-        OntIndividual.Named iKarl = TestUtils.findOntEntity(t, OntIndividual.Named.class, "res-karls");
+        OntIndividual.Named iKarl = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-karls");
         Assert.assertEquals(0, TestUtils.plainAssertions(iKarl).count());
+
     }
 
     @Override

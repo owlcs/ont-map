@@ -36,7 +36,7 @@ public class AVC {
     public final static Property constraint = property("constraint");
 
     public static Resource Mapping(String filters, String sources) {
-        return resource(String.format("Mapping--%s--%s--%d", filters, sources, 1));
+        return resource(String.format("Mapping-f%s-s%s-t%d", filters, sources, 1));
     }
 
     public static Property sourceDefaultValue(String pref) {

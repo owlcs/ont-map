@@ -128,7 +128,7 @@ public interface MapFunction extends Description {
 
     /**
      * A Function Call,
-     * i.e. a container which contains function with assigned arguments ready for writing to a graph.
+     * i.e. a container which contains function with assigned arguments ready for writing to a graph as map-expression.
      * Cannot be modified.
      * Note: it is not a {@link org.apache.jena.rdf.model.Resource jena resorce}.
      */
@@ -191,8 +191,11 @@ public interface MapFunction extends Description {
             return add(predicate.getURI(), property.getURI());
         }
 
-        default Builder add(Property predicate, Object literal) {
-            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(literal).toString());
+        default Builder add(Property predicate, Object value) {
+            if (value instanceof Call) {
+                return add(predicate.getURI(), ((Call) value).asUnmodifiableBuilder());
+            }
+            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(value).toString());
         }
 
         /**

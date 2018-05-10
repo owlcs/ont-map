@@ -34,7 +34,7 @@ public class ExceptionsTest {
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("smf:currentUserName"));
         Assert.assertNotNull(f);
         try {
-            context.addExpression(f.create().build());
+            context.addClassBridge(f.create().build());
             Assert.fail("Expression has been added successfully");
         } catch (Exceptions.SpinMapException e) {
             LOGGER.debug("Exception: {}", e.getMessage());

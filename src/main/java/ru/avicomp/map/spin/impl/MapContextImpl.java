@@ -48,6 +48,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
     });
 
+    // only annotation and data property is allowed for property bridge
+    protected Predicate<RDFNode> isAssertionProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
+
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
     }
@@ -78,18 +81,18 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     @Override
-    public MapContextImpl addExpression(MapFunction.Call func) throws MapJenaException {
-        if (!MapJenaException.notNull(func, "Null function call").getFunction().isTarget()) {
-            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, func.getFunction().name()).build();
+    public MapContextImpl addClassBridge(MapFunction.Call filterFunction, MapFunction.Call mappingFunction) throws MapJenaException {
+        if (!MapJenaException.notNull(mappingFunction, "Null function call").getFunction().isTarget()) {
+            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, mappingFunction.getFunction().name()).build();
         }
-        validate(func);
-        RDFNode expr = createExpression(func);
+        RDFNode filterExpression = createFilterExpression(filterFunction);
+        RDFNode mappingExpression = createMappingExpression(mappingFunction);
         // collects target expression statements to be deleted :
         List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
                 .collect(Collectors.toList());
-        addProperty(SPINMAP.target, expr);
+        addProperty(SPINMAP.target, mappingExpression);
         // add Mapping-0-1 to create individual with type
-        addMappingRule(x -> false, target(), null, RDF.type);
+        addMappingRule(isAssertionProperty, target(), filterExpression, RDF.type);
         // delete old target expressions:
         prev.forEach(s -> {
             if (s.getObject().isAnon()) {
@@ -97,7 +100,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             }
             getModel().remove(s);
         });
-        writeFunctionBody(func);
+        writeFunctionBody(mappingFunction);
         return this;
     }
 
@@ -119,26 +122,32 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        // only annotation and data property is allowed for property bridge
-        Predicate<RDFNode> isAssertionProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
         if (!isAssertionProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
-        validate(mappingFunction);
-        RDFNode filterExpression = null;
-        if (filterFunction != null) {
-            MapFunction f = filterFunction.getFunction();
-            if (!f.isBoolean()) {
-                throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
-            }
-            validate(filterFunction);
-            filterExpression = createExpression(filterFunction);
-        }
-        RDFNode mappingExpression = createExpression(mappingFunction);
+        RDFNode filterExpression = createFilterExpression(filterFunction);
+        RDFNode mappingExpression = createMappingExpression(mappingFunction);
         Resource mapping = addMappingRule(isAssertionProperty, mappingExpression, filterExpression, target);
         MapPropertiesImpl res = asProperties(mapping);
         writeFunctionBody(mappingFunction);
         return res;
+    }
+
+    protected RDFNode createFilterExpression(MapFunction.Call function) {
+        if (function == null) {
+            return null;
+        }
+        MapFunction f = function.getFunction();
+        if (!f.isBoolean()) {
+            throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
+        }
+        validate(function);
+        return createExpression(function);
+    }
+
+    protected RDFNode createMappingExpression(MapFunction.Call function) {
+        validate(function);
+        return createExpression(function);
     }
 
     /**
@@ -339,7 +348,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                     .add(Key.CONTEXT_SOURCE, toString(source)).build();
         }
         return getModel().createContext(source, getTarget())
-                .addExpression(builder.add(SPINMAPL.context.getURI(), getURI()).build());
+                .addClassBridge(null, builder.add(SPINMAPL.context.getURI(), getURI()).build());
     }
 
     /**
@@ -454,13 +463,22 @@ public class MapContextImpl extends ResourceImpl implements Context {
         throw new MapJenaException("TODO: " + argType + "|" + funcType);
     }
 
+    /**
+     * Maps {@link MapFunction.Arg} typed value to {@link RDFNode} if possible, otherwise throws an exception.
+     * Notice that the result node is not attached to the graph physically.
+     *
+     * @param function {@link MapFunction}
+     * @param type     String argument type
+     * @param value    String argument value
+     * @return fresh rdf-node, either literal or resource.
+     * @throws MapJenaException if parameters cannot be mapped to RDFNode
+     */
     public RDFNode makeArgRDFNode(MapFunction function, final String type, final String value) throws MapJenaException {
         MapModelImpl m = getModel();
         Resource uri = null;
         if (m.containsResource(ResourceFactory.createResource(value))) {
             uri = m.createResource(value);
         }
-        // clarify type:
         String foundType = type;
         String foundValue = value;
         if (AVC.undefined.getURI().equals(type)) {

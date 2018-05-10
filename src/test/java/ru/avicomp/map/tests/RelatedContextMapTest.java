@@ -5,10 +5,10 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -19,30 +19,15 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
  * Created by @szuev on 01.05.2018.
  */
 public class RelatedContextMapTest extends MapTestData2 {
-    private final Logger LOGGER = LoggerFactory.getLogger(RelatedContextMapTest.class);
 
-    @Test
     @Override
-    public void testInference() {
-        LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
-        TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
-        TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
-        MapModel m = assembleMapping(manager, s, t);
-        TestUtils.debug(m);
+    public void validate(OntGraphModel result) {
+        Assert.assertEquals(4, result.listNamedIndividuals().count());
 
-        LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
-        TestUtils.debug(t);
-
-        Assert.assertEquals(4, t.listNamedIndividuals().count());
-
-        OntIndividual.Named iBob = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Bob");
-        OntIndividual.Named iJane = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Jane");
-        OntIndividual.Named iJhon = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Jhon");
-        OntIndividual.Named iKarl = TestUtils.findOntEntity(t, OntIndividual.Named.class, "Karl");
+        OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Bob");
+        OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Jane");
+        OntIndividual.Named iJhon = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Jhon");
+        OntIndividual.Named iKarl = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Karl");
 
         // no address for Jane and Jhon
         Assert.assertEquals(0, TestUtils.plainAssertions(iJane).count());
@@ -82,7 +67,7 @@ public class RelatedContextMapTest extends MapTestData2 {
         Context contact2user = person2user.createRelatedContext(contact);
 
         MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
-        person2user.addExpression(changeNamespace
+        person2user.addClassBridge(changeNamespace
                 .create().add(pm.expandPrefix("spinmapl:targetNamespace"), targetNS).build());
         MapFunction equals = manager.getFunction(pm.expandPrefix("spinmap:equals"));
         String arg1 = pm.expandPrefix("sp:arg1");
