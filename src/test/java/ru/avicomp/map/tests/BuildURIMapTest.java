@@ -130,7 +130,7 @@ public class BuildURIMapTest extends MapTestData1 {
         TestUtils.debug(propertyFunction1, pm);
         TestUtils.debug(propertyFunction2, pm);
 
-        MapModel res = createFreshMapping(manager, "Used functions: spinmapl:buildURI2, spinmapl:concatWithSeparator, spinmap:equals");
+        MapModel res = createMappingModel(manager, "Used functions: spinmapl:buildURI2, spinmapl:concatWithSeparator, spinmap:equals");
 
         res.createContext(srcClass, dstClass, targetFunction)
                 .addPropertyBridge(propertyFunction1, dstProp).getContext()

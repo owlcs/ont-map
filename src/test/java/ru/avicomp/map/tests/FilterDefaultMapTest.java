@@ -76,9 +76,7 @@ public class FilterDefaultMapTest extends MapTestData2 {
         MapFunction withDefault = manager.getFunction(AVC.withDefault.getURI());
         MapFunction gt = manager.getFunction(manager.prefixes().expandPrefix("sp:gt"));
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt", null);
+        MapModel res = createMappingModel(manager, "Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt");
         Context context = res.createContext(person, user, uuid.create().build());
         MapFunction.Call propertyMapFunc = concatWithSeparator.create()
                 .add(SP.arg1.getURI(), withDefault.create()

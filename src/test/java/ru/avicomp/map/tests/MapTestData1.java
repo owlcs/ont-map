@@ -40,7 +40,7 @@ abstract class MapTestData1 extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleSource() {
-        OntGraphModel m = createModel("source");
+        OntGraphModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
         OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
         OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty1");
@@ -64,18 +64,15 @@ abstract class MapTestData1 extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleTarget() {
-        OntGraphModel m = createModel("target");
+        OntGraphModel m = createDataModel("target");
         String ns = m.getID().getURI() + "#";
         OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
         m.createOntEntity(OntNDP.class, ns + "targetDataProperty2").addDomain(clazz);
         return m;
     }
 
-    MapModel createFreshMapping(MapManager manager, String comment) {
-        MapModel res = manager.createMapModel();
-        // TopBraid Composer (gui, not spin) has difficulties with anonymous ontologies:
-        res.setID(getNameSpace() + "/map")
-                .addComment(comment, null);
-        return res;
+    @Override
+    public String getDataNameSpace() {
+        return getNameSpace(MapTestData1.class);
     }
 }

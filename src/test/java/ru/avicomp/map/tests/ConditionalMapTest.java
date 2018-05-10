@@ -119,9 +119,7 @@ public class ConditionalMapTest extends MapTestData2 {
         MapFunction datatype = manager.getFunction(SP.resource("datatype").getURI());
         MapFunction cast = manager.getFunction(SPIF.cast.getURI());
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: spinmapl:composeURI, sp:eq, sp:datatype, spif:cast", null);
+        MapModel res = createMappingModel(manager, "Used functions: spinmapl:composeURI, sp:eq, sp:datatype, spif:cast");
         Context context = res.createContext(srcClass, dstClass, targetFunctionCall);
         propsMap.forEach((sourceDatatype, targetProperty) -> {
             MapFunction.Call filter = eq.create()

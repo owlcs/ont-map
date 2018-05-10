@@ -64,7 +64,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         TestUtils.debug(targetFunction, pm);
         TestUtils.debug(propertyFunction1, pm);
 
-        MapModel res = createFreshMapping(manager,
+        MapModel res = createMappingModel(manager,
                 "Please note: TopBraid Composer (5.5.1) has a problem with displaying diagram.\n" +
                         "Don't worry: that's just its problem:\n" +
                         "to make sure run inferences and check result individuals.");

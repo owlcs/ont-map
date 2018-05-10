@@ -59,9 +59,8 @@ public class RelatedContextMapTest extends MapTestData2 {
         OntNDP contactAddress = TestUtils.findOntEntity(src, OntNDP.class, "address");
         OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace, spinmap:equals", null);
+        MapModel res = createMappingModel(manager,
+                "Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace, spinmap:equals");
 
         Context person2user = res.createContext(person, user);
         Context contact2user = person2user.createRelatedContext(contact);

@@ -1,6 +1,7 @@
 package ru.avicomp.map;
 
-import org.apache.jena.rdf.model.Model;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.avicomp.map.tests.*;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
@@ -21,6 +22,7 @@ import java.util.Collection;
  * Created by @szuev on 24.04.2018.
  */
 public class TestExamplesSaver {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestExamplesSaver.class);
 
     public static void main(String... args) throws IOException {
         Path dir = Paths.get("out");
@@ -37,22 +39,29 @@ public class TestExamplesSaver {
                 new FilterDefaultMapTest(),
                 new FilterIndividualsMapTest()
         );
+
         for (AbstractMapTest mapTest : mapTests) {
-            String file = mapTest.getClass().getSimpleName() + "-%s.ttl";
             OntGraphModel src = mapTest.assembleSource();
             OntGraphModel dst = mapTest.assembleTarget();
             OntGraphModel map = OntModelFactory.createModel(mapTest.assembleMapping(manager, src, dst).getGraph(),
                     OntModelConfig.ONT_PERSONALITY_LAX);
-            save(dir.resolve(String.format(file, "src")), src);
-            save(dir.resolve(String.format(file, "dst")), dst);
-            save(dir.resolve(String.format(file, "map")), map);
+            Path srcFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-src.ttl");
+            Path dstFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-dst.ttl");
+            Path mapFile = dir.resolve(getURILastPart(mapTest.getMapNameSpace()) + "-map.ttl");
+            saveTurtle(srcFile, src);
+            saveTurtle(dstFile, dst);
+            saveTurtle(mapFile, map);
         }
     }
 
-    private static void save(Path file, Model m) throws IOException {
-        System.out.println("Save to file " + file);
+    private static void saveTurtle(Path file, OntGraphModel m) throws IOException {
+        LOGGER.info("Save ontology <{}> to file <{}>", m.getID().getURI(), file);
         try (Writer out = Files.newBufferedWriter(file)) {
             m.write(out, "ttl");
         }
+    }
+
+    private static String getURILastPart(String uri) {
+        return uri.replaceFirst(".+/([^/]+)/*$", "$1");
     }
 }

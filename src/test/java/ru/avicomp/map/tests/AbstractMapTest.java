@@ -16,17 +16,32 @@ public abstract class AbstractMapTest {
 
     public abstract OntGraphModel assembleTarget();
 
-    public String getNameSpace() {
-        return String.format("http://example.com/%s", getClass().getSimpleName());
+    static String getNameSpace(Class clazz) {
+        return String.format("http://example.com/%s", clazz.getSimpleName());
     }
 
-    protected OntGraphModel createModel(String name) {
+    public String getDataNameSpace() {
+        return getNameSpace(getClass());
+    }
+
+    public String getMapNameSpace() {
+        return getNameSpace(getClass());
+    }
+
+    OntGraphModel createDataModel(String name) {
         OntGraphModel res = OntModelFactory.createModel();
         res.setNsPrefixes(OntModelFactory.STANDARD);
-        res.setID(getNameSpace() + "/" + name);
+        res.setID(getDataNameSpace() + "/" + name);
         String ns = res.getID().getURI() + "#";
         res.setNsPrefix(name, ns);
         return res;
     }
 
+    MapModel createMappingModel(MapManager manager, String description) {
+        MapModel res = manager.createMapModel();
+        // TopBraid Composer (gui, not spin) has difficulties with anonymous ontologies:
+        res.setID(getMapNameSpace() + "/map")
+                .addComment(description, null);
+        return res;
+    }
 }

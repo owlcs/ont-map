@@ -49,9 +49,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         OntNDP srcAge = TestUtils.findOntEntity(src, OntNDP.class, "age");
         OntNDP dstAge = TestUtils.findOntEntity(dst, OntNDP.class, "user-age");
 
-        MapModel res = manager.createMapModel();
-        res.setID(getNameSpace() + "/map")
-                .addComment("Used functions: avc:UUID, spinmap:equals, sp:gt, sp:lt, sp:and", null);
+        MapModel res = createMappingModel(manager, "Used functions: avc:UUID, spinmap:equals, sp:gt, sp:lt, sp:and");
 
         MapFunction gt = manager.getFunction(manager.prefixes().expandPrefix("sp:gt"));
         MapFunction lt = manager.getFunction(manager.prefixes().expandPrefix("sp:lt"));

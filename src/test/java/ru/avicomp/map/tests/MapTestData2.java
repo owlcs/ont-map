@@ -55,7 +55,7 @@ abstract class MapTestData2 extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleSource() {
-        OntGraphModel m = createModel("contacts");
+        OntGraphModel m = createDataModel("contacts");
         String schemaNS = m.getID().getURI() + "#";
         String dataNS = m.getID().getURI() + "/data#";
         m.setNsPrefix("data", dataNS);
@@ -124,7 +124,7 @@ abstract class MapTestData2 extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleTarget() {
-        OntGraphModel m = createModel("users");
+        OntGraphModel m = createDataModel("users");
         String ns = m.getID().getURI() + "#";
         OntClass user = m.createOntEntity(OntClass.class, ns + "User");
         OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
@@ -134,5 +134,10 @@ abstract class MapTestData2 extends AbstractMapTest {
             p.addDomain(user);
         });
         return m;
+    }
+
+    @Override
+    public String getDataNameSpace() {
+        return getNameSpace(MapTestData2.class);
     }
 }
