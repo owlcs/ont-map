@@ -31,7 +31,11 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 public class MappingBuilder {
-    // query variables:
+    public static final String SOURCE_VALUE = "value";
+    public static final String RESULT_VALUE = "result";
+    public static final String TARGET_VALUE = "target";
+
+    // query variables and parameters:
     private Set<String> sourcePredicates = new LinkedHashSet<>();
     private String targetPredicate;
     private Map<String, String> defaultValues = new HashMap<>();
@@ -112,7 +116,9 @@ public class MappingBuilder {
     }
 
     public static String toPredicateString(Collection<Property> properties) {
-        return properties.isEmpty() ? "0" : properties.stream().map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, "")).collect(Collectors.joining("-"));
+        return properties.isEmpty() ? "0" : properties.stream()
+                .map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, ""))
+                .collect(Collectors.joining("-"));
     }
 
     public static String asOptional(String expr) {
@@ -211,17 +217,16 @@ public class MappingBuilder {
     public String build() {
         Objects.requireNonNull(mappingExpression, "Null expression variable name");
         Objects.requireNonNull(targetPredicate, "Null target predicate variable name");
-        String resValue = "resValue";
-        String assertionValuePrefix = "value";
+
         StringBuilder query = new StringBuilder("CONSTRUCT {\n\t")
-                .append("?target ?").append(targetPredicate).append(" ?").append(resValue)
+                .append("?target ?").append(targetPredicate).append(" ?").append(RESULT_VALUE)
                 .append(" .\n}\nWHERE {\n");
 
         int varIndex = 1;
         List<String> mappingVariables = new ArrayList<>();
         List<String> filterVariables = new ArrayList<>();
         for (String p : sourcePredicates) {
-            String v = assertionValuePrefix + varIndex++;
+            String v = SOURCE_VALUE + varIndex++;
             String t = "?this ?" + p + " ?" + v + " .";
             query.append(asOptional(t)).append("\n");
             String d = defaultValues.get(p);
@@ -237,7 +242,8 @@ public class MappingBuilder {
         }
         query.append("\tBIND (").append(makeEvalCall(mappingExpression, mappingVariables))
                 .append(" AS ?")
-                .append(resValue).append(") .\n\tBIND (spinmap:targetResource(?this, ?context) AS ?target) .");
+                .append(RESULT_VALUE).append(") .")
+                .append("\n\tBIND (spinmap:targetResource(?this, ?context) AS ?").append(TARGET_VALUE).append(") .");
         if (filterExpression != null) {
             query.append("\n\tFILTER ")
                     .append("(!bound(?").append(filterExpression).append(") || ")

@@ -60,15 +60,15 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         Context context = res.createContext(person, user);
         context.addClassBridge(
                 and.create()
-                        .add(SP.arg1, gt.create()
-                                .add(SP.arg1, srcAge)
-                                .add(SP.arg2, 25).build())
-                        .add(SP.arg2, lt.create()
-                                .add(SP.arg1, srcAge)
-                                .add(SP.arg2, 100).build())
+                        .addFunction(SP.arg1, gt.create()
+                                .addProperty(SP.arg1, srcAge)
+                                .addLiteral(SP.arg2, 25).build())
+                        .addFunction(SP.arg2, lt.create()
+                                .addProperty(SP.arg1, srcAge)
+                                .addLiteral(SP.arg2, 100).build())
                         .build(),
                 uuid.create().build());
-        context.addPropertyBridge(equals.create().add(SP.arg1, srcAge).build(), dstAge);
+        context.addPropertyBridge(equals.create().addProperty(SP.arg1, srcAge).build(), dstAge);
 
         return res;
     }

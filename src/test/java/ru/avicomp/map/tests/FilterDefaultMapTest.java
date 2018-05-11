@@ -79,15 +79,15 @@ public class FilterDefaultMapTest extends MapTestData2 {
         MapModel res = createMappingModel(manager, "Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt");
         Context context = res.createContext(person, user, uuid.create().build());
         MapFunction.Call propertyMapFunc = concatWithSeparator.create()
-                .add(SP.arg1.getURI(), withDefault.create()
-                        .add(SP.arg1, firstName)
-                        .add(SP.arg2, DATA_FIRST_NAME_DEFAULT))
-                .add(SP.arg2.getURI(), withDefault.create()
-                        .add(SP.arg1, secondName)
-                        .add(SP.arg2, DATA_SECOND_NAME_DEFAULT))
-                .add(SPINMAPL.separator, CONCAT_SEPARATOR)
+                .addFunction(SP.arg1, withDefault.create()
+                        .addProperty(SP.arg1, firstName)
+                        .addLiteral(SP.arg2, DATA_FIRST_NAME_DEFAULT))
+                .addFunction(SP.arg2, withDefault.create()
+                        .addProperty(SP.arg1, secondName)
+                        .addLiteral(SP.arg2, DATA_SECOND_NAME_DEFAULT))
+                .addLiteral(SPINMAPL.separator, CONCAT_SEPARATOR)
                 .build();
-        MapFunction.Call filterFunction = gt.create().add(SP.arg1, age).add(SP.arg2, 30).build();
+        MapFunction.Call filterFunction = gt.create().addProperty(SP.arg1, age).addLiteral(SP.arg2, 30).build();
         context.addPropertyBridge(
                 filterFunction,
                 propertyMapFunc, resultName);

@@ -1,6 +1,7 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.vocabulary.XSD;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,8 @@ import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -49,6 +52,16 @@ abstract class MapTestData2 extends AbstractMapTest {
 
         LOGGER.info("Validate.");
         validate(t);
+        // todo: enable
+        //commonValidate(t);
+    }
+
+    void commonValidate(OntGraphModel m) {
+        List<OntObject> undeclaredIndividuals = TestUtils.plainAssertions(m)
+                .map(OntStatement::getSubject)
+                .filter(o -> !o.types().findFirst().isPresent())
+                .collect(Collectors.toList());
+        Assert.assertEquals("Model has unattached assertions: " + undeclaredIndividuals, 0, undeclaredIndividuals.size());
     }
 
     public abstract void validate(OntGraphModel result);

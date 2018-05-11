@@ -12,7 +12,6 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
@@ -26,7 +25,7 @@ public class PrefixesTest {
     @Test
     public void testPrefixes() {
         MapManager manager = Managers.getMapManager();
-        Model m = OntModelFactory.createModel(manager.createMapModel().getGraph());
+        Model m = manager.createMapModel().asOntModel();
         LOGGER.debug("\n{}", TestUtils.asString(m));
         // owl:imports:
         Assert.assertEquals(1, m.numPrefixes());

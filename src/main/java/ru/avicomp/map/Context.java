@@ -14,6 +14,13 @@ import java.util.stream.Stream;
 public interface Context {
 
     /**
+     * Answers an URI.
+     *
+     * @return String
+     */
+    String getURI();
+
+    /**
      * Returns a source class expression.
      *
      * @return {@link OntCE}
@@ -83,7 +90,7 @@ public interface Context {
     /**
      * Creates a context with the same target class expression and with source linked to the source of this context.
      * Classes can be linked to each other through object property range and domain axioms,
-     * see description for {@link #createRelatedContext(OntOPE, OntCE)}.
+     * see description for {@link #createRelatedContext(OntCE, OntOPE)}.
      * Throws an exception in the case the link (object property) does not exist or it can not be uniquely determined.
      *
      * @param source {@link OntCE} source for the new context, the target is the same as in this context.
@@ -104,12 +111,14 @@ public interface Context {
      * otherwise with "related object context" rule.
      * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
      *
-     * @param property {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
      * @param source   {@link OntCE} class expression, source for result context
+     * @param link {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
      * @return <b>new</b> context with specified class as source and {@link #getTarget()} as target.
      * @throws MapJenaException unable to make reference context
      */
-    Context createRelatedContext(OntOPE property, OntCE source) throws MapJenaException;
+    Context createRelatedContext(OntCE source, OntOPE link) throws MapJenaException;
+
+    Context attachContext(Context other, OntOPE link) throws MapJenaException;
 
     /**
      * Adds a primary rule to bind two class expressions.

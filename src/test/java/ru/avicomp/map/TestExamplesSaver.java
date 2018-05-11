@@ -3,8 +3,6 @@ package ru.avicomp.map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.tests.*;
-import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 import java.io.IOException;
@@ -37,14 +35,14 @@ public class TestExamplesSaver {
                 new ConditionalMapTest(),
                 new RelatedContextMapTest(),
                 new FilterDefaultMapTest(),
-                new FilterIndividualsMapTest()
+                new FilterIndividualsMapTest(),
+                new SplitMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {
             OntGraphModel src = mapTest.assembleSource();
             OntGraphModel dst = mapTest.assembleTarget();
-            OntGraphModel map = OntModelFactory.createModel(mapTest.assembleMapping(manager, src, dst).getGraph(),
-                    OntModelConfig.ONT_PERSONALITY_LAX);
+            OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asOntModel();
             Path srcFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-src.ttl");
             Path dstFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-dst.ttl");
             Path mapFile = dir.resolve(getURILastPart(mapTest.getMapNameSpace()) + "-map.ttl");

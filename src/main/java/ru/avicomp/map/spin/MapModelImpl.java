@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.MapModel;
+import ru.avicomp.map.*;
 import ru.avicomp.map.spin.impl.MapContextImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -25,12 +22,12 @@ import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ru.avicomp.map.spin.Exceptions.ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK;
+import static ru.avicomp.map.spin.Exceptions.ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED;
 
 /**
  * Created by @szuev on 10.04.2018.
@@ -51,6 +48,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
+    public static String getName(Resource resource) {
+        return resource.asNode().toString();
+    }
 
     @Override
     public OntID getID() {
@@ -121,8 +121,34 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     @Override
     public MapModelImpl bindContexts(Context left, Context right) {
-        // todo:
-        throw new UnsupportedOperationException("TODO");
+        OntCE leftClass = left.getTarget();
+        OntCE rightClass = right.getTarget();
+        List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
+        if (res.isEmpty()) {
+            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create()
+                    .add(Exceptions.Key.CONTEXT_TARGET, getName(leftClass))
+                    .add(Exceptions.Key.CONTEXT_TARGET, getName(rightClass))
+                    .build();
+        }
+        if (res.size() != 1) {
+            Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
+                    .add(Exceptions.Key.CONTEXT_TARGET, getName(leftClass))
+                    .add(Exceptions.Key.CONTEXT_TARGET, getName(rightClass));
+            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
+            throw err.build();
+        }
+        OntOPE p = res.get(0);
+        if (isLinkProperty(p, leftClass, rightClass)) {
+            left.attachContext(right, p);
+        } else {
+            right.attachContext(left, p);
+        }
+        return this;
+    }
+
+    @Override
+    public OntGraphModel asOntModel() {
+        return this;
     }
 
     /**
@@ -311,5 +337,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
         return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
+    }
+
+    public Stream<OntOPE> linkProperties(OntCE left, OntCE right) {
+        return ontObjects(OntOPE.class)
+                .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))
+                .distinct();
     }
 }

@@ -1,9 +1,9 @@
 package ru.avicomp.map;
 
-import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.model.OntOPE;
 
 import java.util.stream.Stream;
 
@@ -82,17 +82,11 @@ public interface MapModel {
      * @param right {@link Context}
      * @return this model
      * @throws MapJenaException if something goes wrong
-     * @see Context#createRelatedContext(OntCE)
+     * @see Context#attachContext(Context, OntOPE)
      */
     MapModel bindContexts(Context left, Context right) throws MapJenaException;
 
-    /**
-     * Answers the graph which this Model is presenting.
-     * todo: maybe it is better to return OntGraphModel interface ?
-     *
-     * @return {@link UnionGraph}
-     */
-    UnionGraph getGraph();
+    OntGraphModel asOntModel();
 
     /**
      * Creates a ready to use context, i.e. a class expression binding with an target rule expression.

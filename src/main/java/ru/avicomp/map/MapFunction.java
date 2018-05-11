@@ -183,33 +183,6 @@ public interface MapFunction extends Description {
          */
         MapFunction getFunction();
 
-        default Builder add(Property predicate, OntNDP property) {
-            return add(predicate.getURI(), property.getURI());
-        }
-
-        default Builder add(Property predicate, OntNAP property) {
-            return add(predicate.getURI(), property.getURI());
-        }
-
-        default Builder add(Property predicate, Object value) {
-            if (value instanceof Call) {
-                return add(predicate.getURI(), ((Call) value).asUnmodifiableBuilder());
-            }
-            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(value).toString());
-        }
-
-        /**
-         * TODO: remove or change ?
-         *
-         * @param arg      {@link Arg}
-         * @param function {@link Call}
-         * @return {@link Builder} this builder
-         * @throws MapJenaException something is wrong
-         */
-        default Builder add(Arg arg, Call function) throws MapJenaException {
-            return add(arg.name(), function.asUnmodifiableBuilder());
-        }
-
         /**
          * Builds a function call.
          *
@@ -218,5 +191,24 @@ public interface MapFunction extends Description {
          */
         Call build() throws MapJenaException;
 
+        default Builder addProperty(Property predicate, OntNDP property) {
+            return add(predicate.getURI(), property.getURI());
+        }
+
+        default Builder addProperty(Property predicate, OntNAP property) {
+            return add(predicate.getURI(), property.getURI());
+        }
+
+        default Builder addLiteral(Property predicate, Object value) {
+            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(value).toString());
+        }
+
+        default Builder addFunction(Property predicate, Call function) {
+            return addFunction(predicate, function.asUnmodifiableBuilder());
+        }
+
+        default Builder addFunction(Property predicate, Builder function) {
+            return add(predicate.getURI(), function);
+        }
     }
 }

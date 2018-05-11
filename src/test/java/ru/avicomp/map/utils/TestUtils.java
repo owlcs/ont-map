@@ -1,16 +1,15 @@
 package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.ontapi.jena.model.OntEntity;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntIndividual;
-import ru.avicomp.ontapi.jena.model.OntStatement;
+import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.io.StringWriter;
@@ -54,5 +53,11 @@ public class TestUtils {
 
     public static Stream<OntStatement> plainAssertions(OntIndividual i) {
         return i.statements().filter(st -> !Objects.equals(st.getPredicate(), RDF.type));
+    }
+
+    public static Stream<OntStatement> plainAssertions(OntGraphModel m) {
+        return m.ontObjects(OntPE.class).filter(RDFNode::isURIResource)
+                .map(p -> p.as(Property.class))
+                .flatMap(p -> m.statements(null, p, null));
     }
 }

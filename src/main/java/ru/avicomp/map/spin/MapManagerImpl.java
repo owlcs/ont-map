@@ -8,7 +8,12 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.impl.ModelCom;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.inference.SPINInferences;
+import org.topbraid.spin.progress.NullProgressMonitor;
+import org.topbraid.spin.progress.ProgressMonitor;
+import org.topbraid.spin.progress.SimpleProgressMonitor;
 import org.topbraid.spin.system.SPINModuleRegistry;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
@@ -227,6 +232,8 @@ public class MapManagerImpl implements MapManager {
             SpinModelConfig.init(BuiltinPersonalities.model);
         }
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(InferenceEngineImpl.class);
+
         private final MapManagerImpl manager;
 
         public InferenceEngineImpl(MapManagerImpl manager) {
@@ -235,14 +242,12 @@ public class MapManagerImpl implements MapManager {
 
         @Override
         public void run(MapModel mapping, Graph source, Graph target) throws MapJenaException {
-            // todo: add logging
-
             // Reassembly a union graph (just in case, it should already contain everything needed):
             UnionGraph union = new UnionGraph(Factory.createGraphMem());
             // pass prefixes:
-            union.getPrefixMapping().setNsPrefixes(mapping.getGraph().getPrefixMapping());
+            union.getPrefixMapping().setNsPrefixes(mapping.asOntModel());
             // add everything from mapping:
-            Graphs.flat(mapping.getGraph()).forEach(union::addGraph);
+            Graphs.flat(mapping.asOntModel().getGraph()).forEach(union::addGraph);
             // add everything from source:
             Graphs.flat(source).forEach(union::addGraph);
             // all from library with except of avc (also, just in case):
@@ -250,7 +255,20 @@ public class MapManagerImpl implements MapManager {
 
             Model s = SpinModelConfig.createSpinModel(union);
             Model t = new ModelCom(target);
-            SPINInferences.run(s, t, null, null, false, null);
+
+            ProgressMonitor logMonitor = progressMonitor(mapping);
+            // todo: SPINRuleComparator to ensure classes-bridges go before property-btidges
+            SPINInferences.run(s, t, null, null, false, logMonitor);
+        }
+
+        protected ProgressMonitor progressMonitor(MapModel model) {
+            final String name;
+            return LOGGER.isDebugEnabled() ? new SimpleProgressMonitor(name = model.getID().getURI()) {
+                @Override
+                protected void println(String text) {
+                    LOGGER.debug("{}: {}", name, text);
+                }
+            } : new NullProgressMonitor();
         }
     }
 
