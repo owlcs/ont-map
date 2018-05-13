@@ -7,6 +7,8 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.system.SPINModuleRegistry;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -36,7 +38,7 @@ public class MapManagerImpl implements MapManager {
     private final PrefixMapping prefixLibrary;
     private final Model graphLibrary;
     private final Map<String, MapFunctionImpl> mapFunctions;
-    private final OntPersonality mapPersonality = OntModelConfig.ONT_PERSONALITY_LAX.copy();
+    public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel();
@@ -176,13 +178,23 @@ public class MapManagerImpl implements MapManager {
      * {@link ru.avicomp.ontapi.jena.model.OntCE ont class expression},
      * {@link ru.avicomp.ontapi.jena.model.OntPE ont property expression}.
      *
-     * @return {@link MapModel mapping model}
+     * @return {@link MapModel mapping model}, which also ia anonymous owl ontology
      */
     @Override
     public MapModelImpl createMapModel() {
-        return createMapModel(Factory.createGraphMem(), mapPersonality);
+        return createMapModel(Factory.createGraphMem(), ONT_PERSONALITY);
     }
 
+    /**
+     * Creates a fresh mapping model for the specified graph.
+     * Note: it adds {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} statement to the model,
+     * this is just in case only for Composer Inference Engine, ONT-Map Inference Engine does not use that setting.
+     *
+     * @param base           {@link Graph}
+     * @param owlPersonality {@link OntPersonality}
+     * @return {@link MapModelImpl}
+     * @see InferenceEngineImpl#getMapComparator(Model)
+     */
     public MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
         UnionGraph g = new UnionGraph(base);
         MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
@@ -190,8 +202,14 @@ public class MapManagerImpl implements MapManager {
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         AutoPrefixListener.addAutoPrefixListener(g, prefixes());
+        // Set spin:rulePropertyMaxIterationCount to 2
+        // to be sure that all the rules have been processed through TopBraid Composer Inference as expected,
+        // even if they depend on other rules.
+        // Note: this parameter is unused in our ONT-Map InferenceEngine:
+        // it provides own rules order, and each rule is processed only once.
+        res.add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, res.createTypedLiteral(2));
         // add spinmapl (a top of library) to owl:imports:
-        res.setID(null).addImport(Graphs.getURI(map));
+        res.getID().addImport(Graphs.getURI(map));
         return res;
     }
 

@@ -1,6 +1,5 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
@@ -10,8 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Managers;
-import ru.avicomp.map.MapManager;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.TestUtils;
+import ru.avicomp.ontapi.jena.OntModelFactory;
+import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
@@ -24,11 +27,12 @@ public class PrefixesTest {
 
     @Test
     public void testPrefixes() {
-        MapManager manager = Managers.getMapManager();
-        Model m = manager.createMapModel().asOntModel();
+        OntGraphModel m = OntModelFactory.createModel();
+        AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), Managers.getMapManager().prefixes());
+        m.getID().addImport(SPINMAPL.BASE_URI);
         LOGGER.debug("\n{}", TestUtils.asString(m));
-        // owl:imports:
-        Assert.assertEquals(1, m.numPrefixes());
+        // rdf:type, owl:imports, owl:Ontology - 2 prefixes:
+        Assert.assertEquals(2, m.numPrefixes());
 
         LOGGER.debug("----------------");
         Resource r = m.createResource()

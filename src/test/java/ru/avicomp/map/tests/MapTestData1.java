@@ -35,7 +35,7 @@ abstract class MapTestData1 extends AbstractMapTest {
         mapping = mapping.removeContext(contexts.get(0));
         TestUtils.debug(mapping);
         Assert.assertEquals(0, mapping.contexts().count());
-        Assert.assertEquals(5, mapping.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(6, mapping.asOntModel().getBaseGraph().size());
     }
 
     @Override

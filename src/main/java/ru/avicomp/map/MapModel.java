@@ -22,7 +22,7 @@ public interface MapModel {
      * Returns an ontology id.
      *
      * @return {@link OntID}, not null
-     * @see ru.avicomp.ontapi.jena.model.OntGraphModel#getID()
+     * @see OntGraphModel#getID()
      */
     OntID getID();
 
@@ -31,18 +31,19 @@ public interface MapModel {
      *
      * @param uri String iri or null for anonymous ontology
      * @return {@link OntID}, not null
-     * @see ru.avicomp.ontapi.jena.model.OntGraphModel#setID(String)
+     * @see OntGraphModel#setID(String)
      */
     OntID setID(String uri);
 
     /**
-     * Lists all linked ontologies, i.e. actual imports with exclusion of library.
-     * Note: the result models have {@link ru.avicomp.ontapi.jena.impl.conf.OntModelConfig#ONT_PERSONALITY_LAX} inside.
-     * TODO: rename + should return not only imports, but mapping itself in case it contains (owl) entities for map inference.
+     * Lists all linked (OWL-) ontologies,
+     * i.e. all actual imports with exclusion of library plus this mapping model itself if it has its own OWL-declarations.
      *
-     * @return Stream of imports in form of {@link OntGraphModel OWL2 jena model}.
+     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}.
+     * @see OntGraphModel#imports()
+     * @see #asOntModel()
      */
-    Stream<OntGraphModel> imports();
+    Stream<OntGraphModel> ontologies();
 
     /**
      * Lists all contexts.
@@ -86,6 +87,11 @@ public interface MapModel {
      */
     MapModel bindContexts(Context left, Context right) throws MapJenaException;
 
+    /**
+     * Answers the OWL2 model which wraps the same mapping graph.
+     *
+     * @return {@link OntGraphModel OWL2 jena model}
+     */
     OntGraphModel asOntModel();
 
     /**

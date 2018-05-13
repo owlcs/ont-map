@@ -71,7 +71,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         res.createContext(srcClass, dstClass, targetFunction)
                 .addPropertyBridge(propertyFunction1, dstProp);
         Assert.assertEquals(1, res.contexts().count());
-        Assert.assertEquals(2, res.imports().count());
+        Assert.assertEquals(2, res.ontologies().count());
         Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;

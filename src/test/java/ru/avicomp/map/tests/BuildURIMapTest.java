@@ -136,7 +136,7 @@ public class BuildURIMapTest extends MapTestData1 {
                 .addPropertyBridge(propertyFunction1, dstProp).getContext()
                 .addPropertyBridge(propertyFunction2, dst.getRDFSLabel());
         Assert.assertEquals(1, res.contexts().count());
-        Assert.assertEquals(2, res.imports().count());
+        Assert.assertEquals(2, res.ontologies().count());
         Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;

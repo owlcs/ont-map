@@ -29,8 +29,6 @@ public class SplitMapTest extends MapTestData3 {
         TestUtils.debug(t);
         MapManager manager = Managers.getMapManager();
         MapModel m = assembleMapping(manager, s, t);
-        // todo: debug
-        //m.asOntModel().add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, ResourceFactory.createTypedLiteral(2));
         // todo: for debug
         /*OntStatement st = m.asOntModel().statements(null, SP.arg1, TestUtils.findOntEntity(t, OntNOP.class, "contact-address")).findFirst().orElseThrow(AssertionError::new);
         m.asOntModel().add(st.getSubject(), st.getPredicate(), SPIN._arg1);
@@ -41,7 +39,6 @@ public class SplitMapTest extends MapTestData3 {
         LOGGER.info("Run inference.");
         manager.getInferenceEngine().run(m, s, t);
         TestUtils.debug(t);
-
 
         LOGGER.info("Validate.");
         //todo:

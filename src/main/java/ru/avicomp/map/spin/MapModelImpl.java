@@ -2,6 +2,7 @@ package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDFS;
@@ -17,7 +18,7 @@ import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
-import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -53,23 +54,22 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public OntID getID() {
-        return getNodeAs(Graphs.ontologyNode(getBaseGraph())
-                .orElseGet(() -> createResource().addProperty(RDF.type, OWL.Ontology).asNode()), OntID.class);
+    public Stream<OntGraphModel> ontologies() {
+        Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
+        Stream<OntGraphModel> imports = super.imports(MapManagerImpl.ONT_PERSONALITY)
+                .filter(m -> !SystemModels.graphs().keySet().contains(m.getID().getURI()));
+        return Stream.concat(res, imports);
     }
 
-    @Override
-    public OntID setID(String uri) {
-        return getNodeAs(OntGraphModelImpl.createOntologyID(getBaseModel(), uri).asNode(), OntID.class);
-    }
-
-    @Override
-    public Stream<OntGraphModel> imports(OntPersonality personality) {
-        return imports(personality, false);
-    }
-
-    public Stream<OntGraphModel> imports(OntPersonality personality, boolean withLibrary) {
-        return super.imports(personality).filter(model -> withLibrary || !SystemModels.graphs().keySet().contains(model.getID().getURI()));
+    /**
+     * Answers iff this mapping model has local defined owl-entities declarations.
+     *
+     * @return boolean
+     */
+    public boolean hasOntEntities() {
+        return Iter.asStream(getBaseModel().listSubjectsWithProperty(RDF.type))
+                .filter(RDFNode::isURIResource)
+                .anyMatch(r -> r.canAs(OntEntity.class));
     }
 
     @Override
