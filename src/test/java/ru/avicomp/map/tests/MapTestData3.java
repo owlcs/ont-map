@@ -59,6 +59,6 @@ abstract class MapTestData3 extends AbstractMapTest {
 
     @Override
     public String getDataNameSpace() {
-        return getNameSpace(MapTestData2.class);
+        return getNameSpace(MapTestData3.class);
     }
 }

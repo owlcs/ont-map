@@ -19,13 +19,14 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Auxiliary class-helper to build spin construct mapping template optimised to ONT-MAP API logic.
- * In additional to common capabilities the result mapping template must be able to accept and evaluate filter expression and default values.
+ * Auxiliary class-helper to build a custom spin construct mapping template, which extends {@code spinmap:Mapping-1} and is optimised to ONT-MAP API logic.
+ * In addition to common inherited capabilities the result template must be able to accept and evaluate filter expression and default values.
+ * Also it should be able to deal with the right-part (target) property assertions, but currently this is not supported (todo!).
  * <p>
- * Notice that this functionality is absent in the standard spin-library supply:
+ * Notice that provided functionality is absent in the standard spin-library supply:
  * a spinmap conditional mapping (see {@code spinmap:Conditional-Mapping-1-1}) can only accept ASK query, not abstract expression;
- * no default values are supported by others standard mappings (e.g. {@code spinmap:Mapping-2-1}),
- * as a result all mappings are skipped in case there is no corresponding data assertion on individual.
+ * no default values are supported by all others standard mappings (e.g. {@code spinmap:Mapping-2-1}) -
+ * i.e. if there is no data assertion on source individual then no mapping is performed.
  * <p>
  * Created by @szuev on 05.05.2018.
  */
@@ -56,8 +57,8 @@ public class MappingBuilder {
      */
     public static Resource createMappingTemplate(MapModelImpl model, List<Property> filterPredicates, List<Property> sourcePredicates)
             throws MapJenaException {
-        String filters = toPredicateString(filterPredicates);
-        String sources = toPredicateString(sourcePredicates);
+        String filters = toShortString(filterPredicates);
+        String sources = toShortString(sourcePredicates);
         Resource res = AVC.Mapping(filters, sources).inModel(model);
         if (model.contains(res, RDF.type, SPIN.ConstructTemplate)) {
             return res;
@@ -112,10 +113,12 @@ public class MappingBuilder {
         res.addProperty(RDF.type, SPIN.ConstructTemplate)
                 .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
                 .addProperty(SPIN.body, ARQ2SPIN.parseQuery(query.build(), m));
+        // spin:labelTemplate
+        res.addProperty(SPIN.labelTemplate, query.label());
         return res;
     }
 
-    public static String toPredicateString(Collection<Property> properties) {
+    public static String toShortString(Collection<Property> properties) {
         return properties.isEmpty() ? "0" : properties.stream()
                 .map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, ""))
                 .collect(Collectors.joining("-"));
@@ -253,4 +256,14 @@ public class MappingBuilder {
         return query.toString();
     }
 
+    public String label() {
+        return String.format("Filtering map into %s: derive %s from %s.",
+                asLabeledVariable("context"),
+                asLabeledVariable(targetPredicate),
+                sourcePredicates.stream().map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
+    }
+
+    private static String asLabeledVariable(String msg) {
+        return "{?" + msg + "}";
+    }
 }
