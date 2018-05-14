@@ -322,8 +322,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Answers if specified property links classes together through domain and range axioms.
+     * TODO: move to ONT-API Models?
      *
-     * @param property {@link OntOPE} property to testg
+     * @param property {@link OntOPE} property to test
      * @param domain   {@link OntCE} domain candidate
      * @param range    {@link OntCE} range candidate
      * @return true if it is link property.

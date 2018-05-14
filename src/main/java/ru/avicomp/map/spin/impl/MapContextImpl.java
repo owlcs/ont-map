@@ -185,37 +185,40 @@ public class MapContextImpl extends ResourceImpl implements Context {
     /**
      * Adds a mapping template call to the graph as {@code spinmap:rule}.
      *
-     * @param isProperty        to test that a property can have literal assertions and therefore can be passed to mapping construct.
+     * @param isPropertyAssertion        to test that a property can have literal assertions and therefore can be passed to mapping construct.
      * @param mappingExpression resource describing mapping expression
      * @param filterExpression  resource describing filter expression
      * @param target            {@link Property}
      * @return {@link Resource}
      */
-    public Resource addMappingRule(Predicate<RDFNode> isProperty,
+    public Resource addMappingRule(Predicate<RDFNode> isPropertyAssertion,
                                    RDFNode mappingExpression,
                                    RDFNode filterExpression,
                                    Property target) {
+        Optional<Resource> classMapRule = primaryRule();
         MapModelImpl m = getModel();
         Resource mapping = m.createResource()
                 .addProperty(SPINMAP.context, this)
                 .addProperty(SPINMAP.expression, mappingExpression)
                 .addProperty(SPINMAP.targetPredicate1, target);
-        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, true, isProperty);
+        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, true, isPropertyAssertion);
         List<Property> filterPredicates = new ArrayList<>();
         if (filterExpression != null) {
             mapping.addProperty(AVC.filter, filterExpression);
-            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, false, isProperty));
+            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, false, isPropertyAssertion));
         }
 
         boolean hasDefaults = Iter.asStream(mapping.listProperties())
                 .map(Statement::getPredicate).map(Property::getLocalName).anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
+        boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
+
         Resource template;
-        if (filterExpression == null && !hasDefaults && mappingPredicates.size() < 3) {
+        if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingPredicates.size() < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
             template = SPINMAP.Mapping(mappingPredicates.size(), 1).inModel(m);
         } else {
             // use custom (avc) mapping
-            template = MappingBuilder.createMappingTemplate(m, filterPredicates, mappingPredicates);
+            template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
         }
         mapping.addProperty(RDF.type, template);
         getSource().addProperty(SPINMAP.rule, mapping);

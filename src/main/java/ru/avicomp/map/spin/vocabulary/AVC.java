@@ -35,8 +35,18 @@ public class AVC {
     // to customise spin:constraint arguments, sometimes they are wrong in the standard spin library
     public final static Property constraint = property("constraint");
 
+    // an universal filtering mapping template name
     public static Resource Mapping(String filters, String sources) {
-        return resource(String.format("Mapping-f%s-s%s-t%d", filters, sources, 1));
+        return createMapping("Mapping", filters, sources);
+    }
+
+    // a property mapping template name
+    public static Resource PropertyMapping(String filters, String sources) {
+        return createMapping("PropertyMapping", filters, sources);
+    }
+
+    private static Resource createMapping(String prefix, String filters, String sources) {
+        return resource(String.format("%s-f%s-s%s-t%d", prefix, filters, sources, 1));
     }
 
     public static Property sourceDefaultValue(String pref) {

@@ -51,7 +51,7 @@ public class TestUtils {
         return res;
     }
 
-    public static Stream<OntStatement> plainAssertions(OntIndividual i) {
+    public static Stream<OntStatement> plainAssertions(OntIndividual i) { // todo: move to ONT-API Models?
         return i.statements().filter(st -> !Objects.equals(st.getPredicate(), RDF.type));
     }
 

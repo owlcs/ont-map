@@ -1,5 +1,6 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -10,6 +11,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -44,28 +46,41 @@ public class MappingBuilder {
     private List<String> mappingExpressionArguments = new ArrayList<>();
     private String mappingExpression;
     private String filterExpression;
+    private boolean requireClassAssertion;
 
     /**
-     * Finds or creates an universal custom mapping template {@code avc:Mapping--...--1} with possibility to filter and set default values.
-     * The result template goes directly to the specified model graph.
+     * Finds or creates a custom mapping template with possibility to filter and set default values.
+     * The result template is written directly into the specified model graph.
+     * If {@code isPropertyMapping = false} it produces an universal mapping ({@code avc:Mapping-...-t1}),
+     * which can be used in any case - both for class and property mappings,
+     * otherwise a more specific property template ({@code avc:PropertyMapping-...-t1}) with a class assertion filter in addition is provided.
+     * Since the order of inference has been changed (see {@link InferenceEngineImpl#getMapComparator(Model)}),
+     * a property mapping is processed only after a corresponding individual is created by class-map rule.
+     * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
+     * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,
+     * see {@link MapManagerImpl#createMapModel(Graph, OntPersonality)} for more details.
      *
      * @param model            {@link MapModelImpl}
+     * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct
      * @param filterPredicates List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while filtering
      * @param sourcePredicates List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while mapping
      * @return {@link Resource} a fresh or found mapping template resource in model
      * @throws MapJenaException if something goes wrong
      */
-    public static Resource createMappingTemplate(MapModelImpl model, List<Property> filterPredicates, List<Property> sourcePredicates)
+    public static Resource createMappingTemplate(MapModelImpl model,
+                                                 boolean isPropertyMapping,
+                                                 List<Property> filterPredicates, List<Property> sourcePredicates)
             throws MapJenaException {
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
-        Resource res = AVC.Mapping(filters, sources).inModel(model);
+        Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources)).inModel(model);
         if (model.contains(res, RDF.type, SPIN.ConstructTemplate)) {
             return res;
         }
         MappingBuilder query = new MappingBuilder()
                 .addMappingExpression(SPINMAP.expression.getLocalName())
-                .addTargetPredicate(SPINMAP.targetPredicate1.getLocalName());
+                .addTargetPredicate(SPINMAP.targetPredicate1.getLocalName())
+                .requireClassAssertion(isPropertyMapping);
         // mandatory mapping expression argument:
         res.addProperty(SPIN.constraint, model.createResource()
                 .addProperty(RDF.type, SPL.Argument)
@@ -148,6 +163,7 @@ public class MappingBuilder {
                 .addMappingArgument("sourcePredicate2")
                 .addFilterArgument("sourcePredicate3")
                 .addTargetPredicate("targetPredicate1")
+                .requireClassAssertion(true)
                 .build();
         System.out.println(r);
     }
@@ -185,6 +201,11 @@ public class MappingBuilder {
 
     public MappingBuilder addFilterExpression(String expression) {
         this.filterExpression = expression;
+        return this;
+    }
+
+    public MappingBuilder requireClassAssertion(boolean b) {
+        this.requireClassAssertion = b;
         return this;
     }
 
@@ -247,6 +268,9 @@ public class MappingBuilder {
                 .append(" AS ?")
                 .append(RESULT_VALUE).append(") .")
                 .append("\n\tBIND (spinmap:targetResource(?this, ?context) AS ?").append(TARGET_VALUE).append(") .");
+        if (requireClassAssertion) {
+            query.append("\n\tFILTER EXISTS {\n\t\t?").append(TARGET_VALUE).append(" a ?any .\n\t} .");
+        }
         if (filterExpression != null) {
             query.append("\n\tFILTER ")
                     .append("(!bound(?").append(filterExpression).append(") || ")
@@ -257,7 +281,9 @@ public class MappingBuilder {
     }
 
     public String label() {
-        return String.format("Filtering map into %s: derive %s from %s.",
+        return String.format("%s%sMap into %s: derive %s from %s.",
+                filterExpression != null ? "Filtering " : "",
+                requireClassAssertion ? "Property " : "",
                 asLabeledVariable("context"),
                 asLabeledVariable(targetPredicate),
                 sourcePredicates.stream().map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));

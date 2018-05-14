@@ -37,9 +37,6 @@ public class FilterIndividualsMapTest extends MapTestData2 {
             LOGGER.debug("Individual: {}, age: {}", i, assertions.get(0).getObject());
             Assert.assertTrue("Wrong age for individual " + i, a > 25 && a < 100);
         });
-        // TODO: there are also assertions for age detached from any individual.
-        // TODO: So we should inherit filter from class-bridge to property-bridge
-        // TODO: and add corresponding additional checking.
     }
 
     @Override

@@ -51,6 +51,7 @@ public class SplitMapTest extends MapTestData3 {
             OntIndividual a = assertions.get(0).getObject().as(OntIndividual.Named.class);
             Assert.assertTrue(a.classes().anyMatch(address::equals));
         });
+        commonValidate(t);
     }
 
     @Override
