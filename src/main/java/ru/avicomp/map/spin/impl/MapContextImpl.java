@@ -11,6 +11,7 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
@@ -131,7 +132,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        if (!(isAcceptLinkProperty(mappingFunction) ? isLinkProperty : isAssertionProperty).test(target)) {
+        if (!isAssertionProperty.test(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         RDFNode filterExpression = createFilterExpression(filterFunction);
@@ -140,10 +141,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
         MapPropertiesImpl res = asProperties(mapping);
         writeFunctionBody(mappingFunction);
         return res;
-    }
-
-    protected boolean isAcceptLinkProperty(MapFunction.Call func) {
-        return SPINMAP.targetResource.getURI().equals(MapJenaException.notNull(func, "Null function").getFunction().name());
     }
 
     protected RDFNode createFilterExpression(MapFunction.Call function) {
@@ -335,12 +332,10 @@ public class MapContextImpl extends ResourceImpl implements Context {
         OntCE src1 = getSource();
         List<OntOPE> res = getModel().linkProperties(src1, src2).collect(Collectors.toList());
         if (res.isEmpty()) {
-            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
-                    .add(Key.CONTEXT_SOURCE, MapModelImpl.getName(src2)).build();
+            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
-                    .add(Key.CONTEXT_SOURCE, MapModelImpl.getName(src2));
+            Exceptions.Builder err = exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK).add(Key.CONTEXT_SOURCE, src2);
             res.forEach(p -> err.add(Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
             throw err.build();
         }
@@ -357,8 +352,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
         } else {
             throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
-                    .add(Key.LINK_PROPERTY, MapModelImpl.getName(property))
-                    .add(Key.CONTEXT_SOURCE, MapModelImpl.getName(source)).build();
+                    .add(Key.LINK_PROPERTY, property)
+                    .add(Key.CONTEXT_SOURCE, source).build();
         }
         return getModel().createContext(source, getTarget())
                 .addClassBridge(null, builder.add(SPINMAPL.context.getURI(), getURI()).build());
@@ -366,25 +361,31 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapContextImpl attachContext(Context other, OntOPE link) throws MapJenaException {
+        if (this.equals(other)) {
+            throw exception(ATTACHED_CONTEXT_SELF_CALL).build();
+        }
         OntCE target = other.getTarget();
         OntCE source = other.getSource();
         if (!getSource().equals(source)) {
-            throw exception(ATTACHED_CONTEXT_DIFFEREN_SOURCES)
-                    .add(Key.CONTEXT_SOURCE, MapModelImpl.getName(source)).build();
+            throw exception(ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }
         Property property = ClassPropertyMap.toNamed(link);
         if (!MapModelImpl.isLinkProperty(link, getTarget(), target)) {
             throw exception(ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
-                    .add(Key.LINK_PROPERTY, MapModelImpl.getName(property))
-                    .add(Key.CONTEXT_TARGET, MapModelImpl.getName(target)).build();
+                    .addContext(other)
+                    .add(Key.LINK_PROPERTY, property).build();
         }
-        MapFunction.Call targetResource = getModel().getManager()
-                .getFunction(SPINMAP.targetResource.getURI())
-                .create()
-                .add(SP.arg1.getURI(), property.getURI())
-                .add(SPINMAP.context.getURI(), other.getURI())
-                .build();
-        addPropertyBridge(null, targetResource, property);
+        // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge
+        Model m = getModel();
+        getSource().addProperty(SPINMAP.rule,
+                m.createResource()
+                        .addProperty(RDF.type, SPINMAP.Mapping_0_1)
+                        .addProperty(SPINMAP.context, this)
+                        .addProperty(SPINMAP.targetPredicate1, link)
+                        .addProperty(SPINMAP.expression, m.createResource()
+                                .addProperty(RDF.type, SPINMAP.targetResource)
+                                .addProperty(SP.arg1, SPIN._arg1)
+                                .addProperty(SPINMAP.context, (MapContextImpl) other)));
         return this;
     }
 
@@ -539,9 +540,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     protected Exceptions.Builder exception(Exceptions code) {
-        return code.create()
-                .add(Key.CONTEXT_SOURCE, MapModelImpl.getName(getSource()))
-                .add(Key.CONTEXT_TARGET, MapModelImpl.getName(target()));
+        return code.create().addContext(this);
     }
 
     @Override

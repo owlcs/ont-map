@@ -49,10 +49,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
-    public static String getName(Resource resource) {
-        return resource.asNode().toString();
-    }
-
     @Override
     public Stream<OntGraphModel> ontologies() {
         Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
@@ -125,15 +121,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         OntCE rightClass = right.getTarget();
         List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
         if (res.isEmpty()) {
-            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create()
-                    .add(Exceptions.Key.CONTEXT_TARGET, getName(leftClass))
-                    .add(Exceptions.Key.CONTEXT_TARGET, getName(rightClass))
-                    .build();
+            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create().addContext(left).addContext(right).build();
         }
         if (res.size() != 1) {
             Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
-                    .add(Exceptions.Key.CONTEXT_TARGET, getName(leftClass))
-                    .add(Exceptions.Key.CONTEXT_TARGET, getName(rightClass));
+                    .addContext(left)
+                    .addContext(right);
             res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
             throw err.build();
         }

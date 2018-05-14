@@ -15,8 +15,9 @@ public interface Context {
 
     /**
      * Answers an URI.
+     * A context cannot be anonymous since it is used as parameter in internal mechanisms.
      *
-     * @return String
+     * @return String, not null
      */
     String getURI();
 
@@ -118,6 +119,16 @@ public interface Context {
      */
     Context createRelatedContext(OntCE source, OntOPE link) throws MapJenaException;
 
+    /**
+     * Binds this context and the specified with a link-property.
+     * On inference these contexts together will produce consistent data:
+     * the result individuals will be bound in an object property assertion.
+     *
+     * @param other {@link Context} other context
+     * @param link  {@link OntOPE}, link property
+     * @return <b>this</b> context
+     * @throws MapJenaException if something goes wrong or input parameters are not correct
+     */
     Context attachContext(Context other, OntOPE link) throws MapJenaException;
 
     /**

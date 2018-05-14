@@ -1,6 +1,9 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.rdf.model.RDFNode;
+import ru.avicomp.map.Context;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.impl.MapContextImpl;
 
 import java.util.*;
 
@@ -16,7 +19,8 @@ public enum Exceptions {
     CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION,
     RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED,
     RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK,
-    ATTACHED_CONTEXT_DIFFEREN_SOURCES,
+    ATTACHED_CONTEXT_SELF_CALL,
+    ATTACHED_CONTEXT_DIFFERENT_SOURCES,
     ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED,
     ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK,
 
@@ -34,6 +38,16 @@ public enum Exceptions {
 
         Builder() {
             this.map = new EnumMap<>(Key.class);
+        }
+
+        public Builder addContext(Context context) {
+            return add(Key.CONTEXT, context.getURI())
+                    .add(Key.CONTEXT_SOURCE, context.getSource())
+                    .add(Key.CONTEXT_TARGET, ((MapContextImpl) context).target());
+        }
+
+        public Builder add(Key key, RDFNode n) {
+            return add(key, n.asNode().toString());
         }
 
         public Builder add(Key key, String v) {
@@ -59,6 +73,7 @@ public enum Exceptions {
     }
 
     public enum Key {
+        CONTEXT,
         CONTEXT_SOURCE,
         CONTEXT_TARGET,
         FUNCTION,
