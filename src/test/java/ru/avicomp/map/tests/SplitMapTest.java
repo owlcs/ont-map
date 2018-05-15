@@ -12,6 +12,8 @@ import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +54,20 @@ public class SplitMapTest extends MapTestData3 {
             Assert.assertTrue(a.classes().anyMatch(address::equals));
         });
         commonValidate(t);
+    }
+
+    @Test
+    public void testDeleteContext() {
+        MapModel m = assembleMapping();
+        OntClass address = m.asOntModel().listClasses()
+                .filter(s -> Objects.equals(s.getLocalName(), "Address")).findFirst().orElseThrow(AssertionError::new);
+        OntClass contact = m.asOntModel().listClasses()
+                .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
+        Function<List<Context>, Context> firstContext = contexts -> contexts.stream()
+                .filter(c -> Objects.equals(c.getTarget(), contact)).findFirst().orElseThrow(AssertionError::new);
+        Function<List<Context>, Context> secondContext = contexts -> contexts.stream()
+                .filter(c -> Objects.equals(c.getTarget(), address)).findFirst().orElseThrow(AssertionError::new);
+        RelatedContextMapTest.deleteDependentContextTest(m, firstContext, secondContext);
     }
 
     @Override

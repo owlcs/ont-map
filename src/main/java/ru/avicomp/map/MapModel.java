@@ -64,13 +64,13 @@ public interface MapModel {
     Context createContext(OntCE source, OntCE target);
 
     /**
-     * Removes the specified context and all related triples including property bindings.
+     * Deletes the specified context and all related triples including property bindings.
      *
      * @param context {@link Context}
      * @return this model
+     * @throws MapJenaException in case context cannot be deleted
      */
-    MapModel removeContext(Context context);
-
+    MapModel deleteContext(Context context) throws MapJenaException;
 
     /**
      * Binds contexts together.

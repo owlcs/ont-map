@@ -59,13 +59,14 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Answers iff this mapping model has local defined owl-entities declarations.
+     * TODO: move to ONT-API?
      *
      * @return boolean
      */
     public boolean hasOntEntities() {
-        return Iter.asStream(getBaseModel().listSubjectsWithProperty(RDF.type))
-                .filter(RDFNode::isURIResource)
-                .anyMatch(r -> r.canAs(OntEntity.class));
+        try (Stream<Resource> subjects = Iter.asStream(getBaseModel().listSubjectsWithProperty(RDF.type))) {
+            return subjects.filter(RDFNode::isURIResource).anyMatch(r -> r.canAs(OntEntity.class));
+        }
     }
 
     @Override
@@ -74,13 +75,29 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     public Stream<MapContextImpl> listContexts() {
-        return statements(null, RDF.type, SPINMAP.Context)
-                .map(OntStatement::getSubject)
+        return asContextStream(statements(null, RDF.type, SPINMAP.Context).map(OntStatement::getSubject));
+    }
+
+    /**
+     * Makes a stream of {@link MapContextImpl} from a stream of {@link Resource}s.
+     * Auxiliary method.
+     *
+     * @param stream Stream
+     * @return Stream
+     */
+    private Stream<MapContextImpl> asContextStream(Stream<Resource> stream) {
+        return stream.map(r -> r.as(OntObject.class))
                 .filter(s -> s.objects(SPINMAP.targetClass, OntClass.class).findAny().isPresent())
                 .filter(s -> s.objects(SPINMAP.sourceClass, OntClass.class).findAny().isPresent())
                 .map(this::asContext);
     }
 
+    /**
+     * Finds a context by source and target resources.
+     * @param source {@link Resource}
+     * @param target {@link Resource}
+     * @return Optional around context
+     */
     public Optional<MapContextImpl> findContext(Resource source, Resource target) {
         return statements(null, RDF.type, SPINMAP.Context)
                 .map(OntStatement::getSubject)
@@ -100,12 +117,24 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .orElseGet(() -> asContext(makeContext(source, target)));
     }
 
+    /**
+     * Wraps a resource as {@link MapContextImpl}.
+     * Auxiliary method.
+     * @param context {@link Resource}
+     * @return {@link MapContextImpl}
+     */
     public MapContextImpl asContext(Resource context) {
         return new MapContextImpl(context.asNode(), this);
     }
 
     @Override
-    public MapModelImpl removeContext(Context context) {
+    public MapModelImpl deleteContext(Context context) {
+        List<Context> related = context.dependentContexts().collect(Collectors.toList());
+        if (!related.isEmpty()) {
+            Exceptions.Builder error = Exceptions.CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES.create().addContext(context);
+            related.forEach(error::addContext);
+            throw error.build();
+        }
         MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
         if (getManager().generateNamedIndividuals()) {
             findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
@@ -115,33 +144,67 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return this;
     }
 
-    @Override
-    public MapModelImpl bindContexts(Context left, Context right) {
-        OntCE leftClass = left.getTarget();
-        OntCE rightClass = right.getTarget();
-        List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
-        if (res.isEmpty()) {
-            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create().addContext(left).addContext(right).build();
-        }
-        if (res.size() != 1) {
-            Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
-                    .addContext(left)
-                    .addContext(right);
-            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
-            throw err.build();
-        }
-        OntOPE p = res.get(0);
-        if (isLinkProperty(p, leftClass, rightClass)) {
-            left.attachContext(right, p);
-        } else {
-            right.attachContext(left, p);
-        }
-        return this;
+    /**
+     * Returns all contexts that depend on the specified.
+     * A context can be used as parameter in different function-calls, usually with predicate {@code spinmapl:context}.
+     * There is one exclusion: {@code spinmap:targetResource}, it uses {@code spinmap:context} as predicate for argument with type {@code spinmap:Context}.
+     *
+     * @param context {@link MapContextImpl}
+     * @return distinct stream of contexts
+     */
+    public Stream<MapContextImpl> listRelatedContexts(MapContextImpl context) {
+        Stream<Resource> targetResourceExpressions = statements(null, RDF.type, SPINMAP.targetResource)
+                .map(Statement::getSubject)
+                .filter(s -> s.hasProperty(SPINMAP.context, context));
+        Stream<Resource> otherExpressions = statements(null, SPINMAPL.context, context).map(Statement::getSubject);
+        Stream<Resource> res = Stream.concat(targetResourceExpressions, otherExpressions)
+                .filter(RDFNode::isAnon)
+                .flatMap(e -> Stream.concat(Stream.of(e), listParents(e)))
+                .flatMap(e -> Stream.concat(contextsByRuleExpression(e), contextsByTargetExpression(e)))
+                .filter(RDFNode::isURIResource)
+                .distinct();
+        return asContextStream(res);
     }
 
-    @Override
-    public OntGraphModel asOntModel() {
-        return this;
+    public Stream<Resource> contextsByTargetExpression(RDFNode expression) {
+        return statements(null, SPINMAP.target, expression).map(Statement::getSubject)
+                .filter(s -> s.hasProperty(RDF.type, SPINMAP.Context));
+    }
+
+    public Stream<Resource> contextsByRuleExpression(RDFNode expression) {
+        return statements(null, SPINMAP.expression, expression).map(OntStatement::getSubject)
+                .flatMap(s -> s.objects(SPINMAP.context, Resource.class));
+    }
+
+    public static Stream<Resource> subjects(RDFNode object) {
+        return Iter.asStream(object.getModel().listResourcesWithProperty(null, object));
+    }
+
+    /**
+     * Recursively lists all statements for specified subject.
+     * Note: a possibility of StackOverflowError in case graph contains a recursion.
+     *
+     * @param subject {@link RDFNode}, nullable
+     * @return Stream of {@link Statement}s
+     */
+    public static Stream<Statement> listProperties(RDFNode subject) {
+        if (subject == null || !subject.isAnon()) return Stream.empty();
+        return Iter.asStream(subject.asResource().listProperties())
+                .flatMap(s -> s.getObject().isAnon() ? listProperties(s.getObject().asResource()) : Stream.of(s));
+    }
+
+    /**
+     * Recursively lists all parent resources for specified object node.
+     * Note: a possibility of StackOverflowError in case graph contains a recursion.
+     *
+     * @param object {@link RDFNode}
+     * @return Stream of {@link Resource}s
+     */
+    public static Stream<Resource> listParents(RDFNode object) {
+        return subjects(object).flatMap(s -> {
+            Stream<Resource> r = Stream.of(s);
+            return s.isAnon() ? Stream.concat(r, listParents(s)) : r;
+        });
     }
 
     /**
@@ -244,6 +307,35 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res;
     }
 
+    @Override
+    public MapModelImpl bindContexts(Context left, Context right) {
+        OntCE leftClass = left.getTarget();
+        OntCE rightClass = right.getTarget();
+        List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
+        if (res.isEmpty()) {
+            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create().addContext(left).addContext(right).build();
+        }
+        if (res.size() != 1) {
+            Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
+                    .addContext(left)
+                    .addContext(right);
+            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
+            throw err.build();
+        }
+        OntOPE p = res.get(0);
+        if (isLinkProperty(p, leftClass, rightClass)) {
+            left.attachContext(right, p);
+        } else {
+            right.attachContext(left, p);
+        }
+        return this;
+    }
+
+    @Override
+    public OntGraphModel asOntModel() {
+        return this;
+    }
+
     /**
      * Returns a map-manager to which this model is associated.
      *
@@ -252,7 +344,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapManagerImpl getManager() {
         return manager;
     }
-
 
     /**
      * Returns {@code spinmap:sourcePredicate$i} mapping template argument property.
@@ -263,7 +354,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public Property getSourcePredicate(int i) {
         return createArgProperty(SPINMAP.sourcePredicate(i).getURI());
     }
-
 
     /**
      * Returns {@code spinmap:targetPredicate$i} argument property.

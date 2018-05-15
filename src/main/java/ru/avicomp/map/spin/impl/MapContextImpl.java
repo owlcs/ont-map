@@ -239,7 +239,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         MapModelImpl m = getModel();
         Statement expression = mapping.getRequiredProperty(expressionPredicate);
         // properties from expression, not distinct flat list, i.e. with possible repetitions
-        List<Statement> properties = Stream.concat(Stream.of(expression), listProperties(expression.getObject()))
+        List<Statement> properties = Stream.concat(Stream.of(expression), MapModelImpl.listProperties(expression.getObject()))
                 .filter(s -> isProperty.test(s.getObject()))
                 .collect(Collectors.toList());
 
@@ -289,7 +289,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
      */
     protected static void simplify(Resource mapping) {
         Model m = mapping.getModel();
-        Set<Resource> expressions = listProperties(mapping)
+        Set<Resource> expressions = MapModelImpl.listProperties(mapping)
                 .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
                 .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
                 .map(Statement::getSubject)
@@ -303,19 +303,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 Models.deleteAll(expr);
             });
         });
-    }
-
-    /**
-     * Recursively lists all statements for specified subject.
-     * Note: a possibility of StackOverflowError in case graph contains a recursion.
-     *
-     * @param subject {@link RDFNode}, nullable
-     * @return Stream of {@link Statement}s
-     */
-    public static Stream<Statement> listProperties(RDFNode subject) {
-        if (subject == null || !subject.isAnon()) return Stream.empty();
-        return Iter.asStream(subject.asResource().listProperties())
-                .flatMap(s -> s.getObject().isAnon() ? listProperties(s.getObject().asResource()) : Stream.of(s));
     }
 
     @Override
@@ -404,6 +391,11 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .getFunction(func.getURI())
                 .create()
                 .add(SPINMAPL.predicate.getURI(), p.getURI());
+    }
+
+    @Override
+    public Stream<Context> dependentContexts() {
+        return getModel().listRelatedContexts(this).map(Context.class::cast);
     }
 
     private MapPropertiesImpl asProperties(Resource resource) {

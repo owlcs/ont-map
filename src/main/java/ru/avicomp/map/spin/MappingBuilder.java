@@ -11,7 +11,6 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -58,7 +57,7 @@ public class MappingBuilder {
      * a property mapping is processed only after a corresponding individual is created by class-map rule.
      * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
      * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,
-     * see {@link MapManagerImpl#createMapModel(Graph, OntPersonality)} for more details.
+     * see {@link MapManagerImpl#createMapModel(Graph, ru.avicomp.ontapi.jena.impl.conf.OntPersonality)} for more details.
      *
      * @param model            {@link MapModelImpl}
      * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct
@@ -69,8 +68,7 @@ public class MappingBuilder {
      */
     public static Resource createMappingTemplate(MapModelImpl model,
                                                  boolean isPropertyMapping,
-                                                 List<Property> filterPredicates, List<Property> sourcePredicates)
-            throws MapJenaException {
+                                                 List<Property> filterPredicates, List<Property> sourcePredicates) throws MapJenaException {
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
         Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources)).inModel(model);

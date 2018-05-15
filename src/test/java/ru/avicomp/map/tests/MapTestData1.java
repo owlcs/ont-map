@@ -32,7 +32,7 @@ abstract class MapTestData1 extends AbstractMapTest {
         MapModel mapping = assembleMapping(manager, src, dst);
         List<Context> contexts = mapping.contexts().collect(Collectors.toList());
         Assert.assertEquals(1, contexts.size());
-        mapping = mapping.removeContext(contexts.get(0));
+        mapping = mapping.deleteContext(contexts.get(0));
         TestUtils.debug(mapping);
         Assert.assertEquals(0, mapping.contexts().count());
         Assert.assertEquals(6, mapping.asOntModel().getBaseGraph().size());

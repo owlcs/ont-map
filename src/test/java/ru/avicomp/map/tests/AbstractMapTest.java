@@ -1,6 +1,7 @@
 package ru.avicomp.map.tests;
 
 import org.junit.Assert;
+import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
@@ -22,6 +23,10 @@ public abstract class AbstractMapTest {
     public abstract OntGraphModel assembleSource();
 
     public abstract OntGraphModel assembleTarget();
+
+    MapModel assembleMapping() {
+        return assembleMapping(Managers.getMapManager(), assembleSource(), assembleTarget());
+    }
 
     static String getNameSpace(Class clazz) {
         return String.format("http://example.com/%s", clazz.getSimpleName());

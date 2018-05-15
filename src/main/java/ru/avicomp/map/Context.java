@@ -100,7 +100,6 @@ public interface Context {
      */
     Context createRelatedContext(OntCE source) throws MapJenaException;
 
-
     /**
      * Creates a context associated with this one through the specified object property expression.
      * The object property acts as a link between source class expressions from this context and the returned new context.
@@ -130,6 +129,13 @@ public interface Context {
      * @throws MapJenaException if something goes wrong or input parameters are not correct
      */
     Context attachContext(Context other, OntOPE link) throws MapJenaException;
+
+    /**
+     * Lists all contexts that depend on this.
+     *
+     * @return Stream of contexts
+     */
+    Stream<Context> dependentContexts();
 
     /**
      * Adds a primary rule to bind two class expressions.
