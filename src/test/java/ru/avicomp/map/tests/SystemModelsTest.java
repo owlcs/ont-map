@@ -47,11 +47,12 @@ public class SystemModelsTest {
     }
 
     @Test
-    public void testListFunctions() {
+    public void testListFunctions() { // todo: for debug right now
         MapManager manager = Managers.getMapManager();
         manager.functions()
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
                 .forEach(System.out::println);
+        System.out.println("-----");
         System.out.println(manager.functions().count());
         MapFunction f = manager.getFunction(SP.resource("UUID").getURI());
         Assert.assertNotNull(f);

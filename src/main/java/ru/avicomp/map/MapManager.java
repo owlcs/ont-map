@@ -26,14 +26,14 @@ public interface MapManager {
     PrefixMapping prefixes();
 
     /**
-     * Returns all available functions.
+     * Returns all available functions, which can be safely used by the API.
      *
      * @return Stream of {@link MapFunction}s
      */
     Stream<MapFunction> functions();
 
     /**
-     * Gets function by name, which is an iri in our single implementation.
+     * Gets function by name (an iri in our single implementation).
      *
      * @param name String, not null
      * @return {@link MapFunction}

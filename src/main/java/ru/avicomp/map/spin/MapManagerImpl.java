@@ -4,8 +4,10 @@ import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
-import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.system.SPINModuleRegistry;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -19,8 +21,10 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -136,6 +140,8 @@ public class MapManagerImpl implements MapManager {
     @Override
     public Stream<MapFunction> functions() {
         return mapFunctions.values().stream()
+                // only registered:
+                .filter(this::isRegistered)
                 // skip private:
                 .filter(f -> !f.isPrivate())
                 // skip abstract:
@@ -145,6 +151,34 @@ public class MapManagerImpl implements MapManager {
                 // skip hidden:
                 .filter(f -> !f.isHidden())
                 .map(Function.identity());
+    }
+
+    /**
+     * Answers iff the specified function can be used by API.
+     *
+     * @param function {@link MapFunctionImpl}
+     * @return boolean
+     */
+    public boolean isRegistered(MapFunctionImpl function) {
+        Resource func = function.asResource();
+        // SPARQL wrapper:
+        if (func.hasProperty(SPIN.symbol)) return true;
+        String uri = function.name();
+        if (!SPINRegistry.functionRegistry.isRegistered(uri)) return false;
+        // registered, but no body
+        if (!func.hasProperty(SPIN.body)) return true;
+        // it can be registered but depend on unregistered function
+        Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
+        return MapModelImpl.listProperties(body)
+                .filter(s -> RDF.type.equals(s.getPredicate()))
+                .map(Statement::getObject)
+                .filter(RDFNode::isURIResource)
+                .map(RDFNode::asResource)
+                .map(Resource::getURI)
+                .distinct()
+                .map(mapFunctions::get)
+                .filter(Objects::nonNull)
+                .allMatch(f -> !uri.equals(f.name()) && MapManagerImpl.this.isRegistered(f));
     }
 
     @Override

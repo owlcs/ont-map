@@ -1,4 +1,4 @@
-package org.topbraid.spin.vocabulary;
+package ru.avicomp.map.spin.vocabulary;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;

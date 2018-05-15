@@ -1,10 +1,10 @@
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
-@prefix arg:   <http://spinrdf.org/arg#> .
 @prefix spin:  <http://spinrdf.org/spin#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
+@prefix spinmapl: <http://topbraid.org/spin/spinmapl#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 @prefix avc:   <http://avc.ru/spin#> .
@@ -18,6 +18,16 @@ avc:hidden  a       owl:DatatypeProperty ;
         rdfs:range  xsd:string .
 
 sp:abs  avc:hidden  "Duplicates the function fn:abs, which is preferable, since it has information about return types." .
+
+spinmap:targetResource
+        avc:hidden    "This function should not be allowed to be used explicitly by API.\nAll cases when spinmap:targetResource might be used, should be described through other functions." ;
+        spin:private  true .
+
+spinmapl:relatedSubjectContext
+        avc:hidden  "Instead of explicit calling this function, please use ru.avicomp.map.Context#createRelatedContext(...) methods." .
+
+spinmapl:relatedObjectContext
+        avc:hidden  "Instead of explicit calling this function, please use ru.avicomp.map.Context#createRelatedContext(...) methods." .
 
 sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                           spl:valueType  avc:undefined

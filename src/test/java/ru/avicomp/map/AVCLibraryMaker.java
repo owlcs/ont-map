@@ -10,6 +10,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -19,6 +20,7 @@ import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
@@ -43,7 +45,7 @@ public class AVCLibraryMaker {
         id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
                 "Also it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\n" +
                 "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
-                "and all listed custom  functions can be considered as templates.", null);
+                "and all listed custom functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
 
         OntNDP hidden = m.createOntEntity(OntNDP.class, AVC.hidden.getURI());
@@ -52,7 +54,23 @@ public class AVCLibraryMaker {
         // SP:abs (todo: currently not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
-        // SP:eq can accept any resource, not only boolean literal
+        // SPINMAP:targetResource
+        SPINMAP.targetResource.inModel(m)
+                .addProperty(SPIN.private_, Models.TRUE)
+                .addProperty(hidden, "This function should not be allowed to be used explicitly by API.\n" +
+                        "All cases when spinmap:targetResource might be used, should be described through other functions.");
+
+        // SPINMAPL:relatedSubjectContext
+        SPINMAPL.relatedSubjectContext.inModel(m)
+                .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
+                        "#createRelatedContext(...) methods.");
+        // SPINMAPL:relatedObjectContext
+        SPINMAPL.relatedObjectContext.inModel(m)
+                .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
+                        "#createRelatedContext(...) methods.");
+
+
+        // SP:eq can accept any resource, not only boolean literals
         SP.eq.inModel(m)
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg2).addProperty(SPL.valueType, AVC.undefined));
