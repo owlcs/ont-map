@@ -112,7 +112,7 @@ public class MappingBuilder {
                         }
                     } else {
                         // default value is optional:
-                        Property defaultValue = model.createArgProperty(AVC.sourceDefaultValue(predicate.getLocalName()).getURI());
+                        Property defaultValue = model.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI());
                         res.addProperty(SPIN.constraint, model.createResource()
                                 .addProperty(RDF.type, SPL.Argument)
                                 .addProperty(SPL.predicate, defaultValue)

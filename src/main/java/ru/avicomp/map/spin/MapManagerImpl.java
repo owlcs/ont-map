@@ -248,8 +248,8 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Note: this method is not used during validation of input arguments,
-     * since SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
+     * Note: this method is used during validation of input arguments,
+     * although SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
      *
      * @param model {@link OntGraphModel OWL model}
      * @return {@link ClassPropertyMap mapping}

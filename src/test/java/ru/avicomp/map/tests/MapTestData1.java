@@ -48,6 +48,7 @@ abstract class MapTestData1 extends AbstractMapTest {
         OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty3");
         prop1.addDomain(class1);
         prop2.addDomain(class1);
+        prop3.addDomain(class1);
         OntIndividual.Named individual1 = class1.createIndividual(ns + "a");
         OntIndividual.Named individual2 = class1.createIndividual(ns + "b");
         class1.createIndividual(ns + "c");

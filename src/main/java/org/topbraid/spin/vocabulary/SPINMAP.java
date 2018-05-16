@@ -18,6 +18,7 @@ public class SPINMAP {
     public static final String PREFIX = "spinmap";
 
     public static final String SOURCE_PREDICATE_PREFIX = "sourcePredicate";
+    public static final String TARGET_PREDICATE_PREFIX = "targetPredicate";
 
     public static final Resource Conditional_Mapping_1 = resource("Conditional-Mapping-1");
     public static final Resource Conditional_Mapping_1_1 = resource("Conditional-Mapping-1-1");
@@ -86,7 +87,7 @@ public class SPINMAP {
 
     public static Property targetPredicate(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property("targetPredicate" + i);
+        return property(TARGET_PREDICATE_PREFIX + i);
     }
 
     public static Property sourcePredicate(int i) {

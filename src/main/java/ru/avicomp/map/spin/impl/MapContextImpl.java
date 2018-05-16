@@ -25,7 +25,9 @@ import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,19 +41,17 @@ import static ru.avicomp.map.spin.Exceptions.*;
 @SuppressWarnings("WeakerAccess")
 public class MapContextImpl extends ResourceImpl implements Context {
 
+    public static final String DATA_PROPERTY_KEY = "DataProperty";
     protected final Map<String, Predicate<Resource>> argResourceMapping = Collections.unmodifiableMap(new HashMap<String, Predicate<Resource>>() {
         {
             put(RDFS.Resource.getURI(), r -> true);
-            put(RDF.Property.getURI(), r -> r.canAs(OntPE.class));
+            put(RDF.Property.getURI(), r -> r.isURIResource() && r.canAs(OntPE.class));
+            put(DATA_PROPERTY_KEY, r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class));
             put(RDFS.Class.getURI(), r -> r.canAs(OntCE.class));
             put(RDFS.Datatype.getURI(), r -> r.canAs(OntDT.class));
             put(SPINMAP.Context.getURI(), r -> r.hasProperty(RDF.type, SPINMAP.Context));
         }
     });
-
-    // only annotation and data property is allowed for property bridge
-    protected Predicate<RDFNode> isAssertionProperty = r -> r.canAs(OntNDP.class) || r.canAs(OntNAP.class);
-    protected Predicate<RDFNode> isLinkProperty = r -> r.isURIResource() && r.canAs(OntOPE.class);
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -84,17 +84,18 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapContextImpl addClassBridge(MapFunction.Call filterFunction, MapFunction.Call mappingFunction) throws MapJenaException {
-        if (!MapJenaException.notNull(mappingFunction, "Null function call").getFunction().isTarget()) {
+        if (!testFunction(mappingFunction).getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, mappingFunction.getFunction().name()).build();
         }
-        RDFNode filterExpression = createFilterExpression(filterFunction);
-        RDFNode mappingExpression = createMappingExpression(mappingFunction);
+        Supplier<RDFNode> filterExpression = filterExpression(filterFunction);
         // collects target expression statements to be deleted :
         List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
                 .collect(Collectors.toList());
-        addProperty(SPINMAP.target, mappingExpression);
         // add Mapping-0-1 to create individual with type
-        addMappingRule(isAssertionProperty, target(), filterExpression, RDF.type);
+        addMappingRule(this::target, filterExpression, RDF.type);
+        // add target expression
+        RDFNode mappingExpression = createExpression(mappingFunction);
+        addProperty(SPINMAP.target, mappingExpression);
         // delete old target expressions:
         prev.forEach(s -> {
             if (s.getObject().isAnon()) {
@@ -114,6 +115,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .flatMap(r -> m.statements(getSource(), SPINMAP.rule, r));
     }
 
+    /**
+     * Gets a primary (class to class) mapping rule as ordinal resource.
+     * For a valid (see {@link Context#isValid()}) context the result should be present, otherwise it may be empty.
+     *
+     * @return Optional around {@link Resource}
+     */
     public Optional<Resource> primaryRule() {
         return listRules()
                 .map(Statement::getObject)
@@ -132,32 +139,15 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        if (!isAssertionProperty.test(target)) {
-            throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
-        }
-        RDFNode filterExpression = createFilterExpression(filterFunction);
-        RDFNode mappingExpression = createMappingExpression(mappingFunction);
-        Resource mapping = addMappingRule(isAssertionProperty, mappingExpression, filterExpression, target);
-        MapPropertiesImpl res = asProperties(mapping);
+        testFunction(mappingFunction);
+        Resource mapping = addMappingRule(() -> createExpression(mappingFunction), filterExpression(filterFunction), target);
+        MapPropertiesImpl res = asPropertyBridge(mapping);
         writeFunctionBody(mappingFunction);
         return res;
     }
 
-    protected RDFNode createFilterExpression(MapFunction.Call function) {
-        if (function == null) {
-            return null;
-        }
-        MapFunction f = function.getFunction();
-        if (!f.isBoolean()) {
-            throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
-        }
-        validate(function);
-        return createExpression(function);
-    }
-
-    protected RDFNode createMappingExpression(MapFunction.Call function) {
-        validate(function);
-        return createExpression(function);
+    protected Supplier<RDFNode> filterExpression(MapFunction.Call func) {
+        return testFilterFunction(func) != null ? () -> createExpression(func) : () -> null;
     }
 
     /**
@@ -185,124 +175,48 @@ public class MapContextImpl extends ResourceImpl implements Context {
     /**
      * Adds a mapping template call to the graph as {@code spinmap:rule}.
      *
-     * @param isPropertyAssertion        to test that a property can have literal assertions and therefore can be passed to mapping construct.
      * @param mappingExpression resource describing mapping expression
      * @param filterExpression  resource describing filter expression
      * @param target            {@link Property}
      * @return {@link Resource}
      */
-    public Resource addMappingRule(Predicate<RDFNode> isPropertyAssertion,
-                                   RDFNode mappingExpression,
-                                   RDFNode filterExpression,
+    public Resource addMappingRule(Supplier<RDFNode> mappingExpression,
+                                   Supplier<RDFNode> filterExpression,
                                    Property target) {
-        Optional<Resource> classMapRule = primaryRule();
         MapModelImpl m = getModel();
-        Resource mapping = m.createResource()
+        ContextMappingHelper helper = new ContextMappingHelper(this, m.createResource());
+        // if it is property mapping, the target property must "belong" to the target class:
+        Optional<Resource> classMapRule = primaryRule();
+        if (classMapRule.isPresent() && !helper.isTargetProperty(target)) {
+            throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
+        }
+        helper.getMapping()
                 .addProperty(SPINMAP.context, this)
-                .addProperty(SPINMAP.expression, mappingExpression)
                 .addProperty(SPINMAP.targetPredicate1, target);
-        List<Property> mappingPredicates = setMappingPredicates(mapping, SPINMAP.expression, true, isPropertyAssertion);
-        List<Property> filterPredicates = new ArrayList<>();
-        if (filterExpression != null) {
-            mapping.addProperty(AVC.filter, filterExpression);
-            filterPredicates.addAll(setMappingPredicates(mapping, AVC.filter, false, isPropertyAssertion));
+        RDFNode filterExpr = filterExpression.get();
+        RDFNode mapExpr = mappingExpression.get();
+        List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mapExpr).getSources();
+        List<Property> filterPredicates;
+        if (filterExpr != null) {
+            filterPredicates = helper.addExpression(AVC.filter, filterExpr).getSources();
+        } else {
+            filterPredicates = Collections.emptyList();
         }
 
-        boolean hasDefaults = Iter.asStream(mapping.listProperties())
-                .map(Statement::getPredicate).map(Property::getLocalName).anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
+        boolean hasDefaults = helper.hasDefaults();
         boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
 
         Resource template;
-        if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingPredicates.size() < 3) {
+        if (filterExpr == null && !hasClassMapFilter && !hasDefaults && mappingPredicates.size() < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
             template = SPINMAP.Mapping(mappingPredicates.size(), 1).inModel(m);
         } else {
             // use custom (avc) mapping
             template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
         }
-        mapping.addProperty(RDF.type, template);
-        getSource().addProperty(SPINMAP.rule, mapping);
-        simplify(mapping);
-        return mapping;
-    }
-
-    /**
-     * Processes mapping template call arguments (predicates).
-     *
-     * @param mapping             {@link Resource}
-     * @param expressionPredicate predicate to find expression
-     * @param isProperty          tester to check that a property can have literal assertions and therefore can be passed to mapping construct
-     * @param withDefault         if true and there is {@code avc:withDefault} in call adds also default values from expression to mapping
-     * @return List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}, with possible repetitions
-     */
-    protected List<Property> setMappingPredicates(Resource mapping, Property expressionPredicate, boolean withDefault, Predicate<RDFNode> isProperty) {
-        MapModelImpl m = getModel();
-        Statement expression = mapping.getRequiredProperty(expressionPredicate);
-        // properties from expression, not distinct flat list, i.e. with possible repetitions
-        List<Statement> properties = Stream.concat(Stream.of(expression), MapModelImpl.listProperties(expression.getObject()))
-                .filter(s -> isProperty.test(s.getObject()))
-                .collect(Collectors.toList());
-
-        // prev property-predicate from mapping
-        Map<Property, Property> prev = Iter.asStream(mapping.listProperties())
-                .filter(s -> s.getPredicate().getLocalName().startsWith(SPINMAP.SOURCE_PREDICATE_PREFIX))
-                .filter(s -> isProperty.test(s.getObject()))
-                .collect(Collectors.toMap(s -> s.getObject().as(Property.class), Statement::getPredicate));
-        List<Property> res = new ArrayList<>();
-        int variableIndex = 1;
-        Map<Property, Resource> replacement = new HashMap<>();
-        for (Statement s : properties) {
-            // replace argument property with variable, e.g. spin:_arg1
-            Property property = s.getObject().as(Property.class);
-            Resource variable;
-            if (replacement.containsKey(property)) {
-                variable = replacement.get(property);
-            } else {
-                replacement.put(property, variable = m.getArgVariable(variableIndex++));
-            }
-            m.add(s.getSubject(), s.getPredicate(), variable);
-            m.remove(s);
-            // add mapping predicate
-            Property predicate;
-            if (!prev.containsKey(property)) {
-                predicate = m.getSourcePredicate(prev.size() + 1);
-                mapping.addProperty(predicate, property);
-                prev.put(property, predicate);
-            } else {
-                predicate = prev.get(property);
-            }
-            res.add(predicate);
-            Resource expr;
-            if (withDefault && (expr = s.getSubject()).hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
-                Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
-                mapping.addProperty(m.createArgProperty(AVC.sourceDefaultValue(predicate.getLocalName()).getURI()), defaultValue);
-            }
-        }
-        // mapping predicates
-        return res;
-    }
-
-    /**
-     * Simplifies mapping by replacing {@code spinmap:equals} and {@code avc:withDefault} function calls with its short form.
-     *
-     * @param mapping {@link Resource}
-     */
-    protected static void simplify(Resource mapping) {
-        Model m = mapping.getModel();
-        Set<Resource> expressions = MapModelImpl.listProperties(mapping)
-                .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
-                .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
-                .map(Statement::getSubject)
-                .collect(Collectors.toSet());
-        expressions.forEach(expr -> {
-            RDFNode arg = expr.getRequiredProperty(SP.arg1).getObject();
-            Set<Statement> statements = m.listStatements(null, null, expr).toSet();
-            statements.forEach(s -> {
-                m.add(s.getSubject(), s.getPredicate(), arg);
-                m.remove(s);
-                Models.deleteAll(expr);
-            });
-        });
+        getSource().addProperty(SPINMAP.rule, helper.getMapping().addProperty(RDF.type, template));
+        helper.simplify();
+        return helper.getMapping();
     }
 
     @Override
@@ -398,7 +312,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return getModel().listRelatedContexts(this).map(Context.class::cast);
     }
 
-    private MapPropertiesImpl asProperties(Resource resource) {
+    protected MapPropertiesImpl asPropertyBridge(Resource resource) {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }
 
@@ -418,11 +332,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
      * @return {@link Resource}
      */
     public RDFNode createExpression(MapFunction.Call call) {
-        Model model = getModel();
+        Model m = getModel();
         MapFunction func = call.getFunction();
-        Resource res = model.createResource();
-        Resource function = model.createResource(func.name());
-        res.addProperty(RDF.type, function);
+        Resource res = m.createResource();
         call.asMap().forEach((arg, value) -> {
             RDFNode param = null;
             if (value instanceof MapFunction.Call) {
@@ -438,7 +350,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             res.addProperty(predicate, param);
 
         });
-        return res;
+        return res.addProperty(RDF.type, m.createResource(func.name()));
     }
 
     /**
@@ -449,7 +361,23 @@ public class MapContextImpl extends ResourceImpl implements Context {
      */
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        func.asMap().forEach(this::validateArg);
+        testFunction(func);
+    }
+
+    public MapFunction.Call testFunction(MapFunction.Call func) {
+        MapJenaException.notNull(func, "Null function call").asMap().forEach(this::validateArg);
+        return func;
+    }
+
+    public MapFunction.Call testFilterFunction(MapFunction.Call func) throws MapJenaException {
+        if (func == null) {
+            return null;
+        }
+        MapFunction f = func.getFunction();
+        if (!f.isBoolean()) {
+            throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
+        }
+        return testFunction(func);
     }
 
     private void validateArg(MapFunction.Arg arg, Object value) throws MapJenaException {
@@ -461,7 +389,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (value instanceof MapFunction.Call) {
             String funcType = ((MapFunction.Call) value).getFunction().returnType();
             validateFuncReturnType(argType, funcType);
-            validate((MapFunction.Call) value);
+            testFunction((MapFunction.Call) value);
             return;
         }
         throw new IllegalStateException("??");
@@ -522,7 +450,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             if (uri == null) {
                 return m.createTypedLiteral(foundValue, literalType);
             } else { // data or annotation property with literal assertion
-                foundType = RDF.Property.getURI();
+                foundType = DATA_PROPERTY_KEY;
             }
         }
         if (argResourceMapping.getOrDefault(foundType, r -> false).test(uri)) {
@@ -545,5 +473,184 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     public String toString(PrefixMapping pm) {
         return String.format("Context{%s => %s}", pm.shortForm(getSource().getURI()), pm.shortForm(target().getURI()));
+    }
+
+    /**
+     * Auxiliary class, a helper to process mapping template call arguments (predicates).
+     * Also a holder for class-properties maps related to the specified context.
+     */
+    public static class ContextMappingHelper {
+        private final Resource mapping;
+        private final MapContextImpl context;
+        private final Set<? extends RDFNode> sourceClassProperties;
+        private final Set<? extends RDFNode> targetClassProperties;
+
+        ContextMappingHelper(MapContextImpl context, Resource mapping) {
+            this.mapping = Objects.requireNonNull(mapping);
+            this.context = Objects.requireNonNull(context);
+            this.sourceClassProperties = getClassProperties(context.getSource());
+            this.targetClassProperties = getClassProperties(context.target());
+        }
+
+        /**
+         * Simplifies mapping by replacing {@code spinmap:equals} and {@code avc:withDefault} function calls with its short form.
+         *
+         * @param mapping {@link Resource}
+         */
+        public static void simplify(Resource mapping) {
+            Model m = mapping.getModel();
+            Set<Resource> expressions = MapModelImpl.listProperties(mapping)
+                    .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
+                    .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
+                    .map(Statement::getSubject)
+                    .collect(Collectors.toSet());
+            expressions.forEach(expr -> {
+                RDFNode arg = expr.getRequiredProperty(SP.arg1).getObject();
+                Set<Statement> statements = m.listStatements(null, null, expr).toSet();
+                statements.forEach(s -> {
+                    m.add(s.getSubject(), s.getPredicate(), arg);
+                    m.remove(s);
+                    Models.deleteAll(expr);
+                });
+            });
+        }
+
+        void simplify() {
+            simplify(mapping);
+        }
+
+        Resource getMapping() {
+            return mapping;
+        }
+
+        Map<Property, Property> getSourcePredicatesMap() {
+            return getMapPredicates(SPINMAP.SOURCE_PREDICATE_PREFIX);
+        }
+
+        Map<Property, Property> getTargetPredicatesMap() {
+            return getMapPredicates(SPINMAP.TARGET_PREDICATE_PREFIX);
+        }
+
+        boolean hasDefaults() {
+            return properties()
+                    .map(Statement::getPredicate)
+                    .map(Property::getLocalName)
+                    .anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
+        }
+
+        boolean isContextProperty(RDFNode node) {
+            return node.isURIResource() && (isSourceProperty(node) || isTargetProperty(node));
+        }
+
+        boolean isSourceProperty(RDFNode property) {
+            return sourceClassProperties.contains(property);
+        }
+
+        boolean isTargetProperty(RDFNode property) {
+            return targetClassProperties.contains(property);
+        }
+
+        private Set<Property> getClassProperties(Resource clazz) {
+            return clazz.canAs(OntCE.class) ?
+                    context.getModel().properties(clazz.as(OntCE.class)).collect(Collectors.toSet()) :
+                    Collections.emptySet();
+        }
+
+        private Map<Property, Property> getMapPredicates(String prefix) {
+            return properties()
+                    .filter(s -> s.getPredicate().getLocalName().startsWith(prefix))
+                    .collect(Collectors.toMap(s -> s.getObject().as(Property.class), Statement::getPredicate));
+        }
+
+        private Stream<Statement> properties() {
+            return Iter.asStream(mapping.listProperties())
+                    .filter(s -> s.getObject().isURIResource());
+        }
+
+        /**
+         * Adds an expression to mapping call and process its arguments (predicates).
+         *
+         * @param expressionPredicate {@link Property} predicate. e.g. {@code spinmap:expression}
+         * @param expressionObject    {@link RDFNode} the expression body
+         * @return {@link ExprRes} container with property collections that will be needed when building a mapping template.
+         */
+        ExprRes addExpression(Property expressionPredicate, RDFNode expressionObject) {
+            mapping.addProperty(expressionPredicate, expressionObject);
+            ExprRes res = addExpression(expressionPredicate);
+            if (!res.target.isEmpty()) {
+                throw new UnsupportedOperationException("TODO: expression with arguments from right side are not supported right now.");
+            }
+            return res;
+        }
+
+        private ExprRes addExpression(Property expressionPredicate) {
+            ExprRes res = new ExprRes();
+            MapModelImpl m = context.getModel();
+            Map<Property, Property> sourcePredicatesMap = getSourcePredicatesMap();
+            Map<Property, Property> targetPredicatesMap = getTargetPredicatesMap();
+            Statement expression = mapping.getRequiredProperty(expressionPredicate);
+            // properties from expression, not distinct flat list, i.e. with possible repetitions
+            List<Statement> properties = Stream.concat(Stream.of(expression), MapModelImpl.listProperties(expression.getObject()))
+                    .filter(s -> isContextProperty(s.getObject()))
+                    .collect(Collectors.toList());
+            int variableIndex = 1;
+            for (Statement s : properties) {
+                Resource expr = s.getSubject();
+                // replace argument property with variable, e.g. spin:_arg1
+                Property property = s.getObject().as(Property.class);
+                Resource variable;
+                if (res.replacement.containsKey(property)) {
+                    variable = res.replacement.get(property);
+                } else {
+                    res.replacement.put(property, variable = m.getArgVariable(variableIndex++));
+                }
+                m.add(expr, s.getPredicate(), variable);
+                m.remove(s);
+                // add mapping predicate
+                Property predicate;
+                if (isSourceProperty(property)) {
+                    predicate = processPredicate(property, sourcePredicatesMap, m::getSourcePredicate);
+                    res.sources.add(predicate);
+                } else {
+                    predicate = processPredicate(property, targetPredicatesMap, m::getTargetPredicate);
+                    res.target.add(predicate);
+                }
+                // process default value
+                if (expr.hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
+                    Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
+                    mapping.addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()), defaultValue);
+                }
+            }
+            return res;
+        }
+
+        private Property processPredicate(Property property, Map<Property, Property> prev, IntFunction<Property> generator) {
+            Property predicate;
+            if (!prev.containsKey(property)) {
+                predicate = generator.apply(prev.size() + 1);
+                mapping.addProperty(predicate, property);
+                prev.put(property, predicate);
+            } else {
+                predicate = prev.get(property);
+            }
+            return predicate;
+        }
+
+        /**
+         * Expression settings holder.
+         * {@code sources} - List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}, with possible repetitions
+         * {@code targets} - List of mapping target predicates, e.g. {@code spinmap:targetPredicate1}, with possible repetitions
+         * {@code replacement} - Property-Variable map, where keys are existing properties either from source or target classes
+         * and values - spin variables, e.g. {@code spin:_arg1}
+         */
+        class ExprRes {
+            private final List<Property> sources = new ArrayList<>();
+            private final List<Property> target = new ArrayList<>();
+            private final Map<Property, Resource> replacement = new HashMap<>();
+
+            public List<Property> getSources() {
+                return Collections.unmodifiableList(sources);
+            }
+        }
     }
 }

@@ -345,6 +345,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return manager;
     }
 
+    public Stream<Property> properties(OntCE ce) {
+        return getManager().getClassProperties(this).properties(ce);
+    }
+
     /**
      * Returns {@code spinmap:sourcePredicate$i} mapping template argument property.
      *
@@ -412,7 +416,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Answers if specified property links classes together through domain and range axioms.
-     * TODO: move to ONT-API Models?
+     * TODO: move to ONT-API?
      *
      * @param property {@link OntOPE} property to test
      * @param domain   {@link OntCE} domain candidate

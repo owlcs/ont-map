@@ -49,7 +49,7 @@ public class AVC {
         return resource(String.format("%s-f%s-s%s-t%d", prefix, filters, sources, 1));
     }
 
-    public static Property sourceDefaultValue(String pref) {
+    public static Property predicateDefaultValue(String pref) {
         return property(pref + DEFAULT_PREDICATE_SUFFIX);
     }
 
