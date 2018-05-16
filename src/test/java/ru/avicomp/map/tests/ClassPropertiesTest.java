@@ -67,7 +67,6 @@ public class ClassPropertiesTest {
         OntGraphModel m = load("/foaf.rdf", Lang.RDFXML);
         m.setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/");
         doPrint(m);
-        TestUtils.debug(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("foaf:Person", 38);
         expected.put("foaf:Organization", 21);
@@ -84,9 +83,7 @@ public class ClassPropertiesTest {
         m.setNsPrefix("schema", "http://schema.org/");
         OntClass c = m.getOntEntity(OntClass.class, m.expandPrefix("gr:QuantitativeValue"));
         Assert.assertNotNull(c);
-
         doPrint(m);
-        TestUtils.debug(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("gr:QuantitativeValueInteger", 11);
         expected.put("schema:Product", 23);
@@ -98,6 +95,20 @@ public class ClassPropertiesTest {
         expected.put("gr:ProductOrServiceModel", 28);
         expected.put("gr:WarrantyPromise", 5);
         expected.put("schema:Place", 5);
+        validateClasses(m, expected);
+    }
+
+    @Test
+    public void testISWC() throws Exception {
+        OntGraphModel m = load("/iswc.ttl", Lang.TURTLE);
+        doPrint(m);
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("vocab:organizations", 10);
+        expected.put("vocab:conferences", 7);
+        expected.put("vocab:papers", 9);
+        expected.put("vocab:persons", 13);
+        expected.put("vocab:rel_paper_topic", 4);
+        expected.put("vocab:topics", 4);
         validateClasses(m, expected);
     }
 

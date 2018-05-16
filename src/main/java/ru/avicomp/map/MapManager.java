@@ -60,6 +60,7 @@ public interface MapManager {
      * Basically, this is for GUI's drawing and there is no direct usage in the API.
      * Please note: spin-map (an API default implementation) does not require a property to be "belonged" to a class,
      * i.e. it allows to perform mapping even a property has no domain with a class from a context.
+     * todo: will be used by API
      *
      * @param model {@link OntGraphModel OWL model}
      * @return {@link ClassPropertyMap class properties mapping object}

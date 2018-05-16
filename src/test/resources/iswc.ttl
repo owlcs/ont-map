@@ -1,0 +1,937 @@
+# baseURI: http://iswc.test
+
+@prefix data: <http://d2rq.avc.ru/test#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vocab: <http://d2rq.avc.ru/test/vocab#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://d2rq.avc.ru/test#conferences/23541>
+  rdf:type vocab:conferences ;
+  rdf:type owl:NamedIndividual ;
+  vocab:conferences_ConfID 23541 ;
+  vocab:conferences_Date "June 9-12, 2002" ;
+  vocab:conferences_Datum "2002-10-09T00:00:00"^^xsd:dateTime ;
+  vocab:conferences_Location "Sardinia" ;
+  vocab:conferences_Name "International Semantic Web Conference 2002" ;
+  vocab:conferences_URI "http://annotation.semanticweb.org/iswc/iswc.daml#ISWC_2002" ;
+  rdfs:label "conferences #23541" ;
+.
+<http://d2rq.avc.ru/test#conferences/23542>
+  rdf:type vocab:conferences ;
+  rdf:type owl:NamedIndividual ;
+  vocab:conferences_ConfID 23542 ;
+  vocab:conferences_Date "May 23-26, 2006" ;
+  vocab:conferences_Datum "2006-05-23T00:00:00"^^xsd:dateTime ;
+  vocab:conferences_Location "Edinburgh" ;
+  vocab:conferences_Name "15th International World Wide Web Conference" ;
+  rdfs:label "conferences #23542" ;
+.
+<http://d2rq.avc.ru/test#organizations/1>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address "4676 Admirality Way" ;
+  vocab:organizations_Country "United States" ;
+  vocab:organizations_Location "Marina Del Rey" ;
+  vocab:organizations_Name "USC Information Sciences Institute" ;
+  vocab:organizations_URI "http://trellis.semanticweb.org/expect/web/semanticweb/iswc02_trellis.pdf#ISI" ;
+  rdfs:label "organizations #1" ;
+.
+<http://d2rq.avc.ru/test#organizations/2>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Name "University of Karlsruhe" ;
+  vocab:organizations_Type "U" ;
+  vocab:organizations_URI "http://annotation.semanticweb.org/iswc/iswc.daml#University_of_Karlsruhe" ;
+  rdfs:label "organizations #2" ;
+.
+<http://d2rq.avc.ru/test#organizations/3>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Name "International University in Germany" ;
+  vocab:organizations_Type "U" ;
+  vocab:organizations_URI "http://www.i-u.de/schools/eberhart/iswc2002/#International University in Germany" ;
+  rdfs:label "organizations #3" ;
+.
+<http://d2rq.avc.ru/test#organizations/4>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Country "Germany" ;
+  vocab:organizations_Homepage "http://www.aifb.uni-karlsruhe.de/" ;
+  vocab:organizations_Location "Karlsruhe" ;
+  vocab:organizations_Name "AIFB" ;
+  vocab:organizations_Type "I" ;
+  vocab:organizations_URI "http://annotation.semanticweb.org/iswc/iswc.daml#AIFB" ;
+  rdfs:label "organizations #4" ;
+.
+<http://d2rq.avc.ru/test#organizations/5>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address "De Boelelaan 1081a" ;
+  vocab:organizations_Belongsto <http://d2rq.avc.ru/test#organizations/6> ;
+  vocab:organizations_Country "The Netherlands" ;
+  vocab:organizations_Location "Amsterdam" ;
+  vocab:organizations_Name "Department of Computer Science" ;
+  vocab:organizations_Postcode "1081 HV" ;
+  vocab:organizations_Type "D" ;
+  vocab:organizations_URI "http://www.cs.vu.nl/~borys/papers/abstracts/ISWC2002.html#CSVUNL" ;
+  rdfs:label "organizations #5" ;
+.
+<http://d2rq.avc.ru/test#organizations/6>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address "De Boelelaan 1105" ;
+  vocab:organizations_Country "The Netherlands" ;
+  vocab:organizations_Location "Amsterdam" ;
+  vocab:organizations_Name "Vrije Universiteit Amsterdam" ;
+  vocab:organizations_Postcode "1081 HV" ;
+  vocab:organizations_Type "U" ;
+  vocab:organizations_URI "http://www.cs.vu.nl/~borys/papers/abstracts/ISWC2002.html#VrijeUniversiteitAmsterdam" ;
+  rdfs:label "organizations #6" ;
+.
+<http://d2rq.avc.ru/test#organizations/7>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address "Filton Road" ;
+  vocab:organizations_Country "UK" ;
+  vocab:organizations_Homepage "http://www.hpl.hp.com/" ;
+  vocab:organizations_Location "Bristol" ;
+  vocab:organizations_Name "Hewlett-Packard Laboratories, Bristol" ;
+  vocab:organizations_Postcode "BS34 8QZ" ;
+  vocab:organizations_URI "http://www.hpl.hp.co.uk#HPL" ;
+  rdfs:label "organizations #7" ;
+.
+<http://d2rq.avc.ru/test#organizations/8>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address """Via Enrico Fermi, 1
+21020 - Ispra (Italy)""" ;
+  vocab:organizations_Name "Institute for the Protection and Security of the Citizen" ;
+  vocab:organizations_Type "I" ;
+  vocab:organizations_URI "http://dma.jrc.it#Institute for the Protection and Security of the Citizen" ;
+  rdfs:label "organizations #8" ;
+.
+<http://d2rq.avc.ru/test#organizations/9>
+  rdf:type vocab:organizations ;
+  rdf:type owl:NamedIndividual ;
+  vocab:organizations_Address "Via Vignolese 905" ;
+  vocab:organizations_Country "Italy" ;
+  vocab:organizations_Location "Modena" ;
+  vocab:organizations_Name "Dipartimento di Ingegneria dell'Informazione" ;
+  vocab:organizations_Type "D" ;
+  vocab:organizations_URI "http://www.dbgroup.unimo.it/iswc/iswc.html#DII" ;
+  rdfs:label "organizations #9" ;
+.
+<http://d2rq.avc.ru/test#papers/1>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract """This paper describes an approach to derive assessments about information 
+      sources based on individual feedback about the sources. We describe 
+      TRELLIS, a system that helps users annotate their analysis of 
+      alternative information sources that can be contradictory and 
+      incomplete. As the user makes a decision on which sources to dismiss and 
+      which to believe in making a final decision, TRELLIS captures the 
+      derivation of the decision in a semantic markup. TRELLIS then uses these 
+      annotations to derive an assessment of the source based on the 
+      annotations of many individuals. Our work builds on the Semantic Web and 
+      presents a tool that helps users create annotations that are in a mix of 
+      formal and human language, and exploits the formal representations to 
+      derive measures of trust in the content of Web resources and their 
+      original source.""" ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23541> ;
+  vocab:papers_PaperID 1 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "Trusting Information Sources One Citizen at a Time" ;
+  vocab:papers_URI "http://trellis.semanticweb.org/expect/web/semanticweb/iswc02_trellis.pdf#Trusting Information Sources One Citizen at a Time" ;
+  vocab:papers_Year 2002 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/1> ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/2> ;
+  rdfs:label "papers #1" ;
+.
+<http://d2rq.avc.ru/test#papers/2>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract """This paper describes two approaches for automatically converting RDF Schema 
+and RuleML sources into an inference engine and storage repository. Rather than 
+using traditional inference systems, our solution bases on mainstream 
+technologies like Java and relational database systems. While this necessarily 
+imposes some restrictions, the ease of integration into an existing IT landscape 
+is a major advantage. We present the conversion tools and their limitations. 
+Furthermore, an extension to RuleML is proposed, that allows Java-enabled 
+reaction rules, where calls to Java libraries can be performed upon a rule 
+firing. This requires hosts to be Java-enabled when rules and code are moved 
+across the web. However, the solution allows for great engineering 
+flexibility.""" ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23541> ;
+  vocab:papers_PaperID 2 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "Automatic Generation of Java/SQL based Inference Engines from RDF Schema and RuleML" ;
+  vocab:papers_URI "http://www.i-u.de/schools/eberhart/iswc2002/#Automatic Generation of Java/SQL based Inference Engines from RDF Schema and RuleML" ;
+  vocab:papers_Year 2002 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/4> ;
+  rdfs:label "papers #2" ;
+.
+<http://d2rq.avc.ru/test#papers/4>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract """RDF provides a basic way to represent data for the Semantic Web. We have 
+      been experimenting with the query paradigm for working with RDF data in 
+      semantic web applications. Query of RDF data provides a declarative 
+      access mechanism that is suitable for application usage and remote 
+      access. We describe work on a conceptual model for querying RDF data 
+      that refines ideas first presented in at the W3C workshop on Query 
+      Languages and the design of one possible syntax, derived from rdfDB, 
+      that is suitable for application programmers. Further, we present 
+      experience gained in three implementations of the query language.""" ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23541> ;
+  vocab:papers_PaperID 4 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "Three Implementations of SquishQL, a Simple RDF Query Language" ;
+  vocab:papers_URI "http://www-uk.hpl.hp.com/people/afs/Abstracts/ISWC2002-SquishQL-Abstract.html#SquishQL" ;
+  vocab:papers_Year 2003 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/6> ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/9> ;
+  rdfs:label "papers #4" ;
+.
+<http://d2rq.avc.ru/test#papers/5>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract """A marketplace is 
+      the place in which the demand and supply of buyers and vendors 
+      participating in a business process may meet. Therefore, electronic 
+      marketplaces are virtual communities in which buyers may meet proposals 
+      of several suppliers and make the best choice. In the electronic 
+      commerce world, the comparison between different products is blocked due 
+      to the lack of standards (on the contrary, the proliferation of 
+      standards) describing and classifying them. Therefore, the need for B2B 
+      and B2C marketplaces is to reclassify products and goods according to 
+      different standardization models. This paper aims to face this problem 
+      by suggesting the use of a semi-automatic methodology, supported by a 
+      tool (SI-Designer), to define the mapping among different e-commerce 
+      product classification standards. This methodology was developed for the 
+      MOMIS-system within the Intelligent Integration of Information research 
+      area. We describe our extension to the methodology that makes it 
+      applyable in general to product classification standard, by selecting a 
+      fragment of ECCMA/UNSPSC and ecl@ss standard.""" ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23541> ;
+  vocab:papers_PaperID 5 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "A Data Integration Framework for E-commerce Product Classification" ;
+  vocab:papers_URI "http://www.dbgroup.unimo.it/iswc/iswc.html#A Data Integration Framework for E-commerce Product Classification" ;
+  vocab:papers_Year 2002 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/10> ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/11> ;
+  rdfs:label "papers #5" ;
+.
+<http://d2rq.avc.ru/test#papers/6>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract """The Semantic Web would enable new ways of doing business on the<br>Web 
+      that require development of advanced business document<br>integration 
+      technologies performing intelligent document<br>transformation. The 
+      documents use different vocabularies that<br>consist of large 
+      hierarchies of terms. Accordingly, vocabulary<br>mapping and 
+      transformation becomes an important task in the whole<br>business 
+      document transformation process. It includes several<br>subtasks: map 
+      discovery, map representation, and map execution<br>that must be 
+      seamlessly integrated into the document integration<br>process. In this 
+      paper we discuss the process of discovering the<br>maps between two 
+      vocabularies assuming availability of two sets of<br>documents, each 
+      using one of the vocabularies. We take the<br>vocabularies of product 
+      classification codes as a playground and<br>propose a reusable map 
+      discovery technique based on Bayesian text<br>classification approach. 
+      We show how the discovered maps can be<br>integrated into the document 
+      transformation process.""" ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23541> ;
+  vocab:papers_PaperID 6 ;
+  vocab:papers_Publish "false"^^xsd:boolean ;
+  vocab:papers_Title "Integrating Vocabularies: Discovering and Representing Vocabulary Maps" ;
+  vocab:papers_URI "http://www.cs.vu.nl/~borys/papers/abstracts/ISWC2002.html#OmelayenkoISWC2002" ;
+  vocab:papers_Year 2003 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/5> ;
+  rdfs:label "papers #6" ;
+.
+<http://d2rq.avc.ru/test#papers/7>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract "The original Scientific American article on the Semantic Web appeared in 2001. It described the evolution of a Web that consisted largely of documents for humans to read to one that included data and information for computers to manipulate. The Semantic Web is a Web of actionable information--information derived from data through a semantic theory for interpreting the symbols.This simple idea, however, remains largely unrealized. Shopbots and auction bots abound on the Web, but these are essentially handcrafted for particular tasks; they have little ability to interact with heterogeneous data and information types. Because we haven't yet delivered large-scale, agent-based mediation, some commentators argue that the Semantic Web has failed to deliver. We argue that agents can only flourish when standards are well established and that the Web standards for expressing shared meaning have progressed steadily over the past five years. Furthermore, we see the use of ontologies in the e-science community presaging ultimate success for the Semantic Web--just as the use of HTTP within the CERN particle physics community led to the revolutionary success of the original Web. This article is part of a special issue on the Future of AI." ;
+  vocab:papers_PaperID 7 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "The Semantic Web Revisited" ;
+  vocab:papers_URI "http://eprints.ecs.soton.ac.uk/12614/01/Semantic_Web_Revisted.pdf" ;
+  vocab:papers_Year 2006 ;
+  rdfs:label "papers #7" ;
+.
+<http://d2rq.avc.ru/test#papers/8>
+  rdf:type vocab:papers ;
+  rdf:type owl:NamedIndividual ;
+  vocab:papers_Abstract "The Resource Description Framework and the SPARQL query language provide a standardized way for exposing and linking data sources on the Web. D2R Server is a turn-key solution for making the content of existing, non-RDF databases accessible as SPARQL endpoints. The server takes SPARQL queries from the Web and rewrites them via a mapping into SQL queries against a relational database. This on-the-fly translation allows RDF applications to access the content of large databases without having to replicate them into RDF. D2R Server can be used to integrate existing databases into RDF systems, and to add SPARQL interfaces to database-backed software products. In the talk, we will give an introduction into the D2RQ mapping language, which is used to define mappings between relational and RDF schemata, and demonstrate how D2R Server can be used to extend a WordPress blog with a SPARQL interface." ;
+  vocab:papers_Conference <http://d2rq.avc.ru/test#conferences/23542> ;
+  vocab:papers_PaperID 8 ;
+  vocab:papers_Publish "true"^^xsd:boolean ;
+  vocab:papers_Title "D2R Server - Publishing Relational Databases on the Web as SPARQL Endpoints" ;
+  vocab:papers_URI "http://www.wiwiss.fu-berlin.de/suhl/bizer/d2r-server/resources/d2r-server-slides-www2006.pdf" ;
+  vocab:papers_Year 2006 ;
+  vocab:rel_person_paper <http://d2rq.avc.ru/test#persons/12> ;
+  rdfs:label "papers #8" ;
+.
+<http://d2rq.avc.ru/test#persons/1>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Email "gil@isi.edu" ;
+  vocab:persons_FirstName "Yolanda" ;
+  vocab:persons_Homepage "http://www.isi.edu/~gil" ;
+  vocab:persons_LastName "Gil" ;
+  vocab:persons_PerID 1 ;
+  vocab:persons_Phone "310-448-8794" ;
+  vocab:persons_Photo "http://www.isi.edu/~gil/y.g.v4.tiff" ;
+  vocab:persons_Type "Full_Professor" ;
+  vocab:persons_URI "http://trellis.semanticweb.org/expect/web/semanticweb/iswc02_trellis.pdf#Yolanda Gil" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/1> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/1> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/2> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/3> ;
+  rdfs:label "persons #1" ;
+.
+<http://d2rq.avc.ru/test#persons/10>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "DII- Universita di Modena e Reggio Emilia via Vignolese 905 41100 Modena" ;
+  vocab:persons_Email "bergamaschi.sonia@unimo.it" ;
+  vocab:persons_FirstName "Sonia" ;
+  vocab:persons_Homepage "http://www.dbgroup.unimo.it/Bergamaschi.html" ;
+  vocab:persons_LastName "Bergamaschi" ;
+  vocab:persons_PerID 10 ;
+  vocab:persons_Phone "+39 059 2056132" ;
+  vocab:persons_Type "Full_Professor" ;
+  vocab:persons_URI "http://www.dbgroup.unimo.it/iswc/iswc.html#S. Bergamaschi" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/9> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/10> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/15> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "persons #10" ;
+.
+<http://d2rq.avc.ru/test#persons/11>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "DII- Universita di Modena e Reggio Emilia via Vignolese 905 41100 Modena Italy" ;
+  vocab:persons_Email "guerra.francesco@unimo.it" ;
+  vocab:persons_FirstName "Francesco" ;
+  vocab:persons_Homepage "http://www.dbgroup.unimo.it/~guerra/" ;
+  vocab:persons_LastName "Guerra" ;
+  vocab:persons_PerID 11 ;
+  vocab:persons_Phone "+39 059 20561543" ;
+  vocab:persons_URI "http://www.dbgroup.unimo.it/iswc/iswc.html#F. Guerra" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/9> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/10> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "persons #11" ;
+.
+<http://d2rq.avc.ru/test#persons/12>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "Freie Universität Berlin" ;
+  vocab:persons_Email "chris@bizer.de" ;
+  vocab:persons_FirstName "Christian" ;
+  vocab:persons_Homepage "http://www.bizer.de/" ;
+  vocab:persons_LastName "Bizer" ;
+  vocab:persons_PerID 12 ;
+  vocab:persons_Photo "http://www.wiwiss.fu-berlin.de/en/institute/pwo/bizer/pics/bizer_christian_200x300.png" ;
+  vocab:persons_Type "Researcher" ;
+  vocab:persons_URI "http://www.bizer.de/foaf.rdf#chris" ;
+  rdfs:label "persons #12" ;
+.
+<http://d2rq.avc.ru/test#persons/2>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Email "varunr@isi.edu" ;
+  vocab:persons_FirstName "Varun" ;
+  vocab:persons_Homepage "http://www.isi.edu/~varunr" ;
+  vocab:persons_LastName "Ratnakar" ;
+  vocab:persons_PerID 2 ;
+  vocab:persons_URI "http://trellis.semanticweb.org/expect/web/semanticweb/iswc02_trellis.pdf#Varun Ratnakar" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/1> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/6> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/7> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/8> ;
+  rdfs:label "persons #2" ;
+.
+<http://d2rq.avc.ru/test#persons/3>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Email "blythe@isi.edu" ;
+  vocab:persons_FirstName "Jim" ;
+  vocab:persons_Homepage "http://www.isi.edu/~varunr" ;
+  vocab:persons_LastName "Blythe" ;
+  vocab:persons_PerID 3 ;
+  vocab:persons_Type "Researcher" ;
+  vocab:persons_URI "http://trellis.semanticweb.org/expect/web/semanticweb/iswc02_trellis.pdf#Jim Blythe" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/1> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/1> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/2> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/3> ;
+  rdfs:label "persons #3" ;
+.
+<http://d2rq.avc.ru/test#persons/4>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "International University in Germany Campus 2 76646 Bruchsal Germany" ;
+  vocab:persons_Email "eberhart@i-u.de" ;
+  vocab:persons_FirstName "Andreas" ;
+  vocab:persons_Homepage "http://www.i-u.de/schools/eberhart/" ;
+  vocab:persons_LastName "Eberhart" ;
+  vocab:persons_PerID 4 ;
+  vocab:persons_Phone "+49 7251 700 222" ;
+  vocab:persons_Type "Researcher" ;
+  vocab:persons_URI "http://www.i-u.de/schools/eberhart/iswc2002/#Andreas Eberhart" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/3> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/1> ;
+  rdfs:label "persons #4" ;
+.
+<http://d2rq.avc.ru/test#persons/5>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "Vrije Universiteit, Division of Mathematics and Computer Science, De Boelelaan 1081a,1081hv, Amsterdam, The Netherlands" ;
+  vocab:persons_Email "borys@cs.vu.nl" ;
+  vocab:persons_FirstName "Borys" ;
+  vocab:persons_Homepage "http://www.cs.vu.nl/~borys" ;
+  vocab:persons_LastName "Omelayenko" ;
+  vocab:persons_PerID 5 ;
+  vocab:persons_Type "Researcher" ;
+  vocab:persons_URI "http://www.cs.vu.nl/~borys#Bomelayenko" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/5> ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/6> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/13> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/7> ;
+  rdfs:label "persons #5" ;
+.
+<http://d2rq.avc.ru/test#persons/6>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Address "Hewlett-Packard Laboratories, Bristol, BS34 8QZ, UK" ;
+  vocab:persons_Email "andy.seaborne@hpl.hp.com" ;
+  vocab:persons_FirstName "Andy" ;
+  vocab:persons_Homepage "http://www-uk.hpl.hp.com/people/afs/" ;
+  vocab:persons_LastName "Seaborne" ;
+  vocab:persons_PerID 6 ;
+  vocab:persons_Photo "http://semtech2011.semanticweb.com/uploads/images/bios/3205.jpg" ;
+  vocab:persons_Type "Researcher" ;
+  vocab:persons_URI "http://www-uk.hpl.hp.com/people#andy_seaborne" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/7> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "persons #6" ;
+.
+<http://d2rq.avc.ru/test#persons/9>
+  rdf:type vocab:persons ;
+  rdf:type owl:NamedIndividual ;
+  vocab:persons_Email "areggiori@webweaving.org" ;
+  vocab:persons_FirstName "Alberto" ;
+  vocab:persons_Homepage "http://reggiori.webweaving.org/" ;
+  vocab:persons_LastName "Reggiori" ;
+  vocab:persons_PerID 9 ;
+  vocab:persons_URI "http://reggiori.webweaving.org#Alberto Reggiori" ;
+  vocab:rel_person_organization <http://d2rq.avc.ru/test#organizations/8> ;
+  vocab:rel_person_topic <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "persons #9" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/1/15>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/1> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/15> ;
+  rdfs:label "rel_paper_topic #1/15" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/1/5>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/1> ;
+  vocab:rel_paper_topic_RelationType 1 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "rel_paper_topic #1/5" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/2/3>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/2> ;
+  vocab:rel_paper_topic_RelationType 3 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/3> ;
+  rdfs:label "rel_paper_topic #2/3" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/2/5>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/2> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "rel_paper_topic #2/5" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/4/10>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/4> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/10> ;
+  rdfs:label "rel_paper_topic #4/10" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/4/11>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/4> ;
+  vocab:rel_paper_topic_RelationType 1 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/11> ;
+  rdfs:label "rel_paper_topic #4/11" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/4/14>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/4> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/14> ;
+  rdfs:label "rel_paper_topic #4/14" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/5/13>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/5> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/13> ;
+  rdfs:label "rel_paper_topic #5/13" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/5/2>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/5> ;
+  vocab:rel_paper_topic_RelationType 3 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/2> ;
+  rdfs:label "rel_paper_topic #5/2" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/5/3>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/5> ;
+  vocab:rel_paper_topic_RelationType 1 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/3> ;
+  rdfs:label "rel_paper_topic #5/3" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/6/11>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/6> ;
+  vocab:rel_paper_topic_RelationType 1 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/11> ;
+  rdfs:label "rel_paper_topic #6/11" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/6/13>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/6> ;
+  vocab:rel_paper_topic_RelationType 3 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/13> ;
+  rdfs:label "rel_paper_topic #6/13" ;
+.
+<http://d2rq.avc.ru/test#rel_paper_topic/6/5>
+  rdf:type vocab:rel_paper_topic ;
+  rdf:type owl:NamedIndividual ;
+  vocab:rel_paper_topic_PaperID <http://d2rq.avc.ru/test#papers/6> ;
+  vocab:rel_paper_topic_RelationType 2 ;
+  vocab:rel_paper_topic_TopicID <http://d2rq.avc.ru/test#topics/5> ;
+  rdfs:label "rel_paper_topic #6/5" ;
+.
+<http://d2rq.avc.ru/test#topics/1>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/3> ;
+  vocab:topics_TopicName "Knowledge Representation Languages" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Knowledge_Representation_Languages" ;
+  rdfs:label "topics #1" ;
+.
+<http://d2rq.avc.ru/test#topics/10>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_TopicName "Databases" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Databases" ;
+  rdfs:label "topics #10" ;
+.
+<http://d2rq.avc.ru/test#topics/11>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/5> ;
+  vocab:topics_TopicName "Semantic Web Infrastructure" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Semantic_Web_Iinfrastructure" ;
+  rdfs:label "topics #11" ;
+.
+<http://d2rq.avc.ru/test#topics/13>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_TopicName "E-Business" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#e-Business" ;
+  rdfs:label "topics #13" ;
+.
+<http://d2rq.avc.ru/test#topics/14>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/16> ;
+  vocab:topics_TopicName "Query Languages" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Query_Languages" ;
+  rdfs:label "topics #14" ;
+.
+<http://d2rq.avc.ru/test#topics/15>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_TopicName "Knowledge Management" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Knowledge_Management" ;
+  rdfs:label "topics #15" ;
+.
+<http://d2rq.avc.ru/test#topics/16>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/3> ;
+  vocab:topics_TopicName "Knowledge Discovery" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Knowledge_Discovery" ;
+  rdfs:label "topics #16" ;
+.
+<http://d2rq.avc.ru/test#topics/2>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/15> ;
+  vocab:topics_TopicName "Knowledge Systems" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Knowledge_Systems" ;
+  rdfs:label "topics #2" ;
+.
+<http://d2rq.avc.ru/test#topics/3>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_TopicName "Artificial Intelligence" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Artificial_Intelligence" ;
+  rdfs:label "topics #3" ;
+.
+<http://d2rq.avc.ru/test#topics/4>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/5> ;
+  vocab:topics_TopicName "Semantic Annotation" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Semantic_Annotation" ;
+  rdfs:label "topics #4" ;
+.
+<http://d2rq.avc.ru/test#topics/5>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/8> ;
+  vocab:topics_TopicName "Semantic Web" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Semantic_Web" ;
+  rdfs:label "topics #5" ;
+.
+<http://d2rq.avc.ru/test#topics/6>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/5> ;
+  vocab:topics_TopicName "Semantic Web Languages" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Semantic_Web_Languages" ;
+  rdfs:label "topics #6" ;
+.
+<http://d2rq.avc.ru/test#topics/7>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/8> ;
+  vocab:topics_TopicName "Web Services" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Web_Services" ;
+  rdfs:label "topics #7" ;
+.
+<http://d2rq.avc.ru/test#topics/8>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_TopicName "World Wide Web" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#World_Wide_Web" ;
+  rdfs:label "topics #8" ;
+.
+<http://d2rq.avc.ru/test#topics/9>
+  rdf:type vocab:topics ;
+  rdf:type owl:NamedIndividual ;
+  vocab:topics_ParentID <http://d2rq.avc.ru/test#topics/16> ;
+  vocab:topics_TopicName "Text Mining" ;
+  vocab:topics_URI "http://annotation.semanticweb.org/iswc/iswc.daml#Text_Mining" ;
+  rdfs:label "topics #9" ;
+.
+vocab:conferences
+  rdf:type owl:Class ;
+  rdfs:label "conferences" ;
+.
+vocab:conferences_ConfID
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences ConfID" ;
+  rdfs:range xsd:integer ;
+.
+vocab:conferences_Date
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences Date" ;
+  rdfs:range xsd:string ;
+.
+vocab:conferences_Datum
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences Datum" ;
+  rdfs:range xsd:dateTime ;
+.
+vocab:conferences_Location
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences Location" ;
+  rdfs:range xsd:string ;
+.
+vocab:conferences_Name
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences Name" ;
+  rdfs:range xsd:string ;
+.
+vocab:conferences_URI
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:conferences ;
+  rdfs:label "conferences URI" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations
+  rdf:type owl:Class ;
+  rdfs:label "organizations" ;
+.
+vocab:organizations_Address
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Address" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Belongsto
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Belongsto" ;
+  rdfs:range vocab:organizations ;
+.
+vocab:organizations_Country
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Country" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Homepage
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Homepage" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Location
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Location" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Name
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Name" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Postcode
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Postcode" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_Type
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations Type" ;
+  rdfs:range xsd:string ;
+.
+vocab:organizations_URI
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:organizations ;
+  rdfs:label "organizations URI" ;
+  rdfs:range xsd:string ;
+.
+vocab:papers
+  rdf:type owl:Class ;
+  rdfs:label "papers" ;
+.
+vocab:papers_Abstract
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers Abstract" ;
+  rdfs:range xsd:string ;
+.
+vocab:papers_Conference
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers Conference" ;
+  rdfs:range vocab:conferences ;
+.
+vocab:papers_PaperID
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers PaperID" ;
+  rdfs:range xsd:integer ;
+.
+vocab:papers_Publish
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers Publish" ;
+  rdfs:range xsd:boolean ;
+.
+vocab:papers_Title
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers Title" ;
+  rdfs:range xsd:string ;
+.
+vocab:papers_URI
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers URI" ;
+  rdfs:range xsd:string ;
+.
+vocab:papers_Year
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "papers Year" ;
+  rdfs:range xsd:integer ;
+.
+vocab:persons
+  rdf:type owl:Class ;
+  rdfs:label "persons" ;
+.
+vocab:persons_Address
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Address" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_Email
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Email" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_FirstName
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons FirstName" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_Homepage
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Homepage" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_LastName
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons LastName" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_PerID
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons PerID" ;
+  rdfs:range xsd:integer ;
+.
+vocab:persons_Phone
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Phone" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_Photo
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Photo" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_Type
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons Type" ;
+  rdfs:range xsd:string ;
+.
+vocab:persons_URI
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "persons URI" ;
+  rdfs:range xsd:string ;
+.
+vocab:rel_paper_topic
+  rdf:type owl:Class ;
+  rdfs:label "rel_paper_topic" ;
+.
+vocab:rel_paper_topic_PaperID
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:rel_paper_topic ;
+  rdfs:label "rel_paper_topic PaperID" ;
+  rdfs:range vocab:papers ;
+.
+vocab:rel_paper_topic_RelationType
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:rel_paper_topic ;
+  rdfs:label "rel_paper_topic RelationType" ;
+  rdfs:range xsd:integer ;
+.
+vocab:rel_paper_topic_TopicID
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:rel_paper_topic ;
+  rdfs:label "rel_paper_topic TopicID" ;
+  rdfs:range vocab:topics ;
+.
+vocab:rel_person_organization
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "rel_person_organization OrganizationID" ;
+  rdfs:label "rel_person_organization PersonID" ;
+  rdfs:range vocab:organizations ;
+.
+vocab:rel_person_paper
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:papers ;
+  rdfs:label "rel_person_paper PaperID" ;
+  rdfs:label "rel_person_paper PersonID" ;
+  rdfs:range vocab:persons ;
+.
+vocab:rel_person_topic
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:persons ;
+  rdfs:label "rel_person_topic PersonID" ;
+  rdfs:label "rel_person_topic TopicID" ;
+  rdfs:range vocab:topics ;
+.
+vocab:topics
+  rdf:type owl:Class ;
+  rdfs:label "topics" ;
+.
+vocab:topics_ParentID
+  rdf:type owl:ObjectProperty ;
+  rdfs:domain vocab:topics ;
+  rdfs:label "topics ParentID" ;
+  rdfs:range vocab:topics ;
+.
+vocab:topics_TopicName
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:topics ;
+  rdfs:label "topics TopicName" ;
+  rdfs:range xsd:string ;
+.
+vocab:topics_URI
+  rdf:type owl:DatatypeProperty ;
+  rdfs:domain vocab:topics ;
+  rdfs:label "topics URI" ;
+  rdfs:range xsd:string ;
+.
+<http://iswc.test>
+  rdf:type owl:Ontology ;
+  rdfs:comment "From (ONT-)D2RQ Tests" ;
+  rdfs:comment "Database: <jdbc:mysql://127.0.0.1/iswc>" ;
+  rdfs:seeAlso <https://github.com/avicomp/ont-d2rq> ;
+.

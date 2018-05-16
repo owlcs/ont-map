@@ -86,6 +86,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * the named individual declaration map rules go last,
      * all the rest in the middle,
      * the order for none-map rules is default, i.e. comparing by predicate and string representation of {@link CommandWrapper}s.
+     * todo: will be changed: comparing main rule by target-source context classes
      *
      * @param model {@link Model} with rules, not null
      * @return {@link SPINRuleComparator} comparator
