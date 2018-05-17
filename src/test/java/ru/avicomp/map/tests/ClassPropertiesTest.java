@@ -2,11 +2,9 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.FrontsNode;
-import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -19,8 +17,6 @@ import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -35,17 +31,9 @@ import java.util.stream.Stream;
 public class ClassPropertiesTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClassPropertiesTest.class);
 
-    private OntGraphModel load(String file, Lang format) throws IOException {
-        Graph g = Factory.createGraphMem();
-        try (InputStream in = ClassPropertiesTest.class.getResourceAsStream(file)) {
-            RDFDataMgr.read(g, in, null, format);
-        }
-        return OntModelFactory.createModel(g, OntModelConfig.ONT_PERSONALITY_LAX);
-    }
-
     @Test
     public void testPizza() throws Exception {
-        OntGraphModel m = load("/pizza.ttl", Lang.TURTLE);
+        OntGraphModel m = TestUtils.load("/pizza.ttl", Lang.TURTLE);
         m.setNsPrefix("pizza", m.getID().getURI() + "#");
         m.removeNsPrefix("");
         doPrint(m);
@@ -64,7 +52,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testFoaf() throws Exception {
-        OntGraphModel m = load("/foaf.rdf", Lang.RDFXML);
+        OntGraphModel m = TestUtils.load("/foaf.rdf", Lang.RDFXML);
         m.setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/");
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
@@ -79,7 +67,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testGoodrelations() throws Exception {
-        OntGraphModel m = load("/goodrelations.rdf", Lang.RDFXML);
+        OntGraphModel m = TestUtils.load("/goodrelations.rdf", Lang.RDFXML);
         m.setNsPrefix("schema", "http://schema.org/");
         OntClass c = m.getOntEntity(OntClass.class, m.expandPrefix("gr:QuantitativeValue"));
         Assert.assertNotNull(c);
@@ -100,7 +88,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testISWC() throws Exception {
-        OntGraphModel m = load("/iswc.ttl", Lang.TURTLE);
+        OntGraphModel m = TestUtils.load("/iswc.ttl", Lang.TURTLE);
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("vocab:organizations", 10);

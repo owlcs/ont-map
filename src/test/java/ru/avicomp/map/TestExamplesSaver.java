@@ -36,16 +36,17 @@ public class TestExamplesSaver {
                 new RelatedContextMapTest(),
                 new FilterDefaultMapTest(),
                 new FilterIndividualsMapTest(),
-                new SplitMapTest()
+                new SplitMapTest(),
+                new IntersectConcatMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {
             OntGraphModel src = mapTest.assembleSource();
             OntGraphModel dst = mapTest.assembleTarget();
             OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asOntModel();
-            Path srcFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-src.ttl");
-            Path dstFile = dir.resolve(getURILastPart(mapTest.getDataNameSpace()) + "-dst.ttl");
-            Path mapFile = dir.resolve(getURILastPart(mapTest.getMapNameSpace()) + "-map.ttl");
+            Path srcFile = makeTurtleFile(dir, src);
+            Path dstFile = makeTurtleFile(dir, dst);
+            Path mapFile = makeTurtleFile(dir, map);
             saveTurtle(srcFile, src);
             saveTurtle(dstFile, dst);
             saveTurtle(mapFile, map);
@@ -59,7 +60,23 @@ public class TestExamplesSaver {
         }
     }
 
-    private static String getURILastPart(String uri) {
-        return uri.replaceFirst(".+/([^/]+)/*$", "$1");
+    private static Path makeTurtleFile(Path dir, OntGraphModel m) {
+        return dir.resolve(makeTurtleFileName(m));
     }
+
+    private static String makeTurtleFileName(OntGraphModel m) {
+        return makeTurtleFileName(m.getID().getURI());
+    }
+
+    private static String makeTurtleFileName(String url) {
+        return url.replaceFirst("^http://[^/]+/+(.+)$", "$1")
+                .replaceFirst("^http://", "")
+                .replaceAll("/+", "/")
+                .replaceFirst("^/+", "")
+                .replaceFirst("/+$", "")
+                .replace("#", "-")
+                .replace("/", "-")
+                + ".ttl";
+    }
+
 }

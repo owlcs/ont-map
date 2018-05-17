@@ -479,25 +479,21 @@ public class MapContextImpl extends ResourceImpl implements Context {
      * Auxiliary class, a helper to process mapping template call arguments (predicates).
      * Also a holder for class-properties maps related to the specified context.
      */
-    public static class ContextMappingHelper {
+    static class ContextMappingHelper {
         private final Resource mapping;
         private final MapContextImpl context;
-        private final Set<? extends RDFNode> sourceClassProperties;
-        private final Set<? extends RDFNode> targetClassProperties;
+        private Set<? extends RDFNode> sourceClassProperties;
+        private Set<? extends RDFNode> targetClassProperties;
 
         ContextMappingHelper(MapContextImpl context, Resource mapping) {
             this.mapping = Objects.requireNonNull(mapping);
             this.context = Objects.requireNonNull(context);
-            this.sourceClassProperties = getClassProperties(context.getSource());
-            this.targetClassProperties = getClassProperties(context.target());
         }
 
         /**
          * Simplifies mapping by replacing {@code spinmap:equals} and {@code avc:withDefault} function calls with its short form.
-         *
-         * @param mapping {@link Resource}
          */
-        public static void simplify(Resource mapping) {
+        void simplify() {
             Model m = mapping.getModel();
             Set<Resource> expressions = MapModelImpl.listProperties(mapping)
                     .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
@@ -513,10 +509,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
                     Models.deleteAll(expr);
                 });
             });
-        }
-
-        void simplify() {
-            simplify(mapping);
         }
 
         Resource getMapping() {
@@ -538,16 +530,34 @@ public class MapContextImpl extends ResourceImpl implements Context {
                     .anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
         }
 
+        /**
+         * Gets and caches properties belonging to the source context class.
+         *
+         * @return Set of properties
+         */
+        public Set<? extends RDFNode> getSourceClassProperties() {
+            return sourceClassProperties == null ? sourceClassProperties = getClassProperties(context.getSource()) : sourceClassProperties;
+        }
+
+        /**
+         * Gets and caches properties belonging to the target context class.
+         *
+         * @return Set of properties
+         */
+        public Set<? extends RDFNode> getTargetClassProperties() {
+            return targetClassProperties == null ? targetClassProperties = getClassProperties(context.target()) : targetClassProperties;
+        }
+
         boolean isContextProperty(RDFNode node) {
             return node.isURIResource() && (isSourceProperty(node) || isTargetProperty(node));
         }
 
         boolean isSourceProperty(RDFNode property) {
-            return sourceClassProperties.contains(property);
+            return getSourceClassProperties().contains(property);
         }
 
         boolean isTargetProperty(RDFNode property) {
-            return targetClassProperties.contains(property);
+            return getTargetClassProperties().contains(property);
         }
 
         private Set<Property> getClassProperties(Resource clazz) {
