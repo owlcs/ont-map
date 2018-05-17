@@ -33,8 +33,8 @@ Anonymous individuals are theoretically possible, but currently are not supporte
         // get target class from some ontology:
         OntCE target = ...
         // build target function-call:
-        String funcURI = pm.expandPrefix("spinmapl:targetNamespace");
-        MapFunction call = changeNamespace.create().add(funcURI, "http://target-ns.com#").build();
+        String arg = pm.expandPrefix("spinmapl:targetNamespace");
+        MapFunction call = changeNamespace.create().add(arg, "http://example.com#").build();
         // create mappin-model:
         MapModel mapping = manager.createMapModel();
         // build simple map-context:

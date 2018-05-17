@@ -87,7 +87,7 @@ public class MapManagerImpl implements MapManager {
 
     /**
      * Collects a prefixes library from a collection of graphs.
-     * todo: move to Graphs ont-api utils?
+     * todo: move to ONT-API ?
      *
      * @param graphs {@link Iterable} a collection of graphs
      * @return unmodifiable {@link PrefixMapping prefix mapping}
@@ -140,8 +140,6 @@ public class MapManagerImpl implements MapManager {
     @Override
     public Stream<MapFunction> functions() {
         return mapFunctions.values().stream()
-                // only registered:
-                .filter(this::isRegistered)
                 // skip private:
                 .filter(f -> !f.isPrivate())
                 // skip abstract:
@@ -150,6 +148,8 @@ public class MapManagerImpl implements MapManager {
                 .filter(f -> !f.isDeprecated())
                 // skip hidden:
                 .filter(f -> !f.isHidden())
+                // only registered:
+                .filter(this::isRegistered)
                 .map(Function.identity());
     }
 
@@ -161,13 +161,13 @@ public class MapManagerImpl implements MapManager {
      */
     public boolean isRegistered(MapFunctionImpl function) {
         Resource func = function.asResource();
-        // SPARQL wrapper:
+        // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;
         String uri = function.name();
         if (!SPINRegistry.functionRegistry.isRegistered(uri)) return false;
-        // registered, but no body
+        // registered, but no body -> has a java ARQ body, allow
         if (!func.hasProperty(SPIN.body)) return true;
-        // it can be registered but depend on unregistered function
+        // it can be registered but depend on some other unregistered function
         Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
         return MapModelImpl.listProperties(body)
                 .filter(s -> RDF.type.equals(s.getPredicate()))

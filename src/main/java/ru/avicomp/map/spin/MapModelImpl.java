@@ -183,6 +183,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Recursively lists all statements for specified subject.
      * Note: a possibility of StackOverflowError in case graph contains a recursion.
+     * TODO: move to ONT-API?
      *
      * @param subject {@link RDFNode}, nullable
      * @return Stream of {@link Statement}s
@@ -196,6 +197,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Recursively lists all parent resources for specified object node.
      * Note: a possibility of StackOverflowError in case graph contains a recursion.
+     * TODO: move to ONT-API?
      *
      * @param object {@link RDFNode}
      * @return Stream of {@link Resource}s

@@ -19,6 +19,7 @@ import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 import ru.avicomp.ontapi.jena.model.OntNOP;
 
+import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,27 +33,29 @@ public class IntersectConcatMapTest extends MapTestData4 {
     @Test
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
-        OntGraphModel t = assembleTarget();
+        OntGraphModel src = assembleSource();
+        OntGraphModel dst = assembleTarget();
 
         MapManager manager = Managers.getMapManager();
-        MapModel m = assembleMapping(manager, s, t);
-        TestUtils.debug(m);
+        MapModel map = assembleMapping(manager, src, dst);
+        TestUtils.debug(map);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
-        TestUtils.debug(t);
+        manager.getInferenceEngine().run(map, src, dst);
+        TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
-        PrefixMapping pm = m.asOntModel();
-        t.listNamedIndividuals().forEach(i -> TestUtils.plainAssertions(i)
-                .forEach(a -> LOGGER.debug("Assertion: {}", TestUtils.toString(pm, a))));
+        PrefixMapping pm = map.asOntModel();
+        dst.listNamedIndividuals()
+                .flatMap(TestUtils::plainAssertions)
+                .sorted(Comparator.comparing((Statement s) -> s.getPredicate().getURI()).thenComparing(s -> s.getSubject().getURI()))
+                .forEach(a -> LOGGER.debug("Assertion: {}", TestUtils.toString(pm, a)));
         // number of source and target individuals are the same:
-        OntClass persons = TestUtils.findOntEntity(s, OntClass.class, "persons");
-        Assert.assertEquals(persons.individuals().count(), t.listNamedIndividuals().count());
+        OntClass persons = TestUtils.findOntEntity(src, OntClass.class, "persons");
+        Assert.assertEquals(persons.individuals().count(), dst.listNamedIndividuals().count());
         // have 5 data property assertions for address (two of them on the same individual):
-        OntNDP userAddress = TestUtils.findOntEntity(t, OntNDP.class, "user-address");
-        Set<String> addresses = t.statements(null, userAddress, null)
+        OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
+        Set<String> addresses = dst.statements(null, userAddress, null)
                 .map(Statement::getObject)
                 .map(RDFNode::asLiteral)
                 .map(Literal::getString).collect(Collectors.toSet());
@@ -60,7 +63,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
         Assert.assertEquals(5, addresses.size());
         Assert.assertTrue(addresses.stream().anyMatch(str -> str.contains(SEPARATOR)));
 
-        commonValidate(t);
+        commonValidate(dst);
     }
 
     @Override
