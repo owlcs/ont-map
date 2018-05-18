@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin.impl;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.enhanced.EnhGraph;
 import org.apache.jena.graph.Node;
@@ -8,7 +8,6 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.PropertyBridge;
-import ru.avicomp.map.spin.MapModelImpl;
 
 import java.util.stream.Stream;
 

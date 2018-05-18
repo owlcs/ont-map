@@ -13,10 +13,7 @@ import org.topbraid.spin.util.SimpleImplementation;
 import org.topbraid.spin.util.SimpleImplementation2;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
-import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.spin.impl.SpinTargetFunctionImpl;
-import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 
 import java.lang.reflect.Field;
@@ -52,7 +49,6 @@ public class SpinModelConfig {
         p.add(org.topbraid.spin.model.ElementList.class, new SimpleImplementation(RDF.List.asNode(), ElementListImpl.class));
         p.add(org.topbraid.spin.model.Exists.class, new SimpleImplementation(SP.Exists.asNode(), ExistsImpl.class));
         p.add(org.topbraid.spin.model.Function.class, new SimpleImplementation(SPIN.Function.asNode(), FunctionImpl.class));
-        p.add(SpinTargetFunction.class, new SimpleImplementation(SPINMAP.TargetFunction.asNode(), SpinTargetFunctionImpl.class));
         p.add(org.topbraid.spin.model.FunctionCall.class, new SimpleImplementation(SPIN.Function.asNode(), FunctionCallImpl.class));
         p.add(org.topbraid.spin.model.Filter.class, new SimpleImplementation(SP.Filter.asNode(), FilterImpl.class));
         p.add(org.topbraid.spin.model.update.Insert.class, new SimpleImplementation(SP.Insert.asNode(), InsertImpl.class));

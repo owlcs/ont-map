@@ -3,7 +3,6 @@ package ru.avicomp.map.spin;
 import org.apache.jena.rdf.model.RDFNode;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.impl.MapContextImpl;
 
 import java.util.*;
 

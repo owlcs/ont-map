@@ -12,7 +12,6 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.impl.MapContextImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;

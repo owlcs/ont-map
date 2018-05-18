@@ -12,7 +12,6 @@ import org.topbraid.spin.system.SPINModuleRegistry;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.model.SpinTargetFunction;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapImpl;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
@@ -107,7 +106,7 @@ public class MapManagerImpl implements MapManager {
      */
     public static Stream<org.topbraid.spin.model.Function> listSpinFunctions(Model model) {
         return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.canAs(SpinTargetFunction.class))
+                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.hasProperty(RDF.type, SPINMAP.TargetFunction))
                 .map(s -> s.as(org.topbraid.spin.model.Function.class));
     }
 

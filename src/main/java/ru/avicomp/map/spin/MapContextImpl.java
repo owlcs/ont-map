@@ -1,4 +1,4 @@
-package ru.avicomp.map.spin.impl;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.RDFDatatype;
@@ -14,10 +14,6 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.Exceptions;
-import ru.avicomp.map.spin.MapFunctionImpl;
-import ru.avicomp.map.spin.MapModelImpl;
-import ru.avicomp.map.spin.MappingBuilder;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.model.*;
