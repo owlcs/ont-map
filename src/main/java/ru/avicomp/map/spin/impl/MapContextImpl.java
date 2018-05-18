@@ -160,6 +160,10 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (function.isCustom()) {
             addFunctionBody(function);
         }
+        call.asMap().values().stream()
+                .filter(MapFunction.Call.class::isInstance)
+                .map(MapFunction.Call.class::cast)
+                .forEach(this::writeFunctionBody);
     }
 
     /**
@@ -606,8 +610,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
             int variableIndex = 1;
             for (Statement s : properties) {
                 Resource expr = s.getSubject();
-                // replace argument property with variable, e.g. spin:_arg1
                 Property property = s.getObject().as(Property.class);
+
+                // replace argument property with variable, e.g. spin:_arg1
                 Resource variable;
                 if (res.replacement.containsKey(property)) {
                     variable = res.replacement.get(property);
@@ -616,6 +621,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 }
                 m.add(expr, s.getPredicate(), variable);
                 m.remove(s);
+
                 // add mapping predicate
                 Property predicate;
                 if (isSourceProperty(property)) {

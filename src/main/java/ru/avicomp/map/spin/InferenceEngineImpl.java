@@ -3,10 +3,13 @@ package ru.avicomp.map.spin;
 import org.apache.jena.enhanced.BuiltinPersonalities;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.GraphEventManager;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.impl.ModelCom;
+import org.apache.jena.sparql.util.graph.GraphListenerBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.inference.DefaultSPINRuleComparator;
@@ -19,6 +22,7 @@ import org.topbraid.spin.progress.SimpleProgressMonitor;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.SPINQueryFinder;
 import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -66,11 +70,18 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
         Model s = SpinModelConfig.createSpinModel(union);
         Model t = new ModelCom(target);
-
-        process(s, t, getMapComparator(s), getProgressMonitor(mapping));
+        DebugLogListener logs = new DebugLogListener();
+        GraphEventManager events = target.getEventManager();
+        try {
+            if (LOGGER.isDebugEnabled())
+                events.register(logs);
+            process(s, t, getMapComparator(s), getProgressMonitor(mapping));
+        } finally {
+            events.unregister(logs);
+        }
     }
 
-    protected ProgressMonitor getProgressMonitor(MapModel mapping) {
+    public static ProgressMonitor getProgressMonitor(MapModel mapping) {
         final String name;
         return LOGGER.isDebugEnabled() ? new SimpleProgressMonitor(name = mapping.getID().getURI()) {
             @Override
@@ -115,8 +126,21 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @see SPINInferences#run(Model, Property, Model, SPINExplanations, List, boolean, ProgressMonitor)
      */
     public static void process(Model mapping, Model result, SPINRuleComparator comparator, ProgressMonitor logs) {
-        Map<Resource, List<CommandWrapper>> cls2Query = SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPIN.rule, true, false);
+        Map<Resource, List<CommandWrapper>> cls2Query = SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPINMAP.rule, true, false);
         Map<Resource, List<CommandWrapper>> cls2Constructor = SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPIN.constructor, true, false);
-        SPINInferences.run(mapping, result, cls2Query, cls2Constructor, null, null, true, SPIN.rule, comparator, logs);
+        SPINInferences.run(mapping, result, cls2Query, cls2Constructor, null, null, true, SPINMAP.rule, comparator, logs);
+    }
+
+    public static class DebugLogListener extends GraphListenerBase {
+
+        @Override
+        protected void addEvent(Triple t) {
+            LOGGER.debug("ADD: {}", t);
+        }
+
+        @Override
+        protected void deleteEvent(Triple t) {
+            LOGGER.debug("DELETE: {}", t);
+        }
     }
 }
