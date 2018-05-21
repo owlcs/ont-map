@@ -22,7 +22,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.utils.DebugLogListener;
+import ru.avicomp.map.utils.GraphLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 19.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class TmpInferenceEngineImpl implements MapManager.InferenceEngine {
+public class InferenceEngineImpl implements MapManager.InferenceEngine {
     static {
         // Warning: Jena stupidly allows to modify global personality (org.apache.jena.enhanced.BuiltinPersonalities#model),
         // what does SPIN API, which, also, implicitly requires that patched version everywhere.
@@ -52,12 +52,17 @@ public class TmpInferenceEngineImpl implements MapManager.InferenceEngine {
         SpinModelConfig.init(BuiltinPersonalities.model);
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TmpInferenceEngineImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(InferenceEngineImpl.class);
 
-    protected final SPINInferenceHelper helper = new SPINInferenceHelper();
+    private final MapManagerImpl manager;
+    protected final SPINInferenceHelper helper;
 
-    public UnionModel assembleQueryModel(MapModelImpl mapping, Graph source, Graph target) {
-        MapManagerImpl manager = mapping.getManager();
+    public InferenceEngineImpl(MapManagerImpl manager) {
+        this.manager = manager;
+        this.helper = new SPINInferenceHelper(manager.spinARQFactory, manager.functionRegistry);
+    }
+
+    public UnionModel assembleQueryModel(MapModel mapping, Graph source, Graph target) {
         // Reassembly a union graph (just in case, it should already contain everything needed):
         UnionGraph union = new UnionGraph(mapping.asOntModel().getBaseGraph());
         // pass prefixes:
@@ -83,14 +88,14 @@ public class TmpInferenceEngineImpl implements MapManager.InferenceEngine {
 
     @Override
     public void run(MapModel mapping, Graph source, Graph target) {
-        UnionModel query = assembleQueryModel((MapModelImpl) mapping, source, target);
+        UnionModel query = assembleQueryModel(mapping, source, target);
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
             commands.forEach(c -> LOGGER.debug("Rule for {}: '{}'", c.getStatement().getSubject(), SPINInferenceHelper.toString(c)));
 
         OntGraphModel m = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
         GraphEventManager events = target.getEventManager();
-        DebugLogListener logs = new DebugLogListener();
+        GraphLogListener logs = new GraphLogListener(LOGGER::debug);
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())
@@ -152,8 +157,13 @@ public class TmpInferenceEngineImpl implements MapManager.InferenceEngine {
     @SuppressWarnings("UnusedReturnValue")
     public static class SPINInferenceHelper {
 
-        protected final ARQFactory spinARQFactory = ARQFactory.get();
-        protected final FunctionRegistry jenaFunctionRegistry = FunctionRegistry.get();
+        protected final ARQFactory spinARQFactory;
+        protected final FunctionRegistry jenaFunctionRegistry;
+
+        public SPINInferenceHelper(ARQFactory spinARQFactory, FunctionRegistry jenaFunctionRegistry) {
+            this.spinARQFactory = spinARQFactory;
+            this.jenaFunctionRegistry = jenaFunctionRegistry;
+        }
 
         /**
          * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}

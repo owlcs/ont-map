@@ -9,7 +9,6 @@ import ru.avicomp.map.Context;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.TmpInferenceEngineImpl;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -73,8 +72,7 @@ public class TmpGroupConcatTest extends AbstractMapTest {
         MapModel map = assembleMapping(manager, s, t);
         TestUtils.debug(map);
 
-        TmpInferenceEngineImpl e = new TmpInferenceEngineImpl();
-        e.run(map, s.getGraph(), t.getGraph());
+        manager.getInferenceEngine().run(map, s.getGraph(), t.getGraph());
         TestUtils.debug(t);
     }
 

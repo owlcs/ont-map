@@ -8,6 +8,9 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
+import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.system.SPINModuleRegistry;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -43,19 +46,21 @@ public class MapManagerImpl implements MapManager {
     private final Map<String, MapFunctionImpl> mapFunctions;
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
+    protected final ARQFactory spinARQFactory = ARQFactory.get();
+    protected final SPINModuleRegistry spinModuleRegistry = SPINModuleRegistry.get();
+    protected final FunctionRegistry functionRegistry = FunctionRegistry.get();
+    protected final PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
+
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel();
         this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
-        registerALL(graphLibrary);
+        SPINRegistry r = new SPINRegistry(functionRegistry, propertyFunctionRegistry);
+        r.initSPIN();
+        r.initSPIF();
+        spinModuleRegistry.registerAll(graphLibrary, null);
         this.mapFunctions = listSpinFunctions(graphLibrary)
                 .map(f -> makeFunction(f, prefixLibrary))
                 .collect(Collectors.toMap(MapFunction::name, Function.identity()));
-    }
-
-    public static void registerALL(Model library) {
-        SPINRegistry.initSPIN();
-        SPINRegistry.initSPIF();
-        SPINModuleRegistry.get().registerAll(library, null);
     }
 
     private static Model createLibraryModel() {
@@ -159,12 +164,12 @@ public class MapManagerImpl implements MapManager {
      * @return boolean
      */
     public boolean isRegistered(MapFunctionImpl function) {
-        if (function.isCustom()) return true;
+        //if (function.isCustom()) return true;
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;
         String uri = function.name();
-        if (!SPINRegistry.functionRegistry.isRegistered(uri)) return false;
+        if (!functionRegistry.isRegistered(uri)) return false;
         // registered, but no body -> has a java ARQ body, allow
         if (!func.hasProperty(SPIN.body)) return true;
         // it can be registered but depend on some other unregistered function
@@ -260,7 +265,7 @@ public class MapManagerImpl implements MapManager {
 
     @Override
     public InferenceEngine getInferenceEngine() {
-        return new TmpInferenceEngineImpl();
+        return new InferenceEngineImpl(this);
     }
 
 }

@@ -24,10 +24,15 @@ import java.util.Optional;
  */
 class SPINRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(SPINRegistry.class);
-    static FunctionRegistry functionRegistry = FunctionRegistry.get();
-    private static PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
+    private final FunctionRegistry functionRegistry;
+    private final PropertyFunctionRegistry propertyFunctionRegistry;
 
-    static void initSPIF() {
+    SPINRegistry(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
+        this.functionRegistry = functionRegistry;
+        this.propertyFunctionRegistry = propertyFunctionRegistry;
+    }
+
+    void initSPIF() {
         // from org.topbraid.spin.arq.functions:
         registerFunction("invoke", InvokeFunction.class);
         registerFunction("walkObjects", WalkObjectsFunction.class);
@@ -85,7 +90,7 @@ class SPINRegistry {
         registerPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
     }
 
-    static void initSPIN() {
+    void initSPIN() {
         functionRegistry.put(SPIN.ask.getURI(), new AskFunction());
         functionRegistry.put(SPIN.eval.getURI(), new EvalFunction());
         functionRegistry.put(SPIN.evalInGraph.getURI(), new EvalInGraphFunction());
@@ -96,21 +101,21 @@ class SPINRegistry {
         propertyFunctionRegistry.put(SPINMAPL.OWL_RL_PROPERTY_CHAIN_HELPER, PropertyChainHelperPFunction.class);
     }
 
-    private static void registerFunction(String localName, Class functionClass) {
+    private void registerFunction(String localName, Class functionClass) {
         functionRegistry.put(SPIF.NS + localName, functionClass);
         functionRegistry.put(SPINMAPL.SMF_NS + localName, functionClass); //?
     }
 
-    private static void registerPropertyFunction(String localName, Class functionClass) {
+    private void registerPropertyFunction(String localName, Class functionClass) {
         propertyFunctionRegistry.put(SPIF.NS + localName, functionClass);
         propertyFunctionRegistry.put("http://www.topbraid.org/tops#" + localName, functionClass); //?
     }
 
-    private static void registerFunction(String localName, String functionClass) {
+    private void registerFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerFunction(localName, c));
     }
 
-    private static void registerPropertyFunction(String localName, String functionClass) {
+    private void registerPropertyFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerPropertyFunction(localName, c));
     }
 

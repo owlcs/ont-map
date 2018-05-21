@@ -3,14 +3,19 @@ package ru.avicomp.map.utils;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.sparql.util.graph.GraphListenerBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.function.BiConsumer;
 
 /**
  * Created by @szuev on 21.05.2018.
  */
-public class DebugLogListener extends GraphListenerBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebugLogListener.class);
+public class GraphLogListener extends GraphListenerBase {
+
+    private final BiConsumer<String, Triple> logger;
+
+    public GraphLogListener(BiConsumer<String, Triple> logger) {
+        this.logger = logger;
+    }
 
     @Override
     public void notifyAddGraph(Graph g, Graph other) {
@@ -24,11 +29,11 @@ public class DebugLogListener extends GraphListenerBase {
 
     @Override
     protected void addEvent(Triple t) {
-        LOGGER.debug("ADD: {}", t);
+        logger.accept("ADD: {}", t);
     }
 
     @Override
     protected void deleteEvent(Triple t) {
-        LOGGER.debug("DELETE: {}", t);
+        logger.accept("DELETE: {}", t);
     }
 }
