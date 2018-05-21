@@ -1,16 +1,21 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.util.CommandWrapper;
+import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Utility to work with {@link org.apache.jena.rdf.model.Model}s encapsulating spin/spinmap rules.
@@ -81,5 +86,26 @@ public class SpinModels {
      */
     public static boolean isNamedIndividualSelfMapping(Resource rule) {
         return isDeclarationMapping(rule) && context(rule).filter(SpinModels::isNamedIndividualSelfContext).isPresent();
+    }
+
+    public static Set<Statement> getFunctionBody(Model m, Resource function) {
+        return ru.avicomp.ontapi.jena.utils.Iter.asStream(m.listStatements(function, ru.avicomp.ontapi.jena.vocabulary.RDF.type, SPIN.Function))
+                .map(Statement::getSubject)
+                .filter(r -> r.hasProperty(SPIN.body))
+                .map(r -> r.getRequiredProperty(SPIN.body))
+                .map(Statement::getObject)
+                .filter(RDFNode::isAnon)
+                .map(RDFNode::asResource)
+                .map(Models::getAssociatedStatements)
+                .findFirst()
+                .orElse(Collections.emptySet());
+    }
+
+    public static String toString(CommandWrapper w) {
+        if (w.getLabel() != null)
+            return w.getLabel();
+        if (w.getText() != null)
+            return w.getText();
+        return Optional.ofNullable(w.getStatement()).map(Object::toString).orElse("Unknown mapping");
     }
 }
