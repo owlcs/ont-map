@@ -9,6 +9,7 @@ import ru.avicomp.map.Context;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.TmpInferenceEngineImpl;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;

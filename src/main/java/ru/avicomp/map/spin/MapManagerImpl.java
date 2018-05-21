@@ -227,7 +227,6 @@ public class MapManagerImpl implements MapManager {
      * @param base           {@link Graph}
      * @param owlPersonality {@link OntPersonality}
      * @return {@link MapModelImpl}
-     * @see InferenceEngineImpl#getMapComparator(Model)
      */
     public MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
         UnionGraph g = new UnionGraph(base);
@@ -261,7 +260,7 @@ public class MapManagerImpl implements MapManager {
 
     @Override
     public InferenceEngine getInferenceEngine() {
-        return new InferenceEngineImpl(this);
+        return new TmpInferenceEngineImpl();
     }
 
 }

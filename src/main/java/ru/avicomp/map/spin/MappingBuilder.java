@@ -53,7 +53,7 @@ public class MappingBuilder {
      * If {@code isPropertyMapping = false} it produces an universal mapping ({@code avc:Mapping-...-t1}),
      * which can be used in any case - both for class and property mappings,
      * otherwise a more specific property template ({@code avc:PropertyMapping-...-t1}) with a class assertion filter in addition is provided.
-     * Since the order of inference has been changed (see {@link InferenceEngineImpl#getMapComparator(Model)}),
+     * Since the order of inference has been changed (see {@link TmpInferenceEngineImpl}),
      * a property mapping is processed only after a corresponding individual is created by class-map rule.
      * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
      * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,

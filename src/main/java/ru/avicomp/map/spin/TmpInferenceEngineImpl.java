@@ -1,4 +1,4 @@
-package ru.avicomp.map.tests;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.enhanced.BuiltinPersonalities;
 import org.apache.jena.graph.Graph;
@@ -19,9 +19,10 @@ import org.topbraid.spin.system.SPINLabels;
 import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.utils.DebugLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 19.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class TmpInferenceEngineImpl {
+public class TmpInferenceEngineImpl implements MapManager.InferenceEngine {
     static {
         // Warning: Jena stupidly allows to modify global personality (org.apache.jena.enhanced.BuiltinPersonalities#model),
         // what does SPIN API, which, also, implicitly requires that patched version everywhere.
@@ -80,6 +81,7 @@ public class TmpInferenceEngineImpl {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public void run(MapModel mapping, Graph source, Graph target) {
         UnionModel query = assembleQueryModel((MapModelImpl) mapping, source, target);
         List<QueryWrapper> commands = getSpinMapRules(query);
@@ -88,7 +90,7 @@ public class TmpInferenceEngineImpl {
 
         OntGraphModel m = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
         GraphEventManager events = target.getEventManager();
-        InferenceEngineImpl.DebugLogListener logs = new InferenceEngineImpl.DebugLogListener();
+        DebugLogListener logs = new DebugLogListener();
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())
