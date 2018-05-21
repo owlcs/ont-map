@@ -1,17 +1,17 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -89,7 +89,7 @@ public class SpinModels {
     }
 
     public static Set<Statement> getFunctionBody(Model m, Resource function) {
-        return ru.avicomp.ontapi.jena.utils.Iter.asStream(m.listStatements(function, ru.avicomp.ontapi.jena.vocabulary.RDF.type, SPIN.Function))
+        return Iter.asStream(m.listStatements(function, RDF.type, SPIN.Function))
                 .map(Statement::getSubject)
                 .filter(r -> r.hasProperty(SPIN.body))
                 .map(r -> r.getRequiredProperty(SPIN.body))

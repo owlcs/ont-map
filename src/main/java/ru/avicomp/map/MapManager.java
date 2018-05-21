@@ -2,6 +2,7 @@ package ru.avicomp.map;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
@@ -44,6 +45,12 @@ public interface MapManager {
                 .filter(f -> Objects.equals(name, f.name()))
                 .findFirst()
                 .orElseThrow(() -> new MapJenaException("Function " + name + " not found."));
+    }
+
+    default MapFunction getFunction(Resource resource) {
+        if (!Objects.requireNonNull(resource, "Null function resource").isURIResource())
+            throw new IllegalArgumentException("Not an iri");
+        return getFunction(resource.getURI());
     }
 
     /**

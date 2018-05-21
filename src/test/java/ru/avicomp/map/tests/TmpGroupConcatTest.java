@@ -1,14 +1,10 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.Resource;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.Managers;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
+import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -33,32 +29,17 @@ public class TmpGroupConcatTest extends AbstractMapTest {
         Context context = res.createContext(srcClass, dstClass,
                 manager.getFunction(SPINMAPL.composeURI.getURI()).create()
                         .addLiteral(SPINMAPL.template, "http://{?1}").build());
-        Resource groupConcat = AVC.resource("groupConcatTest");
-        Resource getIRI = AVC.resource("getIRI");
-        Resource get = AVC.resource("get");
 
-        context.addPropertyBridge(manager.getFunction(groupConcat.getURI()).create()
+        MapFunction groupConcat = manager.getFunction(AVC.groupConcat);
+        MapFunction getIRI = manager.getFunction(AVC.asIRI);
+        MapFunction get = manager.getFunction(AVC.currentIndividual);
+
+        context.addPropertyBridge(groupConcat.create()
                 .addLiteral(SPINMAPL.separator, ",")
-                .addFunction(SP.arg2, manager.getFunction(get.getURI()).create())
-                //.add(SP.arg1.getURI(), SPIN._this.getURI())
-                .add(SP.arg1.getURI(), manager.getFunction(getIRI.getURI()).create()
+                .addFunction(SP.arg2, get.create())
+                .add(SP.arg1.getURI(), getIRI.create()
                         .addProperty(SP.arg1, srcProp))
                 .build(), dstProp);
-        /*Model m = SpinModelConfig.createSpinModel(res.asOntModel().getGraph());
-        groupConcat = groupConcat.inModel(m).addProperty(SPIN.body,
-        ARQ2SPIN.parseQuery("SELECT GROUP_CONCAT(?r; SEPARATOR='+')\n" +
-                "WHERE {\n" +
-                "    ?arg1 ?arg2 ?r .\n" +
-                "}", m));
-        SPINModuleRegistry.get().register(SPINFactory.asFunction(groupConcat), null, true);*/
-        //SPINModuleRegistry.get().registerAll(m, null);
-        //m.add(SPINMAP.rule, SPIN.thisUnbound,  ResourceFactory.createTypedLiteral(Boolean.FALSE));
-        //Resource s1 = res.asOntModel().statements(null, RDF.type, getIRI).map(OntStatement::getSubject).findFirst().orElseThrow(AssertionError::new);
-        //Statement s2 = res.asOntModel().statements(null, null, s1).findFirst().orElseThrow(AssertionError::new);
-        //res.asOntModel().remove(s2);
-        //res.asOntModel().add(s2.getSubject(), SP.arg2, srcProp);
-        /*res.asOntModel().statements(null, SPINMAP.targetClass, OWL.NamedIndividual)
-                .map(OntStatement::getSubject).findFirst().ifPresent(Models::deleteAll);*/
         return res;
     }
 
@@ -74,6 +55,7 @@ public class TmpGroupConcatTest extends AbstractMapTest {
 
         manager.getInferenceEngine().run(map, s.getGraph(), t.getGraph());
         TestUtils.debug(t);
+        //todo: validate
     }
 
 

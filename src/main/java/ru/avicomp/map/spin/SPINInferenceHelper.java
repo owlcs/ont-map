@@ -15,6 +15,7 @@ import org.topbraid.spin.model.update.Update;
 import org.topbraid.spin.system.SPINLabels;
 import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
+import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
 
 import java.util.Map;
@@ -156,7 +157,7 @@ public class SPINInferenceHelper {
      * @param queryWrapper {@link CommandWrapper} command to run
      * @param newTriples   {@link Model} to add result of inference
      * @param instance     {@link Resource} individual to infer
-     * @return true if
+     * @return true if changes were done
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      */
     public boolean runQueryOnInstance(QueryWrapper queryWrapper, Model newTriples, Resource instance) {
@@ -166,18 +167,26 @@ public class SPINInferenceHelper {
     }
 
     /**
-     * TODO: description with explanation
+     * Runs a given Jena Query on a given individual and returns the inferred triples as a Model.
+     *
+     * There is a difference with SPIN-API Inferences implementation:
+     * in additional to passing {@code ?this} to top-level query binding (mapping construct) only
+     * there is also a workaround ONT-MAP solution to place it deep in all sub-queries.
+     * It is definitely leak of functionality, which severely limits the space of usage opportunities.
+     * It seems that Topbraid Composer (checked version 5.5.1) has some magic solution for that leak in its deeps also:
+     * testing shows that queries which handled by {@code spin:eval} may accept {@code ?this} in some conditions,
+     * e.g. for original {@code spinmap:Mapping-1-1}, which has no been cloned to local mapping model.
      *
      * @param query    {@link QueryWrapper}
      * @param instance {@link Resource}
      * @return {@link Model} new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
+     * @see AVC#currentIndividual
      */
     public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
-        Model model = query.getSPINQuery().getModel();
+        Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
         //ARQFactory.LOG_QUERIES = true;
-        // todo: will be changed
-        Resource get = AVC.resource("get").inModel(model);
+        Resource get = AVC.currentIndividual.inModel(model);
         Map<Statement, Statement> vars = getThisVarReplacement(get, instance);
         try {
             vars.forEach((a, b) -> model.add(b).remove(a));

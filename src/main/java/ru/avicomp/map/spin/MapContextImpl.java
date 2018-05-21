@@ -1,6 +1,5 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.enhanced.EnhGraph;
 import org.apache.jena.graph.Node;
@@ -17,6 +16,7 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -81,7 +81,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     @Override
     public MapContextImpl addClassBridge(MapFunction.Call filterFunction, MapFunction.Call mappingFunction) throws MapJenaException {
         if (!testFunction(mappingFunction).getFunction().isTarget()) {
-            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).add(Key.FUNCTION, mappingFunction.getFunction().name()).build();
+            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(mappingFunction.getFunction()).build();
         }
         Supplier<RDFNode> filterExpression = filterExpression(filterFunction);
         // collects target expression statements to be deleted :
@@ -154,7 +154,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
     protected void writeFunctionBody(MapFunction.Call call) {
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
-            addFunctionBody(function);
+            Resource res = addFunctionBody(function);
+            Iter.asStream(res.listProperties(AVC.runtime))
+                    .map(Statement::getObject)
+                    .filter(RDFNode::isLiteral)
+                    .map(RDFNode::asLiteral)
+                    .map(Literal::getString)
+                    .forEach(s -> getRuntimeBody(function, s).apply(res, call));
         }
         call.asMap().values().stream()
                 .filter(MapFunction.Call.class::isInstance)
@@ -162,14 +168,29 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .forEach(this::writeFunctionBody);
     }
 
+    public AdjustFunctionBody getRuntimeBody(MapFunction func, String path) {
+        Exceptions.Builder err = exception(Exceptions.CONTEXT_WRONG_RUNTIME_FUNCTION_BODY_CLASS).addFunction(func);
+        try {
+            Class<?> res = Class.forName(path);
+            if (!AdjustFunctionBody.class.isAssignableFrom(res)) {
+                throw err.build();
+            }
+            return (AdjustFunctionBody) res.newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw err.build(e);
+        }
+    }
+
     /**
      * Adds function "as is" to the graph.
      *
      * @param function {@link MapFunctionImpl}
+     * @return Resource function in model
      */
-    protected void addFunctionBody(MapFunctionImpl function) {
-        Model m = getModel();
+    protected Resource addFunctionBody(MapFunctionImpl function) {
+        MapModelImpl m = getModel();
         Models.getAssociatedStatements(function.asResource()).forEach(m::add);
+        return function.asResource().inModel(m);
     }
 
     /**
@@ -375,7 +396,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
         MapFunction f = func.getFunction();
         if (!f.isBoolean()) {
-            throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).add(Key.FUNCTION, f.name()).build();
+            throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).addFunction(f).build();
         }
         return testFunction(func);
     }
@@ -607,7 +628,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             for (Statement s : properties) {
                 Resource expr = s.getSubject();
                 Property property = s.getObject().as(Property.class);
-                if (!expr.hasProperty(RDF.type, AVC.resource("getIRI"))) {
+                if (!expr.hasProperty(RDF.type, AVC.asIRI)) {
                     // replace argument property with variable, e.g. spin:_arg1
                     Resource variable;
                     if (res.replacement.containsKey(property)) {

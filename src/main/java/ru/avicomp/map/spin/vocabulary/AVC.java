@@ -26,8 +26,24 @@ public class AVC {
     // additional property function that is used to provide a mapping mechanism for assertion default values
     public static final Resource withDefault = resource("withDefault");
 
-    // resource, which is used as return type of function or argument
+    // todo:
+    public static final Resource currentIndividual = resource("get");
+
+    // todo:
+    public static final Resource asIRI = resource("getIRI");
+
+    // todo:
+    public static final Resource groupConcat = resource("groupConcatTest");
+
+    // resource, which is used as return type of function or argument in unclear case
     public static final Resource undefined = resource("undefined");
+
+    // functions class to indicate that function is "magic" and may not work as expected in Composer
+    public static final Resource MagicFunctions = resource("MagicFunctions");
+
+    // require special treatment in runtime before inference,
+    // the right part of statement with this predicate must be a class path to ru.avicomp.map.spin.AdjustFunctionBody impl,
+    public static final Property runtime = property("runtime");
 
     // expression predicate to use in conditional templates as a filter
     public static final Property filter = property("filter");

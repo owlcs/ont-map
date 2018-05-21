@@ -36,9 +36,18 @@ sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                           spl:valueType  avc:undefined
                         ] .
 
+avc:MagicFunctions
+  rdf:type spin:Function ;
+  spin:abstract "true"^^xsd:boolean ;
+  rdfs:comment "A collection of functions that may not work as expected in Topbraid Composer." ;
+  rdfs:label "Magic functions" ;
+  rdfs:subClassOf spin:Functions ;
+.
 avc:groupConcatTest
   rdf:type spin:Function ;
   rdfs:comment "For developing" ;
+  spin:returnType xsd:string ;
+  avc:runtime "ru.avicomp.map.spin.AdjustGroupConcatImpl" ;
   spin:body [
       rdf:type sp:Select ;
       sp:resultVariables (
@@ -76,7 +85,9 @@ avc:groupConcatTest
     ] ;
   spin:constraint [
       rdf:type spl:Argument ;
+      spl:optional "true"^^xsd:boolean ;
       spl:predicate spinmapl:separator ;
+      spl:defaultValue " + ";
       spl:valueType xsd:string ;
       rdfs:comment "The separator to put between the two values." ;
     ] ;
@@ -126,7 +137,7 @@ avc:get
         ) ;
     ] ;
   spin:returnType rdfs:Resource ;
-  rdfs:subClassOf spin:Functions ;
+  rdfs:subClassOf avc:MagicFunctions ;
 .
 
 avc:withDefault  a          spin:Function ;

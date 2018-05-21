@@ -7,11 +7,13 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.arq.SPINFunctionDrivers;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.QueryWrapper;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.GraphLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -50,8 +52,18 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         this.helper = new SPINInferenceHelper(manager.spinARQFactory, manager.functionRegistry);
     }
 
+    /**
+     * Reassemblies an union graph.
+     * It is just in case, the input mapping should already contain everything needed.
+     *
+     * @param mapping {@link MapModel} mapping model
+     * @param source  {@link Graph} graph with data to inference
+     * @param target  {@link Graph} graph to put inference results
+     * @return {@link UnionModel} with SPIN personalities
+     * @see SpinModelConfig#LIB_PERSONALITY
+     */
     public UnionModel assembleQueryModel(MapModel mapping, Graph source, Graph target) {
-        // Reassembly a union graph (just in case, it should already contain everything needed):
+        // spin mapping should be fully described inside base graph:
         UnionGraph union = new UnionGraph(mapping.asOntModel().getBaseGraph());
         // pass prefixes:
         union.getPrefixMapping().setNsPrefixes(mapping.asOntModel());
@@ -77,6 +89,15 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     @Override
     public void run(MapModel mapping, Graph source, Graph target) {
         UnionModel query = assembleQueryModel(mapping, source, target);
+        // preparing for runtime functions
+        Set<Resource> runtimeFunctions = Iter.asStream(query.getBaseModel().listSubjectsWithProperty(AVC.runtime))
+                .map(r -> r.inModel(query))
+                .collect(Collectors.toSet());
+        if (!runtimeFunctions.isEmpty()) {
+            manager.spinARQFactory.clearCaches();
+            runtimeFunctions.forEach(r -> manager.functionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r)));
+        }
+
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
             commands.forEach(c -> LOGGER.debug("Rule for {}: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
