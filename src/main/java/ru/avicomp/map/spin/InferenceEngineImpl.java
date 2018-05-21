@@ -21,7 +21,6 @@ import org.topbraid.spin.progress.ProgressMonitor;
 import org.topbraid.spin.progress.SimpleProgressMonitor;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.SPINQueryFinder;
-import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
@@ -29,10 +28,7 @@ import ru.avicomp.map.MapModel;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Impl of inference-engine.
@@ -127,11 +123,23 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      */
     public static void process(Model mapping, Model result, SPINRuleComparator comparator, ProgressMonitor logs) {
         Map<Resource, List<CommandWrapper>> cls2Query = SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPINMAP.rule, true, false);
-        Map<Resource, List<CommandWrapper>> cls2Constructor = SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPIN.constructor, true, false);
+        Map<Resource, List<CommandWrapper>> cls2Constructor =
+                Collections.emptyMap();
+        //SPINQueryFinder.getClass2QueryMap(mapping, mapping, SPIN.constructor, true, false);
         SPINInferences.run(mapping, result, cls2Query, cls2Constructor, null, null, true, SPINMAP.rule, comparator, logs);
     }
 
     public static class DebugLogListener extends GraphListenerBase {
+
+        @Override
+        public void notifyAddGraph(Graph g, Graph other) {
+            other.find(Triple.ANY).forEachRemaining(this::addEvent);
+        }
+
+        @Override
+        public void notifyDeleteGraph(Graph g, Graph other) {
+            other.find(Triple.ANY).forEachRemaining(this::deleteEvent);
+        }
 
         @Override
         protected void addEvent(Triple t) {

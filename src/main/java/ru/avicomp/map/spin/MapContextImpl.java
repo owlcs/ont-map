@@ -607,17 +607,17 @@ public class MapContextImpl extends ResourceImpl implements Context {
             for (Statement s : properties) {
                 Resource expr = s.getSubject();
                 Property property = s.getObject().as(Property.class);
-
-                // replace argument property with variable, e.g. spin:_arg1
-                Resource variable;
-                if (res.replacement.containsKey(property)) {
-                    variable = res.replacement.get(property);
-                } else {
-                    res.replacement.put(property, variable = m.getArgVariable(variableIndex++));
+                if (!expr.hasProperty(RDF.type, AVC.resource("getIRI"))) {
+                    // replace argument property with variable, e.g. spin:_arg1
+                    Resource variable;
+                    if (res.replacement.containsKey(property)) {
+                        variable = res.replacement.get(property);
+                    } else {
+                        res.replacement.put(property, variable = m.getArgVariable(variableIndex++));
+                    }
+                    m.add(expr, s.getPredicate(), variable);
+                    m.remove(s);
                 }
-                m.add(expr, s.getPredicate(), variable);
-                m.remove(s);
-
                 // add mapping predicate
                 Property predicate;
                 if (isSourceProperty(property)) {

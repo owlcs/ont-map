@@ -159,6 +159,7 @@ public class MapManagerImpl implements MapManager {
      * @return boolean
      */
     public boolean isRegistered(MapFunctionImpl function) {
+        if (function.isCustom()) return true;
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;

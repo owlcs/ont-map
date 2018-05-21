@@ -36,6 +36,99 @@ sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                           spl:valueType  avc:undefined
                         ] .
 
+avc:groupConcatTest
+  rdf:type spin:Function ;
+  rdfs:comment "For developing" ;
+  spin:body [
+      rdf:type sp:Select ;
+      sp:resultVariables (
+          [
+            rdf:type sp:GroupConcat ;
+            sp:distinct "true"^^xsd:boolean ;
+            sp:expression [
+                sp:varName "r" ;
+              ] ;
+            sp:separator " + " ;
+          ]
+        ) ;
+      sp:where (
+          [
+            sp:object [
+                sp:varName "r" ;
+              ] ;
+            sp:predicate spin:_arg1 ;
+            sp:subject spin:_arg2 ;
+          ]
+        ) ;
+    ] ;
+  spin:constraint [
+      rdf:type spl:Argument ;
+      spl:optional "true"^^xsd:boolean ;
+      spl:predicate sp:arg2 ;
+      spl:valueType rdfs:Resource ;
+      rdfs:comment "Subject (instance)" ;
+    ] ;
+  spin:constraint [
+      rdf:type spl:Argument ;
+      spl:predicate sp:arg1 ;
+      spl:valueType rdf:Property ;
+      rdfs:comment "Predicate (property)" ;
+    ] ;
+  spin:constraint [
+      rdf:type spl:Argument ;
+      spl:predicate spinmapl:separator ;
+      spl:valueType xsd:string ;
+      rdfs:comment "The separator to put between the two values." ;
+    ] ;
+  rdfs:subClassOf spin:Functions ;
+.
+
+avc:getIRI
+  rdf:type spin:Function ;
+  rdfs:comment "For developing" ;
+  spin:body [
+      rdf:type sp:Select ;
+      sp:resultVariables (
+          [
+            sp:varName "arg1" ;
+          ]
+        ) ;
+      sp:where () ;
+    ] ;
+  spin:constraint [
+      rdf:type spl:Argument ;
+      spl:predicate sp:arg1 ;
+      spl:valueType rdf:Property ;
+      rdfs:comment "The property to return" ;
+    ] ;
+  spin:returnType rdf:Property ;
+  rdfs:subClassOf spin:Functions ;
+.
+
+avc:get
+  rdf:type spin:Function ;
+  rdfs:comment "For developing" ;
+  spin:body [
+      rdf:type sp:Select ;
+      sp:resultVariables (
+          [
+            sp:varName "r" ;
+          ]
+        ) ;
+      sp:where (
+          [
+            rdf:type sp:Bind ;
+            sp:expression spin:_this ;
+            sp:variable [
+                sp:varName "r" ;
+              ] ;
+          ]
+        ) ;
+    ] ;
+  spin:returnType rdfs:Resource ;
+  rdfs:subClassOf spin:Functions ;
+.
+
 avc:withDefault  a          spin:Function ;
         rdfs:comment        "An ontology function for passing default values into a property mapping.\nIt is used for mapping data/annotation property assertion that absences in a particular source individual.\nLike spinmap:equals it returns the primary input property (?arg1) unchanged." ;
         rdfs:label          "With Default" ;

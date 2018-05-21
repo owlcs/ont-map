@@ -59,7 +59,7 @@ public class SPIN {
     public final static Resource _arg3 = _arg(3);
     public final static Resource _arg4 = _arg(4);
     public final static Resource _arg5 = _arg(5);
-    public final static Resource _this = resource("_this");
+    public final static Resource _this = resource("_" + THIS_VAR_NAME);
 
     public final static Property abstract_ = property("abstract");
     public final static Property body = property("body");
