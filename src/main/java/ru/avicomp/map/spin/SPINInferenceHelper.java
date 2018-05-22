@@ -170,18 +170,21 @@ public class SPINInferenceHelper {
      * Runs a given Jena Query on a given individual and returns the inferred triples as a Model.
      *
      * There is a difference with SPIN-API Inferences implementation:
-     * in additional to passing {@code ?this} to top-level query binding (mapping construct) only
-     * there is also a workaround ONT-MAP solution to place it deep in all sub-queries.
-     * It is definitely leak of functionality, which severely limits the space of usage opportunities.
-     * It seems that Topbraid Composer (checked version 5.5.1) has some magic solution for that leak in its deeps also:
-     * testing shows that queries which handled by {@code spin:eval} may accept {@code ?this} in some conditions,
-     * e.g. for original {@code spinmap:Mapping-1-1}, which has no been cloned to local mapping model.
+     * in additional to passing {@code ?this} to top-level query binding (mapping construct)
+     * there is also a ONT-MAP workaround solution to place it deep in all sub-queries, which are called by specified construct.
+     * Handling {@code ?this} only by top-level mapping is definitely leak of SPIN-API functionality,
+     * which severely limits the space of usage opportunities.
+     * But it seems that Topbraid Composer also (checked version 5.5.1) has some magic solution for that leak in its deeps,
+     * maybe similar to ours:
+     * testing shows that sub-queries which handled by {@code spin:eval} may accept {@code ?this} but only  in some limited conditions,
+     * e.g. for original {@code spinmap:Mapping-1-1}, which has no been cloned with changing namespace to local mapping model.
      *
      * @param query    {@link QueryWrapper}
      * @param instance {@link Resource}
      * @return {@link Model} new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      * @see AVC#currentIndividual
+     * @see AVC#MagicFunctions
      */
     public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
         Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);

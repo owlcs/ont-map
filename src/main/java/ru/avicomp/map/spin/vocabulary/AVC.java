@@ -20,29 +20,33 @@ public class AVC {
 
     public static final Property hidden = property("hidden");
 
-    // additional no-arg target function
+    // functions class to indicate that function is "magic" and may not work as expected in Composer
+    public static final Resource MagicFunctions = resource("MagicFunctions");
+    // spin-functions which use SPARQL aggregate functions
+    public static final Resource AggregateFunctions = resource("AggregateFunctions");
+
+    // additional no-arg target function, for convenience' sake
     public static final Resource UUID = resource("UUID");
 
-    // additional property function that is used to provide a mapping mechanism for assertion default values
+    // additional map property function that is used to mapping to pass a default value
+    // in case there is no data assertion on individual
     public static final Resource withDefault = resource("withDefault");
+    // additional map property function that is used by mapping to get a property IRI as is,
+    // i.e. not a value from a data assertion.
+    public static final Resource asIRI = resource("asIRI");
 
-    // todo:
-    public static final Resource currentIndividual = resource("get");
+    //  A magic function to get current individual while inference
+    public static final Resource currentIndividual = resource("currentIndividual");
 
-    // todo:
-    public static final Resource asIRI = resource("getIRI");
-
-    // todo:
-    public static final Resource groupConcat = resource("groupConcatTest");
+    // An aggregate function to concat values from assertions with the same individual and property
+    public static final Resource groupConcat = resource("groupConcat");
 
     // resource, which is used as return type of function or argument in unclear case
     public static final Resource undefined = resource("undefined");
 
-    // functions class to indicate that function is "magic" and may not work as expected in Composer
-    public static final Resource MagicFunctions = resource("MagicFunctions");
-
     // require special treatment in runtime before inference,
-    // the right part of statement with this predicate must be a class path to ru.avicomp.map.spin.AdjustFunctionBody impl,
+    // the right part of statement with this predicate must be
+    // a valid class-path to ru.avicomp.map.spin.AdjustFunctionBody impl as a string literal
     public static final Property runtime = property("runtime");
 
     // expression predicate to use in conditional templates as a filter

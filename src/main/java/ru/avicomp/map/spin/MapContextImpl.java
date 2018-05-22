@@ -160,7 +160,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                     .filter(RDFNode::isLiteral)
                     .map(RDFNode::asLiteral)
                     .map(Literal::getString)
-                    .forEach(s -> getRuntimeBody(function, s).apply(res, call));
+                    .forEach(s -> getRuntimeBody(function, s).apply(res.getModel(), call));
         }
         call.asMap().values().stream()
                 .filter(MapFunction.Call.class::isInstance)
@@ -168,7 +168,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .forEach(this::writeFunctionBody);
     }
 
-    public AdjustFunctionBody getRuntimeBody(MapFunction func, String path) {
+    protected AdjustFunctionBody getRuntimeBody(MapFunction func, String path) {
         Exceptions.Builder err = exception(Exceptions.CONTEXT_WRONG_RUNTIME_FUNCTION_BODY_CLASS).addFunction(func);
         try {
             Class<?> res = Class.forName(path);

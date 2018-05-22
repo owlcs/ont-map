@@ -13,26 +13,40 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
+ * An implementation to adjust {@code avc:groupConcat} function body.
  * Created by @szuev on 21.05.2018.
  *
  * @see ru.avicomp.map.spin.vocabulary.AVC#groupConcat
  */
 public class AdjustGroupConcatImpl implements AdjustFunctionBody {
+
+    /**
+     * Injects separator directly to group-concat
+     *
+     * @param model {@link Model}
+     * @param call  {@link ru.avicomp.map.MapFunction.Call}
+     * @return boolean
+     * @throws MapJenaException in case something is wrong
+     */
     @Override
-    public Boolean apply(Resource functionInModel, MapFunction.Call call) {
-        Model m = MapJenaException.notNull(functionInModel, "Null function expression").getModel();
-        MapFunction.Arg arg = call.getFunction().getArg(SPINMAPL.separator.getURI());
-        String value = (String) MapJenaException.notNull(call.asMap().get(arg), "Null separator");
-        List<Statement> prev = SpinModels.getFunctionBody(m, functionInModel)
+    public Boolean apply(Model model, MapFunction.Call call) throws MapJenaException {
+        MapFunction function = MapJenaException.notNull(call, "Null function call specified").getFunction();
+        Resource resource = MapJenaException.notNull(model, "Null model specified").getResource(function.name());
+        MapFunction.Arg arg = function.getArg(SPINMAPL.separator.getURI());
+        Object value = call.asMap().get(arg);
+        if (!(value instanceof String)) {
+            throw new MapJenaException("Null or wrong value for separator");
+        }
+        String separator = (String) value;
+        List<Statement> prev = SpinModels.getFunctionBody(model, resource)
                 .stream()
                 .filter(s -> Objects.equals(s.getPredicate(), SP.separator))
                 .filter(s -> s.getObject().isLiteral())
                 .collect(Collectors.toList());
-        if (prev.size() != 1) throw new IllegalStateException("Expected single sp:separator literal inside expression");
+        if (prev.size() != 1) throw new MapJenaException("Expected single sp:separator literal inside expression");
         Statement s = prev.get(0);
-        if (value.equals(s.getObject().asLiteral().getString())) return false;
-        m.add(s.getSubject(), s.getPredicate(), value);
-        m.remove(s);
+        if (separator.equals(s.getObject().asLiteral().getString())) return false;
+        model.add(s.getSubject(), s.getPredicate(), separator).remove(s);
         return true;
     }
 }

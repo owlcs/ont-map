@@ -19,14 +19,17 @@ import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
+import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntIndividual;
+import ru.avicomp.ontapi.jena.model.OntStatement;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 19.05.2018.
@@ -78,6 +81,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         return new UnionModel(union, SpinModelConfig.LIB_PERSONALITY);
     }
 
+    /**
+     * Lists all valid spin map rules ({@code spinmap:rule}).
+     *
+     * @param model {@link UnionModel} a query model
+     * @return List of {@link QueryWrapper}s
+     */
     protected List<QueryWrapper> getSpinMapRules(UnionModel model) {
         return Iter.asStream(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY))
                 .flatMap(t -> helper.listCommands(t, model, true, false))
@@ -109,12 +118,36 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         try {
             if (LOGGER.isDebugEnabled())
                 events.register(logs);
-            m.listNamedIndividuals().forEach(i -> run(commands, i, dst));
+            listTypedIndividuals(m).forEach(i -> run(commands, i, dst));
         } finally {
             events.unregister(logs);
         }
     }
 
+    /**
+     * Lists all typed individuals from a model.
+     * The expression {@code model.ontObject(OntIndividual.class)} will return all individuals from a model,
+     * while we need only class-assertion individuals.
+     * TODO: move to ONT-API?
+     *
+     * @param m {@link OntGraphModel} ontology model
+     * @return Stream of {@link OntIndividual}s.
+     * @see ru.avicomp.ontapi.internal.ClassAssertionTranslator
+     */
+    public static Stream<OntIndividual> listTypedIndividuals(OntGraphModel m) {
+        return m.statements(null, RDF.type, null)
+                .filter(s -> s.getObject().canAs(OntCE.class))
+                .map(OntStatement::getSubject)
+                .map(s -> s.as(OntIndividual.class));
+    }
+
+    /**
+     * Runs a query collection on specified individual and stores result to the specified model
+     *
+     * @param queries    List of {@link QueryWrapper}s
+     * @param individual source individual
+     * @param dst        {@link Model} to store results
+     */
     protected void run(List<QueryWrapper> queries, OntIndividual individual, Model dst) {
         List<QueryWrapper> selected = select(queries, individual.classes().collect(Collectors.toSet()));
         process(helper, queries, selected, new HashMap<>(), dst, individual);
@@ -133,20 +166,29 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             }
             LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(c));
             Model res = helper.runQueryOnInstance(c, individual);
-            target.add(res);
             processed.get(individual).add(c);
+            target.add(res);
             if (res.isEmpty()) return;
-            res.listResourcesWithProperty(RDF.type).forEachRemaining(i -> {
-                Set<Resource> classes = i.listProperties(RDF.type)
-                        .mapWith(Statement::getObject)
-                        .filterKeep(RDFNode::isResource)
-                        .mapWith(RDFNode::asResource).toSet();
-                List<QueryWrapper> next = select(all, classes);
-                process(helper, all, next, processed, target, i);
-            });
+            res.listResourcesWithProperty(RDF.type)
+                    .forEachRemaining(i -> {
+                        Set<Resource> classes = i.listProperties(RDF.type)
+                                .mapWith(Statement::getObject)
+                                .filterKeep(RDFNode::isResource)
+                                .mapWith(RDFNode::asResource).toSet();
+                        List<QueryWrapper> next = select(all, classes);
+                        process(helper, all, next, processed, target, i);
+                    });
         });
     }
 
+    /**
+     * Auxiliary.
+     * Selects those queries that have source class from to the given lists
+     *
+     * @param all     List of {@link QueryWrapper}s
+     * @param classes List of class expressions
+     * @return List of {@link QueryWrapper}
+     */
     private static List<QueryWrapper> select(List<QueryWrapper> all, Set<? extends Resource> classes) {
         return all.stream()
                 .filter(c -> classes.contains(c.getStatement().getSubject()))
@@ -155,7 +197,8 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Creates a rule ({@code spin:rule}) comparator which puts declaration map rules ({@code spinmap:rule}) first.
+     * Creates a rule ({@code spin:rule}) comparator which puts declaration map rules
+     * (i.e. {@code spinmap:rule} with {@code spinmap:targetPredicate1 rdf:type}) first.
      *
      * @return {@link Comparator} comparator for {@link CommandWrapper}s
      */

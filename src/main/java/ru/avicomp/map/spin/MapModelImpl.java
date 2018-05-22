@@ -140,7 +140,48 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         }
         deleteContext(c);
         clearUnused();
+        // todo: check unused imports
         return this;
+    }
+
+    /**
+     * Deletes unused anymore things, which is appeared in the base graph.
+     * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
+     */
+    public void clearUnused() {
+        // delete expressions:
+        Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
+                .flatMap(type -> statements(null, RDF.type, type)
+                        .map(OntStatement::getSubject)
+                        // defined locally
+                        .filter(OntObject::isLocal)
+                        // no usage
+                        .filter(s -> !getBaseModel().contains(null, RDF.type, s)))
+                .collect(Collectors.toSet());
+        found.forEach(Models::deleteAll);
+        // delete properties and variables:
+        found = Stream.concat(statements(null, RDFS.subPropertyOf, SP.arg)
+                        .map(OntStatement::getSubject)
+                        .filter(OntObject::isLocal)
+                        .map(s -> s.as(Property.class))
+                        .filter(s -> !getBaseModel().contains(null, s)),
+                statements(null, RDF.type, SP.Variable)
+                        .map(OntStatement::getSubject)
+                        .filter(OntObject::isLocal)
+                        .filter(s -> !getBaseModel().contains(null, null, s)))
+                .collect(Collectors.toSet());
+        found.forEach(Models::deleteAll);
+    }
+
+    public void deleteContext(MapContextImpl context) {
+        // delete rules:
+        Set<Statement> rules = context.listRules().collect(Collectors.toSet());
+        rules.forEach(s -> {
+            Models.deleteAll(s.getObject().asResource());
+            remove(s);
+        });
+        // delete declaration:
+        Models.deleteAll(context);
     }
 
     /**
@@ -186,6 +227,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      *
      * @param subject {@link RDFNode}, nullable
      * @return Stream of {@link Statement}s
+     * @throws StackOverflowError in case graph contains recursion
+     * @see Models#getAssociatedStatements(Resource)
      */
     public static Stream<Statement> listProperties(RDFNode subject) {
         if (subject == null || !subject.isAnon()) return Stream.empty();
@@ -200,50 +243,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      *
      * @param object {@link RDFNode}
      * @return Stream of {@link Resource}s
+     * @throws StackOverflowError in case graph contains recursion
      */
     public static Stream<Resource> listParents(RDFNode object) {
         return subjects(object).flatMap(s -> {
             Stream<Resource> r = Stream.of(s);
             return s.isAnon() ? Stream.concat(r, listParents(s)) : r;
         });
-    }
-
-    /**
-     * Deletes unused anymore things, which is appeared in the base graph.
-     * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
-     */
-    public void clearUnused() {
-        // delete expressions:
-        Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
-                .flatMap(type -> statements(null, RDF.type, type)
-                        .map(OntStatement::getSubject)
-                        .filter(OntObject::isLocal)
-                        .filter(s -> !getBaseModel().contains(null, RDF.type, s)))
-                .collect(Collectors.toSet());
-        found.forEach(Models::deleteAll);
-        // delete properties and variables:
-        found = Stream.concat(statements(null, RDFS.subPropertyOf, SP.arg)
-                        .map(OntStatement::getSubject)
-                        .filter(OntObject::isLocal)
-                        .map(s -> s.as(Property.class))
-                        .filter(s -> !getBaseModel().contains(null, s)),
-                statements(null, RDF.type, SP.Variable)
-                        .map(OntStatement::getSubject)
-                        .filter(OntObject::isLocal)
-                        .filter(s -> !getBaseModel().contains(null, null, s)))
-                .collect(Collectors.toSet());
-        found.forEach(Models::deleteAll);
-    }
-
-    public void deleteContext(MapContextImpl context) {
-        // delete rules:
-        Set<Statement> rules = context.listRules().collect(Collectors.toSet());
-        rules.forEach(s -> {
-            Models.deleteAll(s.getObject().asResource());
-            remove(s);
-        });
-        // delete declaration:
-        Models.deleteAll(context);
     }
 
     /**
@@ -428,6 +434,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
     }
 
+    /**
+     * Lists all linked properties.
+     *
+     * @param left  {@link OntCE}
+     * @param right {@link OntCE}
+     * @return Stream of {@link OntOPE}s
+     */
     public Stream<OntOPE> linkProperties(OntCE left, OntCE right) {
         return ontObjects(OntOPE.class)
                 .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))

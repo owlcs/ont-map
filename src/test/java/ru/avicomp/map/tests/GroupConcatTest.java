@@ -1,5 +1,6 @@
 package ru.avicomp.map.tests;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,16 +9,17 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntIndividual;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by @szuev on 17.05.2018.
  */
-public class TmpGroupConcatTest extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TmpGroupConcatTest.class);
+public class GroupConcatTest extends AbstractMapTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroupConcatTest.class);
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
@@ -44,7 +46,7 @@ public class TmpGroupConcatTest extends AbstractMapTest {
     }
 
     @Test
-    public void _developTest() {
+    public void testInference() {
         OntGraphModel s = assembleSource();
         TestUtils.debug(s);
         OntGraphModel t = assembleTarget();
@@ -55,9 +57,21 @@ public class TmpGroupConcatTest extends AbstractMapTest {
 
         manager.getInferenceEngine().run(map, s.getGraph(), t.getGraph());
         TestUtils.debug(t);
-        //todo: validate
+        List<OntIndividual> individuals = t.listNamedIndividuals().collect(Collectors.toList());
+        Assert.assertEquals(3, individuals.size());
+        validateIndividual(t, "http://individual-1", "A,B,C");
+        validateIndividual(t, "http://individual-3", "23,D");
+        validateIndividual(t, "http://individual-2", "2,4.34");
+        AbstractMapTest.commonValidate(t);
     }
 
+    private void validateIndividual(OntGraphModel m, String name, String value) {
+        OntIndividual i = m.listNamedIndividuals().filter(s -> Objects.equals(s.getURI(), name)).findFirst().orElseThrow(AssertionError::new);
+        List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
+        Assert.assertEquals(1, assertions.size());
+        String actual = assertions.get(0).getObject().asLiteral().getString();
+        Assert.assertEquals(value, actual);
+    }
 
     @Override
     public OntGraphModel assembleSource() {
