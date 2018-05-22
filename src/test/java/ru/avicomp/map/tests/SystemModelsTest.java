@@ -32,14 +32,14 @@ public class SystemModelsTest {
     @Test
     public void testInit() {
         Map<String, Graph> graphs = SystemModels.graphs();
-        Assert.assertEquals(11, graphs.size());
+        Assert.assertEquals(12, graphs.size());
         graphs.forEach((expected, g) -> Assert.assertEquals(expected, Graphs.getURI(g)));
         OntModelFactory.init();
         Assert.assertSame(graphs, SystemModels.graphs());
-        Model lib = ((MapManagerImpl) Managers.getMapManager()).library();
+        Model lib = ((MapManagerImpl) Managers.getMapManager()).getLibrary();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);
-        Assert.assertEquals(28, tree.split("\n").length);
+        Assert.assertEquals(29, tree.split("\n").length);
         Set<String> imports = Graphs.getImports(lib.getGraph());
         LOGGER.debug("Imports: {}", imports);
         Assert.assertEquals(9, imports.size());

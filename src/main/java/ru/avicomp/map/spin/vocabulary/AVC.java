@@ -53,7 +53,7 @@ public class AVC {
     public static final Property filter = property("filter");
 
     // to customise spin:constraint arguments, sometimes they are wrong in the standard spin library
-    public final static Property constraint = property("constraint");
+    public static final Property constraint = property("constraint");
 
     // an universal filtering mapping template name
     public static Resource Mapping(String filters, String sources) {

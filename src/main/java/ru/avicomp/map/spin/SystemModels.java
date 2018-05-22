@@ -36,6 +36,10 @@ public class SystemModels implements JenaSubsystemLifecycle {
         return Loader.GRAPHS;
     }
 
+    public static Graph get(Resources resource) {
+        return graphs().get(resource.getURI());
+    }
+
     @Override
     public void start() {
         LOGGER.debug("START");
@@ -75,6 +79,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
 
     public enum Resources {
         AVC("/etc/avc.spin.ttl", "http://avc.ru/spin"),
+        MATH("/etc/avc.math.ttl", "http://avc.ru/math"),
         SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
         SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
         SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),

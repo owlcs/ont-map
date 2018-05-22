@@ -15,37 +15,38 @@ import ru.avicomp.map.spin.SystemModels;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SPL {
-    public final static String BASE_URI = SystemModels.Resources.SPL.getURI();
-    public final static String NS = BASE_URI + "#";
-    public final static String PREFIX = "spl";
+    public static final String BASE_URI = SystemModels.Resources.SPL.getURI();
+    public static final String NS = BASE_URI + "#";
+    public static final String PREFIX = "spl";
 
-    public final static Resource Argument = resource("Argument");
-    public final static Resource Attribute = resource("Attribute");
-    public final static Resource InferDefaultValue = resource("InferDefaultValue");
-    public final static Resource ObjectCountPropertyConstraint = resource("ObjectCountPropertyConstraint");
-    public final static Resource primaryKeyProperty = resource("primaryKeyProperty");
-    public final static Resource primaryKeyURIStart = resource("primaryKeyURIStart");
-    public final static Resource PrimaryKeyPropertyConstraint = resource("PrimaryKeyPropertyConstraint");
-    public final static Resource PropertyConstraintTemplates = resource("PropertyConstraintTemplates");
-    public final static Resource RunTestCases = resource("RunTestCases");
-    public final static Resource SPINOverview = resource("SPINOverview");
-    public final static Resource TestCase = resource("TestCase");
-    public final static Resource UnionTemplate = resource("UnionTemplate");
-    public final static Resource object = resource("object");
-    public final static Resource objectCount = resource("objectCount");
-    public final static Resource subjectCount = resource("subjectCount");
-    public final static Resource StringFunctions = resource("StringFunctions");
-    public final static Resource ConstraintTemplate = resource("ConstraintTemplate");
-    public final static Resource OntologyFunctions = resource("OntologyFunctions");
+    public static final Resource Argument = resource("Argument");
+    public static final Resource Attribute = resource("Attribute");
+    public static final Resource InferDefaultValue = resource("InferDefaultValue");
+    public static final Resource ObjectCountPropertyConstraint = resource("ObjectCountPropertyConstraint");
+    public static final Resource primaryKeyProperty = resource("primaryKeyProperty");
+    public static final Resource primaryKeyURIStart = resource("primaryKeyURIStart");
+    public static final Resource PrimaryKeyPropertyConstraint = resource("PrimaryKeyPropertyConstraint");
+    public static final Resource PropertyConstraintTemplates = resource("PropertyConstraintTemplates");
+    public static final Resource RunTestCases = resource("RunTestCases");
+    public static final Resource SPINOverview = resource("SPINOverview");
+    public static final Resource TestCase = resource("TestCase");
+    public static final Resource UnionTemplate = resource("UnionTemplate");
+    public static final Resource object = resource("object");
+    public static final Resource objectCount = resource("objectCount");
+    public static final Resource subjectCount = resource("subjectCount");
+    public static final Resource StringFunctions = resource("StringFunctions");
+    public static final Resource ConstraintTemplate = resource("ConstraintTemplate");
+    public static final Resource OntologyFunctions = resource("OntologyFunctions");
+    public static final Resource MathematicalFunctions = resource("MathematicalFunctions");
 
-    public final static Property defaultValue = property("defaultValue");
+    public static final Property defaultValue = property("defaultValue");
     public static final Property dynamicEnumRange = property("dynamicEnumRange");
-    public final static Property hasValue = property("hasValue");
-    public final static Property maxCount = property("maxCount");
-    public final static Property minCount = property("minCount");
-    public final static Property optional = property("optional");
-    public final static Property predicate = property("predicate");
-    public final static Property valueType = property("valueType");
+    public static final Property hasValue = property("hasValue");
+    public static final Property maxCount = property("maxCount");
+    public static final Property minCount = property("minCount");
+    public static final Property optional = property("optional");
+    public static final Property predicate = property("predicate");
+    public static final Property valueType = property("valueType");
 
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);

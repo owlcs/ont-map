@@ -19,6 +19,7 @@ import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapImpl;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
 public class MapManagerImpl implements MapManager {
 
     private final PrefixMapping prefixLibrary;
-    private final Model graphLibrary;
+    private final UnionModel graphLibrary;
     private final Map<String, MapFunctionImpl> mapFunctions;
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
@@ -57,41 +58,41 @@ public class MapManagerImpl implements MapManager {
         SPINRegistry r = new SPINRegistry(functionRegistry, propertyFunctionRegistry);
         r.initSPIN();
         r.initSPIF();
+        r.initMath();
         spinModuleRegistry.registerAll(graphLibrary, null);
         this.mapFunctions = listSpinFunctions(graphLibrary)
                 .map(f -> makeFunction(f, prefixLibrary))
                 .collect(Collectors.toMap(MapFunction::name, Function.identity()));
     }
 
-    private static Model createLibraryModel() {
-        UnionGraph map = getSpinLibraryGraph();
-        // note: this graph is not included to the owl:imports
-        UnionGraph avc = new UnionGraph(getInclusionGraph());
-        avc.addGraph(map);
-        return SpinModelConfig.createSpinModel(avc);
-    }
-
     /**
-     * Gets graph for avc.spin.ttl
-     *
-     * @return unmodified {@link Graph}
+     * Creates a complete ONT-MAP library (a query model).
+     * The result graph (wrapped by Model) includes all ttl resources from {@code /etc} dir.
+     * @return {@link UnionModel}
+     * @see SpinModelConfig#LIB_PERSONALITY
      */
-    public static Graph getInclusionGraph() {
-        return SystemModels.graphs().get(SystemModels.Resources.AVC.getURI());
+    public static UnionModel createLibraryModel() {
+        // avc addition (function and behaviour customization) is a primary graph:
+        UnionGraph res = new UnionGraph(SystemModels.get(SystemModels.Resources.AVC));
+        // math addition (support https://www.w3.org/2005/xpath-functions/math/) :
+        res.addGraph(SystemModels.get(SystemModels.Resources.MATH));
+        // topbraid spinmapl (the top graph of spin family):
+        res.addGraph(getSpinLibraryGraph());
+        return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
 
     /**
-     * Gets spin library union graph without addition
+     * Gets spin library union graph without ONT-MAP additions.
      *
      * @return {@link UnionGraph}
      */
     public static UnionGraph getSpinLibraryGraph() {
-        return Graphs.toUnion(SystemModels.graphs().get(SystemModels.Resources.SPINMAPL.getURI()), SystemModels.graphs().values());
+        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAPL), SystemModels.graphs().values());
     }
 
     /**
      * Collects a prefixes library from a collection of graphs.
-     * todo: move to ONT-API ?
+     * TODO: move to ONT-API ?
      *
      * @param graphs {@link Iterable} a collection of graphs
      * @return unmodifiable {@link PrefixMapping prefix mapping}
@@ -196,7 +197,7 @@ public class MapManagerImpl implements MapManager {
         return prefixLibrary;
     }
 
-    public Model library() {
+    public UnionModel getLibrary() {
         return graphLibrary;
     }
 
@@ -207,7 +208,10 @@ public class MapManagerImpl implements MapManager {
      * @throws IllegalStateException wrong state
      */
     public Graph getMapLibraryGraph() throws IllegalStateException {
-        return ((UnionGraph) graphLibrary.getGraph()).getUnderlying().graphs().findFirst().orElseThrow(IllegalStateException::new);
+        return getLibrary().getGraph().getUnderlying()
+                .graphs()
+                .filter(g -> SystemModels.Resources.SPINMAPL.getURI().equals(Graphs.getURI(g)))
+                .findFirst().orElseThrow(IllegalStateException::new);
     }
 
     /**

@@ -1,0 +1,27 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix spin:  <http://spinrdf.org/spin#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix math:  <http://avc.ru/math#> .
+@prefix spinmap: <http://spinrdf.org/spinmap#> .
+@prefix sp:    <http://spinrdf.org/sp#> .
+@prefix spl:   <http://spinrdf.org/spl#> .
+
+<http://avc.ru/math>  a  owl:Ontology ;
+        rdfs:comment     "A library that contains mathematical functions for some reason missing in the standard spin delivery." ;
+        rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/math/> ;
+        owl:versionIRI   <http://avc.ru/spin#1.0> ;
+        owl:versionInfo  "version 1.0" .
+
+math:cos  a                 spin:Function ;
+        rdfs:comment        "Returns the cosine of the argument. The argument is an angle in radians." ;
+        rdfs:label          "cosinus" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Radians" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "cos" .

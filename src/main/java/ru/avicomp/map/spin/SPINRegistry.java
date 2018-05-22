@@ -1,25 +1,28 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.function.library.leviathan.cos;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.PropertyChainHelperPFunction;
 import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.vocabulary.SPIN;
+import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 
 import java.util.Optional;
 
 /**
- * A helper to register builtin (SPIF) and some common (SPIN) functions.
+ * A helper to register builtin (SPIF), some common (SPIN) and math (MATH) functions.
  * SPIF functions is getting from Topbraid Composer Free Edition (see org.topbraid.spin.functions_*.jar), ver 5.2.2.
- * New topbraid do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
+ * Notice that new topbraid (5.5.1) do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
  * Created by @szuev on 15.04.2018.
  *
  * @see SPIF
  * @see SPIN
+ * @see MATH
  * @see SPINMAPL
  */
 class SPINRegistry {
@@ -34,60 +37,60 @@ class SPINRegistry {
 
     void initSPIF() {
         // from org.topbraid.spin.arq.functions:
-        registerFunction("invoke", InvokeFunction.class);
-        registerFunction("walkObjects", WalkObjectsFunction.class);
+        registerSPIFFunction("invoke", InvokeFunction.class);
+        registerSPIFFunction("walkObjects", WalkObjectsFunction.class);
         // boolean:
-        registerFunction("hasAllObjects", "org.topbraid.spin.functions.internal.bool.HasAllObjectsFunction");
-        registerFunction("isReadOnlyTriple", "org.topbraid.spin.functions.internal.bool.IsReadOnlyTripleFunction");
+        registerSPIFFunction("hasAllObjects", "org.topbraid.spin.functions.internal.bool.HasAllObjectsFunction");
+        registerSPIFFunction("isReadOnlyTriple", "org.topbraid.spin.functions.internal.bool.IsReadOnlyTripleFunction");
         // date:
-        registerFunction("currentTimeMillis", "org.topbraid.spin.functions.internal.date.CurrentTimeMillisFunction");
-        registerFunction("dateFormat", "org.topbraid.spin.functions.internal.date.DateFormatFunction");
-        registerFunction("parseDate", "org.topbraid.spin.functions.internal.date.ParseDateFunction");
-        registerFunction("timeMillis", "org.topbraid.spin.functions.internal.date.TimeMillisFunction");
+        registerSPIFFunction("currentTimeMillis", "org.topbraid.spin.functions.internal.date.CurrentTimeMillisFunction");
+        registerSPIFFunction("dateFormat", "org.topbraid.spin.functions.internal.date.DateFormatFunction");
+        registerSPIFFunction("parseDate", "org.topbraid.spin.functions.internal.date.ParseDateFunction");
+        registerSPIFFunction("timeMillis", "org.topbraid.spin.functions.internal.date.TimeMillisFunction");
         // mathematical:
-        registerFunction("mod", "org.topbraid.spin.functions.internal.mathematical.ModFunction");
-        registerFunction("random", "org.topbraid.spin.functions.internal.mathematical.RandomFunction");
+        registerSPIFFunction("mod", "org.topbraid.spin.functions.internal.mathematical.ModFunction");
+        registerSPIFFunction("random", "org.topbraid.spin.functions.internal.mathematical.RandomFunction");
         // misc
-        registerFunction("canInvoke", "org.topbraid.spin.functions.internal.misc.CanInvokeFunction");
-        registerFunction("cast", "org.topbraid.spin.functions.internal.misc.CastFunction");
-        registerFunction("countMatches", "org.topbraid.spin.functions.internal.misc.CountMatchesFunction");
-        registerFunction("countTransitiveSubjects", "org.topbraid.spin.functions.internal.misc.CountTransitiveSubjectsFunction");
-        registerFunction("shortestObjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestObjectsPathFunction");
-        registerFunction("shortestSubjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestSubjectsPathFunction");
+        registerSPIFFunction("canInvoke", "org.topbraid.spin.functions.internal.misc.CanInvokeFunction");
+        registerSPIFFunction("cast", "org.topbraid.spin.functions.internal.misc.CastFunction");
+        registerSPIFFunction("countMatches", "org.topbraid.spin.functions.internal.misc.CountMatchesFunction");
+        registerSPIFFunction("countTransitiveSubjects", "org.topbraid.spin.functions.internal.misc.CountTransitiveSubjectsFunction");
+        registerSPIFFunction("shortestObjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestObjectsPathFunction");
+        registerSPIFFunction("shortestSubjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestSubjectsPathFunction");
         // string:
-        registerFunction("buildStringFromRDFList", "org.topbraid.spin.functions.internal.string.BuildStringFromRDFListFunction");
-        registerFunction("buildString", "org.topbraid.spin.functions.internal.string.BuildStringFunction");
-        registerFunction("camelCase", "org.topbraid.spin.functions.internal.string.CamelCaseFunction");
-        registerFunction("convertSPINRDFToString", "org.topbraid.spin.functions.internal.string.ConvertSPINRDFToStringFunction");
-        registerFunction("decimalFormat", "org.topbraid.spin.functions.internal.string.DecimalFormatFunction");
-        registerFunction("decodeURL", "org.topbraid.spin.functions.internal.string.DecodeURLFunction");
-        registerFunction("encodeURL", "org.topbraid.spin.functions.internal.string.EncodeURLFunction");
-        registerFunction("generateUUID", "org.topbraid.spin.functions.internal.string.GenerateUUIDFunction");
-        registerFunction("indexOf", "org.topbraid.spin.functions.internal.string.IndexOfFunction");
-        registerFunction("lastIndexOf", "org.topbraid.spin.functions.internal.string.LastIndexOfFunction");
-        registerFunction("lowerCamelCase", "org.topbraid.spin.functions.internal.string.LowerCamelCaseFunction");
-        registerFunction("lowerCase", "org.topbraid.spin.functions.internal.string.LowerCaseFunction");
-        registerFunction("lowerTitleCase", "org.topbraid.spin.functions.internal.string.LowerTitleCaseFunction");
-        registerFunction("name", "org.topbraid.spin.functions.internal.string.NameFunction");
-        registerFunction("regex", "org.topbraid.spin.functions.internal.string.RegexFunction");
-        registerFunction("replaceAll", "org.topbraid.spin.functions.internal.string.ReplaceAllFunction");
-        registerFunction("titleCase", "org.topbraid.spin.functions.internal.string.TitleCaseFunction");
-        registerFunction("toJavaIdentifier", "org.topbraid.spin.functions.internal.string.ToJavaIdentifierFunction");
-        registerFunction("trim", "org.topbraid.spin.functions.internal.string.TrimFunction");
-        registerFunction("upperCase", "org.topbraid.spin.functions.internal.string.UpperCaseFunction");
-        registerFunction("unCamelCase", "org.topbraid.spin.functions.internal.string.UnCamelCaseFunction");
-        registerFunction("buildURI", "org.topbraid.spin.functions.internal.string.BuildURIFunction");
-        registerFunction("buildUniqueURI", "org.topbraid.spin.functions.internal.string.BuildUniqueURIFunction");
+        registerSPIFFunction("buildStringFromRDFList", "org.topbraid.spin.functions.internal.string.BuildStringFromRDFListFunction");
+        registerSPIFFunction("buildString", "org.topbraid.spin.functions.internal.string.BuildStringFunction");
+        registerSPIFFunction("camelCase", "org.topbraid.spin.functions.internal.string.CamelCaseFunction");
+        registerSPIFFunction("convertSPINRDFToString", "org.topbraid.spin.functions.internal.string.ConvertSPINRDFToStringFunction");
+        registerSPIFFunction("decimalFormat", "org.topbraid.spin.functions.internal.string.DecimalFormatFunction");
+        registerSPIFFunction("decodeURL", "org.topbraid.spin.functions.internal.string.DecodeURLFunction");
+        registerSPIFFunction("encodeURL", "org.topbraid.spin.functions.internal.string.EncodeURLFunction");
+        registerSPIFFunction("generateUUID", "org.topbraid.spin.functions.internal.string.GenerateUUIDFunction");
+        registerSPIFFunction("indexOf", "org.topbraid.spin.functions.internal.string.IndexOfFunction");
+        registerSPIFFunction("lastIndexOf", "org.topbraid.spin.functions.internal.string.LastIndexOfFunction");
+        registerSPIFFunction("lowerCamelCase", "org.topbraid.spin.functions.internal.string.LowerCamelCaseFunction");
+        registerSPIFFunction("lowerCase", "org.topbraid.spin.functions.internal.string.LowerCaseFunction");
+        registerSPIFFunction("lowerTitleCase", "org.topbraid.spin.functions.internal.string.LowerTitleCaseFunction");
+        registerSPIFFunction("name", "org.topbraid.spin.functions.internal.string.NameFunction");
+        registerSPIFFunction("regex", "org.topbraid.spin.functions.internal.string.RegexFunction");
+        registerSPIFFunction("replaceAll", "org.topbraid.spin.functions.internal.string.ReplaceAllFunction");
+        registerSPIFFunction("titleCase", "org.topbraid.spin.functions.internal.string.TitleCaseFunction");
+        registerSPIFFunction("toJavaIdentifier", "org.topbraid.spin.functions.internal.string.ToJavaIdentifierFunction");
+        registerSPIFFunction("trim", "org.topbraid.spin.functions.internal.string.TrimFunction");
+        registerSPIFFunction("upperCase", "org.topbraid.spin.functions.internal.string.UpperCaseFunction");
+        registerSPIFFunction("unCamelCase", "org.topbraid.spin.functions.internal.string.UnCamelCaseFunction");
+        registerSPIFFunction("buildURI", "org.topbraid.spin.functions.internal.string.BuildURIFunction");
+        registerSPIFFunction("buildUniqueURI", "org.topbraid.spin.functions.internal.string.BuildUniqueURIFunction");
         // uri
-        registerFunction("isValidURI", "org.topbraid.spin.functions.internal.uri.IsValidURIFunction");
+        registerSPIFFunction("isValidURI", "org.topbraid.spin.functions.internal.uri.IsValidURIFunction");
         // magical
-        registerPropertyFunction("evalPath", "org.topbraid.spin.functions.internal.magic.EvalPathPFunction");
-        registerPropertyFunction("for", "org.topbraid.spin.functions.internal.magic.ForPFunction");
-        registerPropertyFunction("foreach", "org.topbraid.spin.functions.internal.magic.ForeachPFunction");
-        registerPropertyFunction("labelTemplateSegment", "org.topbraid.spin.functions.internal.magic.LabelTemplateSegmentPFunction");
-        registerPropertyFunction("prefix", "org.topbraid.spin.functions.internal.magic.PrefixPFunction");
-        registerPropertyFunction("range", "org.topbraid.spin.functions.internal.magic.RangePFunction");
-        registerPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
+        registerSPIFPropertyFunction("evalPath", "org.topbraid.spin.functions.internal.magic.EvalPathPFunction");
+        registerSPIFPropertyFunction("for", "org.topbraid.spin.functions.internal.magic.ForPFunction");
+        registerSPIFPropertyFunction("foreach", "org.topbraid.spin.functions.internal.magic.ForeachPFunction");
+        registerSPIFPropertyFunction("labelTemplateSegment", "org.topbraid.spin.functions.internal.magic.LabelTemplateSegmentPFunction");
+        registerSPIFPropertyFunction("prefix", "org.topbraid.spin.functions.internal.magic.PrefixPFunction");
+        registerSPIFPropertyFunction("range", "org.topbraid.spin.functions.internal.magic.RangePFunction");
+        registerSPIFPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
     }
 
     void initSPIN() {
@@ -101,22 +104,27 @@ class SPINRegistry {
         propertyFunctionRegistry.put(SPINMAPL.OWL_RL_PROPERTY_CHAIN_HELPER, PropertyChainHelperPFunction.class);
     }
 
-    private void registerFunction(String localName, Class functionClass) {
+    void initMath() {
+        // todo: complete
+        functionRegistry.put(MATH.cos.getURI(), cos.class);
+    }
+
+    private void registerSPIFFunction(String localName, Class functionClass) {
         functionRegistry.put(SPIF.NS + localName, functionClass);
         functionRegistry.put(SPINMAPL.SMF_NS + localName, functionClass); //?
     }
 
-    private void registerPropertyFunction(String localName, Class functionClass) {
+    private void registerSPIFPropertyFunction(String localName, Class functionClass) {
         propertyFunctionRegistry.put(SPIF.NS + localName, functionClass);
         propertyFunctionRegistry.put("http://www.topbraid.org/tops#" + localName, functionClass); //?
     }
 
-    private void registerFunction(String localName, String functionClass) {
-        find(functionClass).ifPresent(c -> registerFunction(localName, c));
+    private void registerSPIFFunction(String localName, String functionClass) {
+        find(functionClass).ifPresent(c -> registerSPIFFunction(localName, c));
     }
 
-    private void registerPropertyFunction(String localName, String functionClass) {
-        find(functionClass).ifPresent(c -> registerPropertyFunction(localName, c));
+    private void registerSPIFPropertyFunction(String localName, String functionClass) {
+        find(functionClass).ifPresent(c -> registerSPIFPropertyFunction(localName, c));
     }
 
     private static Optional<Class> find(String name) {

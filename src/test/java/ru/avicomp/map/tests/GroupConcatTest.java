@@ -2,8 +2,6 @@ package ru.avicomp.map.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
@@ -19,7 +17,6 @@ import java.util.stream.Collectors;
  * Created by @szuev on 17.05.2018.
  */
 public class GroupConcatTest extends AbstractMapTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GroupConcatTest.class);
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {

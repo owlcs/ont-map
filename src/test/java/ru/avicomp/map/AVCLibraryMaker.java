@@ -44,8 +44,6 @@ public class AVCLibraryMaker {
     public static void main(String... args) {
         OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
         OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), p);
-        // to reuse spin variables:
-        //((UnionGraph) m.getGraph()).addGraph(SystemModels.graphs().get(SystemModels.Resources.SPIN.getURI()));
 
         AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), MapManagerImpl.collectPrefixes(SystemModels.graphs().values()));
         OntID id = m.setID(AVC.BASE_URI);

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class AdjustGroupConcatImpl implements AdjustFunctionBody {
 
     /**
-     * Injects separator directly to group-concat
+     * Injects separator directly to group-concat function.
      *
      * @param model {@link Model}
      * @param call  {@link ru.avicomp.map.MapFunction.Call}
