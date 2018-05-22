@@ -68,6 +68,10 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return target().as(OntCE.class);
     }
 
+    public Stream<OntCE> classes() {
+        return target().canAs(OntCE.class) ? Stream.of(getSource(), getTarget()) : Stream.of(getSource());
+    }
+
     /**
      * Returns a target class resource, which may not be {@link OntCE} in special case of {@code owl:NamedIndividual} mapping.
      *
@@ -154,14 +158,22 @@ public class MapContextImpl extends ResourceImpl implements Context {
     protected void writeFunctionBody(MapFunction.Call call) {
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
+            MapModelImpl m = getModel();
             Resource res = addFunctionBody(function);
             Iter.asStream(res.listProperties(AVC.runtime))
                     .map(Statement::getObject)
                     .filter(RDFNode::isLiteral)
                     .map(RDFNode::asLiteral)
                     .map(Literal::getString)
-                    .forEach(s -> getRuntimeBody(function, s).apply(res.getModel(), call));
+                    .forEach(s -> getRuntimeBody(function, s).apply(m, call));
+            // subClassOf
+            Iter.asStream(res.listProperties(RDFS.subClassOf))
+                    .map(Statement::getResource)
+                    .map(Resource::getURI)
+                    .map(u -> m.getManager().getFunction(u))
+                    .forEach(this::addFunctionBody);
         }
+
         call.asMap().values().stream()
                 .filter(MapFunction.Call.class::isInstance)
                 .map(MapFunction.Call.class::cast)

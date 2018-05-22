@@ -187,7 +187,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     @Override
-    public MapFunction getFunction(String name) throws MapJenaException {
+    public MapFunctionImpl getFunction(String name) throws MapJenaException {
         return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 

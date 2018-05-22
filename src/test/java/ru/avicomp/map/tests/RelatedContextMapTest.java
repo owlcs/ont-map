@@ -128,6 +128,7 @@ public class RelatedContextMapTest extends MapTestData2 {
         m.deleteContext(context2);
         TestUtils.debug(m);
         Assert.assertEquals(0, m.contexts().count());
-        Assert.assertEquals(6, m.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(4, m.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(1, m.asOntModel().imports().count());
     }
 }

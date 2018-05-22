@@ -39,11 +39,18 @@ public interface MapModel {
      * Lists all linked (OWL-) ontologies,
      * i.e. all actual imports with exclusion of library plus this mapping model itself if it has its own OWL-declarations.
      *
-     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}.
+     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}s.
      * @see OntGraphModel#imports()
      * @see #asOntModel()
      */
     Stream<OntGraphModel> ontologies();
+
+    /**
+     * Returns manager to which this mapping model is associated.
+     *
+     * @return {@link MapManager}
+     */
+    MapManager getManager();
 
     /**
      * Lists all contexts.

@@ -73,6 +73,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return listContexts().map(Context.class::cast);
     }
 
+    public Stream<OntCE> classes() {
+        return listContexts().flatMap(MapContextImpl::classes).distinct();
+    }
+
     public Stream<MapContextImpl> listContexts() {
         return asContextStream(statements(null, RDF.type, SPINMAP.Context).map(OntStatement::getSubject));
     }
@@ -139,16 +143,38 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
         }
         deleteContext(c);
+        // clean unused functions, mapping templates, properties, variables, etc
         clearUnused();
-        // todo: check unused imports
+        // rerun since RDF is disordered and some data can be omitted in the previous step due to dependencies
+        clearUnused();
+        // remove unused imports (both owl:import declarations and underling graphs)
+        Set<OntID> used = classes().map(this::getOntologyID).collect(Collectors.toSet());
+        Set<OntGraphModel> unused = ontologies()
+                .filter(o -> !used.contains(o.getID()))
+                .filter(o -> !Objects.equals(o, this))
+                .collect(Collectors.toSet());
+        unused.stream()
+                .peek(m -> {
+                    if (!LOGGER.isDebugEnabled()) return;
+                    LOGGER.debug("Remove {}", m);
+                })
+                .forEach(MapModelImpl.this::removeImport);
         return this;
+    }
+
+    private OntID getOntologyID(OntCE ce) {
+        return findModelByClass(ce).map(OntGraphModel::getID).orElseThrow(() -> new IllegalStateException("Can't find ontology for " + ce));
+    }
+
+    protected Optional<OntGraphModel> findModelByClass(Resource ce) {
+        return ontologies().filter(m -> m.ontObjects(OntCE.class).anyMatch(c -> Objects.equals(c, ce))).findFirst();
     }
 
     /**
      * Deletes unused anymore things, which is appeared in the base graph.
      * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
      */
-    public void clearUnused() {
+    protected void clearUnused() {
         // delete expressions:
         Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
                 .flatMap(type -> statements(null, RDF.type, type)
@@ -343,11 +369,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return this;
     }
 
-    /**
-     * Returns a map-manager to which this model is associated.
-     *
-     * @return {@link MapManagerImpl}
-     */
+    @Override
     public MapManagerImpl getManager() {
         return manager;
     }

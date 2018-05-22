@@ -37,7 +37,8 @@ public class TestExamplesSaver {
                 new FilterDefaultMapTest(),
                 new FilterIndividualsMapTest(),
                 new SplitMapTest(),
-                new IntersectConcatMapTest()
+                new IntersectConcatMapTest(),
+                new GroupConcatTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {

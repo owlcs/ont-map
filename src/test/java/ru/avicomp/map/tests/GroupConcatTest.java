@@ -23,7 +23,7 @@ public class GroupConcatTest extends AbstractMapTest {
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        MapModel res = createMappingModel(manager, "TODO");
+        MapModel res = createMappingModel(manager, "Used functions: spinmapl:composeURI, avc:groupConcat, avc:asIRI, avc:currentIndividual");
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
         OntNDP srcProp = TestUtils.findOntEntity(src, OntNDP.class, "sourceDataProperty1");
@@ -63,6 +63,18 @@ public class GroupConcatTest extends AbstractMapTest {
         validateIndividual(t, "http://individual-3", "23,D");
         validateIndividual(t, "http://individual-2", "2,4.34");
         AbstractMapTest.commonValidate(t);
+    }
+
+    @Test
+    public void testDeleteContext() {
+        MapModel m = assembleMapping();
+        TestUtils.debug(m);
+        Context context = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        m.deleteContext(context);
+        TestUtils.debug(m);
+        Assert.assertEquals(0, m.contexts().count());
+        Assert.assertEquals(4, m.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(1, m.asOntModel().imports().count());
     }
 
     private void validateIndividual(OntGraphModel m, String name, String value) {

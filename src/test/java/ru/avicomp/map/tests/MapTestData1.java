@@ -30,12 +30,15 @@ abstract class MapTestData1 extends AbstractMapTest {
         OntGraphModel dst = assembleTarget();
         MapManager manager = Managers.getMapManager();
         MapModel mapping = assembleMapping(manager, src, dst);
+        Assert.assertEquals(2, mapping.ontologies().count());
         List<Context> contexts = mapping.contexts().collect(Collectors.toList());
         Assert.assertEquals(1, contexts.size());
         mapping = mapping.deleteContext(contexts.get(0));
         TestUtils.debug(mapping);
         Assert.assertEquals(0, mapping.contexts().count());
-        Assert.assertEquals(6, mapping.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(4, mapping.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(0, mapping.ontologies().count());
+        Assert.assertEquals(1, mapping.asOntModel().imports().count());
     }
 
     @Override
