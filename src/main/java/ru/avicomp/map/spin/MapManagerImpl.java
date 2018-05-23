@@ -55,10 +55,7 @@ public class MapManagerImpl implements MapManager {
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel();
         this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
-        SPINRegistry r = new SPINRegistry(functionRegistry, propertyFunctionRegistry);
-        r.initSPIN();
-        r.initSPIF();
-        r.initMath();
+        SPINRegistry.init(functionRegistry, propertyFunctionRegistry);
         spinModuleRegistry.registerAll(graphLibrary, null);
         this.mapFunctions = listSpinFunctions(graphLibrary)
                 .map(f -> makeFunction(f, prefixLibrary))

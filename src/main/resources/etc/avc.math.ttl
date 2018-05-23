@@ -3,16 +3,72 @@
 @prefix spin:  <http://spinrdf.org/spin#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix math:  <http://avc.ru/math#> .
+@prefix math:  <http://www.w3.org/2005/xpath-functions/math#> .
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 
 <http://avc.ru/math>  a  owl:Ontology ;
         rdfs:comment     "A library that contains mathematical functions for some reason missing in the standard spin delivery." ;
-        rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/math/> ;
+        rdfs:seeAlso     <http://www.w3.org/2005/xpath-functions/math/> ;
         owl:versionIRI   <http://avc.ru/spin#1.0> ;
         owl:versionInfo  "version 1.0" .
+
+math:acos  a                spin:Function ;
+        rdfs:comment        "Returns the arc cosine of the argument." ;
+        rdfs:label          "arccosine" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "acos" .
+
+math:log  a                 spin:Function ;
+        rdfs:comment        "Returns the natural logarithm of the argument." ;
+        rdfs:label          "natural logarithm" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "log" .
+
+math:pi  a                  spin:Function ;
+        rdfs:comment        "Returns an approximation to the mathematical constant π." ;
+        rdfs:label          "pi" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "pi" .
+
+math:sin  a                 spin:Function ;
+        rdfs:comment        "Returns the sine of the argument. The argument is an angle in radians." ;
+        rdfs:label          "sine" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Radians" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "sin" .
+
+math:asin  a                spin:Function ;
+        rdfs:comment        "Returns the arc sine of the argument." ;
+        rdfs:label          "arcsine" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "asin" .
 
 math:cos  a                 spin:Function ;
         rdfs:comment        "Returns the cosine of the argument. The argument is an angle in radians." ;
@@ -25,3 +81,95 @@ math:cos  a                 spin:Function ;
                             ] ;
         spin:returnType     xsd:double ;
         spinmap:shortLabel  "cos" .
+
+math:pow  a                 spin:Function ;
+        rdfs:comment        "Returns the result of raising the first argument to the power of the second." ;
+        rdfs:label          "power" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg2 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "pow" .
+
+math:log10  a               spin:Function ;
+        rdfs:comment        "Returns the base-ten logarithm of the argument." ;
+        rdfs:label          "base-ten logarithm" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "log10" .
+
+math:sqrt  a                spin:Function ;
+        rdfs:comment        "Returns the non-negative square root of the argument." ;
+        rdfs:label          "square root" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "sqrt" .
+
+math:exp10  a               spin:Function ;
+        rdfs:comment        "Returns the value of 10^x." ;
+        rdfs:label          "base-ten exponent" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "exp10" .
+
+math:exp  a                 spin:Function ;
+        rdfs:comment        "Returns the value of e^x." ;
+        rdfs:label          "exponent" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "exp" .
+
+math:tan  a                 spin:Function ;
+        rdfs:comment        "Returns the tangent of the argument. The argument is an angle in radians." ;
+        rdfs:label          "tangent" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "tan" .
+
+math:atan  a                spin:Function ;
+        rdfs:comment        "Returns the arc tangent of the argument." ;
+        rdfs:label          "arctangent" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "atan" .
+
+math:atan2  a               spin:Function ;
+        rdfs:comment        "Returns the angle in radians subtended at the origin by the point on a plane with coordinates (x, y) and the positive x-axis." ;
+        rdfs:label          "arctangent 2" ;
+        rdfs:subClassOf     spl:MathematicalFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "atan2" .

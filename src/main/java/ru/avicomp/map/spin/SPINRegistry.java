@@ -1,41 +1,44 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.sparql.function.FunctionRegistry;
-import org.apache.jena.sparql.function.library.leviathan.cos;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.PropertyChainHelperPFunction;
 import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.vocabulary.SPIN;
-import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A helper to register builtin (SPIF), some common (SPIN) and math (MATH) functions.
+ * A helper to register builtin (SPIF) and some common (SPIN) functions.
  * SPIF functions is getting from Topbraid Composer Free Edition (see org.topbraid.spin.functions_*.jar), ver 5.2.2.
- * Notice that new topbraid (5.5.1) do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
+ * New topbraid do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
  * Created by @szuev on 15.04.2018.
  *
  * @see SPIF
  * @see SPIN
- * @see MATH
  * @see SPINMAPL
  */
+@SuppressWarnings("UnusedReturnValue")
 class SPINRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(SPINRegistry.class);
     private final FunctionRegistry functionRegistry;
     private final PropertyFunctionRegistry propertyFunctionRegistry;
 
-    SPINRegistry(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
-        this.functionRegistry = functionRegistry;
-        this.propertyFunctionRegistry = propertyFunctionRegistry;
+    private SPINRegistry(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
+        this.functionRegistry = Objects.requireNonNull(functionRegistry, "Null " + FunctionRegistry.class.getName());
+        this.propertyFunctionRegistry = Objects.requireNonNull(propertyFunctionRegistry, "Null " + PropertyFunctionRegistry.class.getName());
     }
 
-    void initSPIF() {
+    static void init(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
+        new SPINRegistry(functionRegistry, propertyFunctionRegistry).initSPIN().initSPIF();
+    }
+
+    private SPINRegistry initSPIF() {
         // from org.topbraid.spin.arq.functions:
         registerSPIFFunction("invoke", InvokeFunction.class);
         registerSPIFFunction("walkObjects", WalkObjectsFunction.class);
@@ -91,9 +94,10 @@ class SPINRegistry {
         registerSPIFPropertyFunction("prefix", "org.topbraid.spin.functions.internal.magic.PrefixPFunction");
         registerSPIFPropertyFunction("range", "org.topbraid.spin.functions.internal.magic.RangePFunction");
         registerSPIFPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
+        return this;
     }
 
-    void initSPIN() {
+    private SPINRegistry initSPIN() {
         functionRegistry.put(SPIN.ask.getURI(), new AskFunction());
         functionRegistry.put(SPIN.eval.getURI(), new EvalFunction());
         functionRegistry.put(SPIN.evalInGraph.getURI(), new EvalInGraphFunction());
@@ -102,11 +106,7 @@ class SPINRegistry {
         propertyFunctionRegistry.put(SPIN.constructViolations.getURI(), ConstructViolationsPFunction.class);
         propertyFunctionRegistry.put(SPIN.select.getURI(), SelectPFunction.class);
         propertyFunctionRegistry.put(SPINMAPL.OWL_RL_PROPERTY_CHAIN_HELPER, PropertyChainHelperPFunction.class);
-    }
-
-    void initMath() {
-        // todo: complete
-        functionRegistry.put(MATH.cos.getURI(), cos.class);
+        return this;
     }
 
     private void registerSPIFFunction(String localName, Class functionClass) {
