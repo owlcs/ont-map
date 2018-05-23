@@ -150,6 +150,17 @@ public interface Context {
     }
 
     /**
+     * @param func   {@link MapFunction.Builder}
+     * @param target {@link Property}
+     * @return {@link PropertyBridge}
+     * @throws MapJenaException unable to build a property bridge
+     * @see #addPropertyBridge(MapFunction.Call, Property)
+     */
+    default PropertyBridge addPropertyBridge(MapFunction.Builder func, Property target) throws MapJenaException {
+        return addPropertyBridge(func.build(), target);
+    }
+
+    /**
      * Adds a properties bridge without filtering.
      * This is commonly used method, while its overloaded companion is used less frequently to build specific ontology mappings.
      *
@@ -157,6 +168,7 @@ public interface Context {
      * @param target property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
      * @return {@link PropertyBridge} a container with all input settings.
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
+     * @see #addPropertyBridge(MapFunction.Call, MapFunction.Call, Property)
      */
     default PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
         return addPropertyBridge(null, func, target);

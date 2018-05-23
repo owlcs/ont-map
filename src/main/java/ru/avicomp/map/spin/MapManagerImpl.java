@@ -1,6 +1,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
@@ -51,6 +52,7 @@ public class MapManagerImpl implements MapManager {
     protected final SPINModuleRegistry spinModuleRegistry = SPINModuleRegistry.get();
     protected final FunctionRegistry functionRegistry = FunctionRegistry.get();
     protected final PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
+    protected final TypeMapper types = TypeMapper.getInstance();
 
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel();

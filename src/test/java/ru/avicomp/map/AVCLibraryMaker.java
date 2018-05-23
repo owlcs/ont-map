@@ -1,6 +1,7 @@
 package ru.avicomp.map;
 
 import org.apache.jena.graph.Factory;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
@@ -19,15 +20,15 @@ import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
-import ru.avicomp.ontapi.jena.model.OntDT;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntID;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -42,10 +43,7 @@ import java.util.stream.Stream;
 public class AVCLibraryMaker {
 
     public static void main(String... args) {
-        OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
-        OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), p);
-
-        AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), MapManagerImpl.collectPrefixes(SystemModels.graphs().values()));
+        OntGraphModel m = createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.BASE_URI);
         id.setVersionIRI(AVC.NS + "1.0");
         id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
@@ -53,6 +51,7 @@ public class AVCLibraryMaker {
                 "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
                 "and all listed custom functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
+        m.addImport(createModel(getSPLGraph()));
 
         OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
 
@@ -64,7 +63,18 @@ public class AVCLibraryMaker {
         runtime.addRange(xsdString);
         runtime.addComment("A property for using to describe runtime functionality provided by ONT-MAP API", null);
 
-        // redefine spin-variables used in SPARQL queries:
+        OntDT numeric = m.createOntEntity(OntDT.class, AVC.numeric.getURI());
+        numeric.addComment("Represents all numeric datatypes", null);
+        numeric.addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/sparql11-query/#operandDataTypes"));
+        List<OntDR> numberDRs = Stream.of(XSD.integer, XSD.decimal, XSD.xfloat, XSD.xdouble,
+                XSD.nonPositiveInteger, XSD.negativeInteger,
+                XSD.nonNegativeInteger, XSD.positiveInteger,
+                XSD.xlong, XSD.xint, XSD.xshort, XSD.xbyte,
+                XSD.unsignedLong, XSD.unsignedInt, XSD.unsignedShort, XSD.unsignedByte).map(r -> m.getOntEntity(OntDT.class, r)).collect(Collectors.toList());
+        numeric.addEquivalentClass(m.createUnionOfDataRange(numberDRs));
+
+        // redefine spin-variables used in SPARQL function bodies:
+        // although they are comes with import, the manager use this graph without any imports
         Stream.of("this", "source", "arg1", "arg2")
                 .forEach(s -> SPIN.resource("_" + s).inModel(m).addProperty(RDF.type, SP.Variable).addProperty(SP.varName, s));
 
@@ -223,9 +233,37 @@ public class AVCLibraryMaker {
                                 "    BIND (CONCAT(\"urn:uuid:\", ?value) AS ?uri) .\n" +
                                 "}", m));
 
+        // AVC:IRI
+        AVC.IRI.inModel(m)
+                .addProperty(RDF.type, SPINMAP.TargetFunction)
+                .addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions)
+                .addProperty(SPIN.returnType, RDFS.Resource)
+                .addProperty(RDFS.seeAlso, SP.resource("iri"))
+                .addProperty(RDFS.seeAlso, ResourceFactory.createResource("https://www.w3.org/TR/sparql11-query/#func-iri"))
+                .addProperty(SPINMAP.shortLabel, "IRI")
+                .addProperty(RDFS.label, "creates IRI resource")
+                .addProperty(RDFS.comment, "A target function.\n" +
+                        "Returns an IRI as target resource (individual).\n" +
+                        "Please note: mapping inference will create only single target individual, merging all sources to one")
+                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT (IRI(?arg1))\nWHERE {\n}", m))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg1)
+                        .addProperty(SPL.valueType, XSD.xstring)
+                        .addProperty(RDFS.comment, "An IRI (xsd:string)"));
 
         m.write(System.out, "ttl");
 
     }
 
+    static OntGraphModel createModel(Graph graph) {
+        OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
+        OntGraphModel res = OntModelFactory.createModel(graph, p);
+        AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), MapManagerImpl.collectPrefixes(SystemModels.graphs().values()));
+        return res;
+    }
+
+    static Graph getSPLGraph() {
+        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPL), SystemModels.graphs().values());
+    }
 }

@@ -420,15 +420,17 @@ public class MapContextImpl extends ResourceImpl implements Context {
             return;
         }
         if (value instanceof MapFunction.Call) {
-            String funcType = ((MapFunction.Call) value).getFunction().returnType();
-            validateFuncReturnType(argType, funcType);
-            testFunction((MapFunction.Call) value);
+            MapFunction.Call call = (MapFunction.Call) value;
+            validateFuncReturnType(arg.getFunction(), call.getFunction(), argType);
+            testFunction(call);
             return;
         }
         throw new IllegalStateException("??");
     }
 
-    private void validateFuncReturnType(String argType, String funcType) {
+    private void validateFuncReturnType(MapFunction parent, MapFunction func, String argType) {
+        PrefixMapping pm = getModel();
+        String funcType = func.returnType();
         if (argType.equals(funcType)) {
             return;
         }
@@ -438,7 +440,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
         }
         RDFDatatype literalType = getModel().getDatatype(funcType);
         if (literalType != null) // todo:
-            throw new MapJenaException("TODO:" + literalType);
+            throw new MapJenaException("TODO:" + literalType + " ::: " + "(" + parent + ")" + pm.shortForm(argType) + "||" + pm.shortForm(funcType));
         if (RDFS.Resource.getURI().equals(argType))
             return;
         // todo:

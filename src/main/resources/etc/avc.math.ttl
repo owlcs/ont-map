@@ -12,7 +12,8 @@
         rdfs:comment     "A library that contains mathematical functions for some reason missing in the standard spin delivery." ;
         rdfs:seeAlso     <http://www.w3.org/2005/xpath-functions/math/> ;
         owl:versionIRI   <http://avc.ru/spin#1.0> ;
-        owl:versionInfo  "version 1.0" .
+        owl:versionInfo  "version 1.0" ;
+        owl:imports      <http://spinrdf.org/spl> .
 
 math:acos  a                spin:Function ;
         rdfs:comment        "Returns the arc cosine of the argument." ;

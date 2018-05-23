@@ -25,8 +25,15 @@ public class AVC {
     // spin-functions which use SPARQL aggregate functions
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
 
-    // additional no-arg target function, for convenience' sake
+    // a virtual number datatype to be used as function or argument type restriction
+    // see https://www.w3.org/TR/sparql11-query/#operandDataTypes
+    public static final Resource numeric = resource("numeric");
+
+    // additional no-arg target function, for debugging and for convenience' sake
     public static final Resource UUID = resource("UUID");
+
+    // additional single-arg target function, for debugging and for convenience' sake
+    public static final Resource IRI = resource("IRI");
 
     // additional map property function that is used to mapping to pass a default value
     // in case there is no data assertion on individual

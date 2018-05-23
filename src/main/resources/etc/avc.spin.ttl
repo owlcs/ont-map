@@ -12,7 +12,8 @@
 <http://avc.ru/spin>  a  owl:Ontology ;
         rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom functions can be considered as templates." ;
         owl:versionIRI   avc:1.0 ;
-        owl:versionInfo  "version 1.0" .
+        owl:versionInfo  "version 1.0" ;
+        owl:imports      <http://spinrdf.org/spl> .
 
 spin:_this  a       sp:Variable ;
         sp:varName  "this" .
@@ -33,6 +34,13 @@ avc:hidden  a       owl:DatatypeProperty ;
 avc:runtime  a      owl:DatatypeProperty ;
         rdfs:comment  "A property for using to describe runtime functionality provided by ONT-MAP API" ;
         rdfs:range  xsd:string .
+
+avc:numeric  a               rdfs:Datatype ;
+        rdfs:comment         "Represents all numeric datatypes" ;
+        rdfs:seeAlso         <https://www.w3.org/TR/sparql11-query/#operandDataTypes> ;
+        owl:equivalentClass  [ a            rdfs:Datatype ;
+                               owl:unionOf  ( xsd:integer xsd:decimal xsd:float xsd:double xsd:nonPositiveInteger xsd:negativeInteger xsd:nonNegativeInteger xsd:positiveInteger xsd:long xsd:int xsd:short xsd:byte xsd:unsignedLong xsd:unsignedInt xsd:unsignedShort xsd:unsignedByte )
+                             ] .
 
 avc:AggregateFunctions
         a                spin:Function ;
@@ -95,6 +103,26 @@ avc:UUID  a                 spinmap:TargetFunction ;
                             ] ;
         spin:returnType     rdfs:Resource ;
         spinmap:shortLabel  "UUID" .
+
+avc:IRI  a                  spinmap:TargetFunction ;
+        rdfs:comment        "A target function.\nReturns an IRI as target resource (individual).\nPlease note: mapping inference will create only single target individual, merging all sources to one" ;
+        rdfs:label          "creates IRI resource" ;
+        rdfs:seeAlso        sp:iri , <https://www.w3.org/TR/sparql11-query/#func-iri> ;
+        rdfs:subClassOf     spinmap:TargetFunctions ;
+        spin:body           [ a                   sp:Select ;
+                              sp:resultVariables  ( [ a        sp:iri ;
+                                                      sp:arg1  spin:_arg1
+                                                    ]
+                                                  ) ;
+                              sp:where            ()
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "An IRI (xsd:string)" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  xsd:string
+                            ] ;
+        spin:returnType     rdfs:Resource ;
+        spinmap:shortLabel  "IRI" .
 
 avc:groupConcat  a          spin:Function ;
         rdfs:comment        "An aggregate function to concatenate values from assertions with the same individual and property using specified separator.\nNotice: string natural sort order is used." ;

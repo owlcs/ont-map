@@ -7,16 +7,9 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.spin.MapManagerImpl;
-import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SystemModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.MATH;
-import ru.avicomp.map.utils.AutoPrefixListener;
-import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.UnionGraph;
-import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
-import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -29,14 +22,13 @@ import ru.avicomp.ontapi.jena.vocabulary.XSD;
 public class MathLibraryMaker {
 
     public static void main(String... args) {
-        OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
-        OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), p);
-        AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), MapManagerImpl.collectPrefixes(SystemModels.graphs().values()));
+        OntGraphModel m = AVCLibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(SystemModels.Resources.MATH.getURI());
         id.setVersionIRI(AVC.NS + "1.0");
         id.addComment("A library that contains mathematical functions for some reason missing in the standard spin delivery.", null);
         id.addProperty(RDFS.seeAlso, m.getResource(MATH.URI));
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
+        m.addImport(AVCLibraryMaker.createModel(AVCLibraryMaker.getSPLGraph()));
 
         createFunctionDouble2Double(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
         createFunctionDouble2Double(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);
