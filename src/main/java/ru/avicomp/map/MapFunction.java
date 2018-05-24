@@ -29,7 +29,7 @@ public interface MapFunction extends Description {
      *
      * @return String, absolute iri.
      */
-    String returnType();
+    String type();
 
     /**
      * Returns a list of function arguments.

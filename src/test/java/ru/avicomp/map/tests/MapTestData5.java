@@ -26,7 +26,8 @@ abstract class MapTestData5 extends AbstractMapTest {
         // data
         OntIndividual.Named individual1 = class1.createIndividual(ns + "A");
         OntIndividual.Named individual2 = class1.createIndividual(ns + "B");
-        individual1.addProperty(prop1, xdouble.createLiteral(1));
+        // warning: bug (in jena?) xdouble.createLiteral(1) produces wrong result. fix in ont-api?
+        individual1.addProperty(prop1, xdouble.createLiteral(1.0));
         individual2.addProperty(prop2, xdouble.createLiteral(Math.E));
         return m;
     }

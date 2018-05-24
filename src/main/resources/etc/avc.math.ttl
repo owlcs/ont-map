@@ -41,10 +41,6 @@ math:pi  a                  spin:Function ;
         rdfs:comment        "Returns an approximation to the mathematical constant π." ;
         rdfs:label          "pi" ;
         rdfs:subClassOf     spl:MathematicalFunctions ;
-        spin:constraint     [ a              spl:Argument ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  xsd:double
-                            ] ;
         spin:returnType     xsd:double ;
         spinmap:shortLabel  "pi" .
 

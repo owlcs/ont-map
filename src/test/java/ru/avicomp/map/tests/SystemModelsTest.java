@@ -50,7 +50,7 @@ public class SystemModelsTest {
     public void testListFunctions() { // todo: for debug right now
         MapManager manager = Managers.getMapManager();
         manager.functions()
-                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
+                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::type).thenComparing(MapFunction::name))
                 .forEach(System.out::println);
         System.out.println("-----");
         System.out.println(manager.functions().count());
@@ -64,7 +64,7 @@ public class SystemModelsTest {
         PrefixMapping pm = manager.prefixes();
         pm.getNsPrefixMap().forEach((p, u) -> System.out.println(p + "=> " + u));
         manager.functions()
-                .flatMap(x -> Stream.concat(Stream.of(x.returnType()), x.args().map(MapFunction.Arg::type)))
+                .flatMap(x -> Stream.concat(Stream.of(x.type()), x.args().map(MapFunction.Arg::type)))
                 .map(u -> manager.prefixes().shortForm(u))
                 .sorted()
                 .distinct()

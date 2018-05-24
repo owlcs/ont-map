@@ -1,10 +1,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +9,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
@@ -97,6 +95,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Finds a context by source and target resources.
+     *
      * @param source {@link Resource}
      * @param target {@link Resource}
      * @return Optional around context
@@ -123,6 +122,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Wraps a resource as {@link MapContextImpl}.
      * Auxiliary method.
+     *
      * @param context {@link Resource}
      * @return {@link MapContextImpl}
      */
@@ -213,7 +213,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Returns all contexts that depend on the specified.
      * A context can be used as parameter in different function-calls, usually with predicate {@code spinmapl:context}.
-     * There is one exclusion: {@code spinmap:targetResource}, it uses {@code spinmap:context} as predicate for argument with type {@code spinmap:Context}.
+     * There is one exclusion: {@code spinmap:targetResource},
+     * it uses {@code spinmap:context} as predicate for argument with type {@code spinmap:Context}.
      *
      * @param context {@link MapContextImpl}
      * @return distinct stream of contexts
@@ -435,12 +436,78 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Gets rdf-datatype from a model,
      * which can be builtin (e.g {@code xsd:int}) or custom if corresponding declaration is present in the model.
+     * TODO: move to ONT-API?
      *
      * @param uri String, not null.
      * @return {@link RDFDatatype} or null
      */
     public RDFDatatype getDatatype(String uri) {
-        return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype).orElse(null);
+        return datatype(uri).orElse(null);
+    }
+
+    public Optional<RDFDatatype> datatype(String uri) {
+        return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype);
+    }
+
+    /**
+     * Answers if specified datatype is numeric.
+     *
+     * @param type {@link RDFDatatype}
+     * @return boolean
+     */
+    public boolean isNumeric(RDFDatatype type) {
+        String dt = Objects.requireNonNull(type, "Null dt").getURI();
+        return numberDatatypes().map(OntDT::toRDFDatatype).map(RDFDatatype::getURI).anyMatch(dt::equals);
+    }
+
+    /**
+     * Returns all numeric datatypes, defined in avc.spin.ttl.
+     *
+     * @return Stream of all number datatypes
+     * @see AVC#numeric
+     * @see <a href='https://www.w3.org/TR/sparql11-query/#operandDataTypes'>SPARQL Operand Data Types</a>
+     */
+    public Stream<OntDT> numberDatatypes() {
+        OntDT res = AVC.numeric.inModel(this).as(OntDT.class);
+        OntDR dr = res.equivalentClass().findFirst()
+                .orElseThrow(() -> new IllegalStateException("Can't find owl:equivalentClass for " + res));
+        return dr.as(OntDR.UnionOf.class).dataRanges().map(d -> d.as(OntDT.class));
+    }
+
+    /**
+     * Converts a string to RDFNode.
+     * String form can be obtained using {@link RDFNode#toString()} method.
+     * TODO: move to ONT-API?
+     *
+     * @param value String, not null
+     * @return {@link RDFNode} literal or resource, not null
+     */
+    public RDFNode toNode(String value) {
+        if (Objects.requireNonNull(value, "Null value").contains("^^")) { // must be typed literal
+            String t = expandPrefix(value.replaceFirst(".+\\^\\^(.+)", "$1"));
+            Optional<RDFDatatype> type = datatype(t);
+            if (type.isPresent()) {
+                String lex = value.replaceFirst("(.+)\\^\\^.+", "$1");
+                return createTypedLiteral(lex, type.get());
+            }
+        }
+        if (value.contains("@")) { // lang literal
+            String lex = value.replaceFirst("@.+", "");
+            String lang = value.replaceFirst(".+@", "");
+            return createLiteral(lex, lang);
+        }
+        Resource res = createResource(value);
+        if (containsResource(res)) { // uri resource
+            return res;
+        }
+        // ONT-API stupidly overrides toString for OntObject:
+        AnonId id = new AnonId(value.replaceFirst("^\\[[^]]+](.+)", "$1"));
+        res = createResource(id);
+        if (containsResource(res)) { // anonymous resource
+            return res;
+        }
+        // plain literal
+        return createLiteral(value);
     }
 
     /**

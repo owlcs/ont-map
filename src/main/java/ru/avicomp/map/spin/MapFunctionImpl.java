@@ -45,7 +45,7 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     @Override
-    public String returnType() {
+    public String type() {
         Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
         return (r == null ? AVC.undefined : r).getURI();
     }
@@ -76,7 +76,7 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public boolean isBoolean() {
-        return XSD.xboolean.getURI().equals(returnType());
+        return XSD.xboolean.getURI().equals(type());
     }
 
     /**
@@ -135,7 +135,7 @@ public class MapFunctionImpl implements MapFunction {
 
     public String toString(PrefixMapping pm) {
         return String.format("%s [%s](%s)",
-                pm.shortForm(returnType()),
+                pm.shortForm(type()),
                 pm.shortForm(name()), args()
                         .map(ArgImpl.class::cast)
                         .map(a -> a.toString(pm))

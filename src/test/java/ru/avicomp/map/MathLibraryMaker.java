@@ -30,47 +30,46 @@ public class MathLibraryMaker {
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         m.addImport(AVCLibraryMaker.createModel(AVCLibraryMaker.getSPLGraph()));
 
-        createFunctionDouble2Double(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
-        createFunctionDouble2Double(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);
-        createFunctionDouble2Double(MATH.atan.inModel(m), "atan", "arctangent", "Returns the arc tangent of the argument.", null);
-        createFunctionDouble2Double(MATH.atan2.inModel(m), "atan2", "arctangent 2",
+        createDoubleFuncWithDoubleArg(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
+        createDoubleFuncWithDoubleArg(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);
+        createDoubleFuncWithDoubleArg(MATH.atan.inModel(m), "atan", "arctangent", "Returns the arc tangent of the argument.", null);
+        createDoubleFuncWithDoubleArg(MATH.atan2.inModel(m), "atan2", "arctangent 2",
                 "Returns the angle in radians subtended at the origin by the point on a plane with coordinates (x, y) and the positive x-axis.", null);
-        createFunctionDouble2Double(MATH.cos.inModel(m), "cos", "cosinus", "Returns the cosine of the argument. The argument is an angle in radians.", "Radians");
-        createFunctionDouble2Double(MATH.exp.inModel(m), "exp", "exponent", "Returns the value of e^x.", null);
-        createFunctionDouble2Double(MATH.exp10.inModel(m), "exp10", "base-ten exponent", "Returns the value of 10^x.", null);
-        createFunctionDouble2Double(MATH.log.inModel(m), "log", "natural logarithm", "Returns the natural logarithm of the argument.", null);
-        createFunctionDouble2Double(MATH.log10.inModel(m), "log10", "base-ten logarithm", "Returns the base-ten logarithm of the argument.", null);
-        createFunctionDouble2Double(MATH.pi.inModel(m), "pi", "pi", "Returns an approximation to the mathematical constant π.", null);
+        createDoubleFuncWithDoubleArg(MATH.cos.inModel(m), "cos", "cosinus", "Returns the cosine of the argument. The argument is an angle in radians.", "Radians");
+        createDoubleFuncWithDoubleArg(MATH.exp.inModel(m), "exp", "exponent", "Returns the value of e^x.", null);
+        createDoubleFuncWithDoubleArg(MATH.exp10.inModel(m), "exp10", "base-ten exponent", "Returns the value of 10^x.", null);
+        createDoubleFuncWithDoubleArg(MATH.log.inModel(m), "log", "natural logarithm", "Returns the natural logarithm of the argument.", null);
+        createDoubleFuncWithDoubleArg(MATH.log10.inModel(m), "log10", "base-ten logarithm", "Returns the base-ten logarithm of the argument.", null);
+        createDoubleFunction(MATH.pi.inModel(m), "pi", "pi", "Returns an approximation to the mathematical constant π.");
 
-        createFunctionDouble2Double(MATH.pow.inModel(m), "pow", "power", "Returns the result of raising the first argument to the power of the second.", null)
+        createDoubleFuncWithDoubleArg(MATH.pow.inModel(m), "pow", "power", "Returns the result of raising the first argument to the power of the second.", null)
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
                         .addProperty(SPL.valueType, XSD.xdouble));
 
-        createFunctionDouble2Double(MATH.sin.inModel(m), "sin", "sine", "Returns the sine of the argument. The argument is an angle in radians.", "Radians");
-        createFunctionDouble2Double(MATH.sqrt.inModel(m), "sqrt", "square root", "Returns the non-negative square root of the argument.", null);
-        createFunctionDouble2Double(MATH.tan.inModel(m), "tan", "tangent", "Returns the tangent of the argument. The argument is an angle in radians.", null);
+        createDoubleFuncWithDoubleArg(MATH.sin.inModel(m), "sin", "sine", "Returns the sine of the argument. The argument is an angle in radians.", "Radians");
+        createDoubleFuncWithDoubleArg(MATH.sqrt.inModel(m), "sqrt", "square root", "Returns the non-negative square root of the argument.", null);
+        createDoubleFuncWithDoubleArg(MATH.tan.inModel(m), "tan", "tangent", "Returns the tangent of the argument. The argument is an angle in radians.", null);
 
         m.write(System.out, "ttl");
     }
 
-    private static Resource createFunction(Resource name, String shortLabel, String label, String comment) {
+    private static Resource createDoubleFunction(Resource name, String shortLabel, String label, String comment) {
         return name.addProperty(RDF.type, SPIN.Function)
                 .addProperty(RDFS.subClassOf, SPL.MathematicalFunctions)
                 .addProperty(SPINMAP.shortLabel, shortLabel)
                 .addProperty(RDFS.label, label)
-                .addProperty(RDFS.comment, comment);
+                .addProperty(RDFS.comment, comment)
+                .addProperty(SPIN.returnType, XSD.xdouble);
     }
 
-    private static Resource createFunctionDouble2Double(Resource name, String shortLabel, String label, String comment, String argComment) {
+    private static Resource createDoubleFuncWithDoubleArg(Resource name, String shortLabel, String label, String comment, String argComment) {
         Resource arg = name.getModel().createResource()
                 .addProperty(RDF.type, SPL.Argument)
                 .addProperty(SPL.predicate, SP.arg1)
                 .addProperty(SPL.valueType, XSD.xdouble);
         if (argComment != null) arg.addProperty(RDFS.comment, argComment);
-        return createFunction(name, shortLabel, label, comment)
-                .addProperty(SPIN.returnType, XSD.xdouble)
-                .addProperty(SPIN.constraint, arg);
+        return createDoubleFunction(name, shortLabel, label, comment).addProperty(SPIN.constraint, arg);
     }
 }
