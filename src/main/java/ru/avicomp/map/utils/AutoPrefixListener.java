@@ -6,7 +6,6 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.shared.PrefixMapping;
-import org.apache.jena.sparql.util.graph.GraphListenerBase;
 import ru.avicomp.ontapi.jena.UnionGraph;
 
 import java.util.HashMap;
@@ -24,7 +23,7 @@ import java.util.function.Function;
  * Created by @szuev on 12.04.2018.
  */
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
-public class AutoPrefixListener extends GraphListenerBase {
+public class AutoPrefixListener extends BaseGraphListener {
     private final PrefixMapping prefixes;
     private final NodePrefixExtractor extractor;
 

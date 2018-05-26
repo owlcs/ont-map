@@ -1,11 +1,12 @@
 package ru.avicomp.map.utils;
 
+import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphListener;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.sparql.util.graph.GraphListenerBase;
 import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntCE;
@@ -18,37 +19,67 @@ import java.util.stream.Collectors;
 /**
  * An implementation of {@link GraphListener} to provide a cached {@link ClassPropertyMap class-property-map}.
  * Any changes in a graph to which this listener is attached on will reset that cache.
+ * Based on caffeine, sine it is used by OWL-API
+ * TODO: something wrong in logic: top-level cache will not be reset in case of changes in sub-graphs
  * <p>
  * Created by @szuev on 19.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class ClassPropertyMapListener extends GraphListenerBase {
+public class ClassPropertyMapListener extends BaseGraphListener {
 
     protected final LoadingCache<OntCE, Set<Property>> properties;
 
     public ClassPropertyMapListener(ClassPropertyMap noCache) {
-        this.properties = Caffeine.newBuilder()
+        this.properties = buildCache(key -> noCache.properties(key).collect(Collectors.toSet()));
+    }
+
+    /**
+     * Builds caffeine loading cache.
+     *
+     * @param loader {@link CacheLoader}
+     * @param <K>    any key type
+     * @param <V>    any value type
+     * @return {@link LoadingCache}
+     * @see ru.avicomp.ontapi.internal.InternalModel.CacheDataFactory
+     */
+    static <K, V> LoadingCache<K, V> buildCache(CacheLoader<K, V> loader) {
+        return Caffeine.newBuilder()
+                // a magic number from OWL-API
                 .maximumSize(2048)
                 //.softValues()
-                .build(key -> noCache.properties(key).collect(Collectors.toSet()));
+                .build(loader);
+    }
+
+    protected void invalidate() {
+        properties.invalidateAll();
     }
 
     @Override
     protected void addEvent(Triple triple) {
-        properties.invalidateAll();
+        invalidate();
     }
 
     @Override
     protected void deleteEvent(Triple triple) {
-        properties.invalidateAll();
+        invalidate();
     }
 
-    private Set<Property> getProperties(OntCE ce) {
-        return Objects.requireNonNull(properties.get(ce), "Null property set for " + ce);
+    @Override
+    public void notifyAddGraph(Graph g, Graph other) {
+        invalidate();
+    }
+
+    @Override
+    public void notifyDeleteGraph(Graph g, Graph other) {
+        invalidate();
+    }
+
+    protected Set<Property> getProperties(OntCE ce) {
+        return Objects.requireNonNull(properties.get(Objects.requireNonNull(ce, "Null class")), "Null property set for " + ce);
     }
 
     public ClassPropertyMap get() {
-        return c -> getProperties(c).stream();
+        return ce -> ClassPropertyMapListener.this.getProperties(ce).stream();
     }
 
     /**

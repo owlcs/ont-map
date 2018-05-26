@@ -263,6 +263,7 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
+        //return new ClassPropertyMapImpl();
         return ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) model.getGraph(), ClassPropertyMapImpl::new);
     }
 

@@ -60,7 +60,6 @@ public interface MapManager {
      */
     MapModel createMapModel();
 
-
     /**
      * Provides a class-properties mapping.
      *

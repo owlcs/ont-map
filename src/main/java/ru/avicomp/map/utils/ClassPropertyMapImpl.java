@@ -7,6 +7,7 @@ import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntPE;
+import ru.avicomp.ontapi.jena.model.OntStatement;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -65,8 +66,16 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         return Stream.concat(classes.flatMap(c -> collect(c, visited)), res).distinct();
     }
 
+    /**
+     * Lists all direct class properties.
+     * TODO: move to ONT-API ?
+     *
+     * @param ce {@link OntCE}
+     * @return Stream of {@link Property properties}
+     */
     protected Stream<Property> directProperties(OntCE ce) {
-        Stream<Property> res = ce.properties().map(ClassPropertyMap::toNamed);
+        Stream<Property> res = withDomain(ce)
+                .map(ClassPropertyMap::toNamed);
         if (ce instanceof OntCE.ONProperty) {
             Property p = ClassPropertyMap.toNamed(((OntCE.ONProperty) ce).getOnProperty());
             res = Stream.concat(res, Stream.of(p));
@@ -77,4 +86,20 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         }
         return res;
     }
+
+    /**
+     * This is analogue of {@code ce.properties()} but with property declaration checking.
+     * TODO: move to ONT-API ?
+     *
+     * @param ce {@link OntCE}
+     * @return Stream of {@link OntPE}s
+     * @see OntCE#properties()
+     */
+    protected Stream<OntPE> withDomain(OntCE ce) {
+        return ce.getModel().statements(null, RDFS.domain, ce)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.canAs(OntPE.class))
+                .map(s -> s.as(OntPE.class));
+    }
+
 }
