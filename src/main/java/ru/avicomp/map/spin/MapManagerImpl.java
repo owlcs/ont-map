@@ -4,10 +4,7 @@ import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
@@ -17,16 +14,19 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.utils.AutoPrefixListener;
-import ru.avicomp.map.utils.ClassPropertyMapImpl;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
+import ru.avicomp.map.utils.LocalClassPropertyMapImpl;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
+import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -67,6 +67,7 @@ public class MapManagerImpl implements MapManager {
     /**
      * Creates a complete ONT-MAP library (a query model).
      * The result graph (wrapped by Model) includes all ttl resources from {@code /etc} dir.
+     *
      * @return {@link UnionModel}
      * @see SpinModelConfig#LIB_PERSONALITY
      */
@@ -255,16 +256,46 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
+     * Gets a a class-properties map object.
+     * The result is cached and is placed in the specified model, in a listener attached to the top-level {@link UnionGraph graph}.
+     *
      * Note: this method is used during validation of input arguments,
      * although SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
      *
      * @param model {@link OntGraphModel OWL model}
      * @return {@link ClassPropertyMap mapping}
+     * @see ClassPropertyMapListener
      */
     @Override
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
-        //return new ClassPropertyMapImpl();
-        return ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) model.getGraph(), ClassPropertyMapImpl::new);
+        Stream<OntGraphModel> models = (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
+                .flatMap(MapManagerImpl::flat);
+        List<ClassPropertyMap> maps = models
+                .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(), () -> new LocalClassPropertyMapImpl(m)))
+                .collect(Collectors.toList());
+        return new ClassPropertyMap() {
+            @Override
+            public Stream<Property> properties(OntCE ce) {
+                return maps.stream().flatMap(m -> m.properties(ce)).distinct();
+            }
+
+            @Override
+            public Stream<OntCE> classes(OntPE pe) {
+                return maps.stream().flatMap(m -> m.classes(pe)).distinct();
+            }
+        };
+    }
+
+    /**
+     * Lists all associated (from {@code owl:imports}) models including specified as a flat stream.
+     * TODO: move to ONT-API
+     *
+     * @param m {@link OntGraphModel}
+     * @return Stream of models
+     * @see Graphs#flat(Graph)
+     */
+    public static Stream<OntGraphModel> flat(OntGraphModel m) {
+        return Stream.concat(Stream.of(m), m.imports().map(MapManagerImpl::flat).flatMap(Function.identity()));
     }
 
     @Override

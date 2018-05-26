@@ -11,6 +11,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -159,6 +160,19 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     LOGGER.debug("Remove {}", m);
                 })
                 .forEach(MapModelImpl.this::removeImport);
+        return this;
+    }
+
+
+    @Override
+    public MapModelImpl removeImport(OntGraphModel m) {
+        super.removeImport(m);
+        // detach ClassPropertiesMap Listener to let GC clean any cached data, it is just in case
+        UnionGraph.OntEventManager events = ((UnionGraph) m.getGraph()).getEventManager();
+        events.listeners()
+                .filter(l -> ClassPropertyMapListener.class.equals(l.getClass()))
+                .collect(Collectors.toSet())
+                .forEach(events::unregister);
         return this;
     }
 

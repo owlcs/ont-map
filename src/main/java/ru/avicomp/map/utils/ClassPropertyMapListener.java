@@ -83,21 +83,21 @@ public class ClassPropertyMapListener extends BaseGraphListener {
     }
 
     /**
-     * Creates or finds a cached class-properties mapping which is attached to the specified graph.
+     * Creates or finds a cached class-properties mapping which is attached to the specified graph through {@link ClassPropertyMapListener map listener}.
      *
      * @param graph    {@link UnionGraph} a graph to attache listener
      * @param internal a factory to provide a new class-property mapping to be cached
      * @return {@link ClassPropertyMap} an existing or a new class-property mapping, not null.
      */
     public static ClassPropertyMap getCachedClassPropertyMap(UnionGraph graph, Supplier<ClassPropertyMap> internal) {
-        UnionGraph.OntEventManager manager = graph.getEventManager();
-        return manager.listeners()
+        UnionGraph.OntEventManager events = graph.getEventManager();
+        return events.listeners()
                 .filter(l -> ClassPropertyMapListener.class.equals(l.getClass()))
                 .map(ClassPropertyMapListener.class::cast)
                 .findFirst()
                 .orElseGet(() -> {
                     ClassPropertyMapListener res = new ClassPropertyMapListener(internal.get());
-                    manager.register(res);
+                    events.register(res);
                     return res;
                 }).get();
     }

@@ -11,12 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.map.Managers;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -127,6 +129,31 @@ public class ClassPropertiesTest {
         expected.put("e:C2", 1);
         expected.put("e:C3", 2);
         validateClasses(m, expected);
+    }
+
+    @Test
+    public void testModifying() throws IOException {
+        MapManager manager = Managers.getMapManager();
+        OntGraphModel sub = TestUtils.load("/pizza.ttl", Lang.TURTLE);
+        OntGraphModel top = OntModelFactory.createModel();
+        top.setID("http://test.x");
+        top.addImport(sub);
+
+        OntClass clazz = top.getOntEntity(OntClass.class, sub.expandPrefix(":Siciliana"));
+        ClassPropertyMap map = manager.getClassProperties(top);
+        Assert.assertEquals(5, map.properties(clazz).count());
+
+        OntObject p1 = top.createOntEntity(OntNDP.class, "http://dp1").addDomain(clazz).getSubject();
+        Assert.assertEquals(6, map.properties(clazz).count());
+
+        top.removeOntObject(p1);
+        Assert.assertEquals(5, map.properties(clazz).count());
+
+        OntObject p2 = sub.createOntEntity(OntNDP.class, "http://dp2").addDomain(clazz).getSubject();
+        Assert.assertEquals(6, map.properties(clazz).count());
+
+        sub.removeOntObject(p2);
+        Assert.assertEquals(5, map.properties(clazz).count());
     }
 
     private static void validateClasses(OntGraphModel m, Map<String, Integer> expected) {
