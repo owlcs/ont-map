@@ -525,16 +525,30 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Answers if specified property links classes together through domain and range axioms.
+     * Answers if specified property links classes together through domain/range or restriction relationships.
      * TODO: move to ONT-API?
      *
      * @param property {@link OntOPE} property to test
-     * @param domain   {@link OntCE} domain candidate
-     * @param range    {@link OntCE} range candidate
+     * @param domain   {@link OntCE} "domain" candidate
+     * @param range    {@link OntCE} "range" candidate
      * @return true if it is link property.
+     * @see ru.avicomp.map.utils.ClassPropertyMapImpl#directProperties(OntCE)
      */
-    public static boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
-        return property.domain().anyMatch(d -> Objects.equals(d, domain)) && property.range().anyMatch(r -> Objects.equals(r, range));
+    public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
+        Property p = ClassPropertyMap.toNamed(property);
+        if (properties(domain).noneMatch(p::equals)) return false;
+        // range
+        if (property.range().anyMatch(r -> Objects.equals(r, range))) return true;
+        // object some/all values from or cardinality restriction
+        return statements(null, OWL.onProperty, property)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.canAs(OntCE.ComponentRestrictionCE.class))
+                .map(s -> s.as(OntCE.ComponentRestrictionCE.class))
+                .map(OntCE.Value::getValue)
+                .map(RDFNode.class::cast)
+                .filter(RDFNode::isResource)
+                .map(RDFNode::asResource)
+                .anyMatch(range::equals);
     }
 
     /**

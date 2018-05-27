@@ -271,18 +271,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapContextImpl createRelatedContext(OntCE source, OntOPE link) throws MapJenaException {
+        MapModelImpl m = getModel();
         MapFunction.Builder builder;
         Property property = ClassPropertyMap.toNamed(link);
-        if (MapModelImpl.isLinkProperty(link, getSource(), source)) {
+        if (m.isLinkProperty(link, getSource(), source)) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, property);
-        } else if (MapModelImpl.isLinkProperty(link, source, getSource())) {
+        } else if (m.isLinkProperty(link, source, getSource())) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
         } else {
             throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
                     .add(Key.LINK_PROPERTY, property)
                     .add(Key.CONTEXT_SOURCE, source).build();
         }
-        return getModel().createContext(source, getTarget())
+        return m.createContext(source, getTarget())
                 .addClassBridge(null, builder.add(SPINMAPL.context.getURI(), getURI()).build());
     }
 
@@ -291,19 +292,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (this.equals(other)) {
             throw exception(ATTACHED_CONTEXT_SELF_CALL).build();
         }
+        MapModelImpl m = getModel();
         OntCE target = other.getTarget();
         OntCE source = other.getSource();
         if (!getSource().equals(source)) {
             throw exception(ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }
         Property property = ClassPropertyMap.toNamed(link);
-        if (!MapModelImpl.isLinkProperty(link, getTarget(), target)) {
+        if (!m.isLinkProperty(link, getTarget(), target)) {
             throw exception(ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(other)
                     .add(Key.LINK_PROPERTY, property).build();
         }
         // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge
-        Model m = getModel();
         getSource().addProperty(SPINMAP.rule,
                 m.createResource()
                         .addProperty(RDF.type, SPINMAP.Mapping_0_1)

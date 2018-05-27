@@ -9,18 +9,15 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.topbraid.spin.arq.ARQFactory;
-import org.topbraid.spin.arq.SPINFunctionDrivers;
 import org.topbraid.spin.model.*;
 import org.topbraid.spin.model.update.Update;
 import org.topbraid.spin.system.SPINLabels;
 import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.vocabulary.AVC;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -169,52 +166,22 @@ public class SPINInferenceHelper {
     /**
      * Runs a given Jena Query on a given individual and returns the inferred triples as a Model.
      *
-     * There is a difference with SPIN-API Inferences implementation:
-     * in additional to passing {@code ?this} to top-level query binding (mapping construct)
-     * there is also a ONT-MAP workaround solution to place it deep in all sub-queries, which are called by specified construct.
-     * Handling {@code ?this} only by top-level mapping is definitely leak of SPIN-API functionality,
-     * which severely limits the space of usage opportunities.
-     * But it seems that Topbraid Composer also (checked version 5.5.1) has some magic solution for that leak in its deeps,
-     * maybe similar to ours:
-     * testing shows that sub-queries which handled by {@code spin:eval} may accept {@code ?this} but only  in some limited conditions,
-     * e.g. for original {@code spinmap:Mapping-1-1}, which has no been cloned with changing namespace to local mapping model.
-     *
      * @param query    {@link QueryWrapper}
      * @param instance {@link Resource}
      * @return {@link Model} new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
-     * @see AVC#currentIndividual
-     * @see AVC#MagicFunctions
      */
     public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
         Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
         //ARQFactory.LOG_QUERIES = true;
-        Resource get = AVC.currentIndividual.inModel(model);
-        Map<Statement, Statement> vars = getThisVarReplacement(get, instance);
-        try {
-            vars.forEach((a, b) -> model.add(b).remove(a));
-            if (!vars.isEmpty()) {
-                spinARQFactory.clearCaches();
-                jenaFunctionRegistry.put(get.getURI(), SPINFunctionDrivers.get().create(get));
-            }
-            Map<String, RDFNode> initialBindings = query.getTemplateBinding();
-            QuerySolutionMap bindings = new QuerySolutionMap();
-            if (initialBindings != null) {
-                initialBindings.forEach(bindings::add);
-            }
-            bindings.add(SPIN.THIS_VAR_NAME, instance);
-            QueryExecution qexec = spinARQFactory.createQueryExecution(query.getQuery(), model, bindings);
-            return qexec.execConstruct();
-        } finally {
-            vars.forEach((a, b) -> model.add(a).remove(b));
+        Map<String, RDFNode> initialBindings = query.getTemplateBinding();
+        QuerySolutionMap bindings = new QuerySolutionMap();
+        if (initialBindings != null) {
+            initialBindings.forEach(bindings::add);
         }
-    }
-
-    private static Map<Statement, Statement> getThisVarReplacement(Resource function, Resource instance) {
-        Model m = function.getModel();
-        return SpinModels.getFunctionBody(m, function).stream()
-                .filter(s -> Objects.equals(s.getObject(), SPIN._this))
-                .collect(Collectors.toMap(x -> x, x -> m.createStatement(x.getSubject(), x.getPredicate(), instance)));
+        bindings.add(SPIN.THIS_VAR_NAME, instance);
+        QueryExecution qexec = spinARQFactory.createQueryExecution(query.getQuery(), model, bindings);
+        return qexec.execConstruct();
     }
 
 }

@@ -18,9 +18,11 @@ import java.util.stream.Stream;
 
 /**
  * A class-property mapping implementation based on rules found empirically using Tobraid Composer Diagram.
- * These rules are not the standard, and definitely not fully covered OWL2 specification.
- * Moreover it does not seem to matter whether they are right: spin-api don't use it while inference context.
- * What we need - just something to draw class-property box in GUI.
+ * It seems that these rules are not the standard, and right now definitely not fully covered OWL2 specification.
+ * Moreover for SPIN-API it does not seem to matter whether they are right:
+ * it does not use them directly while inference context.
+ * But we deal only with OWL2 ontologies, so we need strict constraints to used while construct mapping.
+ * Also we need something to draw class-property box in GUI.
  * <p>
  * Created by @szuev on 19.04.2018.
  */
@@ -74,8 +76,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * @return Stream of {@link Property properties}
      */
     protected Stream<Property> directProperties(OntCE ce) {
-        Stream<Property> res = withDomain(ce)
-                .map(ClassPropertyMap::toNamed);
+        Stream<Property> res = withDomain(ce).map(ClassPropertyMap::toNamed);
         if (ce instanceof OntCE.ONProperty) {
             Property p = ClassPropertyMap.toNamed(((OntCE.ONProperty) ce).getOnProperty());
             res = Stream.concat(res, Stream.of(p));
