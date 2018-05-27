@@ -1,4 +1,4 @@
-package ru.avicomp.map;
+package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
 import org.apache.jena.rdf.model.Resource;

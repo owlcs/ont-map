@@ -1,7 +1,9 @@
-package ru.avicomp.map;
+package ru.avicomp.map.tools;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.avicomp.map.Managers;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.tests.*;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 

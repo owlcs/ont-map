@@ -13,19 +13,7 @@
         rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom functions can be considered as templates." ;
         owl:versionIRI   avc:1.0 ;
         owl:versionInfo  "version 1.0" ;
-        owl:imports      <http://spinrdf.org/spl> .
-
-spin:_this  a       sp:Variable ;
-        sp:varName  "this" .
-
-spin:_arg1  a       sp:Variable ;
-        sp:varName  "arg1" .
-
-spin:_arg2  a       sp:Variable ;
-        sp:varName  "arg2" .
-
-spin:_source  a     sp:Variable ;
-        sp:varName  "source" .
+         owl:imports      <http://spinrdf.org/spinmap> .
 
 avc:hidden  a       owl:DatatypeProperty ;
         rdfs:comment  "A property for marking unused functions from standard spin-map library supply." ;
@@ -87,7 +75,7 @@ avc:UUID  a                 spinmap:TargetFunction ;
                               sp:where            ( [ a              sp:Bind ;
                                                       sp:expression  [ a        sp:md5 ;
                                                                        sp:arg1  [ a        sp:str ;
-                                                                                  sp:arg1  spin:_source
+                                                                                  sp:arg1  [ sp:varName  "source" ]
                                                                                 ]
                                                                      ] ;
                                                       sp:variable    [ sp:varName  "value" ]

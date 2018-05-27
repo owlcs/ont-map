@@ -45,8 +45,8 @@ public class UUIDMapTest extends MapTestData1 {
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
 
         MapFunction func = manager.getFunction(AVC.UUID.getURI());
         MapFunction.Call targetFunction = func.create().build();
@@ -64,7 +64,7 @@ public class UUIDMapTest extends MapTestData1 {
                 .filter(OntStatement::isLocal)
                 .collect(Collectors.toList());
         Assert.assertEquals(1, statements.size());
-        Assert.assertEquals(37, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
+        Assert.assertEquals(38, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
         return res;
     }
 

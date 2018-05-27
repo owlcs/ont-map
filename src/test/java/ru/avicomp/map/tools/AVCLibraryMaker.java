@@ -1,4 +1,4 @@
-package ru.avicomp.map;
+package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
@@ -9,6 +9,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
+import ru.avicomp.map.Context;
 import ru.avicomp.map.spin.AdjustGroupConcatImpl;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.SpinModelConfig;
@@ -40,6 +41,7 @@ import java.util.stream.Stream;
  *
  * @see AVC
  */
+@SuppressWarnings("WeakerAccess")
 public class AVCLibraryMaker {
 
     public static void main(String... args) {
@@ -51,7 +53,8 @@ public class AVCLibraryMaker {
                 "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
                 "and all listed custom functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
-        m.addImport(createModel(getSPLGraph()));
+        // depends on spinmap to reuse variables (spinmap:_source, spin:_this, spin:_arg*) while building functions bodies
+        m.addImport(createModel(getSPINMAPGraph()));
 
         OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
 
@@ -72,11 +75,6 @@ public class AVCLibraryMaker {
                 XSD.xlong, XSD.xint, XSD.xshort, XSD.xbyte,
                 XSD.unsignedLong, XSD.unsignedInt, XSD.unsignedShort, XSD.unsignedByte).map(r -> m.getOntEntity(OntDT.class, r)).collect(Collectors.toList());
         numeric.addEquivalentClass(m.createUnionOfDataRange(numberDRs));
-
-        // redefine spin-variables used in SPARQL function bodies:
-        // although they are comes with import, the manager use this graph without any imports
-        Stream.of("this", "source", "arg1", "arg2")
-                .forEach(s -> SPIN.resource("_" + s).inModel(m).addProperty(RDF.type, SP.Variable).addProperty(SP.varName, s));
 
         // AVC:MagicFunctions
         AVC.MagicFunctions.inModel(m)
@@ -265,5 +263,9 @@ public class AVCLibraryMaker {
 
     static Graph getSPLGraph() {
         return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPL), SystemModels.graphs().values());
+    }
+
+    static Graph getSPINMAPGraph() {
+        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAP), SystemModels.graphs().values());
     }
 }

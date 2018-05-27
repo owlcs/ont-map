@@ -30,8 +30,8 @@ public class NestedFuncMapTest extends MapTestData1 {
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
         List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);

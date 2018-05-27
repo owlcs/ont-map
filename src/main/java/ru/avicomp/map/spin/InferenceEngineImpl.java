@@ -151,7 +151,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @param dst        {@link Model} to store results
      */
     protected void run(List<QueryWrapper> queries, OntIndividual individual, Model dst) {
-        List<QueryWrapper> selected = select(queries, individual.classes().collect(Collectors.toSet()));
+        List<QueryWrapper> selected = select(queries, getClasses(individual));
         process(helper, queries, selected, new HashMap<>(), dst, individual);
     }
 
@@ -181,6 +181,24 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                         process(helper, all, next, processed, target, i);
                     });
         });
+    }
+
+    /**
+     * Gets all types (classes) for an individual, taken into account class hierarchy.
+     * TODO: move to ONT-API?
+     *
+     * @param i {@link OntIndividual}
+     * @return Set of {@link OntCE class expressions}
+     */
+    public static Set<OntCE> getClasses(OntIndividual i) {
+        Set<OntCE> res = new HashSet<>();
+        i.classes().forEach(c -> collectSuperClasses(c, res));
+        return res;
+    }
+
+    private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
+        if (!res.add(ce)) return;
+        ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
     }
 
     /**
