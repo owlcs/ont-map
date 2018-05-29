@@ -1,0 +1,541 @@
+@prefix :      <ttt://ex.com/test#> .
+@prefix ex:    <ttt://ex.com/test#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xml:   <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:CCRNU  a                  owl:Class ;
+        rdfs:label           "XZ" ;
+        rdfs:subClassOf      ex:CCRUU ;
+        rdfs:subClassOf      [ a                   owl:Restriction ;
+                               owl:onProperty      ex:OAFEU ;
+                               owl:someValuesFrom  ex:CCPAN
+                             ] ;
+        owl:equivalentClass  [ a            owl:Class ;
+                               owl:unionOf  ( ex:CCRND ex:CCRNK ex:CCRNR ex:CCRNT )
+                             ] .
+
+ex:CDEUU  a              owl:Class ;
+        rdfs:label       "Element" ;
+        rdfs:subClassOf  ex:CDUUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAHUU ;
+                           owl:someValuesFrom  ex:CCPAS
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDEUU
+                         ] .
+
+ex:CCRSU  a              owl:Class ;
+        rdfs:label       "Entity" ;
+        rdfs:subClassOf  ex:CCRUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFGU ;
+                           owl:someValuesFrom  ex:CCPRU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFFU ;
+                           owl:someValuesFrom  ex:CCPAS
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFDU ;
+                           owl:someValuesFrom  ex:CCPIU
+                         ] .
+
+ex:CCPAS_000005  a       owl:Class ;
+        rdfs:label       "Latitude" ;
+        rdfs:subClassOf  ex:CCPAS ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABCU ;
+                           owl:someValuesFrom  ex:CAUUU_000008
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OBAUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPRU ;
+        rdfs:label          "SubjectRole" ;
+        rdfs:range          ex:CCRSU ;
+        rdfs:subPropertyOf  ex:OBUUU .
+
+<ttt://ex.com/test>  a  owl:Ontology ;
+        owl:versionIRI  <http://ex.com/test#ver2> .
+
+ex:CDSPR_000005  a       owl:Class ;
+        rdfs:label       "Latitude str" ;
+        rdfs:subClassOf  ex:CDEUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAHUU ;
+                           owl:someValuesFrom  ex:CCPAS_000005
+                         ] .
+
+ex:OBBUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "ObjectID" ;
+        rdfs:range          ex:CCRSU ;
+        rdfs:subPropertyOf  ex:OBUUU .
+
+ex:OABBU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPUU ;
+        rdfs:label          "HasSource" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:OABGU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasReportPeriod" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:DEUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         [ a            owl:Class ;
+                              owl:unionOf  ( ex:CCPAU ex:CCPIU )
+                            ] ;
+        rdfs:label          "HasBase" ;
+        rdfs:range          xsd:string ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:CCPRU  a              owl:Class ;
+        rdfs:label       "Role" ;
+        rdfs:subClassOf  ex:CCPUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OADUU ;
+                           owl:someValuesFrom  ex:CCRSU
+                         ] ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "Role" ;
+                           owl:onProperty  ex:DCUUU
+                         ] .
+
+ex:CCRNK  a              owl:Class ;
+        rdfs:label       "Classificator" ;
+        rdfs:subClassOf  ex:CCRNU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFEU ;
+                           owl:someValuesFrom  ex:CCPAN_000003
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFEU ;
+                           owl:someValuesFrom  ex:CCPAN_000002
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAFEU ;
+                           owl:someValuesFrom  ex:CCPAN_000001
+                         ] .
+
+ex:OAFGU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCRSU ;
+        rdfs:label          "ManageRole" ;
+        rdfs:range          ex:CCPRU ;
+        rdfs:subPropertyOf  ex:OAFUU ;
+        owl:inverseOf       ex:OBAUU .
+
+ex:DBUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         ex:CAUUU ;
+        rdfs:label          "HasAddressValueAttributeXZ" ;
+        rdfs:range          xsd:string ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:CCPAN_000003  a       owl:Class ;
+        rdfs:label       "Long Name" ;
+        rdfs:subClassOf  ex:CCPAN ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OABAU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasReportYear" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:OABFU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasPeriodicity" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:CCPAS_000011  a       owl:Class ;
+        rdfs:label       "Name" ;
+        rdfs:subClassOf  ex:CCPAS ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:CDSPR_000011  a       owl:Class ;
+        rdfs:label       "Name str" ;
+        rdfs:subClassOf  ex:CDEUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAHUU ;
+                           owl:someValuesFrom  ex:CCPAS_000011
+                         ] .
+
+ex:CDUUU  a              owl:Class ;
+        rdfs:label       "Descriptor" ;
+        rdfs:subClassOf  owl:Thing ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DIUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OAFFU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCRSU ;
+        rdfs:label          "HasAttributeEntity" ;
+        rdfs:range          ex:CCPAS ;
+        rdfs:subPropertyOf  ex:OAFUU .
+
+ex:OAAUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CAUUU ;
+        rdfs:label          "HasAddressAttributeXZ" ;
+        rdfs:range          ex:CCPAN ;
+        rdfs:subPropertyOf  ex:OAUUU .
+
+ex:CAUUU  a               owl:Class ;
+        rdfs:label        "Address" ;
+        rdfs:subClassOf   owl:Thing ;
+        rdfs:subClassOf   [ a                   owl:Restriction ;
+                            owl:onProperty      ex:OACUU ;
+                            owl:someValuesFrom  ex:CCRNU
+                          ] ;
+        rdfs:subClassOf   [ a                   owl:Restriction ;
+                            owl:onProperty      ex:OAAUU ;
+                            owl:someValuesFrom  ex:CCPAN
+                          ] ;
+        rdfs:subClassOf   [ a                   owl:Restriction ;
+                            owl:onProperty      ex:DBUUU ;
+                            owl:someValuesFrom  xsd:string
+                          ] ;
+        owl:disjointWith  ex:CCUUU .
+
+ex:OABUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPUU ;
+        rdfs:label          "HasAddress" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OAUUU .
+
+ex:CCPAS_000006  a       owl:Class ;
+        rdfs:label       "Longitude" ;
+        rdfs:subClassOf  ex:CCPAS ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABCU ;
+                           owl:someValuesFrom  ex:CAUUU_000008
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OACUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CAUUU ;
+        rdfs:label          "HasAddressXZ" ;
+        rdfs:range          ex:CCRNU ;
+        rdfs:subPropertyOf  ex:OAUUU .
+
+ex:CDSPR_000006  a       owl:Class ;
+        rdfs:label       "Longitude str" ;
+        rdfs:subClassOf  ex:CDEUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAHUU ;
+                           owl:someValuesFrom  ex:CCPAS_000006
+                         ] .
+
+ex:OADUU  a                 owl:ObjectProperty ;
+        rdfs:domain         [ a            owl:Class ;
+                              owl:unionOf  ( ex:CCPIU ex:CCPRU )
+                            ] ;
+        rdfs:label          "HasObjectValue" ;
+        rdfs:range          ex:CCRSU ;
+        rdfs:subPropertyOf  ex:OAUUU .
+
+ex:OBUUU  a                 owl:ObjectProperty ;
+        rdfs:label          "IsInverseRelationship" ;
+        rdfs:subPropertyOf  owl:topObjectProperty .
+
+ex:CCPAU  a              owl:Class ;
+        rdfs:label       "Attribute" ;
+        rdfs:subClassOf  ex:CCPUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABCU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DDUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] ;
+        rdfs:subClassOf  [ a            owl:Class ;
+                           owl:unionOf  ( [ a                   owl:Restriction ;
+                                            owl:onProperty      ex:OABEU ;
+                                            owl:someValuesFrom  ex:CAUUU
+                                          ]
+                                          [ a                   owl:Restriction ;
+                                            owl:onProperty      ex:DEUUU ;
+                                            owl:someValuesFrom  xsd:string
+                                          ]
+                                        )
+                         ] .
+
+ex:DGUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         ex:CCPUU ;
+        rdfs:label          "HasType" ;
+        rdfs:range          xsd:string ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:CCPAN_000001  a       owl:Class ;
+        rdfs:label       "Short Name" ;
+        rdfs:subClassOf  ex:CCPAN ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OAFUU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCRUU ;
+        rdfs:label          "HasPredicate" ;
+        rdfs:range          ex:CCPUU ;
+        rdfs:subPropertyOf  ex:OAUUU .
+
+ex:OABEU  a                 owl:ObjectProperty ;
+        rdfs:domain         [ a            owl:Class ;
+                              owl:unionOf  ( ex:CCPAU ex:CCPIU )
+                            ] ;
+        rdfs:label          "HasBaseReference" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:DDUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         [ a            owl:Class ;
+                              owl:unionOf  ( ex:CCPAU ex:CCPIU )
+                            ] ;
+        rdfs:label          "HasCategory" ;
+        rdfs:range          [ a          rdfs:Datatype ;
+                              owl:oneOf  ( "Bit" "Geography" "Geometry" "Datatime" "Decimal" "Boolean" "Reference" "Text" "Integer" )
+                            ] ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:OAGUU  a         owl:ObjectProperty ;
+        rdfs:label  "HasDescriptor" ;
+        rdfs:range  ex:CDUUU .
+
+ex:CCRND  a              owl:Class ;
+        rdfs:label       "Vocabulary" ;
+        rdfs:subClassOf  ex:CCRNU .
+
+ex:CAUUU_000008  a       owl:Class ;
+        rdfs:label       "Degree" ;
+        rdfs:subClassOf  ex:CAUUU_000006 ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "2209" ;
+                           owl:onProperty  ex:DBUUU
+                         ] .
+
+ex:OAHUU  a         owl:ObjectProperty ;
+        rdfs:label  "HasAttribute" ;
+        rdfs:range  ex:CCPAS .
+
+ex:DAUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         ex:CCUUU ;
+        rdfs:label          "HasUUID" ;
+        rdfs:range          xsd:string ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:OAFEU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCRNU ;
+        rdfs:label          "HasAttributeXZ" ;
+        rdfs:range          ex:CCPAN ;
+        rdfs:subPropertyOf  ex:OAFUU .
+
+ex:CCPUU  a               owl:Class ;
+        rdfs:label        "Predicate Class" ;
+        rdfs:subClassOf   ex:CCUUU ;
+        rdfs:subClassOf   [ a                   owl:Restriction ;
+                            owl:onProperty      ex:OABBU ;
+                            owl:someValuesFrom  ex:CAUUU
+                          ] ;
+        rdfs:subClassOf   [ a                   owl:Restriction ;
+                            owl:onProperty      ex:DGUUU ;
+                            owl:someValuesFrom  xsd:string
+                          ] ;
+        owl:disjointWith  ex:CCRUU .
+
+ex:CCRNT  a              owl:Class ;
+        rdfs:label       "Catalog" ;
+        rdfs:subClassOf  ex:CCRNU .
+
+ex:CCRUU  a              owl:Class ;
+        rdfs:label       "Resource" ;
+        rdfs:subClassOf  ex:CCUUU .
+
+ex:OABDU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasBriefInfo" ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:CCPAS  a              owl:Class ;
+        rdfs:label       "AttributeClass" ;
+        rdfs:subClassOf  ex:CCPAU ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "Attribute Entity" ;
+                           owl:onProperty  ex:DCUUU
+                         ] .
+
+ex:CCUUU  a              owl:Class ;
+        rdfs:label       "Concept" ;
+        rdfs:subClassOf  owl:Thing ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DAUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:OAFDU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCRSU ;
+        rdfs:label          "HasID" ;
+        rdfs:range          ex:CCPIU ;
+        rdfs:subPropertyOf  ex:OAFUU ;
+        owl:inverseOf       ex:OBBUU .
+
+ex:CAUUU_000006  a       owl:Class ;
+        rdfs:label       "Unit" ;
+        rdfs:subClassOf  ex:CAUUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OACUU ;
+                           owl:someValuesFrom  ex:CRNK_000006
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAAUU ;
+                           owl:someValuesFrom  ex:CCPAN_000002
+                         ] .
+
+ex:DIUUU  a          owl:DatatypeProperty ;
+        rdfs:domain  ex:CDUUU ;
+        rdfs:label   "HasCharacteristic" ;
+        rdfs:range   xsd:string .
+
+ex:CCPAN  a              owl:Class ;
+        rdfs:label       "OneMore Attribute" ;
+        rdfs:subClassOf  ex:CCPAU ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "Attribute XZ" ;
+                           owl:onProperty  ex:DCUUU
+                         ] .
+
+ex:OAUUU  a                 owl:ObjectProperty ;
+        rdfs:label          "HasDirectLink" ;
+        rdfs:subPropertyOf  owl:topObjectProperty .
+
+ex:DFUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasBeginning" ;
+        rdfs:range          xsd:string ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+ex:CCPAN_000002  a       owl:Class ;
+        rdfs:label       "Code" ;
+        rdfs:subClassOf  ex:CCPAN ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+ex:CCRNR  a              owl:Class ;
+        rdfs:label       "Rubricator" ;
+        rdfs:subClassOf  ex:CCRNU .
+
+ex:DCUUU  a                 owl:DatatypeProperty ;
+        rdfs:domain         ex:CCPUU ;
+        rdfs:label          "HasView" ;
+        rdfs:range          [ a          rdfs:Datatype ;
+                              owl:oneOf  ( "Attribute XZ" "Attribute Entity" "Indicator" "Role" )
+                            ] ;
+        rdfs:subPropertyOf  owl:topDataProperty .
+
+[ a            owl:AllDisjointClasses ;
+  owl:members  ( ex:CCPAU ex:CCPIU ex:CCPRU )
+] .
+
+ex:OABCU  a                 owl:ObjectProperty ;
+        rdfs:domain         [ a            owl:Class ;
+                              owl:unionOf  ( ex:CCPAU ex:CCPIU )
+                            ] ;
+        rdfs:label          "HasUnit" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:CRNK_000006  a        owl:Class ;
+        rdfs:label       "Classificator Unit" ;
+        rdfs:subClassOf  ex:CCRNK .
+
+ex:OABHU  a                 owl:ObjectProperty ;
+        rdfs:domain         ex:CCPIU ;
+        rdfs:label          "HasDeadline" ;
+        rdfs:range          ex:CAUUU ;
+        rdfs:subPropertyOf  ex:OABUU .
+
+ex:CCPIU  a              owl:Class ;
+        rdfs:label       "Indicator" ;
+        rdfs:subClassOf  ex:CCPUU ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "Indicator" ;
+                           owl:onProperty  ex:DCUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABHU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OADUU ;
+                           owl:someValuesFrom  ex:CCRSU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DDUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABGU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABDU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABCU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABAU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:DFUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] ;
+        rdfs:subClassOf  [ a            owl:Class ;
+                           owl:unionOf  ( [ a                   owl:Restriction ;
+                                            owl:onProperty      ex:OABEU ;
+                                            owl:someValuesFrom  ex:CAUUU
+                                          ]
+                                          [ a                   owl:Restriction ;
+                                            owl:onProperty      ex:DEUUU ;
+                                            owl:someValuesFrom  xsd:string
+                                          ]
+                                        )
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OABFU ;
+                           owl:someValuesFrom  ex:CAUUU
+                         ] .

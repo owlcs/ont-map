@@ -49,6 +49,7 @@ public class ClassPropertiesTest {
         expected.put("pizza:Medium", 1);
         expected.put("pizza:SpicyPizzaEquivalent", 2);
         expected.put("pizza:CheeseyPizza", 2);
+        expected.put("pizza:Capricciosa", 5);
         validateClasses(m, expected);
     }
 
@@ -99,6 +100,19 @@ public class ClassPropertiesTest {
         expected.put("vocab:persons", 13);
         expected.put("vocab:rel_paper_topic", 4);
         expected.put("vocab:topics", 4);
+        validateClasses(m, expected);
+    }
+
+    @Test
+    public void testExTest() throws Exception {
+        OntGraphModel m = TestUtils.load("/ex-test.ttl", Lang.TURTLE);
+        doPrint(m);
+        Map<String, Integer> expected = new LinkedHashMap<>();
+        expected.put("ex:CCPAS_000011", 11);
+        expected.put("ex:CCPIU", 19);
+        expected.put("ex:CCPRU", 9);
+        expected.put("ex:CRNK_000006", 5);
+        expected.put("ex:CAUUU_000008", 4);
         validateClasses(m, expected);
     }
 
