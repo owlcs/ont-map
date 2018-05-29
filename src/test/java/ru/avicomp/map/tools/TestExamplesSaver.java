@@ -41,7 +41,8 @@ public class TestExamplesSaver {
                 new SplitMapTest(),
                 new IntersectConcatMapTest(),
                 new GroupConcatTest(),
-                new MathOpsMapTest()
+                new MathOpsMapTest(),
+                new MultiContextMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {
@@ -73,8 +74,8 @@ public class TestExamplesSaver {
     }
 
     private static String makeTurtleFileName(String url) {
-        return url.replaceFirst("^http://[^/]+/+(.+)$", "$1")
-                .replaceFirst("^http://", "")
+        return url.replaceFirst("^\\w+://[^/]+/+(.+)$", "$1")
+                .replaceFirst("^\\w+://", "")
                 .replaceAll("/+", "/")
                 .replaceFirst("^/+", "")
                 .replaceFirst("/+$", "")

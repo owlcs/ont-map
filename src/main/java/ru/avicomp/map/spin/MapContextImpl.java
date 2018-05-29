@@ -79,8 +79,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
         // collects target expression statements to be deleted :
         List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
                 .collect(Collectors.toList());
-        // add Mapping-0-1 to create individual with type
-        addMappingRule(this::target, filterExpression, RDF.type);
+        if (getSource().equals(target())) { // self mapping
+            if (filterFunction != null)
+                throw new MapJenaException("Filter is not supported for self mapping: " + filterFunction);
+        } else {
+            // add Mapping-0-1 to create individual with target type
+            addMappingRule(this::target, filterExpression, RDF.type);
+        }
         // add target expression
         RDFNode mappingExpression = createExpression(mappingFunction);
         addProperty(SPINMAP.target, mappingExpression);

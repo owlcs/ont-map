@@ -2,10 +2,7 @@ package ru.avicomp.map.utils;
 
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shared.PrefixMapping;
@@ -90,6 +87,10 @@ public class TestUtils {
         return i.statements().filter(st -> !Objects.equals(st.getPredicate(), RDF.type));
     }
 
+    public static String getStringValue(OntIndividual i, OntNDP p) {
+        return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getString).orElseThrow(AssertionError::new);
+    }
+
     public static Stream<OntStatement> plainAssertions(OntGraphModel m) {
         return m.ontObjects(OntPE.class).filter(RDFNode::isURIResource)
                 .map(p -> p.as(Property.class))
@@ -110,4 +111,5 @@ public class TestUtils {
                 pm.shortForm(s.getPredicate().getURI()),
                 s.getObject());
     }
+
 }

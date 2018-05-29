@@ -539,3 +539,27 @@ ex:CCPIU  a              owl:Class ;
                            owl:onProperty      ex:OABFU ;
                            owl:someValuesFrom  ex:CAUUU
                          ] .
+
+ex:CDSPR_D00001  a       owl:Class ;
+        rdfs:label       "Situation" ;
+        rdfs:subClassOf  ex:CDDUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDSPR_000011
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDSPR_000006
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDSPR_000005
+                         ] .
+
+ex:CDDUU  a              owl:Class ;
+        rdfs:label       "Data" ;
+        rdfs:subClassOf  ex:CDUUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      ex:OAGUU ;
+                           owl:someValuesFrom  ex:CDEUU
+                         ] .
