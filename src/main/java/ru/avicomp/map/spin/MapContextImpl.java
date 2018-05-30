@@ -47,7 +47,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public OntCE getSource() throws JenaException {
-        return getRequiredProperty(SPINMAP.sourceClass).getObject().as(OntCE.class);
+        return source().as(OntCE.class);
     }
 
     @Override
@@ -60,9 +60,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     /**
+     * Returns source class expression as a regular resource.
+     *
+     * @return {@link Resource} for predicate {@code spinmap:sourceClass}
+     * @throws JenaException nothing found
+     */
+    public Resource source() throws JenaException {
+        return getRequiredProperty(SPINMAP.sourceClass).getObject().asResource();
+    }
+
+    /**
      * Returns a target class resource, which may not be {@link OntCE} in special case of {@code owl:NamedIndividual} mapping.
      *
-     * @return {@link Resource}
+     * @return {@link Resource} for predicate {@code spinmap:targetClass}
      * @throws JenaException illegal state - no resource found
      */
     public Resource target() throws JenaException {
@@ -75,17 +85,22 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (!testFunction(mappingFunction).getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(mappingFunction.getFunction()).build();
         }
+        MapModelImpl m = getModel();
         Supplier<RDFNode> filterExpression = filterExpression(filterFunction);
         // collects target expression statements to be deleted :
-        List<Statement> prev = getModel().statements(this, SPINMAP.target, null)
-                .collect(Collectors.toList());
-        if (getSource().equals(target())) { // self mapping
-            if (filterFunction != null)
-                throw new MapJenaException("Filter is not supported for self mapping: " + filterFunction);
-        } else {
+        List<Statement> prev = m.statements(this, SPINMAP.target, null).collect(Collectors.toList());
+
+        /* // todo: temporary disabled; the order of source individuals is unpredictable, see (and fix) inference engine #process method
+        if (filterFunction != null || m.listContexts()
+                .filter(c -> Objects.equals(c.target(), target()))
+                .map(MapContextImpl::primaryRule)
+                .noneMatch(Optional::isPresent)) {
             // add Mapping-0-1 to create individual with target type
             addMappingRule(this::target, filterExpression, RDF.type);
         }
+        */
+        addMappingRule(this::target, filterExpression, RDF.type);
+
         // add target expression
         RDFNode mappingExpression = createExpression(mappingFunction);
         addProperty(SPINMAP.target, mappingExpression);
@@ -94,7 +109,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
             if (s.getObject().isAnon()) {
                 Models.deleteAll(s.getObject().asResource());
             }
-            getModel().remove(s);
+            m.remove(s);
         });
         writeFunctionBody(mappingFunction);
         return this;
@@ -219,26 +234,41 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return helper.getMapping();
     }
 
+    /**
+     * Gets a primary (class to class) mapping rule as ordinal resource.
+     * For a valid (see {@link Context#isValid()}) standalone context the result should be present, otherwise it may be empty.
+     *
+     * @return Optional around mapping {@link Resource}
+     */
+    public Optional<Resource> primaryRule() {
+        return listTypedRules()
+                .filter(r -> r.hasProperty(SPINMAP.expression, target()))
+                .findFirst();
+    }
+
+    /**
+     * Lists {@code spinmap:rule} which are deriving {@code rdf:type}.
+     *
+     * @return Stream of {@link Resource}s
+     */
+    public Stream<Resource> listTypedRules() {
+        return listRules()
+                .map(Statement::getObject)
+                .map(RDFNode::asResource)
+                .filter(r -> r.hasProperty(SPINMAP.targetPredicate1, RDF.type));
+    }
+
+    /**
+     * Lists all {@code spinmap:rule} resources belonging to this context.
+     *
+     * @return Stream of {@link Statement}
+     */
     public Stream<Statement> listRules() {
         MapModelImpl m = getModel();
         return m.statements(null, SPINMAP.context, this)
                 .map(OntStatement::getSubject)
                 .filter(RDFNode::isAnon)
                 .flatMap(r -> m.statements(getSource(), SPINMAP.rule, r));
-    }
-
-    /**
-     * Gets a primary (class to class) mapping rule as ordinal resource.
-     * For a valid (see {@link Context#isValid()}) context the result should be present, otherwise it may be empty.
-     *
-     * @return Optional around {@link Resource}
-     */
-    public Optional<Resource> primaryRule() {
-        return listRules()
-                .map(Statement::getObject)
-                .map(RDFNode::asResource)
-                .filter(r -> r.hasProperty(SPINMAP.targetPredicate1, RDF.type))
-                .findFirst();
     }
 
     @Override
@@ -338,7 +368,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public Stream<Context> dependentContexts() {
-        return getModel().listRelatedContexts(this).map(Context.class::cast);
+        MapModelImpl m = getModel();
+        return Stream.concat(m.listChainedContexts(this), m.listRelatedContexts(this)).distinct().map(Context.class::cast);
     }
 
     protected MapPropertiesImpl asPropertyBridge(Resource resource) {

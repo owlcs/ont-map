@@ -94,6 +94,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                 .flatMap(t -> helper.listCommands(t, model, true, false))
                 .filter(QueryWrapper.class::isInstance)
                 .map(QueryWrapper.class::cast)
+                .sorted(MAP_COMPARATOR::compare)
                 .collect(Collectors.toList());
     }
 
@@ -111,7 +112,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
-            commands.forEach(c -> LOGGER.debug("Rule for {}: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
+            commands.forEach(c -> LOGGER.debug("Rule for <{}>: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
 
         OntGraphModel m = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
         GraphEventManager events = target.getEventManager();
@@ -175,14 +176,16 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Map<Resource, Set<Resource>> inMemory = new HashMap<>();
         selected.forEach(c -> {
             if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(c)) {
-                LOGGER.warn("The query '{}' has already been processed for individual {}", c, individual);
+                LOGGER.warn("The query '{}' has been already processed for individual {}", SpinModels.toString(c), individual);
                 return;
             }
             LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(c));
             Model res = helper.runQueryOnInstance(c, individual);
+            if (res.isEmpty()) {
+                return;
+            }
             processed.get(individual).add(c);
             target.add(res);
-            if (res.isEmpty()) return;
             res.listResourcesWithProperty(RDF.type)
                     .forEachRemaining(i -> {
                         Set<Resource> classes = inMemory.computeIfAbsent(i, x -> new HashSet<>());
@@ -218,7 +221,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Selects those queries whose source class is in the the given list.
+     * Selects those queries whose source classes are in the the given list.
      * Auxiliary method.
      *
      * @param all     List of {@link QueryWrapper}s
@@ -228,18 +231,19 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static List<QueryWrapper> select(List<QueryWrapper> all, Set<? extends Resource> classes) {
         return all.stream()
                 .filter(c -> classes.contains(c.getStatement().getSubject()))
-                .sorted(MAP_COMPARATOR::compare)
+                //.sorted(MAP_COMPARATOR::compare)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Creates a rule ({@code spin:rule}) comparator which puts declaration map rules
+     * Creates a rule ({@code spin:rule}) comparator which sorts queries by contexts and puts declaration map rules
      * (i.e. {@code spinmap:rule} with {@code spinmap:targetPredicate1 rdf:type}) first.
      *
      * @return {@link Comparator} comparator for {@link CommandWrapper}s
      */
     public static Comparator<CommandWrapper> createMapComparator() {
-        Comparator<Resource> mapRuleComparator = Comparator.comparing(SpinModels::isDeclarationMapping).reversed();
+        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r).map(String::valueOf).orElse("Unknown"))
+                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
         Comparator<CommandWrapper> res = (left, right) -> {
             Optional<Resource> r1 = SpinModels.rule(left);
             Optional<Resource> r2 = SpinModels.rule(right);

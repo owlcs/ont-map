@@ -1,7 +1,5 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.riot.Lang;
-import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,25 +12,15 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 29.05.2018.
  */
-public class MultiContextMapTest extends AbstractMapTest {
+public class MultiContextMapTest extends MapTestData6 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiContextMapTest.class);
-
-    // Test Data:
-    private static final String SHIP_1_NAME = "Bismarck";
-    private static final String SHIP_2_NAME = "Yamashiro";
-    private static final String SHIP_3_NAME = "King George V";
-    private static final double[] SHIP_1_COORDINATES = new double[]{43.296492, 12.3234};
-    private static final double[] SHIP_2_COORDINATES = new double[]{-32, 151.56};
-    private static final double[] SHIP_3_COORDINATES = new double[]{46.34542, 28.674692};
 
     @Ignore // for manual running: ignored since it is called by #testInferenceCycle
     @Test
@@ -76,7 +64,7 @@ public class MultiContextMapTest extends AbstractMapTest {
         LOGGER.debug("Validate '{}'", s);
         OntIndividual.Named i = TestUtils.findOntEntity(m, OntIndividual.Named.class, s);
         List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
-        Assert.assertEquals(m.shortForm(i.getURI()) + ": wrong assertion number", 4, assertions.size());
+        Assert.assertEquals("<" + m.shortForm(i.getURI()) + ">: wrong assertion number", 4, assertions.size());
         OntNDP nameProp = TestUtils.findOntEntity(m, OntNDP.class, "name");
         OntNDP latitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "latitude");
         OntNDP longitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "longitude");
@@ -137,32 +125,10 @@ public class MultiContextMapTest extends AbstractMapTest {
 
     @Override
     public OntGraphModel assembleSource() {
-        OntGraphModel m;
-        try {
-            m = TestUtils.load("/ex-test.ttl", Lang.TURTLE);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-        m.setID(getDataNameSpace() + "/source");
-        m.setNsPrefix("data", m.getID().getURI() + "/data#");
+        OntGraphModel m = super.assembleSource();
         addDataIndividual(m, SHIP_1_NAME, SHIP_1_COORDINATES);
         addDataIndividual(m, SHIP_2_NAME, SHIP_2_COORDINATES);
         addDataIndividual(m, SHIP_3_NAME, SHIP_3_COORDINATES);
-        return m;
-    }
-
-
-    @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("result");
-        String ns = m.getID().getURI() + "#";
-        OntClass res = m.createOntEntity(OntClass.class, ns + "Res");
-        OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
-        Stream.of("name", "latitude", "longitude", "message").forEach(s -> {
-            OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
-            p.addRange(string);
-            p.addDomain(res);
-        });
         return m;
     }
 

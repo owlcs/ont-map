@@ -225,13 +225,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Returns all contexts that depend on the specified.
+     * Lists all contexts that depend on the specified by function call.
      * A context can be used as parameter in different function-calls, usually with predicate {@code spinmapl:context}.
      * There is one exclusion: {@code spinmap:targetResource},
      * it uses {@code spinmap:context} as predicate for argument with type {@code spinmap:Context}.
      *
-     * @param context {@link MapContextImpl}
-     * @return distinct stream of contexts
+     * @param context {@link MapContextImpl} to check
+     * @return distinct stream of other contexts
      */
     public Stream<MapContextImpl> listRelatedContexts(MapContextImpl context) {
         Stream<Resource> targetResourceExpressions = statements(null, RDF.type, SPINMAP.targetResource)
@@ -245,6 +245,17 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .filter(RDFNode::isURIResource)
                 .distinct();
         return asContextStream(res);
+    }
+
+    /**
+     * Lists all contexts that depend on the specified by derived type.
+     *
+     * @param context {@link MapContextImpl} to check
+     * @return distinct stream of other contexts
+     */
+    public Stream<MapContextImpl> listChainedContexts(MapContextImpl context) {
+        Resource clazz = context.target();
+        return listContexts().filter(c -> Objects.equals(c.source(), clazz));
     }
 
     public Stream<Resource> contextsByTargetExpression(RDFNode expression) {
