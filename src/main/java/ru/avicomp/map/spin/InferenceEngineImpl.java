@@ -155,12 +155,24 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         process(helper, queries, selected, new HashMap<>(), dst, individual);
     }
 
+    /**
+     * Processes inference.
+     * A recursive method.
+     *
+     * @param helper     {@link SPINInferenceHelper}
+     * @param all        List of {@link QueryWrapper}, all queries from a model
+     * @param selected   List of {@link QueryWrapper}, queries to be run on specified individual
+     * @param processed  Map of already processed individual-queries to prevent recursion
+     * @param target     Model to write inference result
+     * @param individual {@link Resource} individual to process
+     */
     private static void process(SPINInferenceHelper helper,
                                 List<QueryWrapper> all,
                                 List<QueryWrapper> selected,
                                 Map<Resource, Set<QueryWrapper>> processed,
                                 Model target,
                                 Resource individual) {
+        Map<Resource, Set<Resource>> inMemory = new HashMap<>();
         selected.forEach(c -> {
             if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(c)) {
                 LOGGER.warn("The query '{}' has already been processed for individual {}", c, individual);
@@ -173,13 +185,17 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             if (res.isEmpty()) return;
             res.listResourcesWithProperty(RDF.type)
                     .forEachRemaining(i -> {
-                        Set<Resource> classes = i.listProperties(RDF.type)
+                        Set<Resource> classes = inMemory.computeIfAbsent(i, x -> new HashSet<>());
+                        i.listProperties(RDF.type)
                                 .mapWith(Statement::getObject)
                                 .filterKeep(RDFNode::isResource)
-                                .mapWith(RDFNode::asResource).toSet();
-                        List<QueryWrapper> next = select(all, classes);
-                        process(helper, all, next, processed, target, i);
+                                .mapWith(RDFNode::asResource)
+                                .forEachRemaining(classes::add);
                     });
+        });
+        inMemory.forEach((i, classes) -> {
+            List<QueryWrapper> next = select(all, classes);
+            process(helper, all, next, processed, target, i);
         });
     }
 

@@ -3,6 +3,7 @@ package ru.avicomp.map.tests;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,9 @@ public class MultiContextMapTest extends AbstractMapTest {
     private static final double[] SHIP_2_COORDINATES = new double[]{-32, 151.56};
     private static final double[] SHIP_3_COORDINATES = new double[]{46.34542, 28.674692};
 
+    @Ignore // for manual running: ignored since it is called by #testInferenceCycle
     @Test
-    public void testInference() {
+    public void testInferenceOnce() {
         LOGGER.info("Assembly models.");
         OntGraphModel src = assembleSource();
         OntGraphModel dst = assembleTarget();
@@ -48,22 +50,33 @@ public class MultiContextMapTest extends AbstractMapTest {
         LOGGER.info("Run inference.");
         manager.getInferenceEngine().run(map, src, dst);
         TestUtils.debug(dst);
+        validate(dst);
+    }
 
+    private void validate(OntGraphModel dst) {
         LOGGER.info("Validate.");
         Assert.assertEquals(3, dst.listNamedIndividuals().count());
-
-        validate(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
-        validate(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
-        validate(dst, SHIP_3_NAME, SHIP_3_COORDINATES);
+        validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
+        validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
+        validateIndividual(dst, SHIP_3_NAME, SHIP_3_COORDINATES);
         commonValidate(dst);
     }
 
-    private static void validate(OntGraphModel m, String name, double[] coordinates) {
+    @Test
+    public void testInferenceCycle() {
+        int n = 10;
+        for (int i = 0; i < n; i++) {
+            LOGGER.info("ITER#{}", i);
+            testInferenceOnce();
+        }
+    }
+
+    private static void validateIndividual(OntGraphModel m, String name, double[] coordinates) {
         String s = "res-" + name.toLowerCase().replace(" ", "-");
         LOGGER.debug("Validate '{}'", s);
         OntIndividual.Named i = TestUtils.findOntEntity(m, OntIndividual.Named.class, s);
         List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
-        Assert.assertEquals(4, assertions.size());
+        Assert.assertEquals(m.shortForm(i.getURI()) + ": wrong assertion number", 4, assertions.size());
         OntNDP nameProp = TestUtils.findOntEntity(m, OntNDP.class, "name");
         OntNDP latitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "latitude");
         OntNDP longitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "longitude");
