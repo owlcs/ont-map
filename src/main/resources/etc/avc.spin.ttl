@@ -181,7 +181,7 @@ avc:withDefault  a          spin:Function ;
         spinmap:shortLabel  "withDefault" .
 
 avc:asIRI  a                spin:Function ;
-        rdfs:comment        "An ontology function for passing property IRI as it is.\nAny other map-function will actually accept a property assertion value found by mapping template call\n,while this function forces not to get a value but use a predicate IRI instead." ;
+        rdfs:comment        "An ontology function for passing property IRI as it is.\nAny other map-functions will actually accept a property assertion value found by mapping template call,\nwhile this function forces not to get a value but use a predicate IRI instead." ;
         rdfs:label          "As IRI" ;
         rdfs:seeAlso        avc:withDefault , spinmap:equals ;
         rdfs:subClassOf     spl:OntologyFunctions ;
@@ -213,3 +213,65 @@ avc:currentIndividual
                             ] ;
         spin:returnType     rdfs:Resource ;
         spinmap:shortLabel  "currentIndividual" .
+
+avc:objectWithFilter  a     spin:Function ;
+        rdfs:comment        "Gets the object of a given subject (?arg1) / predicate (?arg2) combination which match predicate (?arg3) / object (?arg4), returns a RDFNode." ;
+        rdfs:label          "object with filter" ;
+        rdfs:seeAlso        spl:object ;
+        rdfs:subClassOf     spl:OntologyFunctions ;
+        spin:body           [ a                   sp:Select ;
+                              sp:resultVariables  ( [ sp:varName  "object" ]
+                                                  ) ;
+                              sp:where            ( [ a            sp:Optional ;
+                                                      sp:elements  ( [ a              sp:Bind ;
+                                                                       sp:expression  spin:_arg4 ;
+                                                                       sp:variable    [ sp:varName  "value" ]
+                                                                     ]
+                                                                   )
+                                                    ]
+                                                    [ a            sp:Optional ;
+                                                      sp:elements  ( [ a              sp:Bind ;
+                                                                       sp:expression  spin:_arg3 ;
+                                                                       sp:variable    [ sp:varName  "property" ]
+                                                                     ]
+                                                                   )
+                                                    ]
+                                                    [ sp:object     [ sp:varName  "object" ] ;
+                                                      sp:predicate  spin:_arg2 ;
+                                                      sp:subject    spin:_arg1
+                                                    ]
+                                                    [ a              sp:Filter ;
+                                                      sp:expression  [ a            sp:exists ;
+                                                                       sp:elements  ( [ sp:object     [ sp:varName  "value" ] ;
+                                                                                        sp:predicate  [ sp:varName  "property" ] ;
+                                                                                        sp:subject    [ sp:varName  "object" ]
+                                                                                      ]
+                                                                                    )
+                                                                     ]
+                                                    ]
+                                                  )
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Object (RDFNode) to filter results of select. Optional" ;
+                              spl:optional   true ;
+                              spl:predicate  sp:arg4 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Second predicate to filter results of select. Optional" ;
+                              spl:optional   true ;
+                              spl:predicate  sp:arg3 ;
+                              spl:valueType  rdf:Property
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The subject to get the object from." ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  rdfs:Resource
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The predicate to get the object of." ;
+                              spl:predicate  sp:arg2 ;
+                              spl:valueType  rdf:Property
+                            ] ;
+        spin:returnType     avc:undefined ;
+        spinmap:shortLabel  "object" .

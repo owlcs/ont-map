@@ -150,7 +150,7 @@ public class AVCLibraryMaker {
                 .addProperty(SPINMAP.shortLabel, "asIRI")
                 .addProperty(RDFS.label, "As IRI")
                 .addProperty(RDFS.comment, "An ontology function for passing property IRI as it is.\n" +
-                        "Any other map-function will actually accept a property assertion value found by mapping template call\n," +
+                        "Any other map-functions will actually accept a property assertion value found by mapping template call,\n" +
                         "while this function forces not to get a value but use a predicate IRI instead.")
                 .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
                 .addProperty(SPIN.constraint, m.createResource()
@@ -249,6 +249,53 @@ public class AVCLibraryMaker {
                         .addProperty(SPL.predicate, SP.arg1)
                         .addProperty(SPL.valueType, XSD.xstring)
                         .addProperty(RDFS.comment, "An IRI (xsd:string)"));
+
+        // AVC:objectWithFilter
+        AVC.objectWithFilter.inModel(m)
+                .addProperty(RDF.type, SPIN.Function)
+                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
+                .addProperty(SPIN.returnType, AVC.undefined)
+                .addProperty(RDFS.seeAlso, SPL.object)
+                .addProperty(SPINMAP.shortLabel, "object")
+                .addProperty(RDFS.label, "object with filter")
+                .addProperty(RDFS.comment, "Gets the object of a given subject (?arg1) / predicate (?arg2) combination " +
+                        "which match predicate (?arg3) / object (?arg4), returns a RDFNode.")
+                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?object\n" +
+                        "WHERE {\n" +
+                        "    OPTIONAL {\n" +
+                        "        BIND (?arg4 AS ?value) .\n" +
+                        "    } .\n" +
+                        "    OPTIONAL {\n" +
+                        "        BIND (?arg3 AS ?property) .\n" +
+                        "    } .\n" +
+                        "    ?arg1 ?arg2 ?object .\n" +
+                        "    FILTER EXISTS {\n" +
+                        "        ?object ?property ?value .\n" +
+                        "    } .\n" +
+                        "}", m))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg1)
+                        .addProperty(SPL.valueType, RDFS.Resource)
+                        .addProperty(RDFS.comment, "The subject to get the object from."))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg2)
+                        .addProperty(SPL.valueType, RDF.Property)
+                        .addProperty(RDFS.comment, "The predicate to get the object of."))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg3)
+                        .addProperty(SPL.valueType, RDF.Property)
+                        .addProperty(SPL.optional, Models.TRUE)
+                        .addProperty(RDFS.comment, "Second predicate to filter results of select. Optional"))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg4)
+                        .addProperty(SPL.valueType, AVC.undefined)
+                        .addProperty(SPL.optional, Models.TRUE)
+                        .addProperty(RDFS.comment, "Object (RDFNode) to filter results of select. Optional"));
+
 
         m.write(System.out, "ttl");
 

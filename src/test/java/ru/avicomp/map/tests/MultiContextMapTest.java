@@ -96,13 +96,13 @@ public class MultiContextMapTest extends MapTestData6 {
         OntNDP latitudeProp = TestUtils.findOntEntity(dst, OntNDP.class, "latitude");
         OntNDP longitudeProp = TestUtils.findOntEntity(dst, OntNDP.class, "longitude");
         OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
-        MapModel res = createMappingModel(manager, "TODO");
 
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
         MapFunction self = manager.getFunction(SPINMAPL.self);
         MapFunction equals = manager.getFunction(SPINMAP.equals);
         MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator);
 
+        MapModel res = createMappingModel(manager, "Used functions: spinmapl:composeURI, spinmapl:self, spinmap:equals, spinmapl:concatWithSeparator");
         Context mainContext = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
         // ship name
         Context nameContext = mainContext.createRelatedContext(CDSPR_000011).createRelatedContext(CCPAS_000011, OAHUU);

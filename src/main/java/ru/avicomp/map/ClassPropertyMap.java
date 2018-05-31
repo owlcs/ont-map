@@ -38,7 +38,7 @@ public interface ClassPropertyMap {
      * Casts a property expression to {@link Property rdfs:Property}.
      * If specified argument is an {@link OntOPE.Inverse inverse-of object property expression}, i.e. an anonymous resource,
      * than returns its named companion as a Property.
-     * TODO: move to ONT-API (to OntPE ?)
+     * TODO: move to ONT-API (already moved: replace) ?
      *
      * @param p {@link OntPE}
      * @return {@link Property}

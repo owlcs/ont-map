@@ -1,19 +1,17 @@
 package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDFS;
 import ru.avicomp.map.ClassPropertyMap;
-import ru.avicomp.ontapi.jena.model.OntCE;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntPE;
-import ru.avicomp.ontapi.jena.model.OntStatement;
+import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -46,7 +44,15 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         if (Objects.equals(ce, OWL.Thing)) {
             return OWL_THING_PROPERTIES.stream().peek(p -> p.inModel(model));
         }
-        Stream<Property> res = directProperties(ce);
+        Set<Property> res = directProperties(ce).collect(Collectors.toSet());
+        // if one of the direct properties contains in propertyChain List in the first place,
+        // then that propertyChain can be added to the result list as effective property
+        listPropertyChains(model)
+                .filter(p -> res.stream()
+                        .filter(x -> x.canAs(OntOPE.class))
+                        .map(x -> x.as(OntOPE.class))
+                        .anyMatch(x -> containFirst(p, x)))
+                .map(ClassPropertyMap::toNamed).forEach(res::add);
 
         Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() : Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
 
@@ -65,7 +71,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
                 .distinct()
                 .filter(c -> !Objects.equals(c, ce));
 
-        return Stream.concat(classes.flatMap(c -> collect(c, visited)), res).distinct();
+        return Stream.concat(classes.flatMap(c -> collect(c, visited)), res.stream()).distinct();
     }
 
     /**
@@ -75,7 +81,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * @param ce {@link OntCE}
      * @return Stream of {@link Property properties}
      */
-    protected Stream<Property> directProperties(OntCE ce) {
+    protected static Stream<Property> directProperties(OntCE ce) {
         Stream<Property> res = withDomain(ce).map(ClassPropertyMap::toNamed);
         if (ce instanceof OntCE.ONProperty) {
             Property p = ClassPropertyMap.toNamed(((OntCE.ONProperty) ce).getOnProperty());
@@ -90,17 +96,43 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
 
     /**
      * This is analogue of {@code ce.properties()} but with property declaration checking.
-     * TODO: move to ONT-API ?
+     * TODO: move to ONT-API (#properties already fixed!)?
      *
      * @param ce {@link OntCE}
      * @return Stream of {@link OntPE}s
      * @see OntCE#properties()
      */
-    protected Stream<OntPE> withDomain(OntCE ce) {
+    protected static Stream<OntPE> withDomain(OntCE ce) {
         return ce.getModel().statements(null, RDFS.domain, ce)
                 .map(OntStatement::getSubject)
                 .filter(s -> s.canAs(OntPE.class))
                 .map(s -> s.as(OntPE.class));
+    }
+
+    /**
+     * Lists all {@code owl:propertyChainAxiom} object properties.
+     * TODO: move to ONT-API ?
+     *
+     * @param m {@link OntGraphModel}
+     * @return Stream of {@link OntOPE}s
+     */
+    public static Stream<OntOPE> listPropertyChains(OntGraphModel m) {
+        return m.statements(null, OWL.propertyChainAxiom, null)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.canAs(OntOPE.class))
+                .map(s -> s.as(OntOPE.class));
+    }
+
+    /**
+     * Answers iff left argument has a {@code owl:propertyChainAxiom} list which contains right argument in the first position.
+     * TODO: move to ONT-API ?
+     *
+     * @param left  {@link OntOPE}
+     * @param right {@link OntOPE}
+     * @return boolean
+     */
+    public static boolean containFirst(OntOPE left, OntOPE right) {
+        return left.superPropertyOf().findFirst().map(right::equals).orElse(false);
     }
 
 }

@@ -42,7 +42,8 @@ public class TestExamplesSaver {
                 new IntersectConcatMapTest(),
                 new GroupConcatTest(),
                 new MathOpsMapTest(),
-                new MultiContextMapTest()
+                new MultiContextMapTest(),
+                new PropertyChainMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {

@@ -35,6 +35,9 @@ public class AVC {
     // additional single-arg target function, for debugging and for convenience' sake
     public static final Resource IRI = resource("IRI");
 
+    // analogue of spl:object with filter
+    public static final Resource objectWithFilter = resource("objectWithFilter");
+
     // additional map property function that is used to mapping to pass a default value
     // in case there is no data assertion on individual
     public static final Resource withDefault = resource("withDefault");

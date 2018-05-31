@@ -83,7 +83,7 @@ public class TestUtils {
         return res.reversed().thenComparing(String::compareTo);
     }
 
-    public static Stream<OntStatement> plainAssertions(OntIndividual i) { // todo: move to ONT-API ?
+    public static Stream<OntStatement> plainAssertions(OntIndividual i) { // todo: move to ONT-API (already done) ?
         return i.statements().filter(st -> !Objects.equals(st.getPredicate(), RDF.type));
     }
 

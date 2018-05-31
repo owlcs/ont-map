@@ -68,7 +68,8 @@ public class MappingBuilder {
      */
     public static Resource createMappingTemplate(MapModelImpl model,
                                                  boolean isPropertyMapping,
-                                                 List<Property> filterPredicates, List<Property> sourcePredicates) throws MapJenaException {
+                                                 List<Property> filterPredicates,
+                                                 List<Property> sourcePredicates) throws MapJenaException {
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
         Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources)).inModel(model);

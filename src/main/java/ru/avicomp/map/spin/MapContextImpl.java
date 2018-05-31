@@ -219,9 +219,10 @@ public class MapContextImpl extends ResourceImpl implements Context {
         boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
 
         Resource template;
-        if (filterExpr == null && !hasClassMapFilter && !hasDefaults && mappingPredicates.size() < 3) {
+        int mappingSources = (int) mappingPredicates.stream().distinct().count();
+        if (filterExpr == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
-            template = SPINMAP.Mapping(mappingPredicates.size(), 1).inModel(m);
+            template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
         } else {
             // use custom (avc) mapping
             template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
@@ -577,7 +578,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 throw new MapJenaException("TODO-Context");
             }
             if (RDF.Property.equals(arg)) {
-                if (node.isURIResource() && node.canAs(OntPE.class)) return;
+                //if (node.isURIResource() && node.canAs(OntPE.class)) return;
+                // can be passed built-in property, e.g. rdf:type
+                if (node.isURIResource()) return;
                 throw new MapJenaException("TODO-Property");
             }
             if (arg.canAs(OntDT.class) && (node.canAs(OntNDP.class) || node.canAs(OntNAP.class))) {
