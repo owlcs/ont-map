@@ -90,7 +90,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
         // collects target expression statements to be deleted :
         List<Statement> prev = m.statements(this, SPINMAP.target, null).collect(Collectors.toList());
 
-        /* // todo: temporary disabled; the order of source individuals is unpredictable, see (and fix) inference engine #process method
         if (filterFunction != null || m.listContexts()
                 .filter(c -> Objects.equals(c.target(), target()))
                 .map(MapContextImpl::primaryRule)
@@ -98,8 +97,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
             // add Mapping-0-1 to create individual with target type
             addMappingRule(this::target, filterExpression, RDF.type);
         }
-        */
-        addMappingRule(this::target, filterExpression, RDF.type);
 
         // add target expression
         RDFNode mappingExpression = createExpression(mappingFunction);

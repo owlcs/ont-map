@@ -1,6 +1,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.enhanced.BuiltinPersonalities;
+import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphEventManager;
 import org.apache.jena.graph.Node;
@@ -51,6 +52,15 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected final MapManagerImpl manager;
     protected final SPINInferenceHelper helper;
     protected static final Comparator<CommandWrapper> MAP_COMPARATOR = createMapComparator();
+    // Assume there is Hotspot Java 6 VM (x32)
+    // Then java6 (actually java8 much less, java9 even less) approximate String memory size would be: 8 * (int) ((((no chars) * 2) + 45) / 8)
+    // org.apache.jena.graph.Node_Blank contains BlankNodeId which in turn contains a String (id) ~ size: 8 (header) + 8 + (string size)
+    // org.apache.jena.graph.Node_URI contains label as String ~ size: 8 + (string size)
+    // For uri or blank node with length 50 (owl:ObjectProperty = 46, jena blank node id = 36) chars
+    // the average size of node would be ~ 160 bytes.
+    // Let it be ten times more ~ 1024 byte, i.e. 1MB ~= 1000 nodes (Wow! It is very very understated. But whatever)
+    // Then 50MB threshold:
+    protected static final int INTERMEDIATE_STORE_THRESHOLD = 50_000;
 
     public InferenceEngineImpl(MapManagerImpl manager) {
         this.manager = manager;
@@ -83,21 +93,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         return new UnionModel(union, SpinModelConfig.LIB_PERSONALITY);
     }
 
-    /**
-     * Lists all valid spin map rules ({@code spinmap:rule}).
-     *
-     * @param model {@link UnionModel} a query model
-     * @return List of {@link QueryWrapper}s
-     */
-    protected List<QueryWrapper> getSpinMapRules(UnionModel model) {
-        return Iter.asStream(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY))
-                .flatMap(t -> helper.listCommands(t, model, true, false))
-                .filter(QueryWrapper.class::isInstance)
-                .map(QueryWrapper.class::cast)
-                .sorted(MAP_COMPARATOR::compare)
-                .collect(Collectors.toList());
-    }
-
     @Override
     public void run(MapModel mapping, Graph source, Graph target) {
         UnionModel query = assembleQueryModel(mapping, source, target);
@@ -114,24 +109,101 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         if (LOGGER.isDebugEnabled())
             commands.forEach(c -> LOGGER.debug("Rule for <{}>: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
 
-        OntGraphModel m = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
+        OntGraphModel src = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())
                 events.register(logs);
-            listTypedIndividuals(m).forEach(i -> run(commands, i, dst));
+            run(commands, src, dst);
         } finally {
             events.unregister(logs);
         }
     }
 
     /**
+     * Runs a query collection on one model and stores the result to another.
+     *
+     * @param queries List of {@link QueryWrapper}s
+     * @param src     {@link OntGraphModel} containing source individuals
+     * @param dst     {@link Model} to write
+     */
+    protected void run(List<QueryWrapper> queries, OntGraphModel src, Model dst) {
+        Set<Node> inMemory = new HashSet<>();
+        // first process all direct individuals from the source graph:
+        listTypedIndividuals(src).forEach(i -> {
+            List<QueryWrapper> selected = select(queries, getClasses(i));
+            Map<Resource, Set<QueryWrapper>> visited;
+            process(selected, visited = new HashMap<>(), inMemory, dst, i);
+            // in case no enough memory to keep temporary objects, flush them immediately:
+            if (inMemory.size() > INTERMEDIATE_STORE_THRESHOLD) {
+                process(queries, visited, inMemory, dst);
+            }
+        });
+        // next iteration: flush temporary stored individuals, which appeared while the first process
+        process(queries, new HashMap<>(), inMemory, dst);
+    }
+
+    /**
+     * Runs a query collection for a collection of individuals (in form of regular resources),
+     * stores the result to the specified model.
+     *
+     * @param queries     List of {@link QueryWrapper}s
+     * @param processed   Map of already processed individual-queries to prevent recursion
+     * @param individuals List of {@link Resource}s
+     * @param model       {@link Model} to write
+     */
+    protected void process(List<QueryWrapper> queries,
+                           Map<Resource, Set<QueryWrapper>> processed,
+                           Set<Node> individuals,
+                           Model model) {
+        Iterator<Node> iterator = individuals.iterator();
+        while (iterator.hasNext()) {
+            Resource i = model.asRDFNode(iterator.next()).asResource();
+            List<QueryWrapper> selected = select(queries, getClasses(i));
+            process(selected, processed, individuals, model, i);
+            iterator.remove();
+        }
+    }
+
+    /**
+     * Processes inference on individual.
+     *
+     * @param queries    List of {@link QueryWrapper}, queries to be run on specified individual
+     * @param processed  Map of already processed individual-queries to prevent recursion
+     * @param store      Set of {@link Node}s, the collection of result individuals to process in next step
+     * @param target     Model to write inference result
+     * @param individual {@link Resource} individual to process
+     */
+    protected void process(List<QueryWrapper> queries,
+                           Map<Resource, Set<QueryWrapper>> processed,
+                           Set<Node> store,
+                           Model target,
+                           Resource individual) {
+        queries.forEach(c -> {
+            if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(c)) {
+                LOGGER.warn("The query '{}' has been already processed for individual {}", SpinModels.toString(c), individual);
+                return;
+            }
+            LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(c));
+            Model res = helper.runQueryOnInstance(c, individual);
+            processed.get(individual).add(c);
+            if (res.isEmpty()) {
+                return;
+            }
+            target.add(res);
+            res.listSubjectsWithProperty(RDF.type).mapWith(FrontsNode::asNode).forEachRemaining(store::add);
+        });
+    }
+
+    /**
      * Lists all typed individuals from a model.
      * The expression {@code model.ontObject(OntIndividual.class)} will return all individuals from a model,
      * while we need only class-assertion individuals.
-     * TODO: move to ONT-API?
+     * Also please note: the order is unpredictable since it is determined by the graph,
+     * which may be huge and may not be in memory.
+     * TODO: move to ONT-API (already moved!)?
      *
      * @param m {@link OntGraphModel} ontology model
      * @return Stream of {@link OntIndividual}s.
@@ -145,61 +217,17 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Runs a query collection on specified individual and stores result to the specified model
+     * Gets all object resources from {@code rdf:type} statement for a specified subject in model.
      *
-     * @param queries    List of {@link QueryWrapper}s
-     * @param individual source individual
-     * @param dst        {@link Model} to store results
+     * @param i {@link Resource}, individual
+     * @return Set of {@link Resource}, classes
      */
-    protected void run(List<QueryWrapper> queries, OntIndividual individual, Model dst) {
-        List<QueryWrapper> selected = select(queries, getClasses(individual));
-        process(helper, queries, selected, new HashMap<>(), dst, individual);
-    }
-
-    /**
-     * Processes inference.
-     * A recursive method.
-     *
-     * @param helper     {@link SPINInferenceHelper}
-     * @param all        List of {@link QueryWrapper}, all queries from a model
-     * @param selected   List of {@link QueryWrapper}, queries to be run on specified individual
-     * @param processed  Map of already processed individual-queries to prevent recursion
-     * @param target     Model to write inference result
-     * @param individual {@link Resource} individual to process
-     */
-    private static void process(SPINInferenceHelper helper,
-                                List<QueryWrapper> all,
-                                List<QueryWrapper> selected,
-                                Map<Resource, Set<QueryWrapper>> processed,
-                                Model target,
-                                Resource individual) {
-        Map<Resource, Set<Resource>> inMemory = new HashMap<>();
-        selected.forEach(c -> {
-            if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(c)) {
-                LOGGER.warn("The query '{}' has been already processed for individual {}", SpinModels.toString(c), individual);
-                return;
-            }
-            LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(c));
-            Model res = helper.runQueryOnInstance(c, individual);
-            if (res.isEmpty()) {
-                return;
-            }
-            processed.get(individual).add(c);
-            target.add(res);
-            res.listResourcesWithProperty(RDF.type)
-                    .forEachRemaining(i -> {
-                        Set<Resource> classes = inMemory.computeIfAbsent(i, x -> new HashSet<>());
-                        i.listProperties(RDF.type)
-                                .mapWith(Statement::getObject)
-                                .filterKeep(RDFNode::isResource)
-                                .mapWith(RDFNode::asResource)
-                                .forEachRemaining(classes::add);
-                    });
-        });
-        inMemory.forEach((i, classes) -> {
-            List<QueryWrapper> next = select(all, classes);
-            process(helper, all, next, processed, target, i);
-        });
+    private static Set<Resource> getClasses(Resource i) {
+        return i.listProperties(RDF.type)
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isResource)
+                .mapWith(RDFNode::asResource)
+                .toSet();
     }
 
     /**
@@ -218,6 +246,21 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
         if (!res.add(ce)) return;
         ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
+    }
+
+    /**
+     * Lists all valid spin map rules ({@code spinmap:rule}).
+     *
+     * @param model {@link UnionModel} a query model
+     * @return List of {@link QueryWrapper}s
+     */
+    protected List<QueryWrapper> getSpinMapRules(UnionModel model) {
+        return Iter.asStream(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY))
+                .flatMap(t -> helper.listCommands(t, model, true, false))
+                .filter(QueryWrapper.class::isInstance)
+                .map(QueryWrapper.class::cast)
+                .sorted(MAP_COMPARATOR::compare)
+                .collect(Collectors.toList());
     }
 
     /**
