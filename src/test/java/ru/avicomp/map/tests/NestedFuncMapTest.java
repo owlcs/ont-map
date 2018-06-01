@@ -88,12 +88,13 @@ public class NestedFuncMapTest extends MapTestData1 {
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
         Assert.assertEquals(3, srcIndividuals.size());
-        String v11 = srcIndividuals.get(0).objects(props.get(0), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
-        String v12 = srcIndividuals.get(0).objects(props.get(1), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
-        String v13 = srcIndividuals.get(0).objects(props.get(2), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
-        String v21 = srcIndividuals.get(1).objects(props.get(0), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
-        String v22 = srcIndividuals.get(1).objects(props.get(1), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
-        String v23 = srcIndividuals.get(1).objects(props.get(2), Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
+
+        String v11 = TestUtils.getStringValue(srcIndividuals.get(0), props.get(0));
+        String v12 = TestUtils.getStringValue(srcIndividuals.get(0), props.get(1));
+        String v13 = TestUtils.getStringValue(srcIndividuals.get(0), props.get(2));
+        String v21 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(0));
+        String v22 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(1));
+        String v23 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(2));
 
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(dst);

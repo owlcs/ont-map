@@ -1,7 +1,9 @@
 package ru.avicomp.map.tests;
 
+import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import ru.avicomp.map.Managers;
+import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
@@ -10,6 +12,7 @@ import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntObject;
 import ru.avicomp.ontapi.jena.model.OntStatement;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,5 +67,9 @@ public abstract class AbstractMapTest {
                 .filter(o -> !o.types().findFirst().isPresent())
                 .collect(Collectors.toList());
         Assert.assertEquals("Model has unattached assertions: " + undeclaredIndividuals, 0, undeclaredIndividuals.size());
+    }
+
+    static String toMessage(PrefixMapping pm, MapFunction... functions) {
+        return Arrays.stream(functions).map(MapFunction::name).map(pm::shortForm).collect(Collectors.joining(", "));
     }
 }

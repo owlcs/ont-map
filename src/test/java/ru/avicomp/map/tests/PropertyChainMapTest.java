@@ -81,10 +81,10 @@ public class PropertyChainMapTest extends MapTestData6 {
         MapFunction object = manager.getFunction(SPL.object);
         MapFunction objectWithFilter = manager.getFunction(AVC.objectWithFilter);
 
-        MapFunction.Call DEUUU_IRI = asIRI.create().addProperty(SP.arg1, DEUUU).build();
         MapFunction.Call OASUU_IRI = asIRI.create().addProperty(SP.arg1, OASUU).build();
 
-        MapModel res = createMappingModel(manager, "TODO");
+        MapModel res = createMappingModel(manager, "Used functions: " +
+                toMessage(manager.prefixes(), composeURI, concatWithSeparator, currentIndividual, asIRI, object, objectWithFilter));
 
         Context context = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
         // name

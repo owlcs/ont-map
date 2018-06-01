@@ -90,10 +90,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
         // collects target expression statements to be deleted :
         List<Statement> prev = m.statements(this, SPINMAP.target, null).collect(Collectors.toList());
 
+        // don't add new non-filtering mapping in case there is already other non-filtering mapping deriving the class
         if (filterFunction != null || m.listContexts()
                 .filter(c -> Objects.equals(c.target(), target()))
                 .map(MapContextImpl::primaryRule)
-                .noneMatch(Optional::isPresent)) {
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .allMatch(r -> r.hasProperty(AVC.filter))) {
             // add Mapping-0-1 to create individual with target type
             addMappingRule(this::target, filterExpression, RDF.type);
         }
