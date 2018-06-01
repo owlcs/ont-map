@@ -2,6 +2,7 @@ package ru.avicomp.map;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntPE;
 
 import java.util.Map;
@@ -189,6 +190,10 @@ public interface MapFunction extends Description {
          * @throws MapJenaException if building is not possible
          */
         Call build() throws MapJenaException;
+
+        default Builder addClass(Property predicate, OntCE ce) {
+            return add(predicate.getURI(), ce.asNode().toString());
+        }
 
         default <P extends OntPE & Property> Builder addProperty(Property predicate, P property) {
             return add(predicate.getURI(), property.getURI());

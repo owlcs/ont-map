@@ -1,8 +1,10 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.graph.Graph;
+import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
@@ -126,7 +128,7 @@ public class MappingBuilder {
         Model m = SpinModelConfig.createSpinModel(model.getGraph());
         res.addProperty(RDF.type, SPIN.ConstructTemplate)
                 .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery(query.build(), m));
+                .addProperty(SPIN.body, query.build(m));
         // spin:labelTemplate
         res.addProperty(SPIN.labelTemplate, query.label());
         return res;
@@ -206,6 +208,15 @@ public class MappingBuilder {
     public MappingBuilder requireClassAssertion(boolean b) {
         this.requireClassAssertion = b;
         return this;
+    }
+
+    public RDFNode build(Model m) throws MapJenaException {
+        String query = build();
+        try {
+            return ARQ2SPIN.parseQuery(query, m);
+        } catch (QueryException q) {
+            throw new MapJenaException("Unable to parse '" + query + "'", q);
+        }
     }
 
     /**

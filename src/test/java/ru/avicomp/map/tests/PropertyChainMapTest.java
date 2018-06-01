@@ -93,7 +93,7 @@ public class PropertyChainMapTest extends MapTestData6 {
                         .addFunction(SP.arg1, currentIndividual.create().build())
                         .addFunction(SP.arg2, OASUU_IRI)
                         .add(SP.arg3.getURI(), RDF.type.getURI())
-                        .add(SP.arg4.getURI(), CCPAS_000011.getURI())
+                        .addClass(SP.arg4, CCPAS_000011)
                         .build())
                 .addProperty(SP.arg2, DEUUU)
                 .build(), nameProp);
@@ -104,7 +104,7 @@ public class PropertyChainMapTest extends MapTestData6 {
                                 .addFunction(SP.arg1, currentIndividual.create().build())
                                 .addFunction(SP.arg2, OASUU_IRI)
                                 .add(SP.arg3.getURI(), RDF.type.getURI())
-                                .add(SP.arg4.getURI(), CCPAS_000005.getURI())
+                                .addClass(SP.arg4, CCPAS_000005)
                                 .build())
                         .addProperty(SP.arg2, DEUUU))
                 .addFunction(SP.arg2, object.create()
@@ -112,7 +112,7 @@ public class PropertyChainMapTest extends MapTestData6 {
                                 .addFunction(SP.arg1, currentIndividual.create().build())
                                 .addFunction(SP.arg2, OASUU_IRI)
                                 .add(SP.arg3.getURI(), RDF.type.getURI())
-                                .add(SP.arg4.getURI(), CCPAS_000006.getURI())
+                                .addClass(SP.arg4, CCPAS_000006)
                                 .build())
                         .addProperty(SP.arg2, DEUUU))
                 .addLiteral(SPINMAPL.separator, "-").build(), messageProp);

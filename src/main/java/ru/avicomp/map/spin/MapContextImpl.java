@@ -22,7 +22,6 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.function.IntFunction;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,12 +80,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
     @Override
     public MapContextImpl addClassBridge(MapFunction.Call filterFunction, MapFunction.Call mappingFunction) throws MapJenaException {
-        // todo: add listener to record changes and rollback in case of error
         if (!testFunction(mappingFunction).getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(mappingFunction.getFunction()).build();
         }
+        testFilterFunction(filterFunction);
         MapModelImpl m = getModel();
-        Supplier<RDFNode> filterExpression = filterExpression(filterFunction);
+
         // collects target expression statements to be deleted :
         List<Statement> prev = m.statements(this, SPINMAP.target, null).collect(Collectors.toList());
 
@@ -97,8 +96,9 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .allMatch(r -> r.hasProperty(AVC.filter))) {
+            RDFNode filterExpression = filterFunction == null ? null : createExpression(filterFunction);
             // add Mapping-0-1 to create individual with target type
-            addMappingRule(this::target, filterExpression, RDF.type);
+            addMappingRule(new ContextMappingHelper(this), target(), filterExpression, RDF.type);
         }
 
         // add target expression
@@ -119,16 +119,18 @@ public class MapContextImpl extends ResourceImpl implements Context {
     public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
-        // todo: add listener to record changes and rollback in case of error
+        // the target property must "belong" to the target class:
+        ContextMappingHelper helper = new ContextMappingHelper(this);
+        if (!helper.isTargetProperty(target)) {
+            throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
+        }
         testFunction(mappingFunction);
-        Resource mapping = addMappingRule(() -> createExpression(mappingFunction), filterExpression(filterFunction), target);
+        RDFNode filterExpression = testFilterFunction(filterFunction) != null ? createExpression(filterFunction) : null;
+        RDFNode mappingExpression = createExpression(mappingFunction);
+        Resource mapping = addMappingRule(helper, mappingExpression, filterExpression, target);
         MapPropertiesImpl res = asPropertyBridge(mapping);
         writeFunctionBody(mappingFunction);
         return res;
-    }
-
-    protected Supplier<RDFNode> filterExpression(MapFunction.Call func) {
-        return testFilterFunction(func) != null ? () -> createExpression(func) : () -> null;
     }
 
     /**
@@ -161,7 +163,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .forEach(this::writeFunctionBody);
     }
 
-    protected AdjustFunctionBody getRuntimeBody(MapFunction func, String path) {
+    protected AdjustFunctionBody getRuntimeBody(MapFunction func, String path) throws MapJenaException {
         Exceptions.Builder err = exception(Exceptions.CONTEXT_WRONG_RUNTIME_FUNCTION_BODY_CLASS).addFunction(func);
         try {
             Class<?> res = Class.forName(path);
@@ -189,31 +191,26 @@ public class MapContextImpl extends ResourceImpl implements Context {
     /**
      * Adds a mapping template call to the graph as {@code spinmap:rule}.
      *
+     * @param helper {@link ContextMappingHelper}
      * @param mappingExpression resource describing mapping expression
      * @param filterExpression  resource describing filter expression
      * @param target            {@link Property}
      * @return {@link Resource}
      */
-    public Resource addMappingRule(Supplier<RDFNode> mappingExpression,
-                                   Supplier<RDFNode> filterExpression,
-                                   Property target) {
+    protected Resource addMappingRule(ContextMappingHelper helper,
+                                      RDFNode mappingExpression,
+                                      RDFNode filterExpression,
+                                      Property target) {
         // todo: validate property ranges if it is possible
         MapModelImpl m = getModel();
-        ContextMappingHelper helper = new ContextMappingHelper(this, m.createResource());
-        // if it is property mapping, the target property must "belong" to the target class:
         Optional<Resource> classMapRule = primaryRule();
-        if (classMapRule.isPresent() && !helper.isTargetProperty(target)) {
-            throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
-        }
         helper.getMapping()
                 .addProperty(SPINMAP.context, this)
                 .addProperty(SPINMAP.targetPredicate1, target);
-        RDFNode filterExpr = filterExpression.get();
-        RDFNode mapExpr = mappingExpression.get();
-        List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mapExpr).getSources();
+        List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mappingExpression).getSources();
         List<Property> filterPredicates;
-        if (filterExpr != null) {
-            filterPredicates = helper.addExpression(AVC.filter, filterExpr).getSources();
+        if (filterExpression != null) {
+            filterPredicates = helper.addExpression(AVC.filter, filterExpression).getSources();
         } else {
             filterPredicates = Collections.emptyList();
         }
@@ -223,7 +220,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
 
         Resource template;
         int mappingSources = (int) mappingPredicates.stream().distinct().count();
-        if (filterExpr == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
+        if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
             template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
         } else {
@@ -602,8 +599,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
     static class ContextMappingHelper {
         private final Resource mapping;
         private final MapContextImpl context;
+
         private Set<? extends RDFNode> sourceClassProperties;
         private Set<? extends RDFNode> targetClassProperties;
+
+        ContextMappingHelper(MapContextImpl context) {
+            this(context, context.getModel().createResource());
+        }
 
         ContextMappingHelper(MapContextImpl context, Resource mapping) {
             this.mapping = Objects.requireNonNull(mapping);
