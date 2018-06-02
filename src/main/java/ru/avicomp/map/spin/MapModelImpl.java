@@ -574,4 +574,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))
                 .distinct();
     }
+
+    /**
+     * Adds function "as is" to the graph.
+     *
+     * @param function {@link MapFunctionImpl}
+     * @return Resource function in model
+     */
+    protected Resource addFunctionBody(MapFunctionImpl function) {
+        Models.getAssociatedStatements(function.asResource()).forEach(this::add);
+        return function.asResource().inModel(this);
+    }
+
 }

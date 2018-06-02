@@ -15,6 +15,8 @@ import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
+import java.util.Arrays;
+
 import static ru.avicomp.map.spin.Exceptions.CONTEXT_REQUIRE_TARGET_FUNCTION;
 import static ru.avicomp.map.spin.Exceptions.Key;
 
@@ -130,7 +132,7 @@ public class ExceptionsTest {
             c.addClassBridge(filterFunction, mapFunction);
             Assert.fail("Class bridge is added successfully");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            print(j);
         }
         Assert.assertEquals(count, m.asOntModel().statements().count());
 
@@ -149,7 +151,7 @@ public class ExceptionsTest {
             c.addClassBridge(filterFunction, mapFunction);
             Assert.fail("Class bridge is added successfully");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            print(j);
         }
         Assert.assertEquals(count, m.asOntModel().statements().count());
 
@@ -164,7 +166,7 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            print(j);
         }
         Assert.assertEquals(count, m.asOntModel().statements().count());
 
@@ -178,7 +180,7 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            print(j);
         }
         Assert.assertEquals(count, m.asOntModel().statements().count());
 
@@ -191,9 +193,14 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, sp2);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            print(j);
         }
         Assert.assertEquals(count, m.asOntModel().statements().count());
+    }
+
+    private static void print(MapJenaException j) {
+        LOGGER.debug("Exception: {}", j.getMessage());
+        Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
     }
 }
 

@@ -51,7 +51,8 @@ public class AVC {
     // An aggregate function to concat values from assertions with the same individual and property
     public static final Resource groupConcat = resource("groupConcat");
 
-    // resource, which is used as return type of function or argument in unclear case
+    // resource, which is used as return type of function or argument in unclear case;
+    // actually this means any rdf-node
     public static final Resource undefined = resource("undefined");
 
     // require special treatment in runtime before inference,

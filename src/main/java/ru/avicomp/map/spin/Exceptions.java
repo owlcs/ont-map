@@ -18,7 +18,6 @@ public enum Exceptions {
     CONTEXT_WRONG_EXPRESSION_ARGUMENT,
     CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION,
     CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES,
-    CONTEXT_WRONG_RUNTIME_FUNCTION_BODY_CLASS,
 
     RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED,
     RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK,
@@ -26,6 +25,9 @@ public enum Exceptions {
     ATTACHED_CONTEXT_DIFFERENT_SOURCES,
     ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED,
     ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK,
+
+    FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION,
+    FUNCTION_CALL_WRONG_ARGUMENT_VALUE,
 
     FUNCTION_NONEXISTENT_ARGUMENT,
     FUNCTION_WRONG_ARGUMENT,
@@ -71,7 +73,11 @@ public enum Exceptions {
         }
 
         public SpinMapException build(Throwable cause) {
-            return new SpinMapException(Exceptions.this, map, message(), cause);
+            return build(message(), cause);
+        }
+
+        public SpinMapException build(String message, Throwable cause) {
+            return new SpinMapException(Exceptions.this, map, message, cause);
         }
 
         public String message() {

@@ -21,6 +21,7 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -98,7 +99,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
                 .allMatch(r -> r.hasProperty(AVC.filter))) {
             RDFNode filterExpression = filterFunction == null ? null : createExpression(filterFunction);
             // add Mapping-0-1 to create individual with target type
-            addMappingRule(new ContextMappingHelper(this), target(), filterExpression, RDF.type);
+            ContextMappingHelper.addPrimaryRule(this, filterExpression);
         }
 
         // add target expression
@@ -120,14 +121,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
         // the target property must "belong" to the target class:
-        ContextMappingHelper helper = new ContextMappingHelper(this);
+        ContextMappingHelper helper = ContextMappingHelper.create(this);
         if (!helper.isTargetProperty(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         testFunction(mappingFunction);
         RDFNode filterExpression = testFilterFunction(filterFunction) != null ? createExpression(filterFunction) : null;
         RDFNode mappingExpression = createExpression(mappingFunction);
-        Resource mapping = addMappingRule(helper, mappingExpression, filterExpression, target);
+        Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
         MapPropertiesImpl res = asPropertyBridge(mapping);
         writeFunctionBody(mappingFunction);
         return res;
@@ -142,99 +143,48 @@ public class MapContextImpl extends ResourceImpl implements Context {
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
             MapModelImpl m = getModel();
-            Resource res = addFunctionBody(function);
+            Resource res = m.addFunctionBody(function);
             Iter.asStream(res.listProperties(AVC.runtime))
                     .map(Statement::getObject)
                     .filter(RDFNode::isLiteral)
                     .map(RDFNode::asLiteral)
                     .map(Literal::getString)
-                    .forEach(s -> getRuntimeBody(function, s).apply(m, call));
+                    .forEach(s -> findRuntimeBody(function, s).apply(m, call));
             // subClassOf
             Iter.asStream(res.listProperties(RDFS.subClassOf))
                     .map(Statement::getResource)
                     .map(Resource::getURI)
                     .map(u -> m.getManager().getFunction(u))
-                    .forEach(this::addFunctionBody);
+                    .forEach(m::addFunctionBody);
         }
-
         call.asMap().values().stream()
                 .filter(MapFunction.Call.class::isInstance)
                 .map(MapFunction.Call.class::cast)
                 .forEach(this::writeFunctionBody);
     }
 
-    protected AdjustFunctionBody getRuntimeBody(MapFunction func, String path) throws MapJenaException {
-        Exceptions.Builder err = exception(Exceptions.CONTEXT_WRONG_RUNTIME_FUNCTION_BODY_CLASS).addFunction(func);
+    /**
+     * @param func      {@link MapFunctionImpl}
+     * @param classPath String
+     * @return {@link AdjustFunctionBody}
+     * @throws MapJenaException can't fetch runtime body
+     */
+    protected static AdjustFunctionBody findRuntimeBody(MapFunctionImpl func, String classPath) throws MapJenaException {
         try {
-            Class<?> res = Class.forName(path);
+            Class<?> res = Class.forName(classPath);
             if (!AdjustFunctionBody.class.isAssignableFrom(res)) {
-                throw err.build();
+                throw new MapJenaException(func.name() + ": incompatible class type: " + classPath + " <> " + res.getName());
             }
             return (AdjustFunctionBody) res.newInstance();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw err.build(e);
+            throw new MapJenaException(func.name() + ": can't init " + classPath, e);
         }
-    }
-
-    /**
-     * Adds function "as is" to the graph.
-     *
-     * @param function {@link MapFunctionImpl}
-     * @return Resource function in model
-     */
-    protected Resource addFunctionBody(MapFunctionImpl function) {
-        MapModelImpl m = getModel();
-        Models.getAssociatedStatements(function.asResource()).forEach(m::add);
-        return function.asResource().inModel(m);
-    }
-
-    /**
-     * Adds a mapping template call to the graph as {@code spinmap:rule}.
-     *
-     * @param helper {@link ContextMappingHelper}
-     * @param mappingExpression resource describing mapping expression
-     * @param filterExpression  resource describing filter expression
-     * @param target            {@link Property}
-     * @return {@link Resource}
-     */
-    protected Resource addMappingRule(ContextMappingHelper helper,
-                                      RDFNode mappingExpression,
-                                      RDFNode filterExpression,
-                                      Property target) {
-        // todo: validate property ranges if it is possible
-        MapModelImpl m = getModel();
-        Optional<Resource> classMapRule = primaryRule();
-        helper.getMapping()
-                .addProperty(SPINMAP.context, this)
-                .addProperty(SPINMAP.targetPredicate1, target);
-        List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mappingExpression).getSources();
-        List<Property> filterPredicates;
-        if (filterExpression != null) {
-            filterPredicates = helper.addExpression(AVC.filter, filterExpression).getSources();
-        } else {
-            filterPredicates = Collections.emptyList();
-        }
-
-        boolean hasDefaults = helper.hasDefaults();
-        boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
-
-        Resource template;
-        int mappingSources = (int) mappingPredicates.stream().distinct().count();
-        if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
-            // use standard (spinmap) mapping, which does not support filter and default values
-            template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
-        } else {
-            // use custom (avc) mapping
-            template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
-        }
-        getSource().addProperty(SPINMAP.rule, helper.getMapping().addProperty(RDF.type, template));
-        helper.simplify();
-        return helper.getMapping();
     }
 
     /**
      * Gets a primary (class to class) mapping rule as ordinal resource.
-     * For a valid (see {@link Context#isValid()}) standalone context the result should be present, otherwise it may be empty.
+     * For a valid (see {@link Context#isValid()}) standalone context
+     * the result should be present, otherwise it may be empty.
      *
      * @return Optional around mapping {@link Resource}
      */
@@ -437,7 +387,19 @@ public class MapContextImpl extends ResourceImpl implements Context {
         MapJenaException holder = exception(CONTEXT_WRONG_EXPRESSION_ARGUMENT).addFunction(func.getFunction()).build();
         MapJenaException.notNull(func, "Null function call").asMap().forEach((arg, value) -> {
             try {
-                MapContextImpl.this.testArgument(arg, value);
+                MapModelImpl m = getModel();
+                ArgValidator v = new ArgValidator(m, arg);
+                if (value instanceof String) {
+                    v.testStringValue((String) value);
+                    return;
+                }
+                if (value instanceof MapFunction.Call) {
+                    MapFunction.Call call = (MapFunction.Call) value;
+                    v.testFunctionValue(call.getFunction());
+                    testFunction(call);
+                    return;
+                }
+                throw new IllegalStateException("Should never happen");
             } catch (MapJenaException e) {
                 holder.addSuppressed(e);
             }
@@ -445,22 +407,6 @@ public class MapContextImpl extends ResourceImpl implements Context {
         if (holder.getSuppressed().length == 0)
             return func;
         throw holder;
-    }
-
-    protected void testArgument(MapFunction.Arg arg, Object value) throws MapJenaException {
-        MapModelImpl m = getModel();
-        Validator v = new Validator(m, arg);
-        if (value instanceof String) {
-            v.test((String) value);
-            return;
-        }
-        if (value instanceof MapFunction.Call) {
-            MapFunction.Call call = (MapFunction.Call) value;
-            v.test(call.getFunction());
-            testFunction(call);
-            return;
-        }
-        throw new IllegalStateException("Should never happen");
     }
 
     protected Exceptions.Builder exception(Exceptions code) {
@@ -473,18 +419,22 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     public String toString(PrefixMapping pm) {
-        return String.format("Context{%s => %s}", pm.shortForm(getSource().getURI()), pm.shortForm(target().getURI()));
+        return toString(r -> r.isAnon() ? r.toString() : pm.shortForm(r.getURI()));
+    }
+
+    private String toString(Function<Resource, String> toString) {
+        return String.format("Context{%s => %s}", toString.apply(source()), toString.apply(target()));
     }
 
     /**
      * Auxiliary class, a helper to validate a {@link MapFunction.Arg function-call argument} values,
      * which could be either nested function or string representation of literal or resource
      */
-    static class Validator {
+    static class ArgValidator {
         private final MapModelImpl model;
         private final MapFunction.Arg argument;
 
-        Validator(MapModelImpl model, MapFunction.Arg argument) {
+        ArgValidator(MapModelImpl model, MapFunction.Arg argument) {
             this.model = model;
             this.argument = argument;
         }
@@ -494,9 +444,14 @@ public class MapContextImpl extends ResourceImpl implements Context {
          *
          * @param value {@link MapFunction}
          */
-        public void test(MapFunction value) throws MapJenaException {
+        public void testFunctionValue(MapFunction value) throws MapJenaException {
             Resource arg = model.createResource(argument.type());
             Resource type = model.createResource(value.type());
+            Exceptions.Builder error = Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION.create()
+                    .add(Key.ARG, argument.name())
+                    .addFunction(value)
+                    .add(Key.ARG_TYPE, arg.toString())
+                    .add(Key.ARG_VALUE, type.toString());
             if (arg.equals(type)) {
                 return;
             }
@@ -506,29 +461,29 @@ public class MapContextImpl extends ResourceImpl implements Context {
             }
             if (RDFS.Literal.equals(arg)) {
                 if (type.canAs(OntDT.class)) return;
-                throw new MapJenaException("TODO-Function-1");
+                throw error.build();
             }
             if (AVC.numeric.equals(arg)) {
                 if (type.canAs(OntDT.class) && model.isNumeric(type.as(OntDT.class).toRDFDatatype())) return;
-                throw new MapJenaException("TODO-Function-1");
+                throw error.build();
             }
             if (RDF.PlainLiteral.equals(arg)) {
                 if (XSD.xstring.equals(type)) return;
-                throw new MapJenaException("TODO-Function-3");
+                throw error.build();
             }
             if (RDF.Property.equals(arg)) {
                 if (Stream.of(RDF.Property, OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).anyMatch(type::equals))
                     return;
-                throw new MapJenaException("TODO-Function-4");
+                throw error.build();
             }
             if (RDFS.Class.equals(arg)) {
                 if (OWL.Class.equals(arg)) return;
-                throw new MapJenaException("TODO-Function-5");
+                throw error.build();
             }
             if (RDFS.Resource.equals(arg)) {
                 return;
             }
-            throw new MapJenaException("TODO: Function");
+            throw error.build();
         }
 
         /**
@@ -537,9 +492,13 @@ public class MapContextImpl extends ResourceImpl implements Context {
          * @param value String argument value
          * @throws MapJenaException if parameter string value does not match argument type
          */
-        public void test(String value) throws MapJenaException {
+        public void testStringValue(String value) throws MapJenaException {
             Resource arg = model.createResource(argument.type());
             RDFNode node = model.toNode(value);
+            Exceptions.Builder error = Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE.create()
+                    .add(Key.ARG, argument.name())
+                    .add(Key.ARG_TYPE, arg.toString())
+                    .add(Key.ARG_VALUE, node.toString());
             // anything:
             if (AVC.undefined.equals(arg)) {
                 return;
@@ -548,18 +507,16 @@ public class MapContextImpl extends ResourceImpl implements Context {
             if (node.isLiteral()) {
                 Literal literal = node.asLiteral();
                 if (arg.getURI().equals(literal.getDatatypeURI())) return;
-
                 if (RDFS.Literal.equals(arg)) return;
-
                 if (AVC.numeric.equals(arg)) {
                     if (model.isNumeric(literal.getDatatype())) return;
-                    throw new MapJenaException("TODO-Literal-1");
+                    throw error.build();
                 }
                 if (RDF.PlainLiteral.equals(arg)) {
                     if (XSD.xstring.getURI().equals(literal.getDatatypeURI())) return;
-                    throw new MapJenaException("TODO-Literal-2");
+                    throw error.build();
                 }
-                throw new MapJenaException("TODO-Literal-3");
+                throw error.build();
             }
             // then resource
             if (RDFS.Resource.equals(arg)) {
@@ -567,34 +524,35 @@ public class MapContextImpl extends ResourceImpl implements Context {
             }
             if (RDFS.Datatype.equals(arg)) {
                 if (node.canAs(OntDR.class)) return;
-                throw new MapJenaException("TODO-Datarange");
+                throw error.build();
             }
             if (RDFS.Class.equals(arg)) {
                 if (node.canAs(OntCE.class)) return;
-                throw new MapJenaException("TODO-Class");
+                throw error.build();
             }
             if (SPINMAP.Context.equals(arg)) {
                 if (node.asResource().hasProperty(RDF.type, SPINMAP.Context)) return;
-                throw new MapJenaException("TODO-Context");
+                throw error.build();
             }
             if (RDF.Property.equals(arg)) {
                 //if (node.isURIResource() && node.canAs(OntPE.class)) return;
                 // can be passed built-in property, e.g. rdf:type
                 if (node.isURIResource()) return;
-                throw new MapJenaException("TODO-Property");
+                throw error.build();
             }
             if (arg.canAs(OntDT.class) && (node.canAs(OntNDP.class) || node.canAs(OntNAP.class))) {
                 // todo: validate also range for datatype properties while building mapping
                 return;
             }
             // todo: also possible types: sp:Query, spin:Function, spin:Module, rdf:List
-            throw new MapJenaException("TODO: Common arg");
+            throw error.build();
         }
     }
 
     /**
      * Auxiliary class, a helper to process mapping template call arguments (predicates).
      * Also a holder for class-properties maps related to the specified context.
+     * To relieve the main class.
      */
     static class ContextMappingHelper {
         private final Resource mapping;
@@ -603,22 +561,71 @@ public class MapContextImpl extends ResourceImpl implements Context {
         private Set<? extends RDFNode> sourceClassProperties;
         private Set<? extends RDFNode> targetClassProperties;
 
-        ContextMappingHelper(MapContextImpl context) {
-            this(context, context.getModel().createResource());
-        }
-
-        ContextMappingHelper(MapContextImpl context, Resource mapping) {
+        private ContextMappingHelper(MapContextImpl context, Resource mapping) {
             this.mapping = Objects.requireNonNull(mapping);
             this.context = Objects.requireNonNull(context);
         }
 
+        static ContextMappingHelper create(MapContextImpl context) {
+            return new ContextMappingHelper(context, context.getModel().createResource());
+        }
+
+        static void addPrimaryRule(MapContextImpl context, RDFNode filterExpression) {
+            addMappingRule(create(context), context.target(), filterExpression, RDF.type);
+        }
+
         /**
-         * Simplifies mapping by replacing {@code spinmap:equals} and {@code avc:withDefault} function calls with its short form.
+         * Adds a mapping template call to the graph as {@code spinmap:rule}.
+         *
+         * @param helper            {@link ContextMappingHelper}
+         * @param mappingExpression resource describing mapping expression
+         * @param filterExpression  resource describing filter expression
+         * @param target            {@link Property}
+         * @return {@link Resource}
          */
-        void simplify() {
+        static Resource addMappingRule(ContextMappingHelper helper,
+                                       RDFNode mappingExpression,
+                                       RDFNode filterExpression,
+                                       Property target) {
+            // todo: validate property ranges if it is possible
+            MapContextImpl context = helper.context;
+            Resource mapping = helper.mapping;
+            MapModelImpl m = context.getModel();
+            Optional<Resource> classMapRule = context.primaryRule();
+            mapping.addProperty(SPINMAP.context, context)
+                    .addProperty(SPINMAP.targetPredicate1, target);
+            List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mappingExpression).getSources();
+            List<Property> filterPredicates;
+            if (filterExpression != null) {
+                filterPredicates = helper.addExpression(AVC.filter, filterExpression).getSources();
+            } else {
+                filterPredicates = Collections.emptyList();
+            }
+
+            boolean hasDefaults = helper.hasDefaults();
+            boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
+
+            Resource template;
+            int mappingSources = (int) mappingPredicates.stream().distinct().count();
+            if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
+                // use standard (spinmap) mapping, which does not support filter and default values
+                template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
+            } else {
+                // use custom (avc) mapping
+                template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
+            }
+            context.getSource().addProperty(SPINMAP.rule, mapping.addProperty(RDF.type, template));
+            simplify(mapping);
+            return mapping;
+        }
+
+        /**
+         * Simplifies mapping by replacing {@code spinmap:equals} function calls with its short form.
+         */
+        private static void simplify(Resource mapping) {
             Model m = mapping.getModel();
             Set<Resource> expressions = MapModelImpl.listProperties(mapping)
-                    .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals) || Objects.equals(s.getObject(), AVC.withDefault))
+                    .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
                     .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
                     .map(Statement::getSubject)
                     .collect(Collectors.toSet());

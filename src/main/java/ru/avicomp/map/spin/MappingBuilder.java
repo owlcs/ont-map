@@ -140,35 +140,6 @@ public class MappingBuilder {
                 .collect(Collectors.joining("-"));
     }
 
-    public static String asOptional(String expr) {
-        return String.format("\tOPTIONAL {\n\t\t%s\n\t} .", expr);
-    }
-
-    public static String makeEvalCall(String expressionVariable, List<String> argumentVariables) {
-        if (argumentVariables.isEmpty()) {
-            return "spin:eval(?" + expressionVariable + ", sp:arg1, ?this)";
-        }
-        return Stream.concat(Stream.of(expressionVariable), IntStream.rangeClosed(1, argumentVariables.size())
-                .mapToObj(i -> "sp:arg" + i + ", ?" + argumentVariables.get(i - 1)))
-                .collect(Collectors.joining(", ", "spin:eval(?", ")"));
-    }
-
-    public static void main(String... args) { // todo: test
-        String r = new MappingBuilder()
-                .addMappingExpression("expression")
-                .addFilterExpression("filter")
-                .addSourceDefaultValue("sourcePredicate1", "defaultValue1")
-                .addSourceDefaultValue("sourcePredicate2", "defaultValue2")
-                .addSourcePredicate("sourcePredicate3")
-                .addMappingArgument("sourcePredicate1")
-                .addMappingArgument("sourcePredicate2")
-                .addFilterArgument("sourcePredicate3")
-                .addTargetPredicate("targetPredicate1")
-                .requireClassAssertion(true)
-                .build();
-        System.out.println(r);
-    }
-
     public MappingBuilder addSourceDefaultValue(String sourcePredicateVariable, String defaultValueVariable) {
         addSourcePredicate(sourcePredicateVariable);
         defaultValues.put(sourcePredicateVariable, defaultValueVariable);
@@ -297,6 +268,20 @@ public class MappingBuilder {
                 asLabeledVariable("context"),
                 asLabeledVariable(targetPredicate),
                 sourcePredicates.stream().map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
+    }
+
+
+    private static String asOptional(String expr) {
+        return String.format("\tOPTIONAL {\n\t\t%s\n\t} .", expr);
+    }
+
+    private static String makeEvalCall(String expressionVariable, List<String> argumentVariables) {
+        if (argumentVariables.isEmpty()) {
+            return "spin:eval(?" + expressionVariable + ", sp:arg1, ?this)";
+        }
+        return Stream.concat(Stream.of(expressionVariable), IntStream.rangeClosed(1, argumentVariables.size())
+                .mapToObj(i -> "sp:arg" + i + ", ?" + argumentVariables.get(i - 1)))
+                .collect(Collectors.joining(", ", "spin:eval(?", ")"));
     }
 
     private static String asLabeledVariable(String msg) {
