@@ -62,6 +62,24 @@ spinmapl:relatedSubjectContext
 spinmapl:relatedObjectContext
         avc:hidden  "Instead of explicit calling this function, please use ru.avicomp.map.Context#createRelatedContext(...) methods." .
 
+spl:primaryKeyURIStart
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spl:hasPrimaryKey
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spl:isPrimaryKeyPropertyOfInstance
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spl:primaryKeyProperty
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spinmapl:resourceWithPrimaryKey
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spinmapl:usePrimaryKey
+        avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
 avc:UUID  a                 spinmap:TargetFunction ;
         rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;
         rdfs:label          "MD5 UUID" ;

@@ -111,6 +111,17 @@ public class AVCLibraryMaker {
                 .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
                         "#createRelatedContext(...) methods.");
 
+        // SPIN primary key functionality
+        String primaryKeyExclusionReason = "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic";
+        Stream.of(SPINMAPL.resource("resourceWithPrimaryKey"),
+                SPINMAPL.resource("usePrimaryKey"),
+                SPL.resource("primaryKeyProperty"),
+                SPL.resource("primaryKeyURIStart"),
+                SPL.resource("hasPrimaryKey"),
+                SPL.resource("isPrimaryKeyPropertyOfInstance"))
+                .map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, primaryKeyExclusionReason));
+
         // SP:eq can accept any resource, not only boolean literals
         SP.eq.inModel(m)
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
