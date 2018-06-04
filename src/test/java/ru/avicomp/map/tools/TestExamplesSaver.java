@@ -43,7 +43,8 @@ public class TestExamplesSaver {
                 new GroupConcatTest(),
                 new MathOpsMapTest(),
                 new MultiContextMapTest(),
-                new PropertyChainMapTest()
+                new PropertyChainMapTest(),
+                new VarArgMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {

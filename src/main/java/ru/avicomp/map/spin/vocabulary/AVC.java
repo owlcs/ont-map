@@ -55,6 +55,9 @@ public class AVC {
     // actually this means any rdf-node
     public static final Resource undefined = resource("undefined");
 
+    // indicator that a function supports varargs
+    public static final Property vararg = property("vararg");
+
     // require special treatment in runtime before inference,
     // the right part of statement with this predicate must be
     // a valid class-path to ru.avicomp.map.spin.AdjustFunctionBody impl as a string literal

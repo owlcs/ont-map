@@ -127,6 +127,19 @@ public class AVCLibraryMaker {
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
                 .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg2).addProperty(SPL.valueType, AVC.undefined));
 
+        // varargs:
+        SP.resource("concat").inModel(m).addProperty(SPIN.constraint, m.createResource()
+                .addProperty(RDF.type, SPL.Argument)
+                .addProperty(SPL.predicate, AVC.vararg)
+                .addProperty(SPL.valueType, XSD.xstring));
+        Stream.of("in", "notIn")
+                .map(SP::resource)
+                .map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, AVC.vararg)
+                        .addProperty(SPL.valueType, RDFS.Literal)));
+
         // AVC:withDefault
         AVC.withDefault.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)

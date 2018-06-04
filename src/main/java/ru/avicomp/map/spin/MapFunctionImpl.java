@@ -1,13 +1,11 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
+import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
@@ -27,13 +25,14 @@ import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
  * A spin based implementation of {@link MapFunction}.
+ * Assumed to be immutable in program life-cycle.
  * Created by @szuev on 09.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
 public class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
     private final org.topbraid.spin.model.Module func;
-    private List<Arg> arguments;
+    private List<ArgImpl> arguments;
 
     public MapFunctionImpl(org.topbraid.spin.model.Function func) {
         this.func = Objects.requireNonNull(func, "Null " + org.topbraid.spin.model.Function.class.getName());
@@ -50,21 +49,21 @@ public class MapFunctionImpl implements MapFunction {
         return (r == null ? AVC.undefined : r).getURI();
     }
 
-    public List<Arg> getArguments() {
+    public List<ArgImpl> getArguments() {
         return arguments == null ? arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
     }
 
     @Override
     public Stream<Arg> args() {
-        return getArguments().stream();
+        return getArguments().stream().map(Arg.class::cast);
     }
 
-    public Optional<Arg> arg(String predicate) {
-        return args().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
+    public Optional<ArgImpl> arg(String predicate) {
+        return getArguments().stream().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
     }
 
     @Override
-    public Arg getArg(String predicate) throws MapJenaException {
+    public ArgImpl getArg(String predicate) throws MapJenaException {
         return arg(predicate)
                 .orElseThrow(() -> exception(FUNCTION_NONEXISTENT_ARGUMENT).add(Key.ARG, predicate).build());
     }
@@ -146,16 +145,27 @@ public class MapFunctionImpl implements MapFunction {
         return code.create().add(Key.FUNCTION, name());
     }
 
+    public static String argumentToName(org.topbraid.spin.model.Argument arg) {
+        Property p = arg.getPredicate();
+        return p == null ? arg.toString() : p.getURI();
+    }
+
     public class ArgImpl implements Arg {
         private final org.topbraid.spin.model.Argument arg;
+        private final String name;
 
         public ArgImpl(org.topbraid.spin.model.Argument arg) {
-            this.arg = arg;
+            this(arg, argumentToName(arg));
+        }
+
+        public ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
+            this.arg = Objects.requireNonNull(arg, "Null " + arg.getClass().getName());
+            this.name = Objects.requireNonNull(name, "Null name");
         }
 
         @Override
         public String name() {
-            return arg.getPredicate().getURI();
+            return name;
         }
 
         @Override
@@ -194,6 +204,11 @@ public class MapFunctionImpl implements MapFunction {
         @Override
         public boolean isOptional() {
             return arg.isOptional();
+        }
+
+        @Override
+        public boolean isVararg() {
+            return AVC.vararg.getURI().equals(name);
         }
 
         @Override
@@ -236,11 +251,24 @@ public class MapFunctionImpl implements MapFunction {
             if (isInherit()) res.add("i");
             return res.isEmpty() ? "" : res.stream().collect(Collectors.joining(",", "(", ")"));
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ArgImpl arg = (ArgImpl) o;
+            return Objects.equals(name, arg.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
     }
 
     public class BuilderImpl implements Builder {
         // either string or builder
-        private final Map<String, Object> input = new HashMap<>();
+        private final Map<Arg, Object> input = new HashMap<>();
 
         @Override
         public Builder add(String arg, String value) {
@@ -254,9 +282,14 @@ public class MapFunctionImpl implements MapFunction {
 
         private Builder put(String predicate, Object val) {
             MapJenaException.notNull(val, "Null argument value");
-            Arg arg = getFunction().getArg(predicate);
+            ArgImpl arg = getFunction().getArg(predicate);
             if (!arg.isAssignable())
                 throw exception(FUNCTION_WRONG_ARGUMENT).add(Key.ARG, predicate).build();
+
+            if (arg.isVararg()) {
+                int index = nextIndex();
+                arg = new ArgImpl(arg.arg, SP.arg(index).getURI());
+            }
 
             if (!(val instanceof String)) {
                 if (val instanceof Builder) {
@@ -272,56 +305,75 @@ public class MapFunctionImpl implements MapFunction {
                     throw new IllegalArgumentException("Wrong argument type: " + val.getClass().getName() + ", " + val);
                 }
             }
-            input.put(arg.name(), val);
+            input.put(arg, val);
             return this;
         }
 
         @Override
-        public MapFunction getFunction() {
+        public MapFunctionImpl getFunction() {
             return MapFunctionImpl.this;
         }
 
         @Override
         public Call build() throws MapJenaException {
-            Map<String, Object> map = input.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> e.getValue() instanceof Builder ? ((Builder) e.getValue()).build() : e.getValue()));
+            Map<Arg, Object> map = new HashMap<>();
+            input.forEach((key, value) -> {
+                Object v;
+                if (value instanceof Builder) {
+                    v = ((Builder) value).build();
+                } else if ((value instanceof Call) || (value instanceof String)) {
+                    v = value;
+                } else {
+                    throw new IllegalArgumentException("Wrong value: " + value);
+                }
+                map.put(key, v);
+            });
             if (MapFunctionImpl.this.isTarget()) {
-                // Most of spin-map target function calls should have spin:_source variable assigned on this argument,
+                // All of the spin-map target function calls should have spin:_source variable assigned on this argument,
                 // although it does not seem it is really needed.
                 MapFunctionImpl.this.arg(SPINMAP.source.getURI())
-                        .ifPresent(a -> map.put(a.name(), SPINMAP.sourceVariable.getURI()));
+                        .ifPresent(a -> map.put(a, SPINMAP.sourceVariable.getURI()));
             }
             // check all required arguments are assigned
             Exceptions.Builder error = exception(FUNCTION_NO_REQUIRED_ARG);
             getFunction().args().forEach(a -> {
-                if (map.containsKey(a.name()) || a.isOptional())
+                if (a.isVararg()) return;
+                if (map.containsKey(a) || a.isOptional())
                     return;
                 String def = a.defaultValue();
                 if (def == null) {
                     error.add(Key.ARG, a.name());
                 } else {
-                    map.put(a.name(), def);
+                    map.put(a, def);
                 }
             });
             if (error.has(Key.ARG))
                 throw error.build();
             return new CallImpl(map);
         }
+
+        public int nextIndex() {
+            return Stream.concat(getFunction().args(), input.keySet().stream())
+                    .map(Arg::name)
+                    .filter(s -> s.matches("^.+#" + SP.ARG + "\\d+$"))
+                    .map(s -> s.replaceFirst("^.+(\\d+)$", "$1"))
+                    .mapToInt(Integer::parseInt)
+                    .max()
+                    .orElse(0) + 1;
+        }
     }
 
     public class CallImpl implements Call {
         // either string or another function calls
-        private final Map<String, Object> parameters;
+        private final Map<Arg, Object> parameters;
 
-        private CallImpl(Map<String, Object> args) {
+        private CallImpl(Map<Arg, Object> args) {
             this.parameters = args;
         }
 
         @Override
         public Map<Arg, Object> asMap() {
-            return parameters.entrySet().stream()
-                    .collect(Collectors.toMap(e -> getFunction().getArg(e.getKey()), Map.Entry::getValue));
+            return Collections.unmodifiableMap(parameters);
         }
 
 

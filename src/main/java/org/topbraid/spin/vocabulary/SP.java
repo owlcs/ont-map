@@ -23,6 +23,8 @@ public class SP {
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "sp";
 
+    public final static String ARG = "arg";
+
     public final static Resource Aggregation = resource("Aggregation");
     public final static Resource AltPath = resource("AltPath");
     public final static Resource Asc = resource("Asc");
@@ -76,7 +78,7 @@ public class SP {
     public final static Resource Variable = resource("Variable");
 
     public final static Property all = property("all");
-    public final static Property arg = property("arg");
+    public final static Property arg = property(ARG);
     public final static Property arg1 = arg(1);
     public final static Property arg2 = arg(2);
     public final static Property arg3 = arg(3);
@@ -142,12 +144,12 @@ public class SP {
 
     public static Property arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property("arg" + i);
+        return property(ARG + i);
     }
 
     public static Integer getArgPropertyIndex(String varName) {
         if (varName == null) return null;
-        if (varName.startsWith("arg")) {
+        if (varName.startsWith(ARG)) {
             return Integer.getInteger(varName.substring(3));
         }
         return null;

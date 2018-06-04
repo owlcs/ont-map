@@ -110,6 +110,15 @@ public interface MapFunction extends Description {
         boolean isOptional();
 
         /**
+         * Answers iff this argument is a fictitious indicator for a function that supports varargs.
+         * Most functions does not contain such arguments and this method will return {@code false}.
+         * Examples of vararg function: {@code sp:concat}, {@code sp:in}.
+         *
+         * @return true in case of vararg.
+         */
+        boolean isVararg();
+
+        /**
          * Answers iff this argument is available to assign value.
          *
          * @return boolean

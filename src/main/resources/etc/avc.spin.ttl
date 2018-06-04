@@ -52,6 +52,21 @@ sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                           spl:valueType  avc:undefined
                         ] .
 
+sp:concat  spin:constraint  [ a              spl:Argument ;
+                              spl:predicate  avc:vararg ;
+                              spl:valueType  xsd:string
+                            ] .
+
+sp:in   spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  avc:vararg ;
+                           spl:valueType  rdfs:Literal
+                         ] .
+
+sp:notIn  spin:constraint  [ a              spl:Argument ;
+                             spl:predicate  avc:vararg ;
+                             spl:valueType  rdfs:Literal
+                           ] .
+
 spinmap:targetResource
         avc:hidden    "This function should not be allowed to be used explicitly by API.\nAll cases when spinmap:targetResource might be used, should be described through other functions." ;
         spin:private  true .

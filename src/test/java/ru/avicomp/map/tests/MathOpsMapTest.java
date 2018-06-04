@@ -20,7 +20,6 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 23.05.2018.
@@ -75,8 +74,7 @@ public class MathOpsMapTest extends MapTestData5 {
         MapFunction e = manager.getFunction(pm.expandPrefix("afn:e"));
         MapFunction abs = manager.getFunction(pm.expandPrefix("fn:abs"));
 
-        MapModel res = createMappingModel(manager, "Used functions: " + Stream.of(iri, mul, ln, exp, sub, p, e, abs).
-                map(MapFunction::name).map(pm::shortForm).collect(Collectors.joining(", ")));
+        MapModel res = createMappingModel(manager, "Used functions: " + toMessage(pm, iri, mul, ln, exp, sub, p, e, abs));
 
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");

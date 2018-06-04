@@ -91,6 +91,10 @@ public class TestUtils {
         return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getString).orElseThrow(AssertionError::new);
     }
 
+    public static boolean getBooleanValue(OntIndividual i, OntNDP p) {
+        return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getBoolean).orElseThrow(AssertionError::new);
+    }
+
     public static Stream<OntStatement> plainAssertions(OntGraphModel m) {
         return m.ontObjects(OntPE.class).filter(RDFNode::isURIResource)
                 .map(p -> p.as(Property.class))
