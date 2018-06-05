@@ -213,11 +213,43 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         MapModelImpl m = getModel();
         Optional<RDFNode> target = m.statements(this, SPINMAP.target, null)
                 .map(Statement::getObject).findFirst();
-        if (!target.isPresent()) return null;
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
+        return target.map(n -> parse(n.asResource())).orElse(null);
     }
 
+    public MapFunctionImpl.CallImpl parse(Resource expr) {
+        MapModelImpl m = getModel();
+        MapManagerImpl man = m.getManager();
+        MapFunctionImpl f;
+        Map<MapFunction.Arg, Object> args = new HashMap<>();
+        if (expr.isURIResource()) {
+            f = man.getFunction(SPINMAP.equals.getURI());
+            args.put(f.getArg(SP.arg1.getURI()), expr.getURI());
+            return createFunctionCall(m, f, args);
+        }
+        String name = expr.getRequiredProperty(RDF.type).getObject().asResource().getURI();
+        f = man.getFunction(name);
+        expr.listProperties()
+                .filterDrop(s -> RDF.type.equals(s.getPredicate()))
+                .forEachRemaining(s -> {
+                    Object v;
+                    if (s.getObject().isAnon()) {
+                        v = parse(s.getObject().asResource());
+                    } else {
+                        v = s.getObject().asNode().toString();
+                    }
+                    args.put(f.getArg(s.getPredicate().getURI()), v);
+                });
+        return createFunctionCall(m, f, args);
+    }
+
+    protected MapFunctionImpl.CallImpl createFunctionCall(PrefixMapping pm, MapFunctionImpl f, Map<MapFunction.Arg, Object> args) {
+        return f.new CallImpl(args) {
+            @Override
+            public String toString() {
+                return super.toString(pm);
+            }
+        };
+    }
 
     @Override
     public Stream<PropertyBridge> properties() {

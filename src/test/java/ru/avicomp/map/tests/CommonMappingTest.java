@@ -66,7 +66,10 @@ public class CommonMappingTest {
         // list contexts
         LOGGER.debug("Model <{}> ::: {}", id, m.contexts().map(Object::toString).collect(Collectors.joining(", ", "[", "]")));
         // list property-bridges
-        m.contexts().forEach(c -> LOGGER.debug("{} :: {}", c, c.properties().map(Object::toString).collect(Collectors.joining(", ", "[", "]"))));
+        m.contexts().forEach(c -> LOGGER.debug("Context properties ({}) :: {}", c, c.properties().map(Object::toString).collect(Collectors.joining(", ", "[", "]"))));
+
+        // list mapping functions:
+        m.contexts().forEach(c -> LOGGER.debug("Mapping function ({}) :: {}", c, c.getMapping()));
 
         Assert.assertEquals(data.contexts, m.contexts().count());
         Assert.assertEquals(data.properties, m.contexts().flatMap(Context::properties).distinct().count());

@@ -364,10 +364,10 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     public class CallImpl implements Call {
-        // either string or another function calls
+        // values can be either string or another function calls
         private final Map<Arg, Object> parameters;
 
-        private CallImpl(Map<Arg, Object> args) {
+        CallImpl(Map<Arg, Object> args) {
             this.parameters = args;
         }
 
@@ -404,6 +404,30 @@ public class MapFunctionImpl implements MapFunction {
                     return CallImpl.this;
                 }
             };
+        }
+
+        public Stream<ArgImpl> directArgs() {
+            return parameters.keySet().stream()
+                    .map(ArgImpl.class::cast)
+                    .filter(a -> !a.isInherit())
+                    .sorted(Comparator.comparing(Arg::name));
+        }
+
+        public String toString(PrefixMapping pm) {
+            return directArgs()
+                    .map(a -> toString(pm, a))
+                    .collect(Collectors.joining(", ", pm.shortForm(getFunction().name()) + "(", ")"));
+        }
+
+        private String toString(PrefixMapping pm, Arg a) {
+            Object v = parameters.get(a);
+            String s;
+            if (v instanceof CallImpl) {
+                s = ((CallImpl) v).toString(pm);
+            } else {
+                s = String.valueOf(v);
+            }
+            return pm.shortForm(a.name()) + "=" + pm.shortForm(s);
         }
 
     }
