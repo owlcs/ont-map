@@ -376,7 +376,6 @@ public class MapFunctionImpl implements MapFunction {
             return Collections.unmodifiableMap(parameters);
         }
 
-
         @Override
         public MapFunctionImpl getFunction() {
             return MapFunctionImpl.this;

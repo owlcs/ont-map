@@ -215,7 +215,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     public void deleteContext(MapContextImpl context) {
         // delete rules:
-        Set<Statement> rules = context.listRules().collect(Collectors.toSet());
+        Set<Statement> rules = context.listRuleStatements().collect(Collectors.toSet());
         rules.forEach(s -> {
             Models.deleteAll(s.getObject().asResource());
             remove(s);

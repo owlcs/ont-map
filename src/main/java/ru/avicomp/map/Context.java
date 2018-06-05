@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * <p>
  * Created by @szuev on 14.04.2018.
  */
-public interface Context {
+public interface Context extends MapResource {
 
     /**
      * Answers an URI.
@@ -41,8 +41,10 @@ public interface Context {
      * (i.e {@code MapFunction#isTarget() == true}).
      *
      * @return {@link MapFunction.Call} or null in case context are not fully completed
+     * @see #isValid()
      */
-    MapFunction.Call getExpression();
+    @Override
+    MapFunction.Call getMapping();
 
     /**
      * Creates a bridge between classes using filter and mapping function calls.
@@ -77,7 +79,6 @@ public interface Context {
      *
      * @return Stream of {@link PropertyBridge}
      */
-
     Stream<PropertyBridge> properties();
 
     /**
@@ -125,10 +126,10 @@ public interface Context {
      *
      * @param other {@link Context} other context
      * @param link  {@link OntOPE}, link property
-     * @return <b>this</b> context
+     * @return {@link PropertyBridge} which connects this context and the specified
      * @throws MapJenaException if something goes wrong or input parameters are not correct
      */
-    Context attachContext(Context other, OntOPE link) throws MapJenaException;
+    PropertyBridge attachContext(Context other, OntOPE link) throws MapJenaException;
 
     /**
      * Lists all contexts that depend on this.
@@ -188,6 +189,6 @@ public interface Context {
      * @return boolean
      */
     default boolean isValid() {
-        return getExpression() != null;
+        return getMapping() != null;
     }
 }

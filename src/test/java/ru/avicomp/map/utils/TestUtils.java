@@ -110,10 +110,14 @@ public class TestUtils {
     }
 
     public static String toString(PrefixMapping pm, Statement s) {
-        return String.format("@%s <%s> ::: '%s'",
-                pm.shortForm(s.getSubject().getURI()),
+        return String.format("@%s <%s> '%s'",
+                toString(pm, s.getSubject()),
                 pm.shortForm(s.getPredicate().getURI()),
-                s.getObject());
+                toString(pm, s.getObject()));
+    }
+
+    public static String toString(PrefixMapping pm, RDFNode r) {
+        return r.isURIResource() ? pm.shortForm(r.asResource().getURI()) : r.isAnon() ? r.asResource().getId().toString() : r.toString();
     }
 
 }

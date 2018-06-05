@@ -3,7 +3,6 @@ package ru.avicomp.map.spin;
 import org.apache.jena.enhanced.EnhGraph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.rdf.model.impl.ResourceImpl;
 import org.apache.jena.shared.JenaException;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
@@ -14,6 +13,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -34,7 +34,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Created by @szuev on 14.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapContextImpl extends ResourceImpl implements Context {
+public class MapContextImpl extends OntObjectImpl implements Context {
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -43,6 +43,11 @@ public class MapContextImpl extends ResourceImpl implements Context {
     @Override
     public MapModelImpl getModel() {
         return (MapModelImpl) super.getModel();
+    }
+
+    @Override
+    public OntObject asResource() {
+        return this;
     }
 
     @Override
@@ -129,9 +134,8 @@ public class MapContextImpl extends ResourceImpl implements Context {
         RDFNode filterExpression = testFilterFunction(filterFunction) != null ? createExpression(filterFunction) : null;
         RDFNode mappingExpression = createExpression(mappingFunction);
         Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
-        MapPropertiesImpl res = asPropertyBridge(mapping);
         writeFunctionBody(mappingFunction);
-        return res;
+        return asPropertyBridge(mapping);
     }
 
     /**
@@ -201,34 +205,48 @@ public class MapContextImpl extends ResourceImpl implements Context {
      */
     public Stream<Resource> listTypedRules() {
         return listRules()
-                .map(Statement::getObject)
-                .map(RDFNode::asResource)
                 .filter(r -> r.hasProperty(SPINMAP.targetPredicate1, RDF.type));
     }
 
+    @Override
+    public MapFunction.Call getMapping() {
+        MapModelImpl m = getModel();
+        Optional<RDFNode> target = m.statements(this, SPINMAP.target, null)
+                .map(Statement::getObject).findFirst();
+        if (!target.isPresent()) return null;
+        // todo: implement
+        throw new UnsupportedOperationException("TODO");
+    }
+
+
+    @Override
+    public Stream<PropertyBridge> properties() {
+        return listMapProperties().map(PropertyBridge.class::cast);
+    }
+
+    public Stream<MapPropertiesImpl> listMapProperties() {
+        return listRules() // skip primary rule:
+                .filter(r -> !(r.hasProperty(SPINMAP.expression, target()) && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
+                .map(this::asPropertyBridge);
+    }
+
+    protected Stream<Resource> listRules() {
+        return listRuleStatements()
+                .map(Statement::getObject)
+                .map(RDFNode::asResource);
+    }
+
     /**
-     * Lists all {@code spinmap:rule} resources belonging to this context.
+     * Lists all {@code _:s spinmap:rule _:o} statements belonging to this context.
      *
      * @return Stream of {@link Statement}
      */
-    public Stream<Statement> listRules() {
+    public Stream<Statement> listRuleStatements() {
         MapModelImpl m = getModel();
         return m.statements(null, SPINMAP.context, this)
                 .map(OntStatement::getSubject)
                 .filter(RDFNode::isAnon)
                 .flatMap(r -> m.statements(getSource(), SPINMAP.rule, r));
-    }
-
-    @Override
-    public MapFunction.Call getExpression() {
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    @Override
-    public Stream<PropertyBridge> properties() {
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
     }
 
     @Override
@@ -271,7 +289,7 @@ public class MapContextImpl extends ResourceImpl implements Context {
     }
 
     @Override
-    public MapContextImpl attachContext(Context other, OntOPE link) throws MapJenaException {
+    public MapPropertiesImpl attachContext(Context other, OntOPE link) throws MapJenaException {
         if (this.equals(other)) {
             throw exception(ATTACHED_CONTEXT_SELF_CALL).build();
         }
@@ -288,16 +306,16 @@ public class MapContextImpl extends ResourceImpl implements Context {
                     .add(Key.LINK_PROPERTY, property).build();
         }
         // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge
-        getSource().addProperty(SPINMAP.rule,
-                m.createResource()
-                        .addProperty(RDF.type, SPINMAP.Mapping_0_1)
-                        .addProperty(SPINMAP.context, this)
-                        .addProperty(SPINMAP.targetPredicate1, link)
-                        .addProperty(SPINMAP.expression, m.createResource()
-                                .addProperty(RDF.type, SPINMAP.targetResource)
-                                .addProperty(SP.arg1, SPIN._arg1)
-                                .addProperty(SPINMAP.context, (MapContextImpl) other)));
-        return this;
+        Resource mapping = m.createResource()
+                .addProperty(RDF.type, SPINMAP.Mapping_0_1)
+                .addProperty(SPINMAP.context, this)
+                .addProperty(SPINMAP.targetPredicate1, link)
+                .addProperty(SPINMAP.expression, m.createResource()
+                        .addProperty(RDF.type, SPINMAP.targetResource)
+                        .addProperty(SP.arg1, SPIN._arg1)
+                        .addProperty(SPINMAP.context, (MapContextImpl) other));
+        getSource().addProperty(SPINMAP.rule, mapping);
+        return asPropertyBridge(mapping);
     }
 
     /**
@@ -320,6 +338,12 @@ public class MapContextImpl extends ResourceImpl implements Context {
         return Stream.concat(m.listChainedContexts(this), m.listRelatedContexts(this)).distinct().map(Context.class::cast);
     }
 
+    /**
+     * Makes a new {@link PropertyBridge} instance.
+     *
+     * @param resource {@link Resource} to wrap
+     * @return {@link MapPropertiesImpl}
+     */
     protected MapPropertiesImpl asPropertyBridge(Resource resource) {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }

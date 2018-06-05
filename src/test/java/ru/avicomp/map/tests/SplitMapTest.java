@@ -94,7 +94,8 @@ public class SplitMapTest extends MapTestData3 {
                 .addLiteral(SPINMAPL.template, dstNS + ":{?1}-{?2}-{?3}").build());
         context1.addPropertyBridge(equals.create().addProperty(SP.arg1, firstName).build(), dstName);
         Context context2 = res.createContext(srcPerson, dstAddress, buildURI1.create()
-                .addProperty(SP.arg1, address).addLiteral(SPINMAPL.template, dstNS + ":{?1}").build());
+                .addProperty(SP.arg1, address)
+                .addLiteral(SPINMAPL.template, dstNS + ":{?1}").build());
 
         return res.bindContexts(context1, context2);
     }

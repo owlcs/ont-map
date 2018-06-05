@@ -12,13 +12,11 @@ import java.util.stream.Stream;
  * <p>
  * Created by @szuev on 16.04.2018.
  */
-public interface PropertyBridge {
+public interface PropertyBridge extends MapResource {
 
     Stream<Property> sources();
 
     Property getTarget();
-
-    MapFunction.Call getExpression();
 
     Context getContext();
 

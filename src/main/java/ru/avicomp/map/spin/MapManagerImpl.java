@@ -26,6 +26,7 @@ import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -185,6 +186,10 @@ public class MapManagerImpl implements MapManager {
                 .map(mapFunctions::get)
                 .filter(Objects::nonNull)
                 .allMatch(f -> !uri.equals(f.name()) && MapManagerImpl.this.isRegistered(f));
+    }
+
+    public Map<String, MapFunctionImpl> getFunctionMap() {
+        return Collections.unmodifiableMap(mapFunctions);
     }
 
     @Override
