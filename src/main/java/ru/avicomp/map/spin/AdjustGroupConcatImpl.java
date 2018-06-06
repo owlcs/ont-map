@@ -33,7 +33,7 @@ public class AdjustGroupConcatImpl implements AdjustFunctionBody {
         MapFunction function = MapJenaException.notNull(call, "Null function call specified").getFunction();
         Resource resource = MapJenaException.notNull(model, "Null model specified").getResource(function.name());
         MapFunction.Arg arg = function.getArg(SPINMAPL.separator.getURI());
-        Object value = call.asMap().get(arg);
+        Object value = call.get(arg);
         if (!(value instanceof String)) {
             throw new MapJenaException("Null or wrong value for separator");
         }

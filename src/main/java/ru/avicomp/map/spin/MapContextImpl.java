@@ -220,7 +220,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         MapModelImpl m = getModel();
         MapManagerImpl man = m.getManager();
         MapFunctionImpl f;
-        Map<MapFunction.Arg, Object> args = new HashMap<>();
+        Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
         if (expr.isURIResource()) {
             f = man.getFunction(SPINMAP.equals.getURI());
             args.put(f.getArg(SP.arg1.getURI()), expr.getURI());
@@ -242,7 +242,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         return createFunctionCall(m, f, args);
     }
 
-    protected MapFunctionImpl.CallImpl createFunctionCall(PrefixMapping pm, MapFunctionImpl f, Map<MapFunction.Arg, Object> args) {
+    protected MapFunctionImpl.CallImpl createFunctionCall(PrefixMapping pm, MapFunctionImpl f, Map<MapFunctionImpl.ArgImpl, Object> args) {
         return f.new CallImpl(args) {
             @Override
             public String toString() {

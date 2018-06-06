@@ -18,6 +18,7 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,13 +54,17 @@ public class MapFunctionImpl implements MapFunction {
         return arguments == null ? arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
     }
 
+    public Stream<ArgImpl> listArgs() {
+        return getArguments().stream();
+    }
+
     @Override
     public Stream<Arg> args() {
-        return getArguments().stream().map(Arg.class::cast);
+        return listArgs().map(Function.identity());
     }
 
     public Optional<ArgImpl> arg(String predicate) {
-        return getArguments().stream().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
+        return listArgs().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
     }
 
     @Override
@@ -135,8 +140,7 @@ public class MapFunctionImpl implements MapFunction {
     public String toString(PrefixMapping pm) {
         return String.format("%s [%s](%s)",
                 pm.shortForm(type()),
-                pm.shortForm(name()), args()
-                        .map(ArgImpl.class::cast)
+                pm.shortForm(name()), listArgs()
                         .map(a -> a.toString(pm))
                         .collect(Collectors.joining(", ")));
     }
@@ -268,7 +272,7 @@ public class MapFunctionImpl implements MapFunction {
 
     public class BuilderImpl implements Builder {
         // either string or builder
-        private final Map<Arg, Object> input = new HashMap<>();
+        private final Map<ArgImpl, Object> input = new HashMap<>();
 
         @Override
         public Builder add(String arg, String value) {
@@ -316,7 +320,7 @@ public class MapFunctionImpl implements MapFunction {
 
         @Override
         public Call build() throws MapJenaException {
-            Map<Arg, Object> map = new HashMap<>();
+            Map<ArgImpl, Object> map = new HashMap<>();
             input.forEach((key, value) -> {
                 Object v;
                 if (value instanceof Builder) {
@@ -336,7 +340,7 @@ public class MapFunctionImpl implements MapFunction {
             }
             // check all required arguments are assigned
             Exceptions.Builder error = exception(FUNCTION_NO_REQUIRED_ARG);
-            getFunction().args().forEach(a -> {
+            getFunction().listArgs().forEach(a -> {
                 if (a.isVararg()) return;
                 if (map.containsKey(a) || a.isOptional())
                     return;
@@ -365,9 +369,9 @@ public class MapFunctionImpl implements MapFunction {
 
     public class CallImpl implements Call {
         // values can be either string or another function calls
-        private final Map<Arg, Object> parameters;
+        protected final Map<ArgImpl, Object> parameters;
 
-        CallImpl(Map<Arg, Object> args) {
+        public CallImpl(Map<ArgImpl, Object> args) {
             this.parameters = args;
         }
 
@@ -377,8 +381,46 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         @Override
+        public Stream<Arg> args() {
+            return listArgs().map(Function.identity());
+        }
+
+        @Override
+        public Object get(Arg arg) throws MapJenaException {
+            try {
+                //noinspection SuspiciousMethodCalls
+                return MapJenaException.notNull(parameters.get(arg), "No value for " + arg);
+            } catch (ClassCastException c) {
+                throw new MapJenaException("No value for " + arg, c);
+            }
+        }
+
+        @Override
         public MapFunctionImpl getFunction() {
             return MapFunctionImpl.this;
+        }
+
+        public Stream<ArgImpl> listArgs() {
+            return parameters.keySet().stream()
+                    .filter(a -> !a.isInherit())
+                    .sorted(Comparator.comparing(Arg::name));
+        }
+
+        public String toString(PrefixMapping pm) {
+            return listArgs()
+                    .map(a -> toString(pm, a))
+                    .collect(Collectors.joining(", ", pm.shortForm(getFunction().name()) + "(", ")"));
+        }
+
+        protected String toString(PrefixMapping pm, ArgImpl a) {
+            Object v = parameters.get(a);
+            String s;
+            if (v instanceof CallImpl) {
+                s = ((CallImpl) v).toString(pm);
+            } else {
+                s = String.valueOf(v);
+            }
+            return pm.shortForm(a.name()) + "=" + pm.shortForm(s);
         }
 
         @Override
@@ -404,30 +446,6 @@ public class MapFunctionImpl implements MapFunction {
                     return CallImpl.this;
                 }
             };
-        }
-
-        public Stream<ArgImpl> directArgs() {
-            return parameters.keySet().stream()
-                    .map(ArgImpl.class::cast)
-                    .filter(a -> !a.isInherit())
-                    .sorted(Comparator.comparing(Arg::name));
-        }
-
-        public String toString(PrefixMapping pm) {
-            return directArgs()
-                    .map(a -> toString(pm, a))
-                    .collect(Collectors.joining(", ", pm.shortForm(getFunction().name()) + "(", ")"));
-        }
-
-        private String toString(PrefixMapping pm, Arg a) {
-            Object v = parameters.get(a);
-            String s;
-            if (v instanceof CallImpl) {
-                s = ((CallImpl) v).toString(pm);
-            } else {
-                s = String.valueOf(v);
-            }
-            return pm.shortForm(a.name()) + "=" + pm.shortForm(s);
         }
 
     }

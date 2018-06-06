@@ -7,6 +7,8 @@ import ru.avicomp.ontapi.jena.model.OntPE;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -63,6 +65,17 @@ public interface MapFunction extends Description {
     Builder create();
 
     /**
+     * Answers iff this function supports varargs.
+     * Most functions does not support varargs and this method will return {@code false}.
+     * Examples of vararg functions: {@code sp:concat}, {@code sp:in}.
+     *
+     * @return true if function has varargs
+     */
+    default boolean isVararg() {
+        return args().anyMatch(Arg::isVararg);
+    }
+
+    /**
      * Gets an argument by predicate iri.
      *
      * @param predicate String, predicate iri
@@ -111,8 +124,6 @@ public interface MapFunction extends Description {
 
         /**
          * Answers iff this argument is a fictitious indicator for a function that supports varargs.
-         * Most functions does not contain such arguments and this method will return {@code false}.
-         * Examples of vararg function: {@code sp:concat}, {@code sp:in}.
          *
          * @return true in case of vararg.
          */
@@ -120,6 +131,8 @@ public interface MapFunction extends Description {
 
         /**
          * Answers iff this argument is available to assign value.
+         * An argument could be inherited from parent function, or be hidden, or be disabled for some other reason.
+         * In this case it is not allowed to be used in building function call.
          *
          * @return boolean
          */
@@ -143,7 +156,22 @@ public interface MapFunction extends Description {
      */
     interface Call {
 
-        Map<Arg, Object> asMap();
+        /**
+         * Returns a direct list of arguments, which are used as keys for the calls parameters.
+         * The result stream is distinct and sorted by {@link Arg#name() argument name}.
+         *
+         * @return Stream of {@link Arg}s.
+         */
+        Stream<Arg> args();
+
+        /**
+         * Returns a value assigned to the call for the specified argument.
+         *
+         * @param arg {@link Arg}
+         * @return either String or another {@link Call call}
+         * @throws MapJenaException in case no value found
+         */
+        Object get(Arg arg) throws MapJenaException;
 
         /**
          * Represents a call as unmodifiable builder instance.
@@ -153,8 +181,23 @@ public interface MapFunction extends Description {
          */
         Builder asUnmodifiableBuilder();
 
+        /**
+         * Answers a function from which this call was created.
+         * @return {@link MapFunction}, never null.
+         */
         default MapFunction getFunction() {
             return asUnmodifiableBuilder().getFunction();
+        }
+
+        /**
+         * Represents this function call as java Map.
+         * Implementations are free to return more wide map including hidden or inherited arguments.
+         * Just for convenience, not to use in GUI.
+         *
+         * @return Map
+         */
+        default Map<Arg, Object> asMap() {
+            return args().collect(Collectors.toMap(Function.identity(), this::get));
         }
     }
 
@@ -167,6 +210,11 @@ public interface MapFunction extends Description {
 
         /**
          * Adds an argument value to a future function call.
+         * The value must be an absolute iri or full literal form with an absolute datatype iri in the right part,
+         * e.g. {@code "1"^^<http://www.w3.org/2001/XMLSchema#int>}.
+         * Note: if an input cannot be treated as resource or literal inside model,
+         * then it is assumed that it is a plain (string) literal,
+         * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          *
          * @param predicate String, iri, not null
          * @param value     String, value, not null.
