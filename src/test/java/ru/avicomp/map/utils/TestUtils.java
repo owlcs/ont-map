@@ -110,7 +110,7 @@ public class TestUtils {
     }
 
     public static String toString(PrefixMapping pm, Statement s) {
-        return String.format("@%s <%s> '%s'",
+        return String.format(s.getObject().isLiteral() ? "@%s <%s> '%s'" : "@%s <%s> @%s",
                 toString(pm, s.getSubject()),
                 pm.shortForm(s.getPredicate().getURI()),
                 toString(pm, s.getObject()));

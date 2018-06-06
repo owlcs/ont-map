@@ -68,6 +68,7 @@ public interface MapFunction extends Description {
      * Answers iff this function supports varargs.
      * Most functions does not support varargs and this method will return {@code false}.
      * Examples of vararg functions: {@code sp:concat}, {@code sp:in}.
+     * To avoid ambiguous situations it is expected that vararg function has one and only one vararg argument.
      *
      * @return true if function has varargs
      */
@@ -87,6 +88,10 @@ public interface MapFunction extends Description {
                 .filter(f -> Objects.equals(predicate, f.name()))
                 .findFirst()
                 .orElseThrow(() -> new MapJenaException("Function (" + name() + ") argument " + predicate + " not found."));
+    }
+
+    default boolean contains(String predicate) {
+        return args().map(Arg::name).anyMatch(predicate::equals);
     }
 
     /**
@@ -160,7 +165,7 @@ public interface MapFunction extends Description {
          * Returns a direct list of arguments, which are used as keys for the calls parameters.
          * The result stream is distinct and sorted by {@link Arg#name() argument name}.
          *
-         * @return Stream of {@link Arg}s.
+         * @return Stream of {@link Arg}s
          */
         Stream<Arg> args();
 
@@ -168,10 +173,18 @@ public interface MapFunction extends Description {
          * Returns a value assigned to the call for the specified argument.
          *
          * @param arg {@link Arg}
-         * @return either String or another {@link Call call}
+         * @return either String or another {@link Call function-call}
          * @throws MapJenaException in case no value found
          */
         Object get(Arg arg) throws MapJenaException;
+
+        /**
+         * Lists all nested function calls.
+         *
+         * @param direct if true only top-level functions will be listed
+         * @return Stream of {@link MapFunction.Call}
+         */
+        Stream<MapFunction.Call> functions(boolean direct);
 
         /**
          * Represents a call as unmodifiable builder instance.

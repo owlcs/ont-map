@@ -102,6 +102,18 @@ public interface MapModel {
     OntGraphModel asOntModel();
 
     /**
+     * Lists all rules ({@link MapResource Mapping Resources}).
+     * A MapResource can be either {@link Context} or {@link PropertyBridge}.
+     * Incomplete contexts are not included to the result.
+     *
+     * @return Stream of {@link MapResource}s.
+     * @see Context#isValid()
+     */
+    default Stream<MapResource> rules() {
+        return contexts().flatMap(c -> c.isValid() ? Stream.concat(Stream.of(c), c.properties()) : c.properties());
+    }
+
+    /**
      * Creates a ready to use context, i.e. a class expression binding with an target rule expression.
      *
      * @param source             {@link OntCE} a source class expression

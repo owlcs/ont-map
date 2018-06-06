@@ -640,6 +640,31 @@ public class MapContextImpl extends OntObjectImpl implements Context {
             });
         }
 
+        /**
+         * Tries to find property in mapping by variable (e.g. {@code spin:_arg1}).
+         *
+         * @param mapping {@link Resource}
+         * @param var     {@link Resource}
+         * @return {@link Property}
+         * @throws JenaException in case no property found
+         */
+        public static Property findProperty(Resource mapping, Resource var) throws JenaException {
+            int index = Integer.parseInt(var.getLocalName().replace(SPIN._ARG, ""));
+            Property sourcePredicate = SPINMAP.sourcePredicate(index);
+            Optional<Property> res = Iter.asStream(mapping.listProperties(sourcePredicate))
+                    .map(Statement::getObject)
+                    .filter(o -> o.canAs(Property.class))
+                    .map(o -> o.as(Property.class))
+                    .findFirst();
+            if (res.isPresent()) return res.get();
+            // special case of spinmap:Mapping-0-1 and spinmap:targetResource, as a hotfix right now:
+            if (mapping.hasProperty(RDF.type, SPINMAP.Mapping_0_1)) {
+                Property targetPredicate = SPINMAP.targetPredicate(index);
+                return mapping.getPropertyResourceValue(targetPredicate).as(Property.class);
+            }
+            throw new MapJenaException("Can't find property for variable " + var);
+        }
+
         Resource getMapping() {
             return mapping;
         }

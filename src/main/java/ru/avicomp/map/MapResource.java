@@ -2,12 +2,15 @@ package ru.avicomp.map;
 
 import ru.avicomp.ontapi.jena.model.OntObject;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 /**
  * Common interface for class and property bridges.
  * <p>
  * Created by @szuev on 05.06.2018.
  */
-interface MapResource {
+public interface MapResource {
 
     /**
      * Wraps this map-resource as ont-resource.
@@ -33,4 +36,17 @@ interface MapResource {
      * @return {@link MapFunction.Call} or null
      */
     MapFunction.Call getFilter();
+
+    /**
+     * Lists all functions which are used by this MapResource.
+     *
+     * @return <b>distinct</b> Stream of {@link MapFunction}s
+     */
+    default Stream<MapFunction> functions() {
+        return Stream.of(getMapping(), getFilter())
+                .filter(Objects::nonNull)
+                .flatMap(f -> Stream.concat(Stream.of(f), f.functions(false)))
+                .map(MapFunction.Call::getFunction)
+                .distinct();
+    }
 }

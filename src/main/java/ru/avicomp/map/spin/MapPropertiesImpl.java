@@ -9,6 +9,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.PropertyBridge;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.OntObject;
 import ru.avicomp.ontapi.jena.utils.Iter;
@@ -53,14 +54,13 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
 
     @Override
     public MapFunction.Call getMapping() {
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
+        return getModel().parseExpression(this, getRequiredProperty(SPINMAP.expression).getObject());
     }
 
     @Override
     public MapFunction.Call getFilter() {
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
+        if (!hasProperty(AVC.filter)) return null;
+        return getModel().parseExpression(this, getPropertyResourceValue(AVC.filter));
     }
 
     @Override

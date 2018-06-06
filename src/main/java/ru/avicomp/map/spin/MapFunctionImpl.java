@@ -32,8 +32,8 @@ import static ru.avicomp.map.spin.Exceptions.*;
 @SuppressWarnings("WeakerAccess")
 public class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
-    private final org.topbraid.spin.model.Module func;
-    private List<ArgImpl> arguments;
+    protected final org.topbraid.spin.model.Module func;
+    protected List<ArgImpl> arguments;
 
     public MapFunctionImpl(org.topbraid.spin.model.Function func) {
         this.func = Objects.requireNonNull(func, "Null " + org.topbraid.spin.model.Function.class.getName());
@@ -110,7 +110,7 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * Returns resource attached to the library model
+     * Returns resource attached to the library model.
      *
      * @return {@link Resource}
      */
@@ -155,11 +155,15 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     public class ArgImpl implements Arg {
-        private final org.topbraid.spin.model.Argument arg;
-        private final String name;
+        protected final org.topbraid.spin.model.Argument arg;
+        protected final String name;
 
         public ArgImpl(org.topbraid.spin.model.Argument arg) {
             this(arg, argumentToName(arg));
+        }
+
+        public ArgImpl(ArgImpl arg, String name) {
+            this(arg.arg, name);
         }
 
         public ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
@@ -292,7 +296,7 @@ public class MapFunctionImpl implements MapFunction {
 
             if (arg.isVararg()) {
                 int index = nextIndex();
-                arg = new ArgImpl(arg.arg, SP.arg(index).getURI());
+                arg = new ArgImpl(arg, SP.arg(index).getURI());
             }
 
             if (!(val instanceof String)) {
@@ -383,6 +387,22 @@ public class MapFunctionImpl implements MapFunction {
         @Override
         public Stream<Arg> args() {
             return listArgs().map(Function.identity());
+        }
+
+        public Stream<MapFunctionImpl.CallImpl> directFunctionCalls() {
+            return parameters.values().stream()
+                    .filter(MapFunctionImpl.CallImpl.class::isInstance)
+                    .map(MapFunctionImpl.CallImpl.class::cast);
+        }
+
+        public Stream<MapFunctionImpl.CallImpl> listFunctions(boolean direct) {
+            if (direct) return directFunctionCalls();
+            return directFunctionCalls().flatMap(f -> Stream.concat(Stream.of(f), f.directFunctionCalls()));
+        }
+
+        @Override
+        public Stream<MapFunction.Call> functions(boolean direct) {
+            return listFunctions(direct).map(Function.identity());
         }
 
         @Override

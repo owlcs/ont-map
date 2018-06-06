@@ -1,7 +1,6 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
@@ -603,7 +602,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      *
      * @param call {@link MapFunction.Call} function call to write
      * @return an anonymous {@link Resource}
-     * @see #parseExpression(Resource, Resource)
+     * @see #parseExpression(Resource, RDFNode)
      */
     protected RDFNode createExpression(MapFunction.Call call) {
         MapFunction func = call.getFunction();
@@ -630,24 +629,40 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * Creates a {@link MapFunction.Call function call} from a given expression resource.
      *
      * @param mapping {@link Resource} mapping
-     * @param expr    {@link Resource} expression
+     * @param expr    {@link RDFNode} expression
      * @return {@link MapFunction.Call}
      * @see #createExpression(MapFunction.Call)
      */
-    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, Resource expr) {
+    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr) {
         MapManagerImpl man = getManager();
         MapFunctionImpl f;
         Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
-        if (expr.isURIResource()) {
+
+        if (expr.isLiteral() || expr.isURIResource()) {
             f = man.getFunction(SPINMAP.equals.getURI());
-            args.put(f.getArg(SP.arg1.getURI()), expr.getURI());
+            String v = (expr.isLiteral() ? expr : MapContextImpl.ContextMappingHelper.findProperty(mapping, expr.asResource())).asNode().toString();
+            args.put(f.getArg(SP.arg1.getURI()), v);
             return createFunctionCall(f, args);
         }
-        String name = expr.getRequiredProperty(RDF.type).getObject().asResource().getURI();
+        if (!expr.isAnon()) throw new IllegalArgumentException("Should never happen: " + expr.toString());
+        Resource expression = expr.asResource();
+        String name = expression.getRequiredProperty(RDF.type).getObject().asResource().getURI();
         f = man.getFunction(name);
-        expr.listProperties()
+        expression.listProperties()
                 .filterDrop(s -> RDF.type.equals(s.getPredicate()))
                 .forEachRemaining(s -> {
+                    String uri = s.getPredicate().getURI();
+                    MapFunctionImpl.ArgImpl a;
+                    if (f.isVararg() && !f.contains(uri)) {
+                        List<MapFunctionImpl.ArgImpl> varargs = f.listArgs()
+                                .filter(MapFunctionImpl.ArgImpl::isVararg)
+                                .collect(Collectors.toList());
+                        if (varargs.size() != 1)
+                            throw new IllegalStateException("Can't find vararg argument for " + f.name());
+                        a = f.new ArgImpl(varargs.get(0), uri);
+                    } else {
+                        a = f.getArg(uri);
+                    }
                     Object v = null;
                     RDFNode n = s.getObject();
                     if (n.isResource()) {
@@ -655,20 +670,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                         if (r.isAnon()) {
                             v = parseExpression(mapping, r);
                         } else if (SpinModels.isSpinArgVariable(r)) {
-                            int index = Integer.parseInt(r.getLocalName().replace(SPIN._ARG, ""));
-                            Property p = SPINMAP.sourcePredicate(index);
-                            v = Iter.asStream(mapping.listProperties(p))
-                                    .map(Statement::getObject)
-                                    .map(FrontsNode::asNode)
-                                    .map(Objects::toString)
-                                    .findFirst()
-                                    .orElse(null);
+                            v = MapContextImpl.ContextMappingHelper.findProperty(mapping, r).asNode().toString();
                         }
                     }
                     if (v == null) {
                         v = n.asNode().toString();
                     }
-                    args.put(f.getArg(s.getPredicate().getURI()), v);
+                    args.put(a, v);
                 });
         return createFunctionCall(f, args);
     }
@@ -677,8 +685,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * Makes a {@link MapFunction.Call} implementation with overridden {@code #toString()},
      * to produce a good-looking output, which can be used as label.
      * Actually, it is not a very good idea to override {@code #toString()},
-     * there should be special mechanism to print anything in ONT-MAP api.
-     * But as temporary solution it is okay - it is not dangerous in our case.
+     * there should be a special mechanism to print anything in ONT-MAP api.
+     * But as temporary solution it is okay: it is not dangerous in our case.
      *
      * @param f    {@link MapFunctionImpl}
      * @param args Map with {@link MapFunctionImpl.ArgImpl args} as keys
