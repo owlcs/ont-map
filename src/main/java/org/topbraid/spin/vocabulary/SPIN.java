@@ -23,6 +23,7 @@ public class SPIN {
 
     public final static String INVERSE_OBJECT_VAR_NAME = "object";
     public final static String THIS_VAR_NAME = "this";
+    public final static String _ARG = "_arg";
 
     public final static Resource ask = resource("ask");
     public final static Resource AskTemplate = resource("AskTemplate");
@@ -101,10 +102,11 @@ public class SPIN {
 
     public static Resource _arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return resource("_arg" + i);
+        return resource(_ARG + i);
     }
 
     public static Model getModel() {
         return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
     }
+
 }

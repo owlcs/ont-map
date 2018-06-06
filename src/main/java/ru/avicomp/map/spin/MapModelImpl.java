@@ -1,8 +1,11 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.XSD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -586,4 +589,144 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return function.asResource().inModel(this);
     }
 
+    /**
+     * Creates an expression resource.
+     * Example of expression:
+     * <pre>{@code
+     * [ a  spinmapl:buildURI2 ;
+     *      sp:arg1            people:secondName ;
+     *      sp:arg2            people:firstName ;
+     *      spinmap:source     spinmap:_source ;
+     *      spinmapl:template  "beings:Being-{?1}-{?2}"
+     *  ] ;
+     *  }</pre>
+     *
+     * @param call {@link MapFunction.Call} function call to write
+     * @return an anonymous {@link Resource}
+     * @see #parseExpression(Resource, Resource)
+     */
+    protected RDFNode createExpression(MapFunction.Call call) {
+        MapFunction func = call.getFunction();
+        Resource res = createResource();
+        call.asMap().forEach((arg, value) -> {
+            RDFNode param = null;
+            if (value instanceof MapFunction.Call) {
+                if (Objects.equals(value, call)) throw new IllegalArgumentException("Self call");
+                param = createExpression((MapFunction.Call) value);
+            }
+            if (value instanceof String) {
+                param = toNode((String) value);
+            }
+            if (param == null)
+                throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
+            Property predicate = createArgProperty(arg.name());
+            res.addProperty(predicate, param);
+
+        });
+        return res.addProperty(RDF.type, createResource(func.name()));
+    }
+
+    /**
+     * Creates a {@link MapFunction.Call function call} from a given expression resource.
+     *
+     * @param mapping {@link Resource} mapping
+     * @param expr    {@link Resource} expression
+     * @return {@link MapFunction.Call}
+     * @see #createExpression(MapFunction.Call)
+     */
+    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, Resource expr) {
+        MapManagerImpl man = getManager();
+        MapFunctionImpl f;
+        Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
+        if (expr.isURIResource()) {
+            f = man.getFunction(SPINMAP.equals.getURI());
+            args.put(f.getArg(SP.arg1.getURI()), expr.getURI());
+            return createFunctionCall(f, args);
+        }
+        String name = expr.getRequiredProperty(RDF.type).getObject().asResource().getURI();
+        f = man.getFunction(name);
+        expr.listProperties()
+                .filterDrop(s -> RDF.type.equals(s.getPredicate()))
+                .forEachRemaining(s -> {
+                    Object v = null;
+                    RDFNode n = s.getObject();
+                    if (n.isResource()) {
+                        Resource r = n.asResource();
+                        if (r.isAnon()) {
+                            v = parseExpression(mapping, r);
+                        } else if (SpinModels.isSpinArgVariable(r)) {
+                            int index = Integer.parseInt(r.getLocalName().replace(SPIN._ARG, ""));
+                            Property p = SPINMAP.sourcePredicate(index);
+                            v = Iter.asStream(mapping.listProperties(p))
+                                    .map(Statement::getObject)
+                                    .map(FrontsNode::asNode)
+                                    .map(Objects::toString)
+                                    .findFirst()
+                                    .orElse(null);
+                        }
+                    }
+                    if (v == null) {
+                        v = n.asNode().toString();
+                    }
+                    args.put(f.getArg(s.getPredicate().getURI()), v);
+                });
+        return createFunctionCall(f, args);
+    }
+
+    /**
+     * Makes a {@link MapFunction.Call} implementation with overridden {@code #toString()},
+     * to produce a good-looking output, which can be used as label.
+     * Actually, it is not a very good idea to override {@code #toString()},
+     * there should be special mechanism to print anything in ONT-MAP api.
+     * But as temporary solution it is okay - it is not dangerous in our case.
+     *
+     * @param f    {@link MapFunctionImpl}
+     * @param args Map with {@link MapFunctionImpl.ArgImpl args} as keys
+     * @return {@link MapFunction.Call} attached to this model.
+     */
+    protected MapFunctionImpl.CallImpl createFunctionCall(MapFunctionImpl f, Map<MapFunctionImpl.ArgImpl, Object> args) {
+        MapModelImpl m = this;
+        return f.new CallImpl(args) {
+            @Override
+            public String toString(PrefixMapping pm) {
+                String name = m.shortForm(getFunction().name());
+                List<MapFunctionImpl.ArgImpl> args = listArgs().collect(Collectors.toList());
+                if (args.size() == 1) { // print without predicate
+                    return name + "(" + getStringValue(m, args.get(0)) + ")";
+                }
+                return args.stream()
+                        .map(a -> toString(pm, a))
+                        .collect(Collectors.joining(", ", name + "(", ")"));
+            }
+
+            @Override
+            protected String getStringValue(PrefixMapping pm, MapFunctionImpl.ArgImpl a) {
+                Object v = get(a);
+                if (v instanceof String) {
+                    RDFNode n = m.toNode((String) v);
+                    if (n.isLiteral()) {
+                        Literal l = n.asLiteral();
+                        String u = l.getDatatypeURI();
+                        if (XSD.xstring.getURI().equals(u)) {
+                            return l.getLexicalForm();
+                        }
+                        return String.format("%s^^%s", l.getLexicalForm(), m.shortForm(u));
+                    } else {
+                        return m.shortForm(n.asNode().toString());
+                    }
+                }
+                return super.getStringValue(pm, a);
+            }
+
+            @Override
+            protected String getStringKey(PrefixMapping pm, MapFunctionImpl.ArgImpl a) {
+                return "?" + toNode(a.name()).asResource().getLocalName();
+            }
+
+            @Override
+            public String toString() {
+                return toString(m);
+            }
+        };
+    }
 }

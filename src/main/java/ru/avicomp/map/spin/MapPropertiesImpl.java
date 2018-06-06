@@ -41,13 +41,9 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
     @Override
     public Stream<Property> sources() {
         return Iter.asStream(listProperties())
-                .filter(s -> isSourcePredicate(s.getPredicate()))
+                .filter(s -> SpinModels.isSourcePredicate(s.getPredicate()))
                 .map(Statement::getObject)
                 .map(s -> s.as(Property.class));
-    }
-
-    public static boolean isSourcePredicate(Property p) {
-        return p.getLocalName().matches("^" + SPINMAP.SOURCE_PREDICATE_PREFIX + "\\d+$");
     }
 
     @Override
@@ -57,6 +53,12 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
 
     @Override
     public MapFunction.Call getMapping() {
+        // todo: implement
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public MapFunction.Call getFilter() {
         // todo: implement
         throw new UnsupportedOperationException("TODO");
     }

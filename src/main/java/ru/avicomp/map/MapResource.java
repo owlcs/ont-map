@@ -24,4 +24,13 @@ interface MapResource {
      * @return {@link MapFunction.Call}
      */
     MapFunction.Call getMapping();
+
+
+    /**
+     * Returns a filter function call.
+     * Usually a mapping (class or property bridge) does not contain any filter and method returns {@code null}.
+     *
+     * @return {@link MapFunction.Call} or null
+     */
+    MapFunction.Call getFilter();
 }

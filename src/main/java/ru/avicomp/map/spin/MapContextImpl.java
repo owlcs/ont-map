@@ -102,13 +102,13 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .allMatch(r -> r.hasProperty(AVC.filter))) {
-            RDFNode filterExpression = filterFunction == null ? null : createExpression(filterFunction);
+            RDFNode filterExpression = filterFunction == null ? null : m.createExpression(filterFunction);
             // add Mapping-0-1 to create individual with target type
             ContextMappingHelper.addPrimaryRule(this, filterExpression);
         }
 
         // add target expression
-        RDFNode mappingExpression = createExpression(mappingFunction);
+        RDFNode mappingExpression = m.createExpression(mappingFunction);
         addProperty(SPINMAP.target, mappingExpression);
         // delete old target expressions:
         prev.forEach(s -> {
@@ -131,8 +131,9 @@ public class MapContextImpl extends OntObjectImpl implements Context {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
         testFunction(mappingFunction);
-        RDFNode filterExpression = testFilterFunction(filterFunction) != null ? createExpression(filterFunction) : null;
-        RDFNode mappingExpression = createExpression(mappingFunction);
+        MapModelImpl m = getModel();
+        RDFNode filterExpression = testFilterFunction(filterFunction) != null ? m.createExpression(filterFunction) : null;
+        RDFNode mappingExpression = m.createExpression(mappingFunction);
         Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
         writeFunctionBody(mappingFunction);
         return asPropertyBridge(mapping);
@@ -185,12 +186,45 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         }
     }
 
+    @Override
+    public MapFunction.Call getMapping() {
+        MapModelImpl m = getModel();
+        Optional<RDFNode> target = m.statements(this, SPINMAP.target, null)
+                .map(Statement::getObject).findFirst();
+        return target.map(n -> m.parseExpression(m.createResource(), n.asResource())).orElse(null);
+    }
+
+    @Override
+    public MapFunction.Call getFilter() {
+        Optional<Resource> mapping = primaryRule().filter(r -> r.hasProperty(AVC.filter));
+        return mapping.map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter))).orElse(null);
+    }
+
+    @Override
+    public Stream<PropertyBridge> properties() {
+        return listMapProperties().map(PropertyBridge.class::cast);
+    }
+
+    public Stream<MapPropertiesImpl> listMapProperties() {
+        return listRules() // skip primary rule:
+                .filter(r -> !(r.hasProperty(SPINMAP.expression, target()) && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
+                .map(this::asPropertyBridge);
+    }
+
     /**
      * Gets a primary (class to class) mapping rule as ordinal resource.
      * For a valid (see {@link Context#isValid()}) standalone context
      * the result should be present, otherwise it may be empty.
+     * Example of such mapping:
+     * <pre>{@code
+     * [ a  spinmap:Mapping-0-1 ;
+     *      spinmap:context           map:Context-SourceClass-TargetClass ;
+     *      spinmap:expression        :TargetClass ;
+     *      spinmap:targetPredicate1  rdf:type
+     *  ] .
+     * }</pre>
      *
-     * @return Optional around mapping {@link Resource}
+     * @return Optional around mapping {@link Resource}, which is an anonymous resource:
      */
     public Optional<Resource> primaryRule() {
         return listTypedRules()
@@ -208,59 +242,6 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                 .filter(r -> r.hasProperty(SPINMAP.targetPredicate1, RDF.type));
     }
 
-    @Override
-    public MapFunction.Call getMapping() {
-        MapModelImpl m = getModel();
-        Optional<RDFNode> target = m.statements(this, SPINMAP.target, null)
-                .map(Statement::getObject).findFirst();
-        return target.map(n -> parse(n.asResource())).orElse(null);
-    }
-
-    public MapFunctionImpl.CallImpl parse(Resource expr) {
-        MapModelImpl m = getModel();
-        MapManagerImpl man = m.getManager();
-        MapFunctionImpl f;
-        Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
-        if (expr.isURIResource()) {
-            f = man.getFunction(SPINMAP.equals.getURI());
-            args.put(f.getArg(SP.arg1.getURI()), expr.getURI());
-            return createFunctionCall(m, f, args);
-        }
-        String name = expr.getRequiredProperty(RDF.type).getObject().asResource().getURI();
-        f = man.getFunction(name);
-        expr.listProperties()
-                .filterDrop(s -> RDF.type.equals(s.getPredicate()))
-                .forEachRemaining(s -> {
-                    Object v;
-                    if (s.getObject().isAnon()) {
-                        v = parse(s.getObject().asResource());
-                    } else {
-                        v = s.getObject().asNode().toString();
-                    }
-                    args.put(f.getArg(s.getPredicate().getURI()), v);
-                });
-        return createFunctionCall(m, f, args);
-    }
-
-    protected MapFunctionImpl.CallImpl createFunctionCall(PrefixMapping pm, MapFunctionImpl f, Map<MapFunctionImpl.ArgImpl, Object> args) {
-        return f.new CallImpl(args) {
-            @Override
-            public String toString() {
-                return super.toString(pm);
-            }
-        };
-    }
-
-    @Override
-    public Stream<PropertyBridge> properties() {
-        return listMapProperties().map(PropertyBridge.class::cast);
-    }
-
-    public Stream<MapPropertiesImpl> listMapProperties() {
-        return listRules() // skip primary rule:
-                .filter(r -> !(r.hasProperty(SPINMAP.expression, target()) && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
-                .map(this::asPropertyBridge);
-    }
 
     protected Stream<Resource> listRules() {
         return listRuleStatements()
@@ -378,43 +359,6 @@ public class MapContextImpl extends OntObjectImpl implements Context {
      */
     protected MapPropertiesImpl asPropertyBridge(Resource resource) {
         return new MapPropertiesImpl(resource.asNode(), getModel());
-    }
-
-    /**
-     * Creates an expression resource.
-     * Example of expression:
-     * <pre>{@code
-     * [ a  spinmapl:buildURI2 ;
-     *      sp:arg1            people:secondName ;
-     *      sp:arg2            people:firstName ;
-     *      spinmap:source     spinmap:_source ;
-     *      spinmapl:template  "beings:Being-{?1}-{?2}"
-     *  ] ;
-     *  }</pre>
-     *
-     * @param call {@link MapFunction.Call} function call to write
-     * @return {@link Resource}
-     */
-    public RDFNode createExpression(MapFunction.Call call) {
-        MapModelImpl m = getModel();
-        MapFunction func = call.getFunction();
-        Resource res = m.createResource();
-        call.asMap().forEach((arg, value) -> {
-            RDFNode param = null;
-            if (value instanceof MapFunction.Call) {
-                if (Objects.equals(value, call)) throw new IllegalArgumentException("Self call");
-                param = createExpression((MapFunction.Call) value);
-            }
-            if (value instanceof String) {
-                param = m.toNode((String) value);
-            }
-            if (param == null)
-                throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
-            Property predicate = getModel().createArgProperty(arg.name());
-            res.addProperty(predicate, param);
-
-        });
-        return res.addProperty(RDF.type, m.createResource(func.name()));
     }
 
     /**

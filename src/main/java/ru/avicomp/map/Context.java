@@ -50,8 +50,10 @@ public interface Context extends MapResource {
      * Creates a bridge between classes using filter and mapping function calls.
      * The filter function call must be boolean (see {@link MapFunction#isBoolean()}.
      * The mapping function call must be target (see {@link MapFunction#isTarget()}.
-     * This method deletes any previously added class connections.
-     * @param filter {@link MapFunction.Call}, a boolean function call to filter source individuals. Can be null
+     * This method deletes any previously added class connections,
+     * but if the context contains any {@link #properties() property bridges} they stay untouched.
+     *
+     * @param filter  {@link MapFunction.Call}, a boolean function call to filter source individuals. Can be null
      * @param mapping {@link MapFunction.Call}, a target function call to map source individual to target. Not null
      * @return this context
      * @throws MapJenaException if something goes wrong
@@ -75,7 +77,7 @@ public interface Context extends MapResource {
     PropertyBridge addPropertyBridge(MapFunction.Call filterFunctionCall, MapFunction.Call mappingFunctionCall, Property target) throws MapJenaException;
 
     /**
-     * Lists all property bindings.
+     * Lists all property bridges.
      *
      * @return Stream of {@link PropertyBridge}
      */
@@ -112,8 +114,8 @@ public interface Context extends MapResource {
      * otherwise with "related object context" rule.
      * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
      *
-     * @param source   {@link OntCE} class expression, source for result context
-     * @param link {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
+     * @param source {@link OntCE} class expression, source for result context
+     * @param link   {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
      * @return <b>new</b> context with specified class as source and {@link #getTarget()} as target.
      * @throws MapJenaException unable to make reference context
      */

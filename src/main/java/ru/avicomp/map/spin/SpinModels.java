@@ -1,10 +1,8 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.topbraid.spin.util.CommandWrapper;
+import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
@@ -107,5 +105,17 @@ public class SpinModels {
         if (w.getText() != null)
             return w.getText();
         return Optional.ofNullable(w.getStatement()).map(Object::toString).orElse("Unknown mapping");
+    }
+
+    public static boolean isSourcePredicate(Property p) {
+        return p.getLocalName().matches("^" + SPINMAP.SOURCE_PREDICATE_PREFIX + "\\d+$");
+    }
+
+    public static boolean isVariable(Resource inModel) {
+        return inModel.hasProperty(RDF.type, SP.Variable);
+    }
+
+    public static boolean isSpinArgVariable(Resource isModel) {
+        return isVariable(isModel) && SPIN.NS.equals(isModel.getNameSpace()) && isModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
     }
 }

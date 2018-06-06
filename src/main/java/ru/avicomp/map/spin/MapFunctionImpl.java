@@ -413,14 +413,17 @@ public class MapFunctionImpl implements MapFunction {
         }
 
         protected String toString(PrefixMapping pm, ArgImpl a) {
+            return getStringKey(pm, a) + "=" + getStringValue(pm, a);
+        }
+
+        protected String getStringValue(PrefixMapping pm, ArgImpl a) {
             Object v = parameters.get(a);
-            String s;
-            if (v instanceof CallImpl) {
-                s = ((CallImpl) v).toString(pm);
-            } else {
-                s = String.valueOf(v);
-            }
-            return pm.shortForm(a.name()) + "=" + pm.shortForm(s);
+            if (v instanceof CallImpl) return ((CallImpl) v).toString(pm);
+            return pm.shortForm(String.valueOf(v));
+        }
+
+        protected String getStringKey(PrefixMapping pm, ArgImpl a) {
+            return pm.shortForm(a.name());
         }
 
         @Override
