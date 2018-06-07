@@ -84,12 +84,12 @@ public interface Context extends MapResource {
     Stream<PropertyBridge> properties();
 
     /**
-     * Removes a property binding from this context.
+     * Deletes a property binding from this context.
      *
      * @param properties {@link PropertyBridge}
      * @return this context
      */
-    Context removeProperties(PropertyBridge properties);
+    Context deletePropertyBridge(PropertyBridge properties);
 
     /**
      * Creates a context with the same target class expression and with source linked to the source of this context.
@@ -186,7 +186,7 @@ public interface Context extends MapResource {
     void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
-     * Answers iff this context is valid for (SPIN-)inference.
+     * Answers iff this context is valid for (SPIN-)map-inference.
      *
      * @return boolean
      */

@@ -265,7 +265,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
     }
 
     @Override
-    public Context removeProperties(PropertyBridge properties) {
+    public Context deletePropertyBridge(PropertyBridge properties) {
         // todo: implement
         throw new UnsupportedOperationException("TODO");
     }

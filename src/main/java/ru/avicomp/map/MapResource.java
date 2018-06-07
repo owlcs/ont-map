@@ -38,6 +38,14 @@ public interface MapResource {
     MapFunction.Call getFilter();
 
     /**
+     * Return the map-model associated with this map-resource.
+     * The model cannot be null.
+     *
+     * @return {@link MapModel}, not null
+     */
+    MapModel getModel();
+
+    /**
      * Lists all functions which are used by this MapResource.
      *
      * @return <b>distinct</b> Stream of {@link MapFunction}s

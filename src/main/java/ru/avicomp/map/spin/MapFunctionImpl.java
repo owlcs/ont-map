@@ -171,6 +171,15 @@ public class MapFunctionImpl implements MapFunction {
             this.name = Objects.requireNonNull(name, "Null name");
         }
 
+        /**
+         * Returns resource attached to the library model.
+         *
+         * @return {@link Resource}
+         */
+        public Resource asResource() {
+            return arg;
+        }
+
         @Override
         public String name() {
             return name;

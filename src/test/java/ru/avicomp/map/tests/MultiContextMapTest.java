@@ -14,7 +14,9 @@ import ru.avicomp.ontapi.jena.model.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by @szuev on 29.05.2018.
@@ -157,6 +159,58 @@ public class MultiContextMapTest extends MapTestData6 {
         res.addAssertion(OAGUU, CDSPR_000011.createIndividual()
                 .addAssertion(OAHUU, CCPAS_000011.createIndividual()
                         .addAssertion(DEUUU, m.createLiteral(shipName))));
+    }
+
+    @Test
+    public void testDeleteContext() {
+        MapModel m = assembleMapping();
+        int contextsNum = 8;
+        int propertiesNum = 4;
+        assertContext(m, contextsNum, propertiesNum);
+
+        OntClass Res = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "Res");
+        OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CDSPR_000011");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CCPAS_000011");
+        Context Res_2Res = find(m, Res, Res);
+        Context CDSPR_000011_2Res = find(m, CDSPR_000011, Res);
+        Context CCPAS_000011_2Res = find(m, CCPAS_000011, Res);
+        // check can't delete CDSPR_000011->Res and CCPAS_000011->Res
+        Stream.of(CCPAS_000011_2Res, CDSPR_000011_2Res).forEach(MultiContextMapTest::testDeleteDependentContext);
+        // delete Res->Res context
+        m.deleteContext(Res_2Res);
+        // on this context there is one property rule (spinmapl:concatWithSeparator)
+        assertContext(m, --contextsNum, --propertiesNum);
+        // check can't delete CDSPR_000011->Res
+        testDeleteDependentContext(CDSPR_000011_2Res);
+        // delete CCPAS_000011->Res
+        m.deleteContext(CCPAS_000011_2Res);
+        // on this context there is one property rule (spinmap:equals)
+        assertContext(m, --contextsNum, --propertiesNum);
+        // celete CDSPR_000011->Res
+        m.deleteContext(CDSPR_000011_2Res);
+        // on this context there is no properties any more (was connected with spinmapl:relatedSubjectContext)
+        assertContext(m, --contextsNum, propertiesNum);
+    }
+
+    private static void testDeleteDependentContext(Context context) {
+        try {
+            context.getModel().deleteContext(context);
+            Assert.fail("Context " + context + " has been deleted!");
+        } catch (MapJenaException j) {
+            LOGGER.debug("Tried to delete {}. Expected error: '{}'", context, j.getMessage());
+        }
+    }
+
+    private static void assertContext(MapModel m, int contextsNum, int propertiesNum) {
+        Assert.assertEquals(contextsNum + propertiesNum, m.rules().count());
+        Assert.assertEquals(contextsNum, m.contexts().count());
+    }
+
+    private static Context find(MapModel m, OntClass src, OntClass dst) {
+        return m.contexts()
+                .filter(c -> Objects.equals(src, c.getSource()))
+                .filter(c -> Objects.equals(dst, c.getTarget()))
+                .findFirst().orElseThrow(AssertionError::new);
     }
 
 }

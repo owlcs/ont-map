@@ -257,7 +257,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public Stream<MapContextImpl> listChainedContexts(MapContextImpl context) {
         Resource clazz = context.target();
-        return listContexts().filter(c -> Objects.equals(c.source(), clazz));
+        return listContexts().filter(c -> !c.equals(context)).filter(c -> Objects.equals(c.source(), clazz));
     }
 
     public Stream<Resource> contextsByTargetExpression(RDFNode expression) {
@@ -659,7 +659,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 .forEachRemaining(s -> {
                     String uri = s.getPredicate().getURI();
                     MapFunctionImpl.ArgImpl a;
-                    if (f.isVararg() && !f.contains(uri)) {
+                    if (f.isVararg() && !f.hasArg(uri)) {
                         List<MapFunctionImpl.ArgImpl> varargs = f.listArgs()
                                 .filter(MapFunctionImpl.ArgImpl::isVararg)
                                 .collect(Collectors.toList());

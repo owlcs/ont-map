@@ -81,7 +81,7 @@ public interface MapFunction extends Description {
      *
      * @param predicate String, predicate iri
      * @return {@link Arg}
-     * @throws MapJenaException in case no arg found.
+     * @throws MapJenaException in case no arg found
      */
     default Arg getArg(String predicate) throws MapJenaException {
         return args()
@@ -90,7 +90,13 @@ public interface MapFunction extends Description {
                 .orElseThrow(() -> new MapJenaException("Function (" + name() + ") argument " + predicate + " not found."));
     }
 
-    default boolean contains(String predicate) {
+    /**
+     * Answers iff this function contains an argument given by its name (predicate).
+     *
+     * @param predicate String, not null
+     * @return true if argument is present
+     */
+    default boolean hasArg(String predicate) {
         return args().map(Arg::name).anyMatch(predicate::equals);
     }
 
