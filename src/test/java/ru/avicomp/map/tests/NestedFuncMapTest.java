@@ -11,10 +11,7 @@ import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntIndividual;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,7 +23,7 @@ import java.util.stream.Collectors;
  * Created by @szuev on 25.04.2018.
  */
 public class NestedFuncMapTest extends MapTestData1 {
-    private final Logger LOGGER = LoggerFactory.getLogger(NestedFuncMapTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NestedFuncMapTest.class);
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
@@ -117,10 +114,57 @@ public class NestedFuncMapTest extends MapTestData1 {
     }
 
     @Test
+    public void testChangeTargetFunction() {
+        MapModel m = assembleMapping();
+        MapManager manager = m.getManager();
+        OntCE sc = m.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new);
+        OntCE tc = m.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new);
+        MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
+        MapFunction.Call targetFunction = composeURI.create().addLiteral(SPINMAPL.template, tc.getNameSpace() + "{?1}").build();
+        m.createContext(sc, tc, targetFunction);
+        TestUtils.debug(m);
+
+        Assert.assertEquals(2, m.rules().count());
+        List<MapFunction> funcs = m.contexts().map(Context::getMapping).map(MapFunction.Call::getFunction).collect(Collectors.toList());
+        Assert.assertEquals(1, funcs.size());
+        Assert.assertEquals(composeURI, funcs.get(0));
+        Assert.assertEquals(2, m.rules().flatMap(MapResource::functions).count());
+
+        OntGraphModel src = m.ontologies().filter(o -> o.listClasses().anyMatch(sc::equals)).findFirst().orElseThrow(AssertionError::new);
+        OntGraphModel dst = m.ontologies().filter(o -> o.listClasses().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
+
+        LOGGER.info("Run inference.");
+        manager.getInferenceEngine().run(m, src, dst);
+        TestUtils.debug(dst);
+
+        LOGGER.info("Validate.");
+        validateAfterInference(src, dst);
+
+    }
+
+    @Test
     @Override
     public void testInference() {
         OntGraphModel src = assembleSource();
         TestUtils.debug(src);
+
+        OntGraphModel dst = assembleTarget();
+        TestUtils.debug(dst);
+
+        MapManager manager = Managers.getMapManager();
+        MapModel mapping = assembleMapping(manager, src, dst);
+        TestUtils.debug(mapping);
+
+        LOGGER.info("Run inference.");
+        manager.getInferenceEngine().run(mapping, src, dst);
+        TestUtils.debug(dst);
+
+        LOGGER.info("Validate.");
+        validateAfterInference(src, dst);
+    }
+
+    private static void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
+        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
         List<OntNDP> props = src.listDataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         List<OntIndividual.Named> srcIndividuals = src.listNamedIndividuals()
@@ -135,19 +179,6 @@ public class NestedFuncMapTest extends MapTestData1 {
         String v22 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(1));
         String v23 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(2));
 
-        OntGraphModel dst = assembleTarget();
-        TestUtils.debug(dst);
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
-
-        MapManager manager = Managers.getMapManager();
-        MapModel mapping = assembleMapping(manager, src, dst);
-        TestUtils.debug(mapping);
-
-        LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(mapping, src, dst);
-        TestUtils.debug(dst);
-
-        LOGGER.info("Validate.");
         Assert.assertEquals(srcIndividuals.size(), dst.listNamedIndividuals().count());
         String ns = dst.getNsPrefixURI("target");
         List<OntIndividual.Named> dstIndividuals = srcIndividuals.stream()
@@ -170,6 +201,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         );
         Collections.sort(expectedValues);
         Assert.assertEquals("Wrong values!", expectedValues, actualValues);
+        commonValidate(dst);
     }
 
 

@@ -204,10 +204,10 @@ public class MapContextImpl extends OntObjectImpl implements Context {
 
     @Override
     public Stream<PropertyBridge> properties() {
-        return listMapProperties().map(PropertyBridge.class::cast);
+        return listPropertyBridges().map(PropertyBridge.class::cast);
     }
 
-    public Stream<MapPropertiesImpl> listMapProperties() {
+    public Stream<MapPropertiesImpl> listPropertyBridges() {
         return listRules() // skip primary rule:
                 .filter(r -> !(r.hasProperty(SPINMAP.expression, target()) && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
                 .map(this::asPropertyBridge);
@@ -251,6 +251,17 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                 .map(RDFNode::asResource);
     }
 
+    @Override
+    public Context deletePropertyBridge(PropertyBridge properties) throws MapJenaException {
+        Statement res = listRuleStatements()
+                .filter(s -> Objects.equals(s.getObject(), properties))
+                .findFirst().orElseThrow(() -> new MapJenaException("Can't find " + properties));
+        Models.deleteAll(res.getObject().asResource());
+        getModel().remove(res);
+        getModel().clear();
+        return this;
+    }
+
     /**
      * Lists all {@code _:s spinmap:rule _:o} statements belonging to this context.
      *
@@ -262,12 +273,6 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                 .map(OntStatement::getSubject)
                 .filter(RDFNode::isAnon)
                 .flatMap(r -> m.statements(getSource(), SPINMAP.rule, r));
-    }
-
-    @Override
-    public Context deletePropertyBridge(PropertyBridge properties) {
-        // todo: implement
-        throw new UnsupportedOperationException("TODO");
     }
 
     @Override
@@ -320,7 +325,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                     .addContext(other)
                     .add(Key.LINK_PROPERTY, property).build();
         }
-        // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge
+        // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge ... or not?
         Resource mapping = m.createResource()
                 .addProperty(RDF.type, SPINMAP.Mapping_0_1)
                 .addProperty(SPINMAP.context, this)

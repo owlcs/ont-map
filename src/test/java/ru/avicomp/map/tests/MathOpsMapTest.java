@@ -1,8 +1,6 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
@@ -10,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.SpinModelConfig;
+import ru.avicomp.map.spin.SpinModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.map.utils.TestUtils;
@@ -19,6 +19,7 @@ import ru.avicomp.ontapi.jena.model.OntIndividual;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -94,5 +95,28 @@ public class MathOpsMapTest extends MapTestData5 {
                 .addFunction(SP.arg1, ln.create().addProperty(SP.arg1, srcProp2))
                 .addFunction(SP.arg2, p.create())), dstProp2);
         return res;
+    }
+
+    @Test
+    public void testDeletePropertyBridge() {
+        MapModel m = assembleMapping();
+        m.rules().flatMap(MapResource::functions).distinct().forEach(f -> LOGGER.debug("{}", f));
+        OntNDP prop = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "dstDataProperty2");
+        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        PropertyBridge p = c.properties().filter(x -> prop.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new);
+        c.deletePropertyBridge(p);
+        TestUtils.debug(m);
+        Assert.assertEquals(1, m.contexts().count());
+        Assert.assertEquals(2, m.ontologies().count());
+        Assert.assertEquals(2, m.rules().count());
+        Set<MapFunction> functions = m.rules().flatMap(MapResource::functions).collect(Collectors.toSet());
+        functions.forEach(f -> LOGGER.debug("{}", f));
+        // no fn:abs, sp:sub, math:log, math:pi
+        Assert.assertEquals(4, functions.size());
+        // math:exp and avc:IRI still there:
+        Model base = SpinModelConfig.createSpinModel(m.asOntModel().getBaseGraph());
+        Set<Resource> localFunctions = SpinModels.listSpinFunctions(base).collect(Collectors.toSet());
+        localFunctions.forEach(f -> LOGGER.debug("Local function: <{}>", m.asOntModel().shortForm(f.getURI())));
+        Assert.assertEquals(2, localFunctions.size());
     }
 }

@@ -88,8 +88,9 @@ public interface Context extends MapResource {
      *
      * @param properties {@link PropertyBridge}
      * @return this context
+     * @throws MapJenaException in case specified property bridge does not belong to this context
      */
-    Context deletePropertyBridge(PropertyBridge properties);
+    Context deletePropertyBridge(PropertyBridge properties) throws MapJenaException;
 
     /**
      * Creates a context with the same target class expression and with source linked to the source of this context.

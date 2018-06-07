@@ -1,6 +1,8 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.*;
+import org.topbraid.spin.model.Function;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -14,6 +16,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Utility to work with {@link org.apache.jena.rdf.model.Model}s encapsulating spin/spinmap rules.
@@ -117,5 +120,20 @@ public class SpinModels {
 
     public static boolean isSpinArgVariable(Resource isModel) {
         return isVariable(isModel) && SPIN.NS.equals(isModel.getNameSpace()) && isModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
+    }
+
+    /**
+     * Lists all spin-api functions.
+     * Auxiliary method.
+     *
+     * @param model {@link Model} with spin-personalities
+     * @return Stream of {@link org.topbraid.spin.model.Function topbraid spin function}s.
+     * @see SpinModelConfig#LIB_PERSONALITY
+     * @see SpinModelConfig#createSpinModel(Graph)
+     */
+    public static Stream<Function> listSpinFunctions(Model model) {
+        return org.apache.jena.atlas.iterator.Iter.asStream(model.listSubjectsWithProperty(RDF.type))
+                .filter(s -> s.canAs(Function.class) || s.hasProperty(RDF.type, SPINMAP.TargetFunction))
+                .map(s -> s.as(Function.class));
     }
 }

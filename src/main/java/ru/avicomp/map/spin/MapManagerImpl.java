@@ -1,10 +1,12 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
@@ -60,7 +62,7 @@ public class MapManagerImpl implements MapManager {
         this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
         SPINRegistry.init(functionRegistry, propertyFunctionRegistry);
         spinModuleRegistry.registerAll(graphLibrary, null);
-        this.mapFunctions = listSpinFunctions(graphLibrary)
+        this.mapFunctions = SpinModels.listSpinFunctions(graphLibrary)
                 .map(f -> makeFunction(f, prefixLibrary))
                 .collect(Collectors.toMap(MapFunction::name, Function.identity()));
     }
@@ -102,19 +104,6 @@ public class MapManagerImpl implements MapManager {
         PrefixMapping res = PrefixMapping.Factory.create();
         graphs.forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
         return res.lock();
-    }
-
-    /**
-     * Lists all spin-api functions.
-     * Auxiliary method.
-     *
-     * @param model {@link Model} with spin-personalities
-     * @return Stream of {@link org.topbraid.spin.model.Function topbraid spin function}s.
-     */
-    public static Stream<org.topbraid.spin.model.Function> listSpinFunctions(Model model) {
-        return Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(org.topbraid.spin.model.Function.class) || s.hasProperty(RDF.type, SPINMAP.TargetFunction))
-                .map(s -> s.as(org.topbraid.spin.model.Function.class));
     }
 
     private static MapFunctionImpl makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {

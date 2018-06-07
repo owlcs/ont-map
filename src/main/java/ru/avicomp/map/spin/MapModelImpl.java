@@ -146,10 +146,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
         }
         deleteContext(c);
-        // clean unused functions, mapping templates, properties, variables, etc
-        clearUnused();
-        // rerun since RDF is disordered and some data can be omitted in the previous step due to dependencies
-        clearUnused();
+        clear();
         // remove unused imports (both owl:import declarations and underling graphs)
         Set<OntID> used = classes().map(this::getOntologyID).collect(Collectors.toSet());
         Set<OntGraphModel> unused = ontologies()
@@ -184,6 +181,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     protected Optional<OntGraphModel> findModelByClass(Resource ce) {
         return ontologies().filter(m -> m.ontObjects(OntCE.class).anyMatch(c -> Objects.equals(c, ce))).findFirst();
+    }
+
+    /**
+     * @see #clearUnused()
+     */
+    protected void clear() {
+        // clean unused functions, mapping templates, properties, variables, etc
+        clearUnused();
+        // re-run since RDF is disordered and some data can be omitted in the previous step due to dependencies
+        clearUnused();
     }
 
     /**
@@ -466,12 +473,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * TODO: move to ONT-API?
      *
      * @param uri String, not null.
-     * @return {@link RDFDatatype} or null
+     * @return Optional around {@link RDFDatatype}
      */
-    public RDFDatatype getDatatype(String uri) {
-        return datatype(uri).orElse(null);
-    }
-
     public Optional<RDFDatatype> datatype(String uri) {
         return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype);
     }

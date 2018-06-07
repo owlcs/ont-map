@@ -74,6 +74,20 @@ public class GroupConcatTest extends AbstractMapTest {
         Assert.assertEquals(1, m.asOntModel().imports().count());
     }
 
+    @Test
+    public void testDeletePropertyBridge() {
+        MapModel m = assembleMapping();
+        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
+        Context c2 = c.deletePropertyBridge(p);
+        Assert.assertSame(c, c2);
+        TestUtils.debug(m);
+        Assert.assertEquals(1, m.contexts().count());
+        Assert.assertEquals(2, m.ontologies().count());
+        Assert.assertEquals(1, m.rules().count());
+        Assert.assertEquals(29, m.asOntModel().getBaseGraph().size());
+    }
+
     private void validateIndividual(OntGraphModel m, String name, String value) {
         OntIndividual i = m.listNamedIndividuals().filter(s -> Objects.equals(s.getURI(), name)).findFirst().orElseThrow(AssertionError::new);
         List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
