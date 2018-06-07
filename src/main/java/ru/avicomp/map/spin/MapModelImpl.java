@@ -602,7 +602,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      *
      * @param call {@link MapFunction.Call} function call to write
      * @return an anonymous {@link Resource}
-     * @see #parseExpression(Resource, RDFNode)
+     * @see #parseExpression(Resource, RDFNode, boolean)
      */
     protected RDFNode createExpression(MapFunction.Call call) {
         MapFunction func = call.getFunction();
@@ -625,22 +625,28 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res.addProperty(RDF.type, createResource(func.name()));
     }
 
+    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr) {
+        return parseExpression(mapping, expr, false);
+    }
+
     /**
      * Creates a {@link MapFunction.Call function call} from a given expression resource.
      *
      * @param mapping {@link Resource} mapping
      * @param expr    {@link RDFNode} expression
+     * @param isFilter boolean
      * @return {@link MapFunction.Call}
      * @see #createExpression(MapFunction.Call)
      */
-    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr) {
+    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr, boolean isFilter) {
         MapManagerImpl man = getManager();
         MapFunctionImpl f;
         Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
 
         if (expr.isLiteral() || expr.isURIResource()) {
             f = man.getFunction(SPINMAP.equals.getURI());
-            String v = (expr.isLiteral() ? expr : MapContextImpl.ContextMappingHelper.findProperty(mapping, expr.asResource())).asNode().toString();
+            String v = (expr.isLiteral() ? expr :
+                    ContextMappingHelper.findProperty(mapping, expr.asResource(), isFilter)).asNode().toString();
             args.put(f.getArg(SP.arg1.getURI()), v);
             return createFunctionCall(f, args);
         }
@@ -668,9 +674,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     if (n.isResource()) {
                         Resource r = n.asResource();
                         if (r.isAnon()) {
-                            v = parseExpression(mapping, r);
+                            v = parseExpression(mapping, r, isFilter);
                         } else if (SpinModels.isSpinArgVariable(r)) {
-                            v = MapContextImpl.ContextMappingHelper.findProperty(mapping, r).asNode().toString();
+                            v = ContextMappingHelper.findProperty(mapping, r, isFilter).asNode().toString();
                         }
                     }
                     if (v == null) {

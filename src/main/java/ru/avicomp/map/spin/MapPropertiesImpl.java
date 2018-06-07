@@ -60,7 +60,7 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
     @Override
     public MapFunction.Call getFilter() {
         if (!hasProperty(AVC.filter)) return null;
-        return getModel().parseExpression(this, getPropertyResourceValue(AVC.filter));
+        return getModel().parseExpression(this, getPropertyResourceValue(AVC.filter), true);
     }
 
     @Override

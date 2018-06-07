@@ -2,14 +2,12 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.rdf.model.Statement;
 import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
+import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
@@ -69,4 +67,27 @@ public class FilterIndividualsMapTest extends MapTestData2 {
 
         return res;
     }
+
+    @Test
+    public void testValidateMapping() {
+        MapModel m = assembleMapping();
+
+
+        Assert.assertEquals(2, m.rules().count());
+        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        Assert.assertEquals("avc:UUID()", c.getMapping().toString());
+        String srcAge = m.asOntModel().shortForm(TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "age").getURI());
+        String contextFilterFunction = String.format("sp:and(?arg1=sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int), " +
+                        "?arg2=sp:lt(?arg1=%s, ?arg2=\"%s\"^^xsd:int))",
+                srcAge, 25, srcAge, 100);
+        Assert.assertEquals(contextFilterFunction, c.getFilter().toString());
+
+        PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
+
+        Assert.assertEquals(TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "user-age"), p.getTarget());
+
+        Assert.assertEquals(String.format("spinmap:equals(%s)", srcAge), p.getMapping().toString());
+        Assert.assertNull(p.getFilter());
+    }
+
 }

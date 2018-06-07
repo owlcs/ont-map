@@ -6,7 +6,6 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.JenaException;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -14,15 +13,18 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
-import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntOPE;
+import ru.avicomp.ontapi.jena.model.OntObject;
+import ru.avicomp.ontapi.jena.model.OntStatement;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -197,7 +199,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
     @Override
     public MapFunction.Call getFilter() {
         Optional<Resource> mapping = primaryRule().filter(r -> r.hasProperty(AVC.filter));
-        return mapping.map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter))).orElse(null);
+        return mapping.map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true)).orElse(null);
     }
 
     @Override
@@ -388,7 +390,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         MapJenaException.notNull(func, "Null function call").asMap().forEach((arg, value) -> {
             try {
                 MapModelImpl m = getModel();
-                ArgValidator v = new ArgValidator(m, arg);
+                ArgValidationHelper v = new ArgValidationHelper(m, arg);
                 if (value instanceof String) {
                     v.testStringValue((String) value);
                     return;
@@ -426,397 +428,4 @@ public class MapContextImpl extends OntObjectImpl implements Context {
         return String.format("Context{%s => %s}", toString.apply(source()), toString.apply(target()));
     }
 
-    /**
-     * Auxiliary class, a helper to validate a {@link MapFunction.Arg function-call argument} values,
-     * which could be either nested function or string representation of literal or resource
-     */
-    static class ArgValidator {
-        private final MapModelImpl model;
-        private final MapFunction.Arg argument;
-
-        ArgValidator(MapModelImpl model, MapFunction.Arg argument) {
-            this.model = model;
-            this.argument = argument;
-        }
-
-        /**
-         * Validates function argument input against specified mapping model.
-         *
-         * @param value {@link MapFunction}
-         */
-        public void testFunctionValue(MapFunction value) throws MapJenaException {
-            Resource arg = model.createResource(argument.type());
-            Resource type = model.createResource(value.type());
-            Exceptions.Builder error = Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION.create()
-                    .add(Key.ARG, argument.name())
-                    .addFunction(value)
-                    .add(Key.ARG_TYPE, arg.toString())
-                    .add(Key.ARG_VALUE, type.toString());
-            if (arg.equals(type)) {
-                return;
-            }
-            if (AVC.undefined.equals(arg) || AVC.undefined.equals(type)) {
-                // seems it is okay
-                return;
-            }
-            if (RDFS.Literal.equals(arg)) {
-                if (type.canAs(OntDT.class)) return;
-                throw error.build();
-            }
-            if (AVC.numeric.equals(arg)) {
-                if (type.canAs(OntDT.class) && model.isNumeric(type.as(OntDT.class).toRDFDatatype())) return;
-                throw error.build();
-            }
-            if (RDF.PlainLiteral.equals(arg)) {
-                if (XSD.xstring.equals(type)) return;
-                throw error.build();
-            }
-            if (RDF.Property.equals(arg)) {
-                if (Stream.of(RDF.Property, OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).anyMatch(type::equals))
-                    return;
-                throw error.build();
-            }
-            if (RDFS.Class.equals(arg)) {
-                if (OWL.Class.equals(arg)) return;
-                throw error.build();
-            }
-            if (RDFS.Resource.equals(arg)) {
-                return;
-            }
-            throw error.build();
-        }
-
-        /**
-         * Validates string argument input against specified mapping model.
-         *
-         * @param value String argument value
-         * @throws MapJenaException if parameter string value does not match argument type
-         */
-        public void testStringValue(String value) throws MapJenaException {
-            Resource arg = model.createResource(argument.type());
-            RDFNode node = model.toNode(value);
-            Exceptions.Builder error = Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE.create()
-                    .add(Key.ARG, argument.name())
-                    .add(Key.ARG_TYPE, arg.toString())
-                    .add(Key.ARG_VALUE, node.toString());
-            // anything:
-            if (AVC.undefined.equals(arg)) {
-                return;
-            }
-            // value is literal
-            if (node.isLiteral()) {
-                Literal literal = node.asLiteral();
-                if (arg.getURI().equals(literal.getDatatypeURI())) return;
-                if (RDFS.Literal.equals(arg)) return;
-                if (AVC.numeric.equals(arg)) {
-                    if (model.isNumeric(literal.getDatatype())) return;
-                    throw error.build();
-                }
-                if (RDF.PlainLiteral.equals(arg)) {
-                    if (XSD.xstring.getURI().equals(literal.getDatatypeURI())) return;
-                    throw error.build();
-                }
-                throw error.build();
-            }
-            // then resource
-            if (RDFS.Resource.equals(arg)) {
-                return;
-            }
-            if (RDFS.Datatype.equals(arg)) {
-                if (node.canAs(OntDR.class)) return;
-                throw error.build();
-            }
-            if (RDFS.Class.equals(arg)) {
-                if (node.canAs(OntCE.class)) return;
-                throw error.build();
-            }
-            if (SPINMAP.Context.equals(arg)) {
-                if (node.asResource().hasProperty(RDF.type, SPINMAP.Context)) return;
-                throw error.build();
-            }
-            if (RDF.Property.equals(arg)) {
-                //if (node.isURIResource() && node.canAs(OntPE.class)) return;
-                // can be passed built-in property, e.g. rdf:type
-                if (node.isURIResource()) return;
-                throw error.build();
-            }
-            if (arg.canAs(OntDT.class) && (node.canAs(OntNDP.class) || node.canAs(OntNAP.class))) {
-                // todo: validate also range for datatype properties while building mapping
-                return;
-            }
-            // todo: also possible types: sp:Query, spin:Function, spin:Module, rdf:List
-            throw error.build();
-        }
-    }
-
-    /**
-     * Auxiliary class, a helper to process mapping template call arguments (predicates).
-     * Also a holder for class-properties maps related to the specified context.
-     * To relieve the main class.
-     */
-    static class ContextMappingHelper {
-        private final Resource mapping;
-        private final MapContextImpl context;
-
-        private Set<? extends RDFNode> sourceClassProperties;
-        private Set<? extends RDFNode> targetClassProperties;
-
-        private ContextMappingHelper(MapContextImpl context, Resource mapping) {
-            this.mapping = Objects.requireNonNull(mapping);
-            this.context = Objects.requireNonNull(context);
-        }
-
-        static ContextMappingHelper create(MapContextImpl context) {
-            return new ContextMappingHelper(context, context.getModel().createResource());
-        }
-
-        static void addPrimaryRule(MapContextImpl context, RDFNode filterExpression) {
-            addMappingRule(create(context), context.target(), filterExpression, RDF.type);
-        }
-
-        /**
-         * Adds a mapping template call to the graph as {@code spinmap:rule}.
-         *
-         * @param helper            {@link ContextMappingHelper}
-         * @param mappingExpression resource describing mapping expression
-         * @param filterExpression  resource describing filter expression
-         * @param target            {@link Property}
-         * @return {@link Resource}
-         */
-        static Resource addMappingRule(ContextMappingHelper helper,
-                                       RDFNode mappingExpression,
-                                       RDFNode filterExpression,
-                                       Property target) {
-            // todo: validate property ranges if it is possible
-            MapContextImpl context = helper.context;
-            Resource mapping = helper.mapping;
-            MapModelImpl m = context.getModel();
-            Optional<Resource> classMapRule = context.primaryRule();
-            mapping.addProperty(SPINMAP.context, context)
-                    .addProperty(SPINMAP.targetPredicate1, target);
-            List<Property> mappingPredicates = helper.addExpression(SPINMAP.expression, mappingExpression).getSources();
-            List<Property> filterPredicates;
-            if (filterExpression != null) {
-                filterPredicates = helper.addExpression(AVC.filter, filterExpression).getSources();
-            } else {
-                filterPredicates = Collections.emptyList();
-            }
-
-            boolean hasDefaults = helper.hasDefaults();
-            boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
-
-            Resource template;
-            int mappingSources = (int) mappingPredicates.stream().distinct().count();
-            if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
-                // use standard (spinmap) mapping, which does not support filter and default values
-                template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
-            } else {
-                // use custom (avc) mapping
-                template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
-            }
-            context.getSource().addProperty(SPINMAP.rule, mapping.addProperty(RDF.type, template));
-            simplify(mapping);
-            return mapping;
-        }
-
-        /**
-         * Simplifies mapping by replacing {@code spinmap:equals} function calls with its short form.
-         */
-        private static void simplify(Resource mapping) {
-            Model m = mapping.getModel();
-            Set<Resource> expressions = MapModelImpl.listProperties(mapping)
-                    .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
-                    .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
-                    .map(Statement::getSubject)
-                    .collect(Collectors.toSet());
-            expressions.forEach(expr -> {
-                RDFNode arg = expr.getRequiredProperty(SP.arg1).getObject();
-                Set<Statement> statements = m.listStatements(null, null, expr).toSet();
-                statements.forEach(s -> {
-                    m.add(s.getSubject(), s.getPredicate(), arg);
-                    m.remove(s);
-                    Models.deleteAll(expr);
-                });
-            });
-        }
-
-        /**
-         * Tries to find property in mapping by variable (e.g. {@code spin:_arg1}).
-         *
-         * @param mapping {@link Resource}
-         * @param var     {@link Resource}
-         * @return {@link Property}
-         * @throws JenaException in case no property found
-         */
-        public static Property findProperty(Resource mapping, Resource var) throws JenaException {
-            int index = Integer.parseInt(var.getLocalName().replace(SPIN._ARG, ""));
-            Property sourcePredicate = SPINMAP.sourcePredicate(index);
-            Optional<Property> res = Iter.asStream(mapping.listProperties(sourcePredicate))
-                    .map(Statement::getObject)
-                    .filter(o -> o.canAs(Property.class))
-                    .map(o -> o.as(Property.class))
-                    .findFirst();
-            if (res.isPresent()) return res.get();
-            // special case of spinmap:Mapping-0-1 and spinmap:targetResource, as a hotfix right now:
-            if (mapping.hasProperty(RDF.type, SPINMAP.Mapping_0_1)) {
-                Property targetPredicate = SPINMAP.targetPredicate(index);
-                return mapping.getPropertyResourceValue(targetPredicate).as(Property.class);
-            }
-            throw new MapJenaException("Can't find property for variable " + var);
-        }
-
-        Resource getMapping() {
-            return mapping;
-        }
-
-        Map<Property, Property> getSourcePredicatesMap() {
-            return getMapPredicates(SPINMAP.SOURCE_PREDICATE_PREFIX);
-        }
-
-        Map<Property, Property> getTargetPredicatesMap() {
-            return getMapPredicates(SPINMAP.TARGET_PREDICATE_PREFIX);
-        }
-
-        boolean hasDefaults() {
-            return properties()
-                    .map(Statement::getPredicate)
-                    .map(Property::getLocalName)
-                    .anyMatch(s -> s.endsWith(AVC.DEFAULT_PREDICATE_SUFFIX));
-        }
-
-        /**
-         * Gets and caches properties belonging to the source context class.
-         *
-         * @return Set of properties
-         */
-        public Set<? extends RDFNode> getSourceClassProperties() {
-            return sourceClassProperties == null ? sourceClassProperties = getClassProperties(context.getSource()) : sourceClassProperties;
-        }
-
-        /**
-         * Gets and caches properties belonging to the target context class.
-         *
-         * @return Set of properties
-         */
-        public Set<? extends RDFNode> getTargetClassProperties() {
-            return targetClassProperties == null ? targetClassProperties = getClassProperties(context.target()) : targetClassProperties;
-        }
-
-        boolean isContextProperty(RDFNode node) {
-            return node.isURIResource() && (isSourceProperty(node) || isTargetProperty(node));
-        }
-
-        boolean isSourceProperty(RDFNode property) {
-            return getSourceClassProperties().contains(property);
-        }
-
-        boolean isTargetProperty(RDFNode property) {
-            return getTargetClassProperties().contains(property);
-        }
-
-        private Set<Property> getClassProperties(Resource clazz) {
-            return clazz.canAs(OntCE.class) ?
-                    context.getModel().properties(clazz.as(OntCE.class)).collect(Collectors.toSet()) :
-                    Collections.emptySet();
-        }
-
-        private Map<Property, Property> getMapPredicates(String prefix) {
-            return properties()
-                    .filter(s -> s.getPredicate().getLocalName().startsWith(prefix))
-                    .collect(Collectors.toMap(s -> s.getObject().as(Property.class), Statement::getPredicate));
-        }
-
-        private Stream<Statement> properties() {
-            return Iter.asStream(mapping.listProperties())
-                    .filter(s -> s.getObject().isURIResource());
-        }
-
-        /**
-         * Adds an expression to mapping call and process its arguments (predicates).
-         *
-         * @param expressionPredicate {@link Property} predicate. e.g. {@code spinmap:expression}
-         * @param expressionObject    {@link RDFNode} the expression body
-         * @return {@link ExprRes} container with property collections that will be needed when building a mapping template.
-         */
-        ExprRes addExpression(Property expressionPredicate, RDFNode expressionObject) {
-            mapping.addProperty(expressionPredicate, expressionObject);
-            ExprRes res = addExpression(expressionPredicate);
-            if (!res.target.isEmpty()) {
-                throw new UnsupportedOperationException("TODO: expression with arguments from right side are not supported right now.");
-            }
-            return res;
-        }
-
-        private ExprRes addExpression(Property expressionPredicate) {
-            ExprRes res = new ExprRes();
-            MapModelImpl m = context.getModel();
-            Map<Property, Property> sourcePredicatesMap = getSourcePredicatesMap();
-            Map<Property, Property> targetPredicatesMap = getTargetPredicatesMap();
-            Statement expression = mapping.getRequiredProperty(expressionPredicate);
-            // properties from expression, not distinct flat list, i.e. with possible repetitions
-            List<Statement> properties = Stream.concat(Stream.of(expression), MapModelImpl.listProperties(expression.getObject()))
-                    .filter(s -> isContextProperty(s.getObject()))
-                    .collect(Collectors.toList());
-            int variableIndex = 1;
-            for (Statement s : properties) {
-                Resource expr = s.getSubject();
-                Property property = s.getObject().as(Property.class);
-                if (!expr.hasProperty(RDF.type, AVC.asIRI)) {
-                    // replace argument property with variable, e.g. spin:_arg1
-                    Resource variable;
-                    if (res.replacement.containsKey(property)) {
-                        variable = res.replacement.get(property);
-                    } else {
-                        res.replacement.put(property, variable = m.getArgVariable(variableIndex++));
-                    }
-                    m.add(expr, s.getPredicate(), variable);
-                    m.remove(s);
-                }
-                // add mapping predicate
-                Property predicate;
-                if (isSourceProperty(property)) {
-                    predicate = processPredicate(property, sourcePredicatesMap, m::getSourcePredicate);
-                    res.sources.add(predicate);
-                } else {
-                    predicate = processPredicate(property, targetPredicatesMap, m::getTargetPredicate);
-                    res.target.add(predicate);
-                }
-                // process default value
-                if (expr.hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
-                    Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
-                    mapping.addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()), defaultValue);
-                }
-            }
-            return res;
-        }
-
-        private Property processPredicate(Property property, Map<Property, Property> prev, IntFunction<Property> generator) {
-            Property predicate;
-            if (!prev.containsKey(property)) {
-                predicate = generator.apply(prev.size() + 1);
-                mapping.addProperty(predicate, property);
-                prev.put(property, predicate);
-            } else {
-                predicate = prev.get(property);
-            }
-            return predicate;
-        }
-
-        /**
-         * Expression settings holder.
-         * {@code sources} - List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}, with possible repetitions
-         * {@code targets} - List of mapping target predicates, e.g. {@code spinmap:targetPredicate1}, with possible repetitions
-         * {@code replacement} - Property-Variable map, where keys are existing properties either from source or target classes
-         * and values - spin variables, e.g. {@code spin:_arg1}
-         */
-        class ExprRes {
-            private final List<Property> sources = new ArrayList<>();
-            private final List<Property> target = new ArrayList<>();
-            private final Map<Property, Resource> replacement = new HashMap<>();
-
-            public List<Property> getSources() {
-                return Collections.unmodifiableList(sources);
-            }
-        }
-    }
 }

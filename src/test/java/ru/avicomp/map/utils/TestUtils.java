@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.tests.ClassPropertiesTest;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
@@ -45,10 +46,12 @@ public class TestUtils {
     }
 
     public static void debug(MapFunction.Call func, PrefixMapping pm) {
-        LOGGER.debug("Function: {}", pm.shortForm(func.getFunction().name()));
-        func.asMap().forEach((arg, o) -> {
+        MapFunctionImpl.CallImpl call = (MapFunctionImpl.CallImpl) func;
+        String name = pm.shortForm(call.getFunction().name());
+        LOGGER.debug("Function: {}, Call: {}", name, call.toString(pm));
+        call.asMap().forEach((arg, o) -> {
             String val = o instanceof String ? (String) o : ((MapFunction.Call) o).getFunction().name();
-            LOGGER.debug("Argument: {} => '{}'", pm.shortForm(arg.name()), pm.shortForm(val));
+            LOGGER.debug("[{}] argument: {} => '{}'", name, pm.shortForm(arg.name()), pm.shortForm(val));
         });
     }
 

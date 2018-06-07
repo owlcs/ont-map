@@ -78,6 +78,45 @@ public class NestedFuncMapTest extends MapTestData1 {
     }
 
     @Test
+    public void testValidateMapping() {
+        MapModel m = assembleMapping();
+        OntClass sc = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "SourceClass1");
+        OntClass tc = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "TargetClass1");
+        OntNDP sp1 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty1");
+        OntNDP sp2 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty2");
+        OntNDP sp3 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty3");
+        OntNDP tp = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "targetDataProperty2");
+
+        Assert.assertEquals(2, m.rules().count());
+        Context context = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        Assert.assertEquals(sc, context.getSource());
+        Assert.assertEquals(tc, context.getTarget());
+
+        Assert.assertEquals(String.format("spinmapl:changeNamespace(afn:namespace(%s))",
+                m.asOntModel().shortForm(tc.getURI())), context.getMapping().toString());
+        Assert.assertNull(context.getFilter());
+
+        PropertyBridge p = context.properties().findFirst().orElseThrow(AssertionError::new);
+
+        Assert.assertEquals(tp, p.getTarget());
+
+        String propertyMappingFunc = String.format("spinmapl:concatWithSeparator(" +
+                        "?arg1=%s, " +
+                        "?arg2=spinmapl:concatWithSeparator(?arg1=%s, " +
+                        "?arg2=spinmapl:concatWithSeparator(?arg1=\"%s\", ?arg2=%s, ?separator=\"%s\"), " +
+                        "?separator=\"%s\"), " +
+                        "?separator=\"%s\")",
+                m.asOntModel().shortForm(sp2.getURI()),
+                m.asOntModel().shortForm(sp1.getURI()),
+                "SOME VALUE",
+                m.asOntModel().shortForm(sp3.getURI()),
+                "???", "--", ", ");
+        LOGGER.debug(propertyMappingFunc);
+        Assert.assertEquals(propertyMappingFunc, p.getMapping().toString());
+        Assert.assertNull(p.getFilter());
+    }
+
+    @Test
     @Override
     public void testInference() {
         OntGraphModel src = assembleSource();
@@ -132,4 +171,6 @@ public class NestedFuncMapTest extends MapTestData1 {
         Collections.sort(expectedValues);
         Assert.assertEquals("Wrong values!", expectedValues, actualValues);
     }
+
+
 }

@@ -134,4 +134,49 @@ public class ConditionalMapTest extends MapTestData2 {
     }
 
 
+    @Test
+    public void testValidateMapping() {
+        MapModel map = assembleMapping();
+        OntGraphModel m = map.asOntModel();
+
+        OntClass sC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("contacts:Contact")));
+        OntClass tC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("users:User")));
+        OntDT sDT1 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:skype")));
+        OntDT sDT2 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:phone")));
+        OntDT sDT3 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:email")));
+        OntNDP sp1 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("contacts:info")));
+        OntNDP tp1 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:skype")));
+        OntNDP tp2 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:phone")));
+        OntNDP tp3 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:email")));
+        OntDT dt = notNull(map.asOntModel().getOntEntity(OntDT.class, XSD.xstring));
+
+        Assert.assertEquals(4, map.rules().count());
+        Context context = map.contexts().findFirst().orElseThrow(AssertionError::new);
+        Assert.assertEquals(sC, context.getSource());
+        Assert.assertEquals("Context: " + context, tC, context.getTarget());
+
+        Assert.assertEquals(String.format("spinmapl:composeURI(\"%s%s\")", tC.getNameSpace(), "res-{?1}"), context.getMapping().toString());
+        Assert.assertNull(context.getFilter());
+
+        PropertyBridge p1 = context.properties().filter(p -> tp1.equals(p.getTarget())).findFirst().orElseThrow(AssertionError::new);
+        PropertyBridge p2 = context.properties().filter(p -> tp2.equals(p.getTarget())).findFirst().orElseThrow(AssertionError::new);
+        PropertyBridge p3 = context.properties().filter(p -> tp3.equals(p.getTarget())).findFirst().orElseThrow(AssertionError::new);
+
+        String propertyMappingFunc = String.format("spif:cast(?datatype=%s, ?arg1=%s)", m.shortForm(dt.getURI()), m.shortForm(sp1.getURI()));
+        String filterMappingFuncTemplate = "sp:eq(?arg1=%s, ?arg2=sp:datatype(" + m.shortForm(sp1.getURI()) + "))";
+
+        Assert.assertEquals(propertyMappingFunc, p1.getMapping().toString());
+        Assert.assertEquals(String.format(filterMappingFuncTemplate, m.shortForm(sDT1.getURI())), p1.getFilter().toString());
+
+        Assert.assertEquals(propertyMappingFunc, p2.getMapping().toString());
+        Assert.assertEquals(String.format(filterMappingFuncTemplate, m.shortForm(sDT2.getURI())), p2.getFilter().toString());
+
+        Assert.assertEquals(propertyMappingFunc, p3.getMapping().toString());
+        Assert.assertEquals(String.format(filterMappingFuncTemplate, m.shortForm(sDT3.getURI())), p3.getFilter().toString());
+    }
+
+    private static <E extends OntEntity> E notNull(E e) {
+        Assert.assertNotNull(e);
+        return e;
+    }
 }

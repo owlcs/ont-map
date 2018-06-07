@@ -4,13 +4,11 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
 import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapManager;
-import ru.avicomp.map.MapModel;
+import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -92,5 +90,37 @@ public class FilterDefaultMapTest extends MapTestData2 {
                 filterFunction,
                 propertyMapFunc, resultName);
         return res;
+    }
+
+    @Test
+    public void testValidateMapping() {
+        MapModel m = assembleMapping();
+        Assert.assertEquals(2, m.rules().count());
+        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        Assert.assertEquals("avc:UUID()", c.getMapping().toString());
+        Assert.assertNull(c.getFilter());
+        PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
+
+        OntNDP firstName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "firstName");
+        OntNDP secondName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "secondName");
+        OntNDP age = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "age");
+        OntNDP resultName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "user-name");
+
+        Assert.assertEquals(resultName, p.getTarget());
+
+        String propertyMappingFunc = String.format("spinmapl:concatWithSeparator(" +
+                        "?arg1=avc:withDefault(?arg1=%s, ?arg2=\"%s\"), " +
+                        "?arg2=avc:withDefault(?arg1=%s, ?arg2=\"%s\"), " +
+                        "?separator=\"%s\")",
+                m.asOntModel().shortForm(firstName.getURI()),
+                DATA_FIRST_NAME_DEFAULT,
+                m.asOntModel().shortForm(secondName.getURI()),
+                DATA_SECOND_NAME_DEFAULT,
+                CONCAT_SEPARATOR);
+        String filterMappingFunc = String.format("sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int)",
+                m.asOntModel().shortForm(age.getURI()), 30);
+
+        Assert.assertEquals(propertyMappingFunc, p.getMapping().toString());
+        Assert.assertEquals(filterMappingFunc, p.getFilter().toString());
     }
 }

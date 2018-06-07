@@ -61,10 +61,10 @@ public class MappingBuilder {
      * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,
      * see {@link MapManagerImpl#createMapModel(Graph, ru.avicomp.ontapi.jena.impl.conf.OntPersonality)} for more details.
      *
-     * @param model            {@link MapModelImpl}
+     * @param model             {@link MapModelImpl}
      * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct
-     * @param filterPredicates List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while filtering
-     * @param sourcePredicates List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while mapping
+     * @param filterPredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while filtering
+     * @param sourcePredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while mapping
      * @return {@link Resource} a fresh or found mapping template resource in model
      * @throws MapJenaException if something goes wrong
      */
@@ -138,6 +138,26 @@ public class MappingBuilder {
         return properties.isEmpty() ? "0" : properties.stream()
                 .map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, ""))
                 .collect(Collectors.joining("-"));
+    }
+
+    /**
+     * Examples of template name:
+     * {@code avc:Mapping-f1-1-s0-t1},
+     * {@code avc:PropertyMapping-f0-s1-t1},
+     * {@code avc:PropertyMapping-f3-s1-2-t1},
+     * {@code avc:PropertyMapping-f1-s1-t1},
+     * {@code avc:PropertyMapping-f0-s1-2-3-t1}
+     *
+     * @param name   String
+     * @param filter boolean
+     * @return List of ints
+     */
+    static int[] parsePredicatesFromTemplateName(String name, boolean filter) {
+        String t = "^.+" + (filter ? "f" : "s") + "([\\d-]+)-\\w.*$";
+        return Arrays.stream(name.replaceFirst(t, "$1").split("-"))
+                .mapToInt(Integer::parseInt)
+                .filter(i -> i != 0)
+                .toArray();
     }
 
     public MappingBuilder addSourceDefaultValue(String sourcePredicateVariable, String defaultValueVariable) {
