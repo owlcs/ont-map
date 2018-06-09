@@ -1,6 +1,7 @@
 package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
+import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
@@ -12,6 +13,7 @@ import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
@@ -24,11 +26,11 @@ public class MathLibraryMaker {
     public static void main(String... args) {
         OntGraphModel m = AVCLibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(SystemModels.Resources.MATH.getURI());
-        id.setVersionIRI(AVC.NS + "1.0");
+        id.setVersionIRI(id.getURI() + "#1.0");
         id.addComment("A library that contains mathematical functions for some reason missing in the standard spin delivery.", null);
         id.addProperty(RDFS.seeAlso, m.getResource(MATH.URI));
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
-        m.addImport(AVCLibraryMaker.createModel(AVCLibraryMaker.getSPLGraph()));
+        m.addImport(AVCLibraryMaker.createModel(getAVCGraph()));
 
         createDoubleFuncWithDoubleArg(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
         createDoubleFuncWithDoubleArg(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);
@@ -46,7 +48,7 @@ public class MathLibraryMaker {
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, XSD.xdouble));
+                        .addProperty(SPL.valueType, AVC.numeric));
 
         createDoubleFuncWithDoubleArg(MATH.sin.inModel(m), "sin", "sine", "Returns the sine of the argument. The argument is an angle in radians.", "Radians");
         createDoubleFuncWithDoubleArg(MATH.sqrt.inModel(m), "sqrt", "square root", "Returns the non-negative square root of the argument.", null);
@@ -71,5 +73,9 @@ public class MathLibraryMaker {
                 .addProperty(SPL.valueType, XSD.xdouble);
         if (argComment != null) arg.addProperty(RDFS.comment, argComment);
         return createDoubleFunction(name, shortLabel, label, comment).addProperty(SPIN.constraint, arg);
+    }
+
+    static Graph getAVCGraph() {
+        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.AVC), SystemModels.graphs().values());
     }
 }

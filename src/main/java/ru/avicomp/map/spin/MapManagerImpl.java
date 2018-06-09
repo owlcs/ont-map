@@ -58,7 +58,7 @@ public class MapManagerImpl implements MapManager {
     protected final TypeMapper types = TypeMapper.getInstance();
 
     public MapManagerImpl() {
-        this.graphLibrary = createLibraryModel();
+        this.graphLibrary = createLibraryModel(Factory.createGraphMem());
         this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
         SPINRegistry.init(functionRegistry, propertyFunctionRegistry);
         spinModuleRegistry.registerAll(graphLibrary, null);
@@ -68,15 +68,19 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Creates a complete ONT-MAP library (a query model).
-     * The result graph (wrapped by Model) includes all ttl resources from {@code /etc} dir.
+     * Creates a complete ONT-MAP library ("a query model" in terms of SPIN-API).
+     * The result graph includes all turtle resources from {@code /etc} dir.
+     * The top level graph is mutable and stands for user defined functions, while others are immutable.
      *
+     * @param graph {@link Graph}, containing user-defined functions
      * @return {@link UnionModel}
      * @see SpinModelConfig#LIB_PERSONALITY
      */
-    public static UnionModel createLibraryModel() {
+    public static UnionModel createLibraryModel(Graph graph) {
+        // root graph for user defined stuff
+        UnionGraph res = new UnionGraph(graph);
         // avc addition (function and behaviour customization) is a primary graph:
-        UnionGraph res = new UnionGraph(SystemModels.get(SystemModels.Resources.AVC));
+        res.addGraph(SystemModels.get(SystemModels.Resources.AVC));
         // math addition (support https://www.w3.org/2005/xpath-functions/math/) :
         res.addGraph(SystemModels.get(SystemModels.Resources.MATH));
         // topbraid spinmapl (the top graph of spin family):

@@ -39,10 +39,10 @@ public class SystemModelsTest {
         Model lib = ((MapManagerImpl) Managers.getMapManager()).getLibrary();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);
-        Assert.assertEquals(29, tree.split("\n").length);
+        Assert.assertEquals(30, tree.split("\n").length);
         Set<String> imports = Graphs.getImports(lib.getGraph());
         LOGGER.debug("Imports: {}", imports);
-        Assert.assertEquals(9, imports.size());
+        Assert.assertEquals(10, imports.size());
         Assert.assertFalse(imports.contains(AVC.URI));
     }
 

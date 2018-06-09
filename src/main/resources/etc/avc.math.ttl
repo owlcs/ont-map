@@ -7,13 +7,14 @@
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
+@prefix avc:   <http://avc.ru/spin#> .
 
 <http://avc.ru/math>  a  owl:Ontology ;
         rdfs:comment     "A library that contains mathematical functions for some reason missing in the standard spin delivery." ;
         rdfs:seeAlso     <http://www.w3.org/2005/xpath-functions/math/> ;
-        owl:versionIRI   <http://avc.ru/spin#1.0> ;
-        owl:versionInfo  "version 1.0" ;
-        owl:imports      <http://spinrdf.org/spl> .
+        owl:imports      <http://avc.ru/spin> ;
+        owl:versionIRI   <http://avc.ru/math#1.0> ;
+        owl:versionInfo  "version 1.0" .
 
 math:acos  a                spin:Function ;
         rdfs:comment        "Returns the arc cosine of the argument." ;
@@ -85,7 +86,7 @@ math:pow  a                 spin:Function ;
         rdfs:subClassOf     spl:MathematicalFunctions ;
         spin:constraint     [ a              spl:Argument ;
                               spl:predicate  sp:arg2 ;
-                              spl:valueType  xsd:double
+                              spl:valueType  avc:numeric
                             ] ;
         spin:constraint     [ a              spl:Argument ;
                               spl:predicate  sp:arg1 ;
