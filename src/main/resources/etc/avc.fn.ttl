@@ -1,0 +1,20 @@
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix fn:    <http://www.w3.org/2005/xpath-functions#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sp:    <http://spinrdf.org/sp#> .
+@prefix spl:   <http://spinrdf.org/spl#> .
+@prefix avc:   <http://avc.ru/spin#> .
+
+<http://avc.ru/fn>  a    owl:Ontology ;
+        rdfs:comment     "XQuery, XPath, and XSLT Functions and Operators.\nA customisation and an addition to the <http://topbraid.org/functions-fn> library." ;
+        rdfs:seeAlso     <http://topbraid.org/functions-fn> , <http://www.w3.org/2005/xpath-functions/> ;
+        owl:imports      <http://avc.ru/spin> ;
+        owl:versionIRI   <http://avc.ru/fn#1.0> ;
+        owl:versionInfo  "version 1.0" .
+
+fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .

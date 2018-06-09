@@ -79,7 +79,8 @@ public class SystemModels implements JenaSubsystemLifecycle {
 
     public enum Resources {
         AVC("/etc/avc.spin.ttl", "http://avc.ru/spin"),
-        MATH("/etc/avc.math.ttl", "http://avc.ru/math"),
+        AVC_MATH("/etc/avc.math.ttl", "http://avc.ru/math"),
+        AVC_FN("/etc/avc.fn.ttl", "http://avc.ru/fn"),
         SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
         SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
         SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),

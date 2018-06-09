@@ -1,6 +1,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
@@ -12,7 +13,6 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -117,7 +117,8 @@ public class MapFunctionImpl implements MapFunction {
      * @return boolean
      */
     public boolean isCustom() {
-        return Objects.equals(AVC.NS, func.getNameSpace()) || Objects.equals(MATH.NS, func.getNameSpace());
+        Triple root = func.getRequiredProperty(RDF.type).asTriple();
+        return MapManagerImpl.additionLibraryGraphs().anyMatch(g -> g.contains(root));
     }
 
     public boolean isPrivate() {

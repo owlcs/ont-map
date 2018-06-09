@@ -28,10 +28,7 @@ import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,11 +76,9 @@ public class MapManagerImpl implements MapManager {
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
         UnionGraph res = new UnionGraph(graph);
-        // avc addition (function and behaviour customization) is a primary graph:
-        res.addGraph(SystemModels.get(SystemModels.Resources.AVC));
-        // math addition (support https://www.w3.org/2005/xpath-functions/math/) :
-        res.addGraph(SystemModels.get(SystemModels.Resources.MATH));
-        // topbraid spinmapl (the top graph of spin family):
+        // avc.spin, avc.fn amd avc.math additions:
+        additionLibraryGraphs().forEach(res::addGraph);
+        // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
         return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
@@ -91,10 +86,24 @@ public class MapManagerImpl implements MapManager {
     /**
      * Gets spin library union graph without ONT-MAP additions.
      *
-     * @return {@link UnionGraph}
+     * @return {@link UnionGraph} with spin-family hierarchy of unmodifiable graphs
      */
     public static UnionGraph getSpinLibraryGraph() {
         return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAPL), SystemModels.graphs().values());
+    }
+
+    /**
+     * Returns a set of addition library graphs.
+     *
+     * @return Stream of unmodifiable {@link Graph}s
+     * @see ru.avicomp.map.spin.vocabulary.AVC
+     * @see ru.avicomp.map.spin.vocabulary.FN
+     * @see ru.avicomp.map.spin.vocabulary.MATH
+     */
+    public static Stream<Graph> additionLibraryGraphs() {
+        return Arrays.stream(SystemModels.Resources.values())
+                .filter(s -> s.name().startsWith("AVC"))
+                .map(SystemModels::get);
     }
 
     /**

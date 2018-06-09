@@ -1,7 +1,6 @@
 package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
-import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
@@ -11,18 +10,9 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.spin.AdjustGroupConcatImpl;
-import ru.avicomp.map.spin.MapManagerImpl;
-import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SystemModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
-import ru.avicomp.map.utils.AutoPrefixListener;
-import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.UnionGraph;
-import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
-import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
-import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -35,7 +25,7 @@ import java.util.stream.Stream;
 /**
  * An utility class to produce avc.spin.ttl (see resources/etc directory).
  * For developing and demonstration.
- * Can be removed.
+ * Will be removed.
  * <p>
  * Created by @szuev on 07.04.2018.
  *
@@ -45,7 +35,7 @@ import java.util.stream.Stream;
 public class AVCLibraryMaker {
 
     public static void main(String... args) {
-        OntGraphModel m = createModel(Factory.createGraphMem());
+        OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.BASE_URI);
         id.setVersionIRI(AVC.NS + "1.0");
         id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
@@ -54,7 +44,7 @@ public class AVCLibraryMaker {
                 "and all listed custom functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         // depends on spinmap to reuse variables (spinmap:_source, spin:_this, spin:_arg*) while building functions bodies
-        m.addImport(createModel(getSPINMAPGraph()));
+        m.addImport(LibraryMaker.createModel(LibraryMaker.getSPINMAPGraph()));
 
         OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
 
@@ -93,7 +83,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.label, "Aggregate functions")
                 .addProperty(RDFS.comment, "A collection of functions that uses SPARQL aggregate functionality (i.e. COUNT, SUM, MIN, MAX, GROUP_CONCAT).");
 
-        // SP:abs (todo: currently not sure this is correct)
+        // SP:abs
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
         // SP:datatype
@@ -127,8 +117,8 @@ public class AVCLibraryMaker {
 
         // SP:eq can accept any resource, not only boolean literals
         SP.eq.inModel(m)
-                .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg1).addProperty(SPL.valueType, AVC.undefined))
-                .addProperty(AVC.constraint, m.createResource().addProperty(SPL.predicate, SP.arg2).addProperty(SPL.valueType, AVC.undefined));
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.undefined))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.undefined));
 
         // varargs:
         SP.resource("concat").inModel(m).addProperty(SPIN.constraint, m.createResource()
@@ -328,18 +318,4 @@ public class AVCLibraryMaker {
 
     }
 
-    static OntGraphModel createModel(Graph graph) {
-        OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
-        OntGraphModel res = OntModelFactory.createModel(graph, p);
-        AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), MapManagerImpl.collectPrefixes(SystemModels.graphs().values()));
-        return res;
-    }
-
-    static Graph getSPLGraph() {
-        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPL), SystemModels.graphs().values());
-    }
-
-    static Graph getSPINMAPGraph() {
-        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAP), SystemModels.graphs().values());
-    }
 }
