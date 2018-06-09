@@ -22,6 +22,7 @@ import java.util.Map;
 /**
  * Settings and personalities for a {@link Model jena model} which contain spin rules and other stuff.
  * Created by @szuev on 07.04.2018.
+ *
  * @see OntModelConfig
  */
 public class SpinModelConfig {
@@ -29,6 +30,7 @@ public class SpinModelConfig {
 
     /**
      * See org.topbraid.spin.vocabulary.SP#init(Personality)
+     *
      * @param p {@link Personality} to modify
      * @return {@link Personality} the same instance
      */

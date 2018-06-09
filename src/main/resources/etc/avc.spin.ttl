@@ -45,6 +45,8 @@ avc:MagicFunctions  a    spin:Function ;
 
 sp:abs  avc:hidden  "Duplicates the function fn:abs, which is preferable, since it has information about return types." .
 
+sp:datatype  avc:returnType  rdfs:Datatype .
+
 sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
                           spl:valueType  avc:undefined
                         ] ;

@@ -38,6 +38,10 @@ public class SPL {
     public static final Resource ConstraintTemplate = resource("ConstraintTemplate");
     public static final Resource OntologyFunctions = resource("OntologyFunctions");
     public static final Resource MathematicalFunctions = resource("MathematicalFunctions");
+    public static final Resource BooleanFunctions = resource("BooleanFunctions");
+    public static final Resource DateFunctions = resource("DateFunctions");
+    public static final Resource MiscFunctions = resource("MiscFunctions");
+    public static final Resource URIFunctions = resource("URIFunctions");
 
     public static final Property defaultValue = property("defaultValue");
     public static final Property dynamicEnumRange = property("dynamicEnumRange");

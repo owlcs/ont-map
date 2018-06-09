@@ -96,6 +96,9 @@ public class AVCLibraryMaker {
         // SP:abs (todo: currently not sure this is correct)
         SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
 
+        // SP:datatype
+        SP.resource("datatype").inModel(m).addProperty(AVC.returnType, RDFS.Datatype);
+
         // SPINMAP:targetResource
         SPINMAP.targetResource.inModel(m)
                 .addProperty(SPIN.private_, Models.TRUE)

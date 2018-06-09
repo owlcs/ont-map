@@ -69,6 +69,9 @@ public class AVC {
     // to customise spin:constraint arguments, sometimes they are wrong in the standard spin library
     public static final Property constraint = property("constraint");
 
+    // to customise function return type, sometimes it is wrong in the standard spin library
+    public static final Property returnType = property("returnType");
+
     // an universal filtering mapping template name
     public static Resource Mapping(String filters, String sources) {
         return createMapping("Mapping", filters, sources);

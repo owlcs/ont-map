@@ -141,6 +141,13 @@ public interface MapFunction extends Description {
         boolean isVararg();
 
         /**
+         * Returns a function to which this argument belongs.
+         *
+         * @return {@link MapFunction}
+         */
+        MapFunction getFunction();
+
+        /**
          * Answers iff this argument is available to assign value.
          * An argument could be inherited from parent function, or be hidden, or be disabled for some other reason.
          * In this case it is not allowed to be used in building function call.
@@ -151,12 +158,6 @@ public interface MapFunction extends Description {
             return true;
         }
 
-        /**
-         * Returns a function to which this argument belongs.
-         *
-         * @return {@link MapFunction}
-         */
-        MapFunction getFunction();
     }
 
     /**
@@ -202,6 +203,7 @@ public interface MapFunction extends Description {
 
         /**
          * Answers a function from which this call was created.
+         *
          * @return {@link MapFunction}, never null.
          */
         default MapFunction getFunction() {

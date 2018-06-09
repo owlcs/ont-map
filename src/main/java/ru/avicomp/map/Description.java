@@ -16,6 +16,14 @@ interface Description {
     String getComment(String lang);
 
     /**
+     * Returns a {@code rdfs:label} concatenated for the specified lang with symbol '\n'.
+     *
+     * @param lang String or null to get default
+     * @return String label
+     */
+    String getLabel(String lang);
+
+    /**
      * Returns default (no lang) merged comment.
      *
      * @return String
@@ -23,14 +31,6 @@ interface Description {
     default String getComment() {
         return getComment(null);
     }
-
-    /**
-     * Returns a {@code rdfs:label} concatenated for the specified lang with symbol '\n'.
-     *
-     * @param lang String or null to get default
-     * @return String label
-     */
-    String getLabel(String lang);
 
     /**
      * Returns default (no lang) merged label.

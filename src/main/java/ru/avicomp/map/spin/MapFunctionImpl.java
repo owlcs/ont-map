@@ -46,6 +46,9 @@ public class MapFunctionImpl implements MapFunction {
 
     @Override
     public String type() {
+        if (func.hasProperty(AVC.returnType)) {
+            return func.getPropertyResourceValue(AVC.returnType).getURI();
+        }
         Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
         return (r == null ? AVC.undefined : r).getURI();
     }
@@ -81,6 +84,30 @@ public class MapFunctionImpl implements MapFunction {
     @Override
     public boolean isBoolean() {
         return XSD.xboolean.getURI().equals(type());
+    }
+
+    /**
+     * Answers if a function is inherited from a given super class.
+     * Currently for debug.
+     * Composers super classes:
+     * <ul>
+     * <li>{@code spin:Functions} - a super class for all spin-functions</li>
+     * <li>{@code spin:MagicProperties}</li>
+     * <li>{@code spinmap:TargetFunctions}</li>
+     * <li>{@code spl:BooleanFunctions}</li>
+     * <li>{@code spl:DateFunctions}</li>
+     * <li>{@code spl:MathematicalFunctions}</li>
+     * <li>{@code spl:MiscFunctions}</li>
+     * <li>{@code spl:OntologyFunctions}</li>
+     * <li>{@code spl:StringFunctions}</li>
+     * <li>{@code spl:URIFunctions}</li>
+     * </ul>
+     *
+     * @param superClass {@link Resource}
+     * @return if there is {@code _:this rdfs:subClassOf _:superClass} statement
+     */
+    public boolean isInheritedOfClass(Resource superClass) {
+        return func.hasProperty(RDFS.subClassOf, superClass);
     }
 
     /**

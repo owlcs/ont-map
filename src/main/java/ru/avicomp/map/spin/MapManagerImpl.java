@@ -252,7 +252,7 @@ public class MapManagerImpl implements MapManager {
     /**
      * Gets a a class-properties map object.
      * The result is cached and is placed in the specified model, in a listener attached to the top-level {@link UnionGraph graph}.
-     *
+     * <p>
      * Note: this method is used during validation of input arguments,
      * although SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
      *

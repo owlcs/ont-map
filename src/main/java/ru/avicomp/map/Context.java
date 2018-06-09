@@ -142,6 +142,14 @@ public interface Context extends MapResource {
     Stream<Context> dependentContexts();
 
     /**
+     * Validates a function-call against this context.
+     *
+     * @param func {@link MapFunction.Call} an expression.
+     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     */
+    void validate(MapFunction.Call func) throws MapJenaException;
+
+    /**
      * Adds a primary rule to bind two class expressions.
      * If some rule is already present in the context, it will be replaced by the new one.
      *
@@ -177,14 +185,6 @@ public interface Context extends MapResource {
     default PropertyBridge addPropertyBridge(MapFunction.Call func, Property target) throws MapJenaException {
         return addPropertyBridge(null, func, target);
     }
-
-    /**
-     * Validates a function-call against this context.
-     *
-     * @param func {@link MapFunction.Call} an expression.
-     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
-     */
-    void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
      * Answers iff this context is valid for (SPIN-)map-inference.

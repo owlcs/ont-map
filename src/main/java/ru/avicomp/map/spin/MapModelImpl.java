@@ -635,8 +635,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Creates a {@link MapFunction.Call function call} from a given expression resource.
      *
-     * @param mapping {@link Resource} mapping
-     * @param expr    {@link RDFNode} expression
+     * @param mapping  {@link Resource} mapping
+     * @param expr     {@link RDFNode} expression
      * @param isFilter boolean
      * @return {@link MapFunction.Call}
      * @see #createExpression(MapFunction.Call)

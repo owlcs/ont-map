@@ -62,7 +62,7 @@ public interface MapManager {
 
     /**
      * Provides a class-properties mapping.
-     *
+     * <p>
      * Used directly by API to build mappings rules:
      * properties that "belong" to the context class are treated as assertions,
      * the rest of the properties are used simply as IRIs.
