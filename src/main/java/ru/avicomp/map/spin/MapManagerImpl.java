@@ -15,16 +15,16 @@ import org.topbraid.spin.system.SPINModuleRegistry;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.map.utils.LocalClassPropertyMapImpl;
 import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
-import ru.avicomp.ontapi.jena.model.OntCE;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntPE;
+import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -43,10 +43,14 @@ import java.util.stream.Stream;
 @SuppressWarnings("WeakerAccess")
 public class MapManagerImpl implements MapManager {
 
+    // OWL2 personality (lax version)
+    public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
+    // OWL2 + SPIN personality
+    public static final OntPersonality LIB_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy().add(SpinModelConfig.LIB_PERSONALITY);
+
     private final PrefixMapping prefixLibrary;
     private final UnionModel graphLibrary;
     private final Map<String, MapFunctionImpl> mapFunctions;
-    public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
 
     protected final ARQFactory spinARQFactory = ARQFactory.get();
     protected final SPINModuleRegistry spinModuleRegistry = SPINModuleRegistry.get();
@@ -67,11 +71,12 @@ public class MapManagerImpl implements MapManager {
     /**
      * Creates a complete ONT-MAP library ("a query model" in terms of SPIN-API).
      * The result graph includes all turtle resources from {@code /etc} dir.
-     * The top level graph is mutable and stands for user defined functions, while others are immutable.
+     * The top level graph is mutable and stands for user defined functions, while others are unmodifiable.
+     * The result model supports OWL2 constructions also, it was done just to handle custom numeric datatype.
      *
-     * @param graph {@link Graph}, containing user-defined functions
+     * @param graph {@link Graph} containing user-defined functions
      * @return {@link UnionModel}
-     * @see SpinModelConfig#LIB_PERSONALITY
+     * @see MapManagerImpl#LIB_PERSONALITY
      */
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
@@ -80,7 +85,7 @@ public class MapManagerImpl implements MapManager {
         additionLibraryGraphs().forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
-        return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
+        return new OntGraphModelImpl(res, LIB_PERSONALITY);
     }
 
     /**
@@ -119,6 +124,13 @@ public class MapManagerImpl implements MapManager {
         return res.lock();
     }
 
+    /**
+     * Wraps a top-spin function as ont-map function.
+     *
+     * @param func {@link org.topbraid.spin.model.Function}
+     * @param pm   {@link PrefixMapping}
+     * @return {@link MapFunctionImpl}
+     */
     private static MapFunctionImpl makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {
         return new MapFunctionImpl(func) {
 
@@ -190,7 +202,12 @@ public class MapManagerImpl implements MapManager {
                 .allMatch(f -> !uri.equals(f.name()) && MapManagerImpl.this.isRegistered(f));
     }
 
-    public Map<String, MapFunctionImpl> getFunctionMap() {
+    /**
+     * Gets all available functions as Map.
+     *
+     * @return {@link Map} with IRIs as keys and {@link MapFunctionImpl} as values
+     */
+    public Map<String, MapFunctionImpl> getFunctionsMap() {
         return Collections.unmodifiableMap(mapFunctions);
     }
 
@@ -204,21 +221,23 @@ public class MapManagerImpl implements MapManager {
         return prefixLibrary;
     }
 
+    /**
+     * Returns the library graph.
+     *
+     * @return {@link UnionModel}
+     */
     public UnionModel getLibrary() {
         return graphLibrary;
     }
 
     /**
-     * Gets a library graph without any inclusion (i.e. without avc addition).
+     * Gets a library graph without any inclusion (i.e. without avc additions).
      *
      * @return {@link UnionGraph}
      * @throws IllegalStateException wrong state
      */
     public Graph getMapLibraryGraph() throws IllegalStateException {
-        return getLibrary().getGraph().getUnderlying()
-                .graphs()
-                .filter(g -> SystemModels.Resources.SPINMAPL.getURI().equals(Graphs.getURI(g)))
-                .findFirst().orElseThrow(IllegalStateException::new);
+        return getSpinLibraryGraph();
     }
 
     /**
@@ -240,12 +259,12 @@ public class MapManagerImpl implements MapManager {
      * Note: it adds {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} statement to the model,
      * this is just in case only for Composer Inference Engine, ONT-Map Inference Engine does not use that setting.
      *
-     * @param base           {@link Graph}
+     * @param base           {@link Graph} base graph
      * @param owlPersonality {@link OntPersonality}
      * @return {@link MapModelImpl}
      */
-    public MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
-        UnionGraph g = new UnionGraph(base);
+    protected MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
+        UnionGraph g = new UnionGraph(Graphs.getBase(base));
         MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
         // do not add avc.spin.ttl addition to the final graph
         Graph map = getMapLibraryGraph();
@@ -260,6 +279,20 @@ public class MapManagerImpl implements MapManager {
         // add spinmapl (a top of library) to owl:imports:
         res.getID().addImport(Graphs.getURI(map));
         return res;
+    }
+
+    /**
+     * Returns all numeric datatypes ({@code rdfs:Datatype}) defined in avc.spin.ttl.
+     *
+     * @return Stream of all number datatypes
+     * @see AVC#numeric
+     * @see <a href='https://www.w3.org/TR/sparql11-query/#operandDataTypes'>SPARQL Operand Data Types</a>
+     */
+    public Stream<OntDT> numberDatatypes() {
+        OntDT res = AVC.numeric.inModel(getLibrary()).as(OntDT.class);
+        OntDR dr = res.equivalentClass().findFirst()
+                .orElseThrow(() -> new IllegalStateException("Can't find owl:equivalentClass for " + res));
+        return dr.as(OntDR.UnionOf.class).dataRanges().map(d -> d.as(OntDT.class));
     }
 
     /**

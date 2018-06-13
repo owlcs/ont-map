@@ -34,26 +34,6 @@ public interface MapManager {
     Stream<MapFunction> functions();
 
     /**
-     * Gets function by name (an iri in our single implementation).
-     *
-     * @param name String, not null
-     * @return {@link MapFunction}
-     * @throws MapJenaException if no function found.
-     */
-    default MapFunction getFunction(String name) throws MapJenaException {
-        return functions()
-                .filter(f -> Objects.equals(name, f.name()))
-                .findFirst()
-                .orElseThrow(() -> new MapJenaException("Function " + name + " not found."));
-    }
-
-    default MapFunction getFunction(Resource resource) {
-        if (!Objects.requireNonNull(resource, "Null function resource").isURIResource())
-            throw new IllegalArgumentException("Not an iri");
-        return getFunction(resource.getURI());
-    }
-
-    /**
      * Creates a fresh mapping model.
      *
      * @return {@link MapModel}
@@ -80,6 +60,26 @@ public interface MapManager {
      * @return {@link InferenceEngine}
      */
     InferenceEngine getInferenceEngine();
+
+    default MapFunction getFunction(Resource resource) {
+        if (!Objects.requireNonNull(resource, "Null function resource").isURIResource())
+            throw new IllegalArgumentException("Not an iri");
+        return getFunction(resource.getURI());
+    }
+
+    /**
+     * Gets function by name (an iri in our single implementation).
+     *
+     * @param name String, not null
+     * @return {@link MapFunction}
+     * @throws MapJenaException if no function found.
+     */
+    default MapFunction getFunction(String name) throws MapJenaException {
+        return functions()
+                .filter(f -> Objects.equals(name, f.name()))
+                .findFirst()
+                .orElseThrow(() -> new MapJenaException("Function " + name + " not found."));
+    }
 
     /**
      * An inference engine.

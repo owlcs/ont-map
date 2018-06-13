@@ -21,7 +21,6 @@ import ru.avicomp.map.utils.GraphLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
-import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntIndividual;
@@ -111,7 +110,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
-        OntGraphModel src = OntModelFactory.createModel(source, OntModelConfig.ONT_PERSONALITY_LAX);
+        OntGraphModel src = OntModelFactory.createModel(source, MapManagerImpl.ONT_PERSONALITY);
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())

@@ -11,7 +11,6 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -487,21 +486,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public boolean isNumeric(RDFDatatype type) {
         String dt = Objects.requireNonNull(type, "Null dt").getURI();
-        return numberDatatypes().map(OntDT::toRDFDatatype).map(RDFDatatype::getURI).anyMatch(dt::equals);
-    }
-
-    /**
-     * Returns all numeric datatypes, defined in avc.spin.ttl.
-     *
-     * @return Stream of all number datatypes
-     * @see AVC#numeric
-     * @see <a href='https://www.w3.org/TR/sparql11-query/#operandDataTypes'>SPARQL Operand Data Types</a>
-     */
-    public Stream<OntDT> numberDatatypes() {
-        OntDT res = AVC.numeric.inModel(this).as(OntDT.class);
-        OntDR dr = res.equivalentClass().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Can't find owl:equivalentClass for " + res));
-        return dr.as(OntDR.UnionOf.class).dataRanges().map(d -> d.as(OntDT.class));
+        return getManager().numberDatatypes().map(OntDT::toRDFDatatype).map(RDFDatatype::getURI).anyMatch(dt::equals);
     }
 
     /**

@@ -1,19 +1,21 @@
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix spin:  <http://spinrdf.org/spin#> .
+@prefix afn:   <http://jena.hpl.hp.com/ARQ/function#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix spinmapl: <http://topbraid.org/spin/spinmapl#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
+@prefix spif:  <http://spinrdf.org/spif#> .
 @prefix avc:   <http://avc.ru/spin#> .
 
 <http://avc.ru/spin>  a  owl:Ontology ;
         rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom functions can be considered as templates." ;
         owl:versionIRI   avc:1.0 ;
         owl:versionInfo  "version 1.0" ;
-         owl:imports      <http://spinrdf.org/spinmap> .
+        owl:imports      <http://spinrdf.org/spinmap> .
 
 avc:hidden  a       owl:DatatypeProperty ;
         rdfs:comment  "A property for marking unused functions from standard spin-map library supply." ;
@@ -44,6 +46,96 @@ avc:MagicFunctions  a    spin:Function ;
         spin:abstract    true .
 
 sp:abs  avc:hidden  "Duplicates the function fn:abs, which is preferable, since it has information about return types." .
+
+sp:sub  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions/#func-numeric-subtract> ;
+        avc:constraint  [ spl:predicate  sp:arg2 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+sp:add  rdfs:comment     "Can work both with numeric datatypes and xsd:string." ;
+        rdfs:subClassOf  spl:StringFunctions ;
+        avc:constraint   [ spl:predicate  sp:arg2 ;
+                           spl:valueType  rdfs:Literal
+                         ] ;
+        avc:constraint   [ spl:predicate  sp:arg1 ;
+                           spl:valueType  rdfs:Literal
+                         ] ;
+        avc:returnType   rdfs:Literal .
+
+sp:divide  rdfs:seeAlso  <https://www.w3.org/TR/xpath-functions/#func-numeric-divide> ;
+        avc:constraint  [ spl:predicate  sp:arg2 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+sp:mul  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions/#func-numeric-multiply> ;
+        avc:constraint  [ spl:predicate  sp:arg2 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+spl:max  rdfs:comment    "Can work both with numeric datatypes and xsd:string." ;
+        rdfs:subClassOf  spl:StringFunctions .
+
+spl:min  rdfs:comment    "Can work both with numeric datatypes and xsd:string." ;
+        rdfs:subClassOf  spl:StringFunctions .
+
+sp:unaryPlus  rdfs:seeAlso  <https://www.w3.org/TR/xpath-functions/#func-numeric-unary-plus> ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+sp:unaryMinus  rdfs:seeAlso  <https://www.w3.org/TR/xpath-functions/#func-numeric-unary-minus> ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+sp:ceil  avc:constraint  [ spl:predicate  sp:arg1 ;
+                           spl:valueType  avc:numeric
+                         ] ;
+        avc:returnType  avc:numeric .
+
+sp:floor  avc:constraint  [ spl:predicate  sp:arg1 ;
+                            spl:valueType  avc:numeric
+                          ] ;
+        avc:returnType  avc:numeric .
+
+sp:round  avc:constraint  [ spl:predicate  sp:arg1 ;
+                            spl:valueType  avc:numeric
+                          ] ;
+        avc:returnType  avc:numeric .
+
+afn:max  avc:constraint  [ spl:predicate  sp:arg2 ;
+                           spl:valueType  avc:numeric
+                         ] ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+afn:min  avc:constraint  [ spl:predicate  sp:arg2 ;
+                           spl:valueType  avc:numeric
+                         ] ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
+
+afn:pi  avc:hidden  "Use math:pi instead" .
+
+sp:isNumeric  avc:returnType  xsd:boolean .
 
 sp:datatype  avc:returnType  rdfs:Datatype .
 
@@ -96,6 +188,17 @@ spinmapl:resourceWithPrimaryKey
 
 spinmapl:usePrimaryKey
         avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
+
+spl:hasArgument  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spif:walkObjects  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spif:canInvoke  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spif:invoke  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spif:convertSPINRDFToString
+        avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
 avc:UUID  a                 spinmap:TargetFunction ;
         rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;

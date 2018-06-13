@@ -17,7 +17,11 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 /**
+ * For developing and demonstration.
+ * NOTE: Not a part of API or APIs Tests: will be removed.
  * Created by @szuev on 22.05.2018.
+ *
+ * @see MATH
  */
 public class MathLibraryMaker {
 

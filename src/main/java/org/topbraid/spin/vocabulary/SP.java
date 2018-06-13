@@ -140,7 +140,15 @@ public class SP {
     public final static Resource not = resource("not");
     public final static Resource regex = resource("regex");
     public final static Resource sub = resource("sub");
+    public final static Resource add = resource("add");
+    public final static Resource mul = resource("mul");
+    public final static Resource divide = resource("divide");
+    public final static Resource unaryPlus = resource("unaryPlus");
     public final static Resource unaryMinus = resource("unaryMinus");
+    public final static Resource ceil = resource("ceil");
+    public final static Resource floor = resource("floor");
+    public final static Resource round = resource("round");
+    public final static Resource isNumeric = resource("isNumeric");
 
     public static Property arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();

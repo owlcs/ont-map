@@ -10,7 +10,9 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.Context;
 import ru.avicomp.map.spin.AdjustGroupConcatImpl;
+import ru.avicomp.map.spin.vocabulary.ARQ;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -25,13 +27,13 @@ import java.util.stream.Stream;
 /**
  * An utility class to produce avc.spin.ttl (see resources/etc directory).
  * For developing and demonstration.
- * Will be removed.
+ * NOTE: Not a part of API or APIs Tests: will be removed.
  * <p>
  * Created by @szuev on 07.04.2018.
  *
  * @see AVC
+ * @see ARQ
  */
-@SuppressWarnings("WeakerAccess")
 public class AVCLibraryMaker {
 
     public static void main(String... args) {
@@ -56,6 +58,7 @@ public class AVCLibraryMaker {
         runtime.addRange(xsdString);
         runtime.addComment("A property for using to describe runtime functionality provided by ONT-MAP API", null);
 
+        // numeric datatype (xs:numeric)
         OntDT numeric = m.createOntEntity(OntDT.class, AVC.numeric.getURI());
         numeric.addComment("Represents all numeric datatypes", null);
         numeric.addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/sparql11-query/#operandDataTypes"));
@@ -81,13 +84,75 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.subClassOf, SPIN.Functions)
                 .addProperty(SPIN.abstract_, Models.TRUE)
                 .addProperty(RDFS.label, "Aggregate functions")
-                .addProperty(RDFS.comment, "A collection of functions that uses SPARQL aggregate functionality (i.e. COUNT, SUM, MIN, MAX, GROUP_CONCAT).");
+                .addProperty(RDFS.comment,
+                        "A collection of functions that uses SPARQL aggregate functionality (i.e. COUNT, SUM, MIN, MAX, GROUP_CONCAT).");
 
+        // Customize mathematical functions:
         // SP:abs
-        SP.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
+        SP.resource("abs").inModel(m).addProperty(hidden,
+                "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
+        // SP:max & SP:min can handle also xsd:string since it is SPARQL which is used overloaded operators ">" and "<"
+        Stream.of(SPL.max, SPL.min).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(RDFS.comment, "Can work both with numeric datatypes and xsd:string.")
+                        .addProperty(RDFS.subClassOf, SPL.StringFunctions));
+        // SP:sub can accept any numbers
+        SP.sub.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions/#func-numeric-subtract"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.numeric));
+        // SP:add can handle string also since it is SPIN representation of SPARQL "+", which is overloaded
+        SP.add.inModel(m).addProperty(RDFS.comment, "Can work both with numeric datatypes and xsd:string.")
+                .addProperty(RDFS.subClassOf, SPL.StringFunctions)
+                .addProperty(AVC.returnType, RDFS.Literal)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, RDFS.Literal))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, RDFS.Literal));
+        // SP:divide
+        SP.divide.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions/#func-numeric-divide"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.numeric));
+        // SP:mul can accept only numeric
+        SP.mul.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions/#func-numeric-multiply"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.numeric));
+        // SP:unaryMinus & SP:unaryPlus
+        SP.unaryPlus.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions/#func-numeric-unary-plus"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
+        SP.unaryMinus.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions/#func-numeric-unary-minus"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
+        // SP:ceil & SP:floor & SP:round
+        Stream.of(SP.ceil, SP.floor, SP.round).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(AVC.returnType, AVC.numeric)
+                        .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric)));
+
+        // Boolean functions:
+        SP.isNumeric.inModel(m).addProperty(AVC.returnType, XSD.xboolean);
+
+        // todo: hide SPIF:random in favour of SP:rand?
 
         // SP:datatype
         SP.resource("datatype").inModel(m).addProperty(AVC.returnType, RDFS.Datatype);
+
+        // SP:eq can accept any resource, not only boolean literals
+        SP.eq.inModel(m)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.undefined))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.undefined));
+
+        // ARQ(prefix=afn) functions: AFN:max and AFN:min can handle only numeric
+        Stream.of(ARQ.max, ARQ.min).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(AVC.returnType, AVC.numeric)
+                        .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
+                        .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.numeric)));
+        // ARQ:pi replaced with MATH:pi
+        ARQ.resource("pi").inModel(m).addProperty(AVC.hidden, "Use math:pi instead");
 
         // SPINMAP:targetResource
         SPINMAP.targetResource.inModel(m)
@@ -104,7 +169,7 @@ public class AVCLibraryMaker {
                 .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
                         "#createRelatedContext(...) methods.");
 
-        // SPIN primary key functionality
+        // Exclude SPIN primary key functionality
         String primaryKeyExclusionReason = "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic";
         Stream.of(SPINMAPL.resource("resourceWithPrimaryKey"),
                 SPINMAPL.resource("usePrimaryKey"),
@@ -114,11 +179,14 @@ public class AVCLibraryMaker {
                 SPL.resource("isPrimaryKeyPropertyOfInstance"))
                 .map(r -> r.inModel(m))
                 .forEach(r -> r.addProperty(hidden, primaryKeyExclusionReason));
-
-        // SP:eq can accept any resource, not only boolean literals
-        SP.eq.inModel(m)
-                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.undefined))
-                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2, AVC.undefined));
+        // Exclude functions affecting spin:Module, spin:Function, sp:Query as not compatible with this API
+        String spinExclusionReason = "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic";
+        Stream.of(SPL.resource("hasArgument"),
+                SPIF.resource("convertSPINRDFToString"),
+                SPIF.resource("invoke"),
+                SPIF.resource("canInvoke"),
+                SPIF.resource("walkObjects")).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, spinExclusionReason));
 
         // varargs:
         SP.resource("concat").inModel(m).addProperty(SPIN.constraint, m.createResource()
@@ -196,7 +264,8 @@ public class AVCLibraryMaker {
                 .addProperty(AVC.runtime, AdjustGroupConcatImpl.class.getName())
                 .addProperty(SPINMAP.shortLabel, "groupConcat")
                 .addProperty(RDFS.label, "Group concat")
-                .addProperty(RDFS.comment, "An aggregate function to concatenate values from assertions with the same individual and property using specified separator.\n" +
+                .addProperty(RDFS.comment, "An aggregate function to concatenate values from assertions with " +
+                        "the same individual and property using specified separator.\n" +
                         "Notice: string natural sort order is used")
                 .addProperty(SPIN.body,
                         ARQ2SPIN.parseQuery("SELECT GROUP_CONCAT(DISTINCT ?r; SEPARATOR=' + ')\n" +

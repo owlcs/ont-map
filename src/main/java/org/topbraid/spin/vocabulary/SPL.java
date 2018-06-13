@@ -42,6 +42,8 @@ public class SPL {
     public static final Resource DateFunctions = resource("DateFunctions");
     public static final Resource MiscFunctions = resource("MiscFunctions");
     public static final Resource URIFunctions = resource("URIFunctions");
+    public static final Resource max = resource("max");
+    public static final Resource min = resource("min");
 
     public static final Property defaultValue = property("defaultValue");
     public static final Property dynamicEnumRange = property("dynamicEnumRange");

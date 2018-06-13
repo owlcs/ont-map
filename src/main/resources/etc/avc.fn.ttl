@@ -1,7 +1,10 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix spin:  <http://spinrdf.org/spin#> .
 @prefix fn:    <http://www.w3.org/2005/xpath-functions#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 @prefix avc:   <http://avc.ru/spin#> .
@@ -18,3 +21,42 @@ fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
                           spl:valueType  avc:numeric
                         ] ;
         avc:returnType  avc:numeric .
+
+fn:round  rdfs:comment   "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near." ;
+        rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/#round> ;
+        avc:constraint   [ spl:predicate  sp:arg1 ;
+                           spl:valueType  avc:numeric
+                         ] ;
+        avc:returnType   avc:numeric ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The precision, int" ;
+                           spl:optional   true ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  xsd:integer
+                         ] .
+
+fn:format-number  a         spin:Function ;
+        rdfs:comment        "Returns a string containing a number formatted according to a given picture string, taking account of decimal formats specified in the static context " ;
+        rdfs:label          "formats a numeric literal" ;
+        rdfs:seeAlso        <https://www.w3.org/TR/xpath-functions-31/#func-format-number> ;
+        rdfs:subClassOf     spl:StringFunctions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Picture" ;
+                              spl:optional   true ;
+                              spl:predicate  sp:arg2 ;
+                              spl:valueType  xsd:string
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Decimal format name" ;
+                              rdfs:seeAlso   <https://tools.ietf.org/html/bcp47> ;
+                              spl:optional   true ;
+                              spl:predicate  sp:arg3 ;
+                              spl:valueType  xsd:string
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "Value to format" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:numeric
+                            ] ;
+        spin:returnType     xsd:string ;
+        spinmap:shortLabel  "format-number" .
