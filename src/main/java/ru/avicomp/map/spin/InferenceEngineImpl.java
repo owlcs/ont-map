@@ -323,6 +323,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          * @see SPINInferenceHelper#runQueryOnInstance(QueryWrapper, Resource)
          * @see AVC#currentIndividual
          * @see AVC#MagicFunctions
+         * @throws MapJenaException in case exception occurred while inference
          */
         @Override
         public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
@@ -335,7 +336,14 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                     spinARQFactory.clearCaches();
                     jenaFunctionRegistry.put(get.getURI(), SPINFunctionDrivers.get().create(get));
                 }
-                return super.runQueryOnInstance(query, instance);
+                try {
+                    return super.runQueryOnInstance(query, instance);
+                } catch (RuntimeException ex) {
+                    throw Exceptions.INFERENCE_FAIL.create()
+                            .add(Exceptions.Key.QUERY, SpinModels.toString(query))
+                            .add(Exceptions.Key.INSTANCE, instance.toString())
+                            .build(ex);
+                }
             } finally {
                 vars.forEach((a, b) -> model.add(a).remove(b));
             }

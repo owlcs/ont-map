@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -91,11 +92,19 @@ public class TestUtils {
     }
 
     public static String getStringValue(OntIndividual i, OntNDP p) {
-        return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getString).orElseThrow(AssertionError::new);
+        return getLiteralValue(i, p, Literal::getString);
     }
 
     public static boolean getBooleanValue(OntIndividual i, OntNDP p) {
-        return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getBoolean).orElseThrow(AssertionError::new);
+        return getLiteralValue(i, p, Literal::getBoolean);
+    }
+
+    public static double getDoubleValue(OntIndividual i, OntNDP p) {
+        return getLiteralValue(i, p, Literal::getDouble);
+    }
+
+    public static <V> V getLiteralValue(OntIndividual i, OntNDP p, Function<Literal, V> map) {
+        return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(map).orElseThrow(AssertionError::new);
     }
 
     public static Stream<OntStatement> plainAssertions(OntGraphModel m) {

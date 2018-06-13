@@ -25,8 +25,9 @@ public class AVC {
     // spin-functions which use SPARQL aggregate functions
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
 
-    // a virtual number datatype to be used as function or argument type restriction
-    // see https://www.w3.org/TR/sparql11-query/#operandDataTypes
+    // a virtual number datatype to be used as function or argument type restriction.
+    // it corresponds xs:numeric
+    // see also https://www.w3.org/TR/sparql11-query/#operandDataTypes
     public static final Resource numeric = resource("numeric");
 
     // additional no-arg target function, for debugging and for convenience' sake

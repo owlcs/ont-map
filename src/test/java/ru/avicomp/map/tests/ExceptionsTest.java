@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
+import ru.avicomp.map.spin.vocabulary.FN;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -201,6 +202,27 @@ public class ExceptionsTest {
     private static void print(MapJenaException j) {
         LOGGER.debug("Exception: {}", j.getMessage());
         Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
+    }
+
+    @Test(expected = Exceptions.SpinMapException.class)
+    public void testInferenceFail() {
+        AbstractMapTest tc = new MathOpsMapTest();
+        OntGraphModel src = tc.assembleSource();
+        OntGraphModel dst = tc.assembleTarget();
+        MapManager man = Managers.getMapManager();
+
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
+        OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty2");
+        OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
+
+        MapModel map = tc.createMappingModel(man, "Wrong fn:format-number picture");
+        Context c = map.createContext(srcClass, dstClass, man.getFunction(SPINMAPL.self).create().build());
+        c.addPropertyBridge(man.getFunction(FN.format_number).create()
+                .addProperty(SP.arg1, srcProp2)
+                .addLiteral(SP.arg2, "9,9.000"), dstProp3);
+        man.getInferenceEngine().run(map, src, dst);
+        TestUtils.debug(dst);
     }
 }
 

@@ -402,7 +402,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
                 }
                 if (value instanceof MapFunction.Call) {
                     MapFunction.Call call = (MapFunction.Call) value;
-                    v.testFunctionValue(call.getFunction());
+                    v.testFunctionValue(call);
                     testFunction(call);
                     return;
                 }

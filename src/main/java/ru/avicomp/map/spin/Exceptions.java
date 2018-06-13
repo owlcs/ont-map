@@ -32,7 +32,9 @@ public enum Exceptions {
     FUNCTION_NONEXISTENT_ARGUMENT,
     FUNCTION_WRONG_ARGUMENT,
     FUNCTION_SELF_CALL,
-    FUNCTION_NO_REQUIRED_ARG,;
+    FUNCTION_NO_REQUIRED_ARG,
+
+    INFERENCE_FAIL;
 
     public Builder create() {
         return new Builder();
@@ -95,6 +97,8 @@ public enum Exceptions {
         ARG,
         ARG_TYPE,
         ARG_VALUE,
+        QUERY,
+        INSTANCE,
     }
 
     public final class SpinMapException extends MapJenaException {

@@ -43,7 +43,7 @@ public class CommonMappingTest {
                 of(SplitMapTest.class, 2, 2, 4),
                 of(IntersectConcatMapTest.class, 2, 2, 5),
                 of(GroupConcatTest.class, 1, 1, 4),
-                of(MathOpsMapTest.class, 1, 2, 8),
+                of(MathOpsMapTest.class, 1, 3, 10),
                 of(MultiContextMapTest.class, 8, 4, 5),
                 of(PropertyChainMapTest.class, 1, 2, 6),
                 of(VarArgMapTest.class, 1, 2, 3)

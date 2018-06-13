@@ -38,11 +38,15 @@ abstract class MapTestData5 extends AbstractMapTest {
         String ns = m.getID().getURI() + "#";
         OntClass clazz = m.createOntEntity(OntClass.class, ns + "DstClass1");
         OntDT xdouble = m.getOntEntity(OntDT.class, XSD.xdouble);
+        OntDT xstring = m.getOntEntity(OntDT.class, XSD.xstring);
         Stream.of("dstDataProperty1", "dstDataProperty2").forEach(s -> {
             OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
             p.addDomain(clazz);
             p.addRange(xdouble);
         });
+        m.createOntEntity(OntNDP.class, ns + "dstDataProperty3")
+                .addDomain(clazz).getSubject().as(OntNDP.class)
+                .addRange(xstring);
         return m;
     }
 

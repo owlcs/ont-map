@@ -1,6 +1,7 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class MathOpsMapTest extends MapTestData5 {
         // validate:
         OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty1");
         OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty2");
+        OntNDP p3 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty3");
         Assert.assertEquals(1, t.statements(null, p1, null).count());
         Assert.assertEquals(1, t.statements(null, p2, null).count());
 
@@ -55,10 +57,12 @@ public class MathOpsMapTest extends MapTestData5 {
         Assert.assertEquals(1, res.size());
         OntIndividual i = res.get(0);
         Assert.assertEquals(RES_URI, i.getURI());
-        double d1 = i.statement(p1).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getDouble).orElseThrow(AssertionError::new);
-        double d2 = i.statement(p2).map(Statement::getObject).map(RDFNode::asLiteral).map(Literal::getDouble).orElseThrow(AssertionError::new);
-        Assert.assertEquals(Math.PI - 1, d2, 0.01);
-        Assert.assertEquals(Math.E * Math.E, d1, 0.01);
+        double v1 = TestUtils.getDoubleValue(i, p1);
+        double v2 = TestUtils.getDoubleValue(i, p2);
+        String v3 = TestUtils.getStringValue(i, p3);
+        Assert.assertEquals(Math.PI - 1, v2, 0.01);
+        Assert.assertEquals(Math.E * Math.E, v1, 0.01);
+        Assert.assertEquals("2,720", v3);
         AbstractMapTest.commonValidate(t);
     }
 
@@ -75,7 +79,10 @@ public class MathOpsMapTest extends MapTestData5 {
         MapFunction e = manager.getFunction(pm.expandPrefix("afn:e"));
         MapFunction abs = manager.getFunction(pm.expandPrefix("fn:abs"));
 
-        MapModel res = createMappingModel(manager, "Used functions: " + toMessage(pm, iri, mul, ln, exp, sub, p, e, abs));
+        MapFunction round = manager.getFunction(pm.expandPrefix("fn:round"));
+        MapFunction formatNumber = manager.getFunction(pm.expandPrefix("fn:format-number"));
+
+        MapModel res = createMappingModel(manager, "Used functions: " + toMessage(pm, iri, mul, ln, exp, sub, p, e, abs, round, formatNumber));
 
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
@@ -83,6 +90,7 @@ public class MathOpsMapTest extends MapTestData5 {
         OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty2");
         OntNDP dstProp1 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty1");
         OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty2");
+        OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
 
         Context c = res.createContext(srcClass, dstClass, iri.create().addLiteral(SP.arg1, RES_URI).build());
         // e * exp($val) ::: src-prop1(=1) => dst-prop1 ::: 2.72 * exp(1) = e^2 = 7.39
@@ -94,6 +102,14 @@ public class MathOpsMapTest extends MapTestData5 {
         c.addPropertyBridge(abs.create().addFunction(SP.arg1, sub.create()
                 .addFunction(SP.arg1, ln.create().addProperty(SP.arg1, srcProp2))
                 .addFunction(SP.arg2, p.create())), dstProp2);
+
+        // round(2.718281828459045, 2) => 2.72e0, format(2.72e0, '#.000', 'ru') => 2,720
+        c.addPropertyBridge(formatNumber.create()
+                .addFunction(SP.arg1, round.create()
+                        .addProperty(SP.arg1, srcProp2)
+                        .addLiteral(SP.arg2, 2))
+                .addLiteral(SP.arg2, "#.000")
+                .addLiteral(SP.arg3, "ru"), dstProp3);
         return res;
     }
 
@@ -108,15 +124,15 @@ public class MathOpsMapTest extends MapTestData5 {
         TestUtils.debug(m);
         Assert.assertEquals(1, m.contexts().count());
         Assert.assertEquals(2, m.ontologies().count());
-        Assert.assertEquals(2, m.rules().count());
+        Assert.assertEquals(3, m.rules().count());
         Set<MapFunction> functions = m.rules().flatMap(MapResource::functions).collect(Collectors.toSet());
         functions.forEach(f -> LOGGER.debug("{}", f));
         // no fn:abs, sp:sub, math:log, math:pi
-        Assert.assertEquals(4, functions.size());
-        // math:exp and avc:IRI still there:
+        Assert.assertEquals(6, functions.size());
+        // math:exp, avc:IRI and fn:format-number still there:
         Model base = SpinModelConfig.createSpinModel(m.asOntModel().getBaseGraph());
         Set<Resource> localFunctions = SpinModels.listSpinFunctions(base).collect(Collectors.toSet());
         localFunctions.forEach(f -> LOGGER.debug("Local function: <{}>", m.asOntModel().shortForm(f.getURI())));
-        Assert.assertEquals(2, localFunctions.size());
+        Assert.assertEquals(3, localFunctions.size());
     }
 }
