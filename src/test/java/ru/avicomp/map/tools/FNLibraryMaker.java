@@ -30,30 +30,11 @@ public class FNLibraryMaker {
         OntID id = m.setID(SystemModels.Resources.AVC_FN.getURI());
         id.setVersionIRI(id.getURI() + "#1.0");
         id.addComment("XQuery, XPath, and XSLT Functions and Operators.\n" +
-                "A customisation and an addition to the <http://topbraid.org/functions-fn> library.", null);
+                "An addition to the <http://topbraid.org/functions-fn> library.", null);
         id.addProperty(RDFS.seeAlso, m.getResource(FN.URI));
         id.addProperty(RDFS.seeAlso, m.getResource("http://topbraid.org/functions-fn"));
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         id.addImport(AVC.BASE_URI);
-
-        // FN:abs takes a number, not any literal
-        FN.abs.inModel(m)
-                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions-31/#func-abs"))
-                .addProperty(AVC.returnType, AVC.numeric)
-                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
-
-        // FN:round
-        FN.round.inModel(m)
-                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/2005/xpath-functions/#round"))
-                .addProperty(RDFS.comment, "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near.")
-                .addProperty(AVC.returnType, AVC.numeric)
-                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, XSD.integer)
-                        .addProperty(SPL.optional, Models.TRUE)
-                        .addProperty(RDFS.comment, "The precision, int"));
 
         // FN:format-number
         FN.format_number.inModel(m)

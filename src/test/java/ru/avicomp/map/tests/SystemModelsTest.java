@@ -32,17 +32,17 @@ public class SystemModelsTest {
     @Test
     public void testInit() {
         Map<String, Graph> graphs = SystemModels.graphs();
-        Assert.assertEquals(13, graphs.size());
+        Assert.assertEquals(14, graphs.size());
         graphs.forEach((expected, g) -> Assert.assertEquals(expected, Graphs.getURI(g)));
         OntModelFactory.init();
         Assert.assertSame(graphs, SystemModels.graphs());
         Model lib = ((MapManagerImpl) Managers.getMapManager()).getLibrary();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);
-        Assert.assertEquals(31, tree.split("\n").length);
+        Assert.assertEquals(32, tree.split("\n").length);
         Set<String> imports = Graphs.getImports(lib.getGraph());
         LOGGER.debug("Imports: {}", imports);
-        Assert.assertEquals(10, imports.size());
+        Assert.assertEquals(11, imports.size());
         Assert.assertFalse(imports.contains(AVC.URI));
     }
 

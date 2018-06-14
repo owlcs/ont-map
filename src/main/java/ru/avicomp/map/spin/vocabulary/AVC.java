@@ -6,14 +6,15 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.map.spin.SystemModels;
 
 /**
- * The vocabulary which describes http://avc.ru/spin.
- * An addition to the spin-family in order to customize spin-function behaviour.
- * See file://resources/etc/avc.spin.ttl
+ * The vocabulary which describes http://avc.ru/spin (an addition to the spin-family in order to customize spin-function behaviour)
+ * and http://avc.ru/lib (functions).
+ * See file://resources/etc/avc.spin.ttl and file://resources/etc/avc.lib.ttl
  * <p>
  * Created by @szuev on 07.04.2018.
  */
 public class AVC {
     public static final String BASE_URI = SystemModels.Resources.AVC.getURI();
+    public static final String LIB_URI = SystemModels.Resources.AVC_LIB.getURI();
     public static final String NS = BASE_URI + "#";
 
     public static final String DEFAULT_PREDICATE_SUFFIX = "DefaultValue";

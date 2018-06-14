@@ -10,30 +10,11 @@
 @prefix avc:   <http://avc.ru/spin#> .
 
 <http://avc.ru/fn>  a    owl:Ontology ;
-        rdfs:comment     "XQuery, XPath, and XSLT Functions and Operators.\nA customisation and an addition to the <http://topbraid.org/functions-fn> library." ;
+        rdfs:comment     "XQuery, XPath, and XSLT Functions and Operators.\nAn addition to the <http://topbraid.org/functions-fn> library." ;
         rdfs:seeAlso     <http://topbraid.org/functions-fn> , <http://www.w3.org/2005/xpath-functions/> ;
         owl:imports      <http://avc.ru/spin> ;
         owl:versionIRI   <http://avc.ru/fn#1.0> ;
         owl:versionInfo  "version 1.0" .
-
-fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
-        avc:constraint  [ spl:predicate  sp:arg1 ;
-                          spl:valueType  avc:numeric
-                        ] ;
-        avc:returnType  avc:numeric .
-
-fn:round  rdfs:comment   "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near." ;
-        rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/#round> ;
-        avc:constraint   [ spl:predicate  sp:arg1 ;
-                           spl:valueType  avc:numeric
-                         ] ;
-        avc:returnType   avc:numeric ;
-        spin:constraint  [ a              spl:Argument ;
-                           rdfs:comment   "The precision, int" ;
-                           spl:optional   true ;
-                           spl:predicate  sp:arg2 ;
-                           spl:valueType  xsd:integer
-                         ] .
 
 fn:format-number  a         spin:Function ;
         rdfs:comment        "Returns a string containing a number formatted according to a given picture string, taking account of decimal formats specified in the static context " ;

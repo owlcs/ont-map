@@ -1,20 +1,13 @@
 package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.Context;
-import ru.avicomp.map.spin.AdjustGroupConcatImpl;
-import ru.avicomp.map.spin.vocabulary.ARQ;
-import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.SPIF;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
-import ru.avicomp.map.tools.spin.QueryHelper;
-import ru.avicomp.map.tools.spin.SPINLibrary;
+import ru.avicomp.map.spin.vocabulary.*;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -34,6 +27,7 @@ import java.util.stream.Stream;
  *
  * @see AVC
  * @see ARQ
+ * @see FN
  */
 public class AVCLibraryMaker {
 
@@ -41,13 +35,11 @@ public class AVCLibraryMaker {
         OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.BASE_URI);
         id.setVersionIRI(AVC.NS + "1.0");
-        id.addComment("This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\n" +
-                "Also it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\n" +
-                "Currently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\n" +
-                "and all listed custom functions can be considered as templates.", null);
+        id.addComment("A library that contains basic definitions required by ONT-MAP API.\n" +
+                "Also it is an addition to the standard spin-family in order to customize functions behaviour.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         // depends on spinmap to reuse variables (spinmap:_source, spin:_this, spin:_arg*) while building functions bodies
-        m.addImport(LibraryMaker.createModel(SPINLibrary.SPINMAP.getGraph()));
+        id.addImport(SPINMAPL.BASE_URI);
 
         OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
 
@@ -202,190 +194,26 @@ public class AVCLibraryMaker {
                         .addProperty(SPL.predicate, AVC.vararg)
                         .addProperty(SPL.valueType, RDFS.Literal)));
 
-        // AVC:withDefault
-        AVC.withDefault.inModel(m)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
-                .addProperty(SPIN.returnType, RDF.Property)
-                .addProperty(RDFS.seeAlso, SPINMAP.equals)
-                .addProperty(RDFS.seeAlso, AVC.asIRI)
-                .addProperty(SPINMAP.shortLabel, "withDefault")
-                .addProperty(RDFS.label, "With Default")
-                .addProperty(RDFS.comment, "An ontology function for passing default values into a property mapping.\n" +
-                        "It is used for mapping data/annotation property assertion that absences in a particular source individual.\n" +
-                        "Like spinmap:equals it returns the primary input property (?arg1) unchanged.")
-                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
+        // FN:abs takes a number, not any literal
+        FN.abs.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions-31/#func-abs"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
+
+        // FN:round
+        FN.round.inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/2005/xpath-functions/#round"))
+                .addProperty(RDFS.comment, "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near.")
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
                 .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, RDF.Property)
-                        .addProperty(RDFS.comment, "The property to get assertion value"))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(org.apache.jena.vocabulary.RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, RDFS.Literal)
-                        .addProperty(RDFS.comment, "The default value to form a fake assertion on the source individual"));
-
-        // AVC:asIRI
-        AVC.asIRI.inModel(m)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
-                .addProperty(SPIN.returnType, RDF.Property)
-                .addProperty(RDFS.seeAlso, SPINMAP.equals)
-                .addProperty(RDFS.seeAlso, AVC.withDefault)
-                .addProperty(SPINMAP.shortLabel, "asIRI")
-                .addProperty(RDFS.label, "As IRI")
-                .addProperty(RDFS.comment, "An ontology function for passing property IRI as it is.\n" +
-                        "Any other map-functions will actually accept a property assertion value found by mapping template call,\n" +
-                        "while this function forces not to get a value but use a predicate IRI instead.")
-                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, RDF.Property)
-                        .addProperty(RDFS.comment, "The property to return as it is"));
-
-        // AVC:currentIndividual
-        AVC.currentIndividual.inModel(m)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, AVC.MagicFunctions)
-                .addProperty(SPIN.returnType, RDFS.Resource)
-                .addProperty(SPINMAP.shortLabel, "currentIndividual")
-                .addProperty(RDFS.label, "Get current individual")
-                .addProperty(RDFS.comment, "A magic function to get current individual while inference.\n" +
-                        "Equivalent to ?this\n" +
-                        "Please note: this function may not work as expected when using Composer.")
-                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?r\nWHERE {\n\tBIND(?this AS ?r)\n}", m));
-
-        // AVC:groupConcat
-        AVC.groupConcat.inModel(m)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, AVC.AggregateFunctions)
-                .addProperty(SPIN.returnType, XSD.xstring)
-                .addProperty(AVC.runtime, AdjustGroupConcatImpl.class.getName())
-                .addProperty(SPINMAP.shortLabel, "groupConcat")
-                .addProperty(RDFS.label, "Group concat")
-                .addProperty(RDFS.comment, "An aggregate function to concatenate values from assertions with " +
-                        "the same individual and property using specified separator.\n" +
-                        "Notice: string natural sort order is used")
-                .addProperty(SPIN.body,
-                        QueryHelper.parseQuery("SELECT GROUP_CONCAT(DISTINCT ?r; SEPARATOR=' + ')\n" +
-                                "WHERE {\n" +
-                                "    {\n" +
-                                "        SELECT *\n" +
-                                "        WHERE {\n" +
-                                "            ?arg2 ?arg1 ?r .\n" +
-                                "        }\n" +
-                                "        ORDER BY (?r)\n" +
-                                "    } .\n" +
-                                "}", m))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, RDF.Property)
-                        .addProperty(RDFS.comment, "The predicate (property)"))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, RDFS.Resource)
+                        .addProperty(SPL.valueType, XSD.integer)
                         .addProperty(SPL.optional, Models.TRUE)
-                        .addProperty(RDFS.comment, "The subject (instance)"))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SPINMAPL.separator)
-                        .addProperty(SPL.valueType, XSD.xstring)
-                        .addProperty(SPL.optional, Models.TRUE)
-                        .addProperty(SPL.defaultValue, " + ")
-                        .addProperty(RDFS.comment, "The separator to put between the two values."));
-
-        // AVC:UUID
-        AVC.UUID.inModel(m)
-                .addProperty(RDF.type, SPINMAP.TargetFunction)
-                .addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions)
-                .addProperty(SPIN.returnType, RDFS.Resource)
-                .addProperty(RDFS.seeAlso, SP.resource("UUID"))
-                .addProperty(RDFS.seeAlso, ResourceFactory.createResource("https://www.w3.org/TR/sparql11-query/#func-uuid"))
-                .addProperty(SPINMAP.shortLabel, "UUID")
-                .addProperty(RDFS.label, "MD5 UUID")
-                .addProperty(RDFS.comment, "A target function.\n" +
-                        "Generates an IRI from the UUID URN scheme based on source individual MD5 sum.\n" +
-                        "Each call of AVC:UUID returns the same UUID IRI.\n" +
-                        "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.")
-                .addProperty(SPIN.body,
-                        QueryHelper.parseQuery("SELECT IRI(?uri)\n" +
-                                "WHERE {\n" +
-                                "    BIND (MD5(str(?source)) AS ?value) .\n" +
-                                "    BIND (CONCAT(\"urn:uuid:\", ?value) AS ?uri) .\n" +
-                                "}", m));
-
-        // AVC:IRI
-        AVC.IRI.inModel(m)
-                .addProperty(RDF.type, SPINMAP.TargetFunction)
-                .addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions)
-                .addProperty(SPIN.returnType, RDFS.Resource)
-                .addProperty(RDFS.seeAlso, SP.resource("iri"))
-                .addProperty(RDFS.seeAlso, ResourceFactory.createResource("https://www.w3.org/TR/sparql11-query/#func-iri"))
-                .addProperty(SPINMAP.shortLabel, "IRI")
-                .addProperty(RDFS.label, "creates IRI resource")
-                .addProperty(RDFS.comment, "A target function.\n" +
-                        "Returns an IRI as target resource (individual).\n" +
-                        "Please note: mapping inference will create only single target individual, merging all sources to one")
-                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT (IRI(?arg1))\nWHERE {\n}", m))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, XSD.xstring)
-                        .addProperty(RDFS.comment, "An IRI (xsd:string)"));
-
-        // AVC:objectWithFilter
-        AVC.objectWithFilter.inModel(m)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
-                .addProperty(SPIN.returnType, AVC.undefined)
-                .addProperty(RDFS.seeAlso, SPL.object)
-                .addProperty(SPINMAP.shortLabel, "object")
-                .addProperty(RDFS.label, "object with filter")
-                .addProperty(RDFS.comment, "Gets the object of a given subject (?arg1) / predicate (?arg2) combination " +
-                        "which match predicate (?arg3) / object (?arg4), returns a RDFNode.")
-                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?object\n" +
-                        "WHERE {\n" +
-                        "    OPTIONAL {\n" +
-                        "        BIND (?arg4 AS ?value) .\n" +
-                        "    } .\n" +
-                        "    OPTIONAL {\n" +
-                        "        BIND (?arg3 AS ?property) .\n" +
-                        "    } .\n" +
-                        "    ?arg1 ?arg2 ?object .\n" +
-                        "    FILTER EXISTS {\n" +
-                        "        ?object ?property ?value .\n" +
-                        "    } .\n" +
-                        "}", m))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, RDFS.Resource)
-                        .addProperty(RDFS.comment, "The subject to get the object from."))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg2)
-                        .addProperty(SPL.valueType, RDF.Property)
-                        .addProperty(RDFS.comment, "The predicate to get the object of."))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg3)
-                        .addProperty(SPL.valueType, RDF.Property)
-                        .addProperty(SPL.optional, Models.TRUE)
-                        .addProperty(RDFS.comment, "Second predicate to filter results of select. Optional"))
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg4)
-                        .addProperty(SPL.valueType, AVC.undefined)
-                        .addProperty(SPL.optional, Models.TRUE)
-                        .addProperty(RDFS.comment, "Object (RDFNode) to filter results of select. Optional"));
-
+                        .addProperty(RDFS.comment, "The precision, int"));
 
         m.write(System.out, "ttl");
-
     }
 
 }

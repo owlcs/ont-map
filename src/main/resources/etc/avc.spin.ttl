@@ -1,6 +1,7 @@
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix spin:  <http://spinrdf.org/spin#> .
+@prefix fn:    <http://www.w3.org/2005/xpath-functions#> .
 @prefix afn:   <http://jena.hpl.hp.com/ARQ/function#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
@@ -12,10 +13,10 @@
 @prefix avc:   <http://avc.ru/spin#> .
 
 <http://avc.ru/spin>  a  owl:Ontology ;
-        rdfs:comment     "This is an addition to the spin-family in order to customize spin-functions behaviour in GUI.\nAlso it contains several custom functions, which can be expressed through the other spin-library and SPARQL.\nCurrently it is assumed that this library is not going to be included as \"owl:import\" to the mappings produces by the API,\nand all listed custom functions can be considered as templates." ;
+        rdfs:comment     "A library that contains basic definitions required by ONT-MAP API.\nAlso it is an addition to the standard spin-family in order to customize functions behaviour." ;
+        owl:imports      <http://topbraid.org/spin/spinmapl> ;
         owl:versionIRI   avc:1.0 ;
-        owl:versionInfo  "version 1.0" ;
-        owl:imports      <http://spinrdf.org/spinmap> .
+        owl:versionInfo  "version 1.0" .
 
 avc:hidden  a       owl:DatatypeProperty ;
         rdfs:comment  "A property for marking unused functions from standard spin-map library supply." ;
@@ -200,216 +201,21 @@ spif:invoke  avc:hidden  "Functions accepting spin:Module or sp:Query are not co
 spif:convertSPINRDFToString
         avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
-avc:UUID  a                 spinmap:TargetFunction ;
-        rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;
-        rdfs:label          "MD5 UUID" ;
-        rdfs:seeAlso        <https://www.w3.org/TR/sparql11-query/#func-uuid> , sp:UUID ;
-        rdfs:subClassOf     spinmap:TargetFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( [ a        sp:iri ;
-                                                      sp:arg1  [ sp:varName  "uri" ]
-                                                    ]
-                                                  ) ;
-                              sp:where            ( [ a              sp:Bind ;
-                                                      sp:expression  [ a        sp:md5 ;
-                                                                       sp:arg1  [ a        sp:str ;
-                                                                                  sp:arg1  [ sp:varName  "source" ]
-                                                                                ]
-                                                                     ] ;
-                                                      sp:variable    [ sp:varName  "value" ]
-                                                    ]
-                                                    [ a              sp:Bind ;
-                                                      sp:expression  [ a        sp:concat ;
-                                                                       sp:arg1  "urn:uuid:" ;
-                                                                       sp:arg2  [ sp:varName  "value" ]
-                                                                     ] ;
-                                                      sp:variable    [ sp:varName  "uri" ]
-                                                    ]
-                                                  )
-                            ] ;
-        spin:returnType     rdfs:Resource ;
-        spinmap:shortLabel  "UUID" .
+fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
 
-avc:IRI  a                  spinmap:TargetFunction ;
-        rdfs:comment        "A target function.\nReturns an IRI as target resource (individual).\nPlease note: mapping inference will create only single target individual, merging all sources to one" ;
-        rdfs:label          "creates IRI resource" ;
-        rdfs:seeAlso        sp:iri , <https://www.w3.org/TR/sparql11-query/#func-iri> ;
-        rdfs:subClassOf     spinmap:TargetFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( [ a        sp:iri ;
-                                                      sp:arg1  spin:_arg1
-                                                    ]
-                                                  ) ;
-                              sp:where            ()
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "An IRI (xsd:string)" ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  xsd:string
-                            ] ;
-        spin:returnType     rdfs:Resource ;
-        spinmap:shortLabel  "IRI" .
-
-avc:groupConcat  a          spin:Function ;
-        rdfs:comment        "An aggregate function to concatenate values from assertions with the same individual and property using specified separator.\nNotice: string natural sort order is used." ;
-        rdfs:label          "Group concat" ;
-        rdfs:subClassOf     avc:AggregateFunctions ;
-        avc:runtime         "ru.avicomp.map.spin.AdjustGroupConcatImpl" ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( [ a              sp:GroupConcat ;
-                                                      sp:distinct    true ;
-                                                      sp:expression  [ sp:varName  "r" ] ;
-                                                      sp:separator   " + "
-                                                    ]
-                                                  ) ;
-                              sp:where            ( [ a         sp:SubQuery ;
-                                                      sp:query  [ a           sp:Select ;
-                                                                  sp:orderBy  ( [ sp:varName  "r" ]
-                                                                              ) ;
-                                                                  sp:where    ( [ sp:object     [ sp:varName  "r" ] ;
-                                                                                  sp:predicate  spin:_arg1 ;
-                                                                                  sp:subject    spin:_arg2
-                                                                                ]
-                                                                              )
-                                                                ]
-                                                    ]
-                                                  )
-                            ] ;
-        spin:constraint     [ a                 spl:Argument ;
-                              rdfs:comment      "The separator to put between the two values." ;
-                              spl:defaultValue  " + " ;
-                              spl:optional      true ;
-                              spl:predicate     spinmapl:separator ;
-                              spl:valueType     xsd:string
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The predicate (property)" ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  rdf:Property
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The subject (instance)" ;
-                              spl:optional   true ;
-                              spl:predicate  sp:arg2 ;
-                              spl:valueType  rdfs:Resource
-                            ] ;
-        spin:returnType     xsd:string ;
-        spinmap:shortLabel  "groupConcat" .
-
-avc:withDefault  a          spin:Function ;
-        rdfs:comment        "An ontology function for passing default values into a property mapping.\nIt is used for mapping data/annotation property assertion that absences in a particular source individual.\nLike spinmap:equals it returns the primary input property (?arg1) unchanged." ;
-        rdfs:label          "With Default" ;
-        rdfs:seeAlso        spinmap:equals , avc:asIRI ;
-        rdfs:subClassOf     spl:OntologyFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( spin:_arg1 ) ;
-                              sp:where            ()
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The default value to form a fake assertion on the source individual" ;
-                              spl:predicate  sp:arg2 ;
-                              spl:valueType  rdfs:Literal
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The property to get assertion value" ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  rdf:Property
-                            ] ;
-        spin:returnType     rdf:Property ;
-        spinmap:shortLabel  "withDefault" .
-
-avc:asIRI  a                spin:Function ;
-        rdfs:comment        "An ontology function for passing property IRI as it is.\nAny other map-functions will actually accept a property assertion value found by mapping template call,\nwhile this function forces not to get a value but use a predicate IRI instead." ;
-        rdfs:label          "As IRI" ;
-        rdfs:seeAlso        avc:withDefault , spinmap:equals ;
-        rdfs:subClassOf     spl:OntologyFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( spin:_arg1 ) ;
-                              sp:where            ()
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The property to return as it is" ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  rdf:Property
-                            ] ;
-        spin:returnType     rdf:Property ;
-        spinmap:shortLabel  "asIRI" .
-
-avc:currentIndividual
-        a                   spin:Function ;
-        rdfs:comment        "A magic function to get current individual while inference.\nEquivalent to ?this\nPlease note: this function may not work as expected when using Composer." ;
-        rdfs:label          "Get current individual" ;
-        rdfs:subClassOf     avc:MagicFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( [ sp:varName  "r" ]
-                                                  ) ;
-                              sp:where            ( [ a              sp:Bind ;
-                                                      sp:expression  spin:_this ;
-                                                      sp:variable    [ sp:varName  "r" ]
-                                                    ]
-                                                  )
-                            ] ;
-        spin:returnType     rdfs:Resource ;
-        spinmap:shortLabel  "currentIndividual" .
-
-avc:objectWithFilter  a     spin:Function ;
-        rdfs:comment        "Gets the object of a given subject (?arg1) / predicate (?arg2) combination which match predicate (?arg3) / object (?arg4), returns a RDFNode." ;
-        rdfs:label          "object with filter" ;
-        rdfs:seeAlso        spl:object ;
-        rdfs:subClassOf     spl:OntologyFunctions ;
-        spin:body           [ a                   sp:Select ;
-                              sp:resultVariables  ( [ sp:varName  "object" ]
-                                                  ) ;
-                              sp:where            ( [ a            sp:Optional ;
-                                                      sp:elements  ( [ a              sp:Bind ;
-                                                                       sp:expression  spin:_arg4 ;
-                                                                       sp:variable    [ sp:varName  "value" ]
-                                                                     ]
-                                                                   )
-                                                    ]
-                                                    [ a            sp:Optional ;
-                                                      sp:elements  ( [ a              sp:Bind ;
-                                                                       sp:expression  spin:_arg3 ;
-                                                                       sp:variable    [ sp:varName  "property" ]
-                                                                     ]
-                                                                   )
-                                                    ]
-                                                    [ sp:object     [ sp:varName  "object" ] ;
-                                                      sp:predicate  spin:_arg2 ;
-                                                      sp:subject    spin:_arg1
-                                                    ]
-                                                    [ a              sp:Filter ;
-                                                      sp:expression  [ a            sp:exists ;
-                                                                       sp:elements  ( [ sp:object     [ sp:varName  "value" ] ;
-                                                                                        sp:predicate  [ sp:varName  "property" ] ;
-                                                                                        sp:subject    [ sp:varName  "object" ]
-                                                                                      ]
-                                                                                    )
-                                                                     ]
-                                                    ]
-                                                  )
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "Object (RDFNode) to filter results of select. Optional" ;
-                              spl:optional   true ;
-                              spl:predicate  sp:arg4 ;
-                              spl:valueType  avc:undefined
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "Second predicate to filter results of select. Optional" ;
-                              spl:optional   true ;
-                              spl:predicate  sp:arg3 ;
-                              spl:valueType  rdf:Property
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The subject to get the object from." ;
-                              spl:predicate  sp:arg1 ;
-                              spl:valueType  rdfs:Resource
-                            ] ;
-        spin:constraint     [ a              spl:Argument ;
-                              rdfs:comment   "The predicate to get the object of." ;
-                              spl:predicate  sp:arg2 ;
-                              spl:valueType  rdf:Property
-                            ] ;
-        spin:returnType     avc:undefined ;
-        spinmap:shortLabel  "object" .
+fn:round  rdfs:comment   "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near." ;
+        rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/#round> ;
+        avc:constraint   [ spl:predicate  sp:arg1 ;
+                           spl:valueType  avc:numeric
+                         ] ;
+        avc:returnType   avc:numeric ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The precision, int" ;
+                           spl:optional   true ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  xsd:integer
+                         ] .

@@ -81,7 +81,7 @@ public class MapManagerImpl implements MapManager {
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
         UnionGraph res = new UnionGraph(graph);
-        // avc.spin, avc.fn amd avc.math additions:
+        // avc.spin, avc.lib, avc.fn amd avc.math additions:
         additionLibraryGraphs().forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
@@ -223,6 +223,14 @@ public class MapManagerImpl implements MapManager {
 
     /**
      * Returns the library graph.
+     * Consists from:
+     * <ul>
+     *     <li>avc.spin.ttl - base definitions and customization</li>
+     *     <li>avc.lib.ttl - additional AVC functions</li>
+     *     <li>avc.math.ttl - functions from xpath/math</li>
+     *     <li>avc.fn.ttl - functions from xpath which were forgotten in http://topbraid.org/functions-afn</li>
+     *     <li>spinmapl.spin.ttl - standard spin-family</li>
+     * </ul>
      *
      * @return {@link UnionModel}
      */
@@ -266,7 +274,7 @@ public class MapManagerImpl implements MapManager {
     protected MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
         UnionGraph g = new UnionGraph(Graphs.getBase(base));
         MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
-        // do not add avc.spin.ttl addition to the final graph
+        // do not add avc.*.ttl addition to the final graph
         Graph map = getMapLibraryGraph();
         g.addGraph(map);
         AutoPrefixListener.addAutoPrefixListener(g, prefixes());
