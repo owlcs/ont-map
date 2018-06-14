@@ -34,7 +34,7 @@ public class FNLibraryMaker {
         id.addProperty(RDFS.seeAlso, m.getResource(FN.URI));
         id.addProperty(RDFS.seeAlso, m.getResource("http://topbraid.org/functions-fn"));
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
-        m.addImport(LibraryMaker.createModel(LibraryMaker.getAVCGraph()));
+        id.addImport(AVC.BASE_URI);
 
         // FN:abs takes a number, not any literal
         FN.abs.inModel(m)

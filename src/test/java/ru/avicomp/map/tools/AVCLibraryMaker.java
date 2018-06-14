@@ -3,7 +3,6 @@ package ru.avicomp.map.tools;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.RDFS;
-import org.topbraid.spin.arq.ARQ2SPIN;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -14,6 +13,8 @@ import ru.avicomp.map.spin.vocabulary.ARQ;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.tools.spin.QueryHelper;
+import ru.avicomp.map.tools.spin.SPINLibrary;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -46,7 +47,7 @@ public class AVCLibraryMaker {
                 "and all listed custom functions can be considered as templates.", null);
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         // depends on spinmap to reuse variables (spinmap:_source, spin:_this, spin:_arg*) while building functions bodies
-        m.addImport(LibraryMaker.createModel(LibraryMaker.getSPINMAPGraph()));
+        m.addImport(LibraryMaker.createModel(SPINLibrary.SPINMAP.getGraph()));
 
         OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
 
@@ -213,7 +214,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.comment, "An ontology function for passing default values into a property mapping.\n" +
                         "It is used for mapping data/annotation property assertion that absences in a particular source individual.\n" +
                         "Like spinmap:equals it returns the primary input property (?arg1) unchanged.")
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg1)
@@ -237,7 +238,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.comment, "An ontology function for passing property IRI as it is.\n" +
                         "Any other map-functions will actually accept a property assertion value found by mapping template call,\n" +
                         "while this function forces not to get a value but use a predicate IRI instead.")
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?arg1\nWHERE {\n}", m))
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg1)
@@ -254,7 +255,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.comment, "A magic function to get current individual while inference.\n" +
                         "Equivalent to ?this\n" +
                         "Please note: this function may not work as expected when using Composer.")
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?r\nWHERE {\n\tBIND(?this AS ?r)\n}", m));
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?r\nWHERE {\n\tBIND(?this AS ?r)\n}", m));
 
         // AVC:groupConcat
         AVC.groupConcat.inModel(m)
@@ -268,7 +269,7 @@ public class AVCLibraryMaker {
                         "the same individual and property using specified separator.\n" +
                         "Notice: string natural sort order is used")
                 .addProperty(SPIN.body,
-                        ARQ2SPIN.parseQuery("SELECT GROUP_CONCAT(DISTINCT ?r; SEPARATOR=' + ')\n" +
+                        QueryHelper.parseQuery("SELECT GROUP_CONCAT(DISTINCT ?r; SEPARATOR=' + ')\n" +
                                 "WHERE {\n" +
                                 "    {\n" +
                                 "        SELECT *\n" +
@@ -311,7 +312,7 @@ public class AVCLibraryMaker {
                         "Each call of AVC:UUID returns the same UUID IRI.\n" +
                         "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.")
                 .addProperty(SPIN.body,
-                        ARQ2SPIN.parseQuery("SELECT IRI(?uri)\n" +
+                        QueryHelper.parseQuery("SELECT IRI(?uri)\n" +
                                 "WHERE {\n" +
                                 "    BIND (MD5(str(?source)) AS ?value) .\n" +
                                 "    BIND (CONCAT(\"urn:uuid:\", ?value) AS ?uri) .\n" +
@@ -329,7 +330,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.comment, "A target function.\n" +
                         "Returns an IRI as target resource (individual).\n" +
                         "Please note: mapping inference will create only single target individual, merging all sources to one")
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT (IRI(?arg1))\nWHERE {\n}", m))
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT (IRI(?arg1))\nWHERE {\n}", m))
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg1)
@@ -346,7 +347,7 @@ public class AVCLibraryMaker {
                 .addProperty(RDFS.label, "object with filter")
                 .addProperty(RDFS.comment, "Gets the object of a given subject (?arg1) / predicate (?arg2) combination " +
                         "which match predicate (?arg3) / object (?arg4), returns a RDFNode.")
-                .addProperty(SPIN.body, ARQ2SPIN.parseQuery("SELECT ?object\n" +
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?object\n" +
                         "WHERE {\n" +
                         "    OPTIONAL {\n" +
                         "        BIND (?arg4 AS ?value) .\n" +

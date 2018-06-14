@@ -32,7 +32,7 @@ public class MathLibraryMaker {
         id.addComment("A library that contains mathematical functions for some reason missing in the standard spin delivery.", null);
         id.addProperty(RDFS.seeAlso, m.getResource(MATH.URI));
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
-        m.addImport(LibraryMaker.createModel(LibraryMaker.getAVCGraph()));
+        id.addImport(AVC.BASE_URI);
 
         createDoubleFuncWithDoubleArg(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
         createDoubleFuncWithDoubleArg(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);

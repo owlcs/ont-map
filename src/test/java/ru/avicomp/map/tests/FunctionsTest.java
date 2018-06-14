@@ -1,6 +1,7 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,10 +82,11 @@ public class FunctionsTest {
                 return ((MapFunctionImpl) f).isInheritedOfClass(SPL.MathematicalFunctions);
             }
         },
-        MISC(20) {
+        MISC(27) {
             @Override
             public boolean test(MapFunction f) {
-                return ((MapFunctionImpl) f).isInheritedOfClass(SPL.MiscFunctions);
+                MapFunctionImpl r = ((MapFunctionImpl) f);
+                return r.isInheritedOfClass(SPL.MiscFunctions) || !r.asResource().hasProperty(RDFS.subClassOf);
             }
         },
         URI(5) {
