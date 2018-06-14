@@ -135,8 +135,6 @@ public class ArgValidationHelper {
             // (property can go both as iri or as assertion value, it is determined while building rule)
             return;
         }
-        // todo: also possible types: sp:Query, spin:Function, spin:Module and rdf:List;
-        // currently the first three types are already excluded from functions supply, the last one are waiting for decision
         throw error.build();
     }
 

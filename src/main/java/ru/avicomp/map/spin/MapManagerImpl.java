@@ -50,7 +50,7 @@ public class MapManagerImpl implements MapManager {
 
     private final PrefixMapping prefixLibrary;
     private final UnionModel graphLibrary;
-    private final Map<String, MapFunctionImpl> mapFunctions;
+    private final Map<String, FunctionImpl> mapFunctions;
 
     protected final ARQFactory spinARQFactory = ARQFactory.get();
     protected final SPINModuleRegistry spinModuleRegistry = SPINModuleRegistry.get();
@@ -64,7 +64,7 @@ public class MapManagerImpl implements MapManager {
         SPINRegistry.init(functionRegistry, propertyFunctionRegistry);
         spinModuleRegistry.registerAll(graphLibrary, null);
         this.mapFunctions = SpinModels.listSpinFunctions(graphLibrary)
-                .map(f -> makeFunction(f, prefixLibrary))
+                .map(FunctionImpl::new)
                 .collect(Collectors.toMap(MapFunction::name, Function.identity()));
     }
 
@@ -125,23 +125,6 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Wraps a top-spin function as ont-map function.
-     *
-     * @param func {@link org.topbraid.spin.model.Function}
-     * @param pm   {@link PrefixMapping}
-     * @return {@link MapFunctionImpl}
-     */
-    private static MapFunctionImpl makeFunction(org.topbraid.spin.model.Function func, PrefixMapping pm) {
-        return new MapFunctionImpl(func) {
-
-            @Override
-            public String toString() {
-                return toString(pm);
-            }
-        };
-    }
-
-    /**
      * Answers iff target individuals must be {@code owl:NamedIndividuals} also.
      *
      * @return boolean
@@ -176,11 +159,11 @@ public class MapManagerImpl implements MapManager {
     /**
      * Answers iff the specified function can be used by API.
      *
-     * @param function {@link MapFunctionImpl}
+     * @param function {@link FunctionImpl}
      * @return boolean
      */
-    public boolean isRegistered(MapFunctionImpl function) {
-        //if (function.isCustom()) return true;
+    public boolean isRegistered(FunctionImpl function) {
+        if (function.isRegistered()) return true;
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;
@@ -190,7 +173,7 @@ public class MapManagerImpl implements MapManager {
         if (!func.hasProperty(SPIN.body)) return true;
         // it can be registered but depend on some other unregistered function
         Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
-        return MapModelImpl.listProperties(body)
+        return function.registered = MapModelImpl.listProperties(body)
                 .filter(s -> RDF.type.equals(s.getPredicate()))
                 .map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
@@ -205,14 +188,14 @@ public class MapManagerImpl implements MapManager {
     /**
      * Gets all available functions as Map.
      *
-     * @return {@link Map} with IRIs as keys and {@link MapFunctionImpl} as values
+     * @return {@link Map} with IRIs as keys and {@link FunctionImpl} as values
      */
-    public Map<String, MapFunctionImpl> getFunctionsMap() {
+    public Map<String, FunctionImpl> getFunctionsMap() {
         return Collections.unmodifiableMap(mapFunctions);
     }
 
     @Override
-    public MapFunctionImpl getFunction(String name) throws MapJenaException {
+    public FunctionImpl getFunction(String name) throws MapJenaException {
         return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
     }
 
@@ -225,11 +208,11 @@ public class MapManagerImpl implements MapManager {
      * Returns the library graph.
      * Consists from:
      * <ul>
-     *     <li>avc.spin.ttl - base definitions and customization</li>
-     *     <li>avc.lib.ttl - additional AVC functions</li>
-     *     <li>avc.math.ttl - functions from xpath/math</li>
-     *     <li>avc.fn.ttl - functions from xpath which were forgotten in http://topbraid.org/functions-afn</li>
-     *     <li>spinmapl.spin.ttl - standard spin-family</li>
+     * <li>avc.spin.ttl - base definitions and customization</li>
+     * <li>avc.lib.ttl - additional AVC functions</li>
+     * <li>avc.math.ttl - functions from xpath/math</li>
+     * <li>avc.fn.ttl - functions from xpath which were forgotten in http://topbraid.org/functions-afn</li>
+     * <li>spinmapl.spin.ttl - standard (composer) spin-family</li>
      * </ul>
      *
      * @return {@link UnionModel}
@@ -351,4 +334,23 @@ public class MapManagerImpl implements MapManager {
         return new InferenceEngineImpl(this);
     }
 
+    /**
+     * A {@link MapFunction MapFunction} attached to the manager.
+     */
+    public class FunctionImpl extends MapFunctionImpl {
+        private Boolean registered;
+
+        public FunctionImpl(org.topbraid.spin.model.Function func) {
+            super(func);
+        }
+
+        @Override
+        public String toString() {
+            return toString(prefixLibrary);
+        }
+
+        public boolean isRegistered() {
+            return registered != null && registered;
+        }
+    }
 }

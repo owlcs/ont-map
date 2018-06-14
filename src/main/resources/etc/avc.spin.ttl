@@ -26,6 +26,9 @@ avc:runtime  a      owl:DatatypeProperty ;
         rdfs:comment  "A property for using to describe runtime functionality provided by ONT-MAP API" ;
         rdfs:range  xsd:string .
 
+avc:undefined  a      rdfs:Datatype ;
+        rdfs:comment  "Any RDF Node, i.e. either resource or literal" .
+
 avc:numeric  a               rdfs:Datatype ;
         rdfs:comment         "Represents all numeric datatypes" ;
         rdfs:seeAlso         <https://www.w3.org/TR/sparql11-query/#operandDataTypes> ;
@@ -138,6 +141,12 @@ afn:pi  avc:hidden  "Use math:pi instead" .
 
 sp:isNumeric  avc:returnType  xsd:boolean .
 
+sp:tz   avc:returnType   xsd:string ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg1 ;
+                           spl:valueType  xsd:dateTime
+                         ] .
+
 sp:datatype  avc:returnType  rdfs:Datatype .
 
 sp:eq   avc:constraint  [ spl:predicate  sp:arg2 ;
@@ -190,16 +199,32 @@ spinmapl:resourceWithPrimaryKey
 spinmapl:usePrimaryKey
         avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
 
-spl:hasArgument  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+spl:hasArgument  avc:hidden  "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
-spif:walkObjects  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+spif:walkObjects  avc:hidden  "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
-spif:canInvoke  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+spif:canInvoke  avc:hidden  "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
-spif:invoke  avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+spif:invoke  avc:hidden  "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic" .
 
 spif:convertSPINRDFToString
         avc:hidden  "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spin:ask  avc:hidden  "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic" .
+
+spin:violatesConstraints
+        avc:hidden  "This function is not compatible with OWL2 world" .
+
+sp:coalesce  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+
+sp:exists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+
+sp:notExists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+
+spif:buildStringFromRDFList
+        avc:hidden  "Hidden: OWL2 does not support custom rdf:List" .
+
+spif:hasAllObjects  avc:hidden  "Hidden: OWL2 does not support custom rdf:List" .
 
 fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
         avc:constraint  [ spl:predicate  sp:arg1 ;

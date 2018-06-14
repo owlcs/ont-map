@@ -51,6 +51,9 @@ public class AVCLibraryMaker {
         runtime.addRange(xsdString);
         runtime.addComment("A property for using to describe runtime functionality provided by ONT-MAP API", null);
 
+        // any rdf-node datatype
+        m.createOntEntity(OntDT.class, AVC.undefined.getURI()).addProperty(RDFS.comment, "Any RDF Node, i.e. either resource or literal");
+
         // numeric datatype (xs:numeric)
         OntDT numeric = m.createOntEntity(OntDT.class, AVC.numeric.getURI());
         numeric.addComment("Represents all numeric datatypes", null);
@@ -129,6 +132,14 @@ public class AVCLibraryMaker {
         // Boolean functions:
         SP.isNumeric.inModel(m).addProperty(AVC.returnType, XSD.xboolean);
 
+        // Datatime functions:
+        SP.tz.inModel(m)
+                .addProperty(AVC.returnType, XSD.xstring)
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg1)
+                        .addProperty(SPL.valueType, XSD.dateTime));
+
         // todo: hide SPIF:random in favour of SP:rand?
 
         // SP:datatype
@@ -163,7 +174,6 @@ public class AVCLibraryMaker {
                         "#createRelatedContext(...) methods.");
 
         // Exclude SPIN primary key functionality
-        String primaryKeyExclusionReason = "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic";
         Stream.of(SPINMAPL.resource("resourceWithPrimaryKey"),
                 SPINMAPL.resource("usePrimaryKey"),
                 SPL.resource("primaryKeyProperty"),
@@ -171,15 +181,23 @@ public class AVCLibraryMaker {
                 SPL.resource("hasPrimaryKey"),
                 SPL.resource("isPrimaryKeyPropertyOfInstance"))
                 .map(r -> r.inModel(m))
-                .forEach(r -> r.addProperty(hidden, primaryKeyExclusionReason));
+                .forEach(r -> r.addProperty(hidden, "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic"));
         // Exclude functions affecting spin:Module, spin:Function, sp:Query as not compatible with this API
-        String spinExclusionReason = "Functions accepting spin:Module or sp:Query are not compatible with ONT-MAP logic";
         Stream.of(SPL.resource("hasArgument"),
                 SPIF.resource("convertSPINRDFToString"),
                 SPIF.resource("invoke"),
                 SPIF.resource("canInvoke"),
-                SPIF.resource("walkObjects")).map(r -> r.inModel(m))
-                .forEach(r -> r.addProperty(hidden, spinExclusionReason));
+                SPIF.resource("walkObjects"),
+                SPIN.resource("ask")).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, "Functions accepting or returning spin:Module or sp:Query are not compatible with ONT-MAP logic"));
+        // SPIN:violatesConstraints - where to use it?
+        SPIN.violatesConstraints.inModel(m).addProperty(hidden, "This function is not compatible with OWL2 world");
+        // SP:coalesce, SP:exists, SP:notExists
+        Stream.of("coalesce", "exists", "notExists").map(SP::resource).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, "Part of SPARQL, which cannot be used explicitly in ONT-MAP"));
+        // SPIF:buildStringFromRDFList, SPIF:hasAllObjects
+        Stream.of(SPIF.resource("buildStringFromRDFList"), SPIF.resource("hasAllObjects")).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, "Hidden: OWL2 does not support custom rdf:List"));
 
         // varargs:
         SP.resource("concat").inModel(m).addProperty(SPIN.constraint, m.createResource()
@@ -207,7 +225,7 @@ public class AVCLibraryMaker {
                 .addProperty(AVC.returnType, AVC.numeric)
                 .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric))
                 .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(org.apache.jena.vocabulary.RDF.type, SPL.Argument)
+                        .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
                         .addProperty(SPL.valueType, XSD.integer)
                         .addProperty(SPL.optional, Models.TRUE)

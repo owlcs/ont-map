@@ -31,7 +31,6 @@ public class SPIF {
     public static final Resource parseDate = resource("parseDate");
     public static final Resource dateFormat = resource("dateFormat");
     public static final Resource cast = resource("cast");
-    public static final Resource buildStringFromRDFList = resource("buildStringFromRDFList");
     public static final Property range = property("range");
 
     public static final Property argDatatype = argProperty("datatype");

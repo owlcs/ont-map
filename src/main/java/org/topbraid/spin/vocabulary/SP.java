@@ -149,6 +149,7 @@ public class SP {
     public final static Resource floor = resource("floor");
     public final static Resource round = resource("round");
     public final static Resource isNumeric = resource("isNumeric");
+    public final static Resource tz = resource("tz");
 
     public static Property arg(int i) {
         if (i <= 0) throw new IllegalArgumentException();

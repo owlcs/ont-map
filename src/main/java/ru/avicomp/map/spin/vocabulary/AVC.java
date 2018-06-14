@@ -26,6 +26,10 @@ public class AVC {
     // spin-functions which use SPARQL aggregate functions
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
 
+    // datatype, which is used as return type of function or argument in unclear case:
+    // actually this means any rdf-node
+    public static final Resource undefined = resource("undefined");
+
     // a virtual number datatype to be used as function or argument type restriction.
     // it corresponds xs:numeric
     // see also https://www.w3.org/TR/sparql11-query/#operandDataTypes
@@ -52,10 +56,6 @@ public class AVC {
 
     // An aggregate function to concat values from assertions with the same individual and property
     public static final Resource groupConcat = resource("groupConcat");
-
-    // resource, which is used as return type of function or argument in unclear case;
-    // actually this means any rdf-node
-    public static final Resource undefined = resource("undefined");
 
     // indicator that a function supports varargs
     public static final Property vararg = property("vararg");

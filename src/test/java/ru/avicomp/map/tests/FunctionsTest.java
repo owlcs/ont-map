@@ -52,19 +52,19 @@ public class FunctionsTest {
      * @see ru.avicomp.map.spin.MapFunctionImpl#isInheritedOfClass(Resource)
      */
     enum FuncTypeFilter {
-        ALL(195) {
+        ALL(188) {
             @Override
             public boolean test(MapFunction f) {
                 return true;
             }
         },
-        BOOLEAN_RETURN_TYPE(42) {
+        BOOLEAN_RETURN_TYPE(38) {
             @Override
             public boolean test(MapFunction f) {
                 return f.isBoolean();
             }
         },
-        BOOLEAN_CLASS(28) {
+        BOOLEAN_CLASS(25) {
             @Override
             public boolean test(MapFunction f) {
                 return ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions);
@@ -82,7 +82,7 @@ public class FunctionsTest {
                 return ((MapFunctionImpl) f).isInheritedOfClass(SPL.MathematicalFunctions);
             }
         },
-        MISC(27) {
+        MISC(26) {
             @Override
             public boolean test(MapFunction f) {
                 MapFunctionImpl r = ((MapFunctionImpl) f);
@@ -101,7 +101,7 @@ public class FunctionsTest {
                 return ((MapFunctionImpl) f).isInheritedOfClass(SPL.OntologyFunctions);
             }
         },
-        STRING(59) {
+        STRING(58) {
             @Override
             public boolean test(MapFunction f) {
                 return ((MapFunctionImpl) f).isInheritedOfClass(SPL.StringFunctions);

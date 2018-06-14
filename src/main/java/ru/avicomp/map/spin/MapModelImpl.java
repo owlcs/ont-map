@@ -573,6 +573,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     protected Resource addFunctionBody(MapFunctionImpl function) {
         Models.getAssociatedStatements(function.asResource()).forEach(this::add);
+        // also any return types?
         return function.asResource().inModel(this);
     }
 
