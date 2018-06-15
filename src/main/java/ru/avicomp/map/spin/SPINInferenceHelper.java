@@ -7,7 +7,6 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.sparql.function.FunctionRegistry;
 import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.model.*;
 import org.topbraid.spin.model.update.Update;
@@ -29,13 +28,8 @@ import java.util.stream.Stream;
 @SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 public class SPINInferenceHelper {
 
-    protected final ARQFactory spinARQFactory;
-    protected final FunctionRegistry jenaFunctionRegistry;
-
-    public SPINInferenceHelper(ARQFactory spinARQFactory, FunctionRegistry jenaFunctionRegistry) {
-        this.spinARQFactory = spinARQFactory;
-        this.jenaFunctionRegistry = jenaFunctionRegistry;
-    }
+    // just in case as local variable (although it is a singleton in spin-api):
+    protected final ARQFactory spinARQFactory = ARQFactory.get();
 
     /**
      * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}

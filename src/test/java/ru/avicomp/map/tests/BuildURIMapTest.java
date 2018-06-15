@@ -11,7 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
@@ -46,7 +49,7 @@ public class BuildURIMapTest extends MapTestData1 {
         TestUtils.debug(dst);
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(mapping);
 

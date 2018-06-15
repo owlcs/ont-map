@@ -37,7 +37,7 @@ public class MathOpsMapTest extends MapTestData5 {
         OntGraphModel t = assembleTarget();
         TestUtils.debug(t);
 
-        MapManager man = Managers.getMapManager();
+        MapManager man = manager();
         MapModel m = assembleMapping(man, s, t);
         TestUtils.debug(m);
 

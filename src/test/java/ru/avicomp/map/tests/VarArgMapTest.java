@@ -6,7 +6,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -22,7 +25,7 @@ public class VarArgMapTest extends AbstractMapTest {
     public void testInference() {
         OntGraphModel s = assembleSource();
         OntGraphModel t = assembleTarget();
-        MapManager man = Managers.getMapManager();
+        MapManager man = manager();
         MapModel m = assembleMapping(man, s, t);
         TestUtils.debug(m);
 

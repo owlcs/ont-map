@@ -8,10 +8,15 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.function.FunctionFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.pfunction.PropertyFunctionFactory;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
-import org.topbraid.spin.arq.ARQFactory;
-import org.topbraid.spin.system.SPINModuleRegistry;
+import org.topbraid.spin.arq.SPINARQPFunction;
+import org.topbraid.spin.arq.SPINARQPFunctionFactory;
+import org.topbraid.spin.arq.SPINFunctionDrivers;
+import org.topbraid.spin.arq.SPINFunctionFactory;
+import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
@@ -52,20 +57,66 @@ public class MapManagerImpl implements MapManager {
     private final UnionModel graphLibrary;
     private final Map<String, FunctionImpl> mapFunctions;
 
-    protected final ARQFactory spinARQFactory = ARQFactory.get();
-    protected final SPINModuleRegistry spinModuleRegistry = SPINModuleRegistry.get();
     protected final FunctionRegistry functionRegistry = FunctionRegistry.get();
     protected final PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
+
     protected final TypeMapper types = TypeMapper.getInstance();
 
     public MapManagerImpl() {
         this.graphLibrary = createLibraryModel(Factory.createGraphMem());
         this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
-        SPINRegistry.init(functionRegistry, propertyFunctionRegistry);
-        spinModuleRegistry.registerAll(graphLibrary, null);
-        this.mapFunctions = SpinModels.listSpinFunctions(graphLibrary)
-                .map(FunctionImpl::new)
-                .collect(Collectors.toMap(MapFunction::name, Function.identity()));
+        this.mapFunctions = new HashMap<>();
+        this.prefixLibrary.getNsPrefixMap().forEach(ExtraPrefixes::add);
+        SPINRegistry.init(this.functionRegistry, this.propertyFunctionRegistry);
+        SpinModels.listSpinFunctions(graphLibrary).forEach(f -> {
+            register(functionRegistry, f);
+            if (f.isMagicProperty()) {
+                register(propertyFunctionRegistry, f);
+            }
+            mapFunctions.put(f.getURI(), new FunctionImpl(f));
+        });
+    }
+
+    /**
+     * Registers an ARQ function.
+     * If the provided Function has an executable body (spin:body), then registers an ARQ function for it with the current FunctionRegistry.
+     * If there is an existing function with the same URI already registered, then it will only be replaced if it is also a SPINARQFunction.
+     *
+     * @param reg  {@link FunctionRegistry}
+     * @param func the function to register
+     * @see org.topbraid.spin.system.SPINModuleRegistry#registerARQFunction(org.topbraid.spin.model.Function)
+     */
+    protected static void register(FunctionRegistry reg, org.topbraid.spin.model.Function func) {
+        FunctionFactory old = reg.get(func.getURI());
+        // Never overwrite native Java functions
+        if (old != null && !(old instanceof SPINFunctionFactory)) {
+            return;
+        }
+        SPINFunctionFactory arq = SPINFunctionDrivers.get().create(func);
+        if (arq != null) {
+            reg.put(func.getURI(), arq);
+        }
+    }
+
+
+    /**
+     * Registers an ARQ property function.
+     * If the provided Function has an executable body (spin:body), then registers an ARQ function for it with the current FunctionRegistry.
+     * If there is an existing function with the same URI already registered, then it will only be replaced if it is also a SPINARQPFunction.
+     *
+     * @param reg  {@link PropertyFunctionRegistry}
+     * @param func the function to register
+     * @see org.topbraid.spin.system.SPINModuleRegistry#registerARQPFunction(org.topbraid.spin.model.Function)
+     */
+    protected static void register(PropertyFunctionRegistry reg, org.topbraid.spin.model.Function func) {
+        if (!func.hasProperty(SPIN.body)) {
+            return;
+        }
+        PropertyFunctionFactory old = reg.get(func.getURI());
+        if (old == null || old instanceof SPINARQPFunction) {
+            SPINARQPFunction arq = SPINARQPFunctionFactory.get().create(func);
+            reg.put(func.getURI(), arq);
+        }
     }
 
     /**
@@ -134,7 +185,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Lists all spin functions with exclusion private, abstract, deprecated and hidden
+     * Lists all common registered spin functions which are not private, abstract, deprecated or hidden
      * (the last property is calculated using info provided by avc supplement graph).
      * Spin templates are not included also.
      *
@@ -151,8 +202,10 @@ public class MapManagerImpl implements MapManager {
                 .filter(f -> !f.isDeprecated())
                 // skip hidden:
                 .filter(f -> !f.isHidden())
+                // skip properties:
+                .filter(f -> !f.isMagicProperty())
                 // only registered:
-                .filter(this::isRegistered)
+                .filter(FunctionImpl::isRegistered)
                 .map(Function.identity());
     }
 
@@ -162,11 +215,6 @@ public class MapManagerImpl implements MapManager {
      * @param function {@link FunctionImpl}
      * @return boolean
      */
-    public boolean isRegistered(FunctionImpl function) {
-        if (function.isRegistered()) return true;
-        return function.registered = isRegistered((MapFunctionImpl) function);
-    }
-
     protected boolean isRegistered(MapFunctionImpl function) {
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
@@ -354,7 +402,8 @@ public class MapManagerImpl implements MapManager {
         }
 
         public boolean isRegistered() {
-            return registered != null && registered;
+            if (registered != null) return registered;
+            return registered = MapManagerImpl.this.isRegistered(this);
         }
     }
 }

@@ -25,6 +25,10 @@ import java.util.stream.Stream;
 @SuppressWarnings("WeakerAccess")
 public class SpinModels {
 
+    public static final Set<Resource> FUNCTION_TYPES = Stream.of(SPIN.Function,
+            SPIN.MagicProperty,
+            SPINMAP.TargetFunction).collect(Iter.toUnmodifiableSet());
+
     /**
      * Gets a {@code spinmap:rule} from CommandWrapper.
      *
@@ -132,8 +136,9 @@ public class SpinModels {
      * @see SpinModelConfig#createSpinModel(Graph)
      */
     public static Stream<Function> listSpinFunctions(Model model) {
-        return org.apache.jena.atlas.iterator.Iter.asStream(model.listSubjectsWithProperty(RDF.type))
-                .filter(s -> s.canAs(Function.class) || s.hasProperty(RDF.type, SPINMAP.TargetFunction))
+        return Iter.asStream(model.listResourcesWithProperty(RDF.type))
+                .filter(s -> FUNCTION_TYPES.stream().anyMatch(t -> s.hasProperty(RDF.type, t)))
                 .map(s -> s.as(Function.class));
     }
+
 }

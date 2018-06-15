@@ -4,7 +4,6 @@ import org.apache.jena.vocabulary.XSD;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
@@ -39,7 +38,7 @@ abstract class MapTestData2 extends AbstractMapTest {
         TestUtils.debug(s);
         OntGraphModel t = assembleTarget();
         TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
         TestUtils.debug(m);
 

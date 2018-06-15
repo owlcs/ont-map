@@ -137,6 +137,10 @@ public class MapFunctionImpl implements MapFunction {
         return func.hasProperty(AVC.hidden);
     }
 
+    protected boolean isMagicProperty() {
+        return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isMagicProperty();
+    }
+
     /**
      * Returns resource attached to the library model.
      *

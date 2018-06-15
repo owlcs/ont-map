@@ -6,7 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.*;
@@ -30,7 +33,7 @@ public class SplitMapTest extends MapTestData3 {
         TestUtils.debug(s);
         OntGraphModel t = assembleTarget();
         TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
 
         TestUtils.debug(m);

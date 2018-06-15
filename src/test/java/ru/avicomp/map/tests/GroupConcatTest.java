@@ -48,7 +48,7 @@ public class GroupConcatTest extends AbstractMapTest {
         TestUtils.debug(s);
         OntGraphModel t = assembleTarget();
         TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel map = assembleMapping(manager, s, t);
         TestUtils.debug(map);
 

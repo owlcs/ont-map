@@ -151,7 +151,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(dst);
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(mapping);
 

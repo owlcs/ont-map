@@ -6,6 +6,7 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphEventManager;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.sparql.function.FunctionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.SPINFunctionDrivers;
@@ -49,7 +50,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(InferenceEngineImpl.class);
 
     protected final MapManagerImpl manager;
-    protected final SPINInferenceHelper helper;
+    protected final MapInferenceHelper helper;
     protected static final Comparator<CommandWrapper> MAP_COMPARATOR = createMapComparator();
     // Assume there is Hotspot Java 6 VM (x32)
     // Then java6 (actually java8 much less, java9 even less) approximate String memory size would be: 8 * (int) ((((no chars) * 2) + 45) / 8)
@@ -95,14 +96,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     @Override
     public void run(MapModel mapping, Graph source, Graph target) {
         UnionModel query = assembleQueryModel(mapping, source, target);
-        // preparing for runtime functions
-        Set<Resource> runtimeFunctions = Iter.asStream(query.getBaseModel().listSubjectsWithProperty(AVC.runtime))
+        // re-register runtime functions
+        Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
                 .map(r -> r.inModel(query))
-                .collect(Collectors.toSet());
-        if (!runtimeFunctions.isEmpty()) {
-            manager.spinARQFactory.clearCaches();
-            runtimeFunctions.forEach(r -> manager.functionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r)));
-        }
+                .forEach(helper::register);
 
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -299,9 +296,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Created by @szuev on 27.05.2018.
      */
     public static class MapInferenceHelper extends SPINInferenceHelper {
+        protected final FunctionRegistry jenaFunctionRegistry;
 
         public MapInferenceHelper(MapManagerImpl manager) {
-            super(manager.spinARQFactory, manager.functionRegistry);
+            this.jenaFunctionRegistry = manager.functionRegistry;
         }
 
         /**
@@ -333,8 +331,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             try {
                 vars.forEach((a, b) -> model.add(b).remove(a));
                 if (!vars.isEmpty()) {
-                    spinARQFactory.clearCaches();
-                    jenaFunctionRegistry.put(get.getURI(), SPINFunctionDrivers.get().create(get));
+                    register(get);
                 }
                 try {
                     return super.runQueryOnInstance(query, instance);
@@ -354,6 +351,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             return SpinModels.getFunctionBody(m, function).stream()
                     .filter(s -> Objects.equals(s.getObject(), SPIN._this))
                     .collect(Collectors.toMap(x -> x, x -> m.createStatement(x.getSubject(), x.getPredicate(), instance)));
+        }
+
+        protected void register(Resource r) {
+            synchronized (spinARQFactory) {
+                spinARQFactory.clearCaches();
+                jenaFunctionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r));
+            }
         }
     }
 }

@@ -32,7 +32,7 @@ public class ConditionalMapTest extends MapTestData2 {
         TestUtils.debug(s);
         OntGraphModel t = assembleTarget();
         TestUtils.debug(t);
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
         TestUtils.debug(m);
 

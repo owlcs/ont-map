@@ -4,7 +4,6 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.Assert;
 import org.junit.Test;
 import ru.avicomp.map.Context;
-import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
@@ -28,7 +27,7 @@ abstract class MapTestData1 extends AbstractMapTest {
     public void testDeleteContext() {
         OntGraphModel src = assembleSource();
         OntGraphModel dst = assembleTarget();
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         Assert.assertEquals(2, mapping.ontologies().count());
         List<Context> contexts = mapping.contexts().collect(Collectors.toList());

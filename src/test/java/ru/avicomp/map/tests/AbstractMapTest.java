@@ -27,8 +27,12 @@ public abstract class AbstractMapTest {
 
     public abstract OntGraphModel assembleTarget();
 
+    MapManager manager() {
+        return Managers.getMapManager();
+    }
+
     MapModel assembleMapping() {
-        return assembleMapping(Managers.getMapManager(), assembleSource(), assembleTarget());
+        return assembleMapping(manager(), assembleSource(), assembleTarget());
     }
 
     static String getNameSpace(Class clazz) {

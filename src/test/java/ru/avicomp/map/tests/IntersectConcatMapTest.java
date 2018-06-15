@@ -11,7 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
@@ -36,7 +39,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
         OntGraphModel src = assembleSource();
         OntGraphModel dst = assembleTarget();
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel map = assembleMapping(manager, src, dst);
         TestUtils.debug(map);
 

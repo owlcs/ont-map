@@ -4,7 +4,10 @@ import org.apache.jena.vocabulary.RDF;
 import org.junit.Assert;
 import org.junit.Test;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.Context;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
@@ -30,7 +33,7 @@ public class UUIDMapTest extends MapTestData1 {
 
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(mapping);
 

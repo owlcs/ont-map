@@ -32,7 +32,7 @@ public class MultiContextMapTest extends MapTestData6 {
         OntGraphModel dst = assembleTarget();
         //TestUtils.debug(src);
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = manager();
         MapModel map = assembleMapping(manager, src, dst);
 
         TestUtils.debug(map);
