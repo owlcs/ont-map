@@ -29,7 +29,7 @@ public class TestExamplesSaver {
         if (!Files.exists(dir)) {
             Files.createDirectory(dir);
         }
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = Managers.createMapManager();
         Collection<AbstractMapTest> mapTests = Arrays.asList(
                 new UUIDMapTest(),
                 new BuildURIMapTest(),

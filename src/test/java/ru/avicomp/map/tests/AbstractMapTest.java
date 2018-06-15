@@ -2,6 +2,7 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
@@ -21,6 +22,13 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractMapTest {
 
+    private static MapManager manager;
+
+    @BeforeClass
+    public static void before() {
+        manager = Managers.createMapManager();
+    }
+
     public abstract MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst);
 
     public abstract OntGraphModel assembleSource();
@@ -28,7 +36,7 @@ public abstract class AbstractMapTest {
     public abstract OntGraphModel assembleTarget();
 
     MapManager manager() {
-        return Managers.getMapManager();
+        return manager;
     }
 
     MapModel assembleMapping() {

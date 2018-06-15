@@ -9,9 +9,7 @@ import ru.avicomp.map.spin.MapManagerImpl;
  */
 public class Managers {
 
-    private static MapManagerImpl instance = new MapManagerImpl();
-
-    public static MapManager getMapManager() {
-        return instance;
+    public static MapManager createMapManager() {
+        return new MapManagerImpl();
     }
 }

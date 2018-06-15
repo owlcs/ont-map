@@ -1,8 +1,6 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.*;
-import org.topbraid.spin.model.Function;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -130,15 +128,15 @@ public class SpinModels {
      * Lists all spin-api functions.
      * Auxiliary method.
      *
-     * @param model {@link Model} with spin-personalities
-     * @return Stream of {@link org.topbraid.spin.model.Function topbraid spin function}s.
-     * @see SpinModelConfig#LIB_PERSONALITY
-     * @see SpinModelConfig#createSpinModel(Graph)
+     * @param model {@link Model}
+     * @return Stream of {@link Resource}s.
      */
-    public static Stream<Function> listSpinFunctions(Model model) {
-        return Iter.asStream(model.listResourcesWithProperty(RDF.type))
-                .filter(s -> FUNCTION_TYPES.stream().anyMatch(t -> s.hasProperty(RDF.type, t)))
-                .map(s -> s.as(Function.class));
+    public static Stream<Resource> listSpinFunctions(Model model) {
+        return Iter.asStream(model.listStatements(null, RDF.type, (RDFNode) null))
+                .filter(s -> s.getObject().isURIResource())
+                .filter(s -> FUNCTION_TYPES.contains(s.getObject().asResource()))
+                .map(Statement::getSubject)
+                .distinct();
     }
 
 }

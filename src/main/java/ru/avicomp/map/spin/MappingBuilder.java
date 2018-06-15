@@ -59,7 +59,7 @@ public class MappingBuilder {
      * a property mapping is processed only after a corresponding individual is created by class-map rule.
      * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
      * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,
-     * see {@link MapManagerImpl#createMapModel(Graph, ru.avicomp.ontapi.jena.impl.conf.OntPersonality)} for more details.
+     * see {@link MapManagerImpl#makeMapModel(Graph, ru.avicomp.ontapi.jena.impl.conf.OntPersonality)} for more details.
      *
      * @param model             {@link MapModelImpl}
      * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct

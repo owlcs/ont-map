@@ -3,10 +3,7 @@ package ru.avicomp.map.spin;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.function.FunctionFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
@@ -51,11 +48,11 @@ public class MapManagerImpl implements MapManager {
     // OWL2 personality (lax version)
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
     // OWL2 + SPIN personality
-    public static final OntPersonality LIB_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy().add(SpinModelConfig.LIB_PERSONALITY);
+    public static final OntPersonality ONT_LIB_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy().add(SpinModelConfig.LIB_PERSONALITY);
 
-    private final PrefixMapping prefixLibrary;
-    private final UnionModel graphLibrary;
-    private final Map<String, FunctionImpl> mapFunctions;
+    private final PrefixMapping prefixes;
+    private final UnionModel library;
+    private final Map<String, FunctionImpl> functions;
 
     protected final FunctionRegistry functionRegistry = FunctionRegistry.get();
     protected final PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
@@ -63,17 +60,29 @@ public class MapManagerImpl implements MapManager {
     protected final TypeMapper types = TypeMapper.getInstance();
 
     public MapManagerImpl() {
-        this.graphLibrary = createLibraryModel(Factory.createGraphMem());
-        this.prefixLibrary = collectPrefixes(SystemModels.graphs().values());
-        this.mapFunctions = new HashMap<>();
-        this.prefixLibrary.getNsPrefixMap().forEach(ExtraPrefixes::add);
+        this.library = createLibraryModel(Factory.createGraphMem());
+        this.prefixes = collectPrefixes(SystemModels.graphs().values());
+        this.functions = new HashMap<>();
         SPINRegistry.init(this.functionRegistry, this.propertyFunctionRegistry);
-        SpinModels.listSpinFunctions(graphLibrary).forEach(f -> {
+        register(library);
+    }
+
+    /**
+     * Registers in the manager all functions described in the given model.
+     *
+     * @param model {@link Model} with spin-personality inside
+     * @see SpinModelConfig#LIB_PERSONALITY
+     */
+    protected void register(Model model) {
+        SpinModels.listSpinFunctions(model)
+                .map(s -> s.as(org.topbraid.spin.model.Function.class))
+                .forEach(f -> {
+                    ExtraPrefixes.add(f);
             register(functionRegistry, f);
             if (f.isMagicProperty()) {
                 register(propertyFunctionRegistry, f);
             }
-            mapFunctions.put(f.getURI(), new FunctionImpl(f));
+                    functions.put(f.getURI(), new FunctionImpl(f));
         });
     }
 
@@ -97,7 +106,6 @@ public class MapManagerImpl implements MapManager {
             reg.put(func.getURI(), arq);
         }
     }
-
 
     /**
      * Registers an ARQ property function.
@@ -127,7 +135,7 @@ public class MapManagerImpl implements MapManager {
      *
      * @param graph {@link Graph} containing user-defined functions
      * @return {@link UnionModel}
-     * @see MapManagerImpl#LIB_PERSONALITY
+     * @see MapManagerImpl#ONT_LIB_PERSONALITY
      */
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
@@ -136,7 +144,7 @@ public class MapManagerImpl implements MapManager {
         additionLibraryGraphs().forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
-        return new OntGraphModelImpl(res, LIB_PERSONALITY);
+        return new OntGraphModelImpl(res, ONT_LIB_PERSONALITY);
     }
 
     /**
@@ -185,7 +193,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Lists all common registered spin functions which are not private, abstract, deprecated or hidden
+     * Lists all common (i.e. no magic) executable spin functions that are not private, abstract, deprecated or hidden
      * (the last property is calculated using info provided by avc supplement graph).
      * Spin templates are not included also.
      *
@@ -193,7 +201,7 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public Stream<MapFunction> functions() {
-        return mapFunctions.values().stream()
+        return functions.values().stream()
                 // skip private:
                 .filter(f -> !f.isPrivate())
                 // skip abstract:
@@ -205,25 +213,26 @@ public class MapManagerImpl implements MapManager {
                 // skip properties:
                 .filter(f -> !f.isMagicProperty())
                 // only registered:
-                .filter(FunctionImpl::isRegistered)
+                .filter(FunctionImpl::isExecutable)
                 .map(Function.identity());
     }
 
     /**
-     * Answers iff the specified function can be used by API.
-     *
-     * @param function {@link FunctionImpl}
+     * Answers iff the specified function is registered (as ARQ or SPARQL) and therefore is executable.
+     * Note that it is a recursive method.
+     * @param function {@link MapFunctionImpl}
      * @return boolean
      */
-    protected boolean isRegistered(MapFunctionImpl function) {
+    protected boolean isExecutable(MapFunctionImpl function) {
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;
         String uri = function.name();
+        // not registered:
         if (!functionRegistry.isRegistered(uri)) return false;
-        // registered, but no body -> has a java ARQ body, allow
+        // registered, but no SPARQL body -> has a java ARQ body -> allow:
         if (!func.hasProperty(SPIN.body)) return true;
-        // it can be registered but depend on some other unregistered function
+        // registered (has SPARQL body) but may depend on some other unregistered functions:
         Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
         return MapModelImpl.listProperties(body)
                 .filter(s -> RDF.type.equals(s.getPredicate()))
@@ -232,28 +241,28 @@ public class MapManagerImpl implements MapManager {
                 .map(RDFNode::asResource)
                 .map(Resource::getURI)
                 .distinct()
-                .map(mapFunctions::get)
+                .map(functions::get)
                 .filter(Objects::nonNull)
-                .allMatch(f -> !uri.equals(f.name()) && MapManagerImpl.this.isRegistered(f));
+                .allMatch(f -> !uri.equals(f.name()) && isExecutable(f));
     }
 
     /**
-     * Gets all available functions as Map.
+     * Gets all available functions as unmodifiable Map.
      *
      * @return {@link Map} with IRIs as keys and {@link FunctionImpl} as values
      */
     public Map<String, FunctionImpl> getFunctionsMap() {
-        return Collections.unmodifiableMap(mapFunctions);
+        return Collections.unmodifiableMap(functions);
     }
 
     @Override
     public FunctionImpl getFunction(String name) throws MapJenaException {
-        return MapJenaException.notNull(mapFunctions.get(name), "Can't find function " + name);
+        return MapJenaException.notNull(functions.get(name), "Can't find function " + name);
     }
 
     @Override
     public PrefixMapping prefixes() {
-        return prefixLibrary;
+        return prefixes;
     }
 
     /**
@@ -262,15 +271,15 @@ public class MapManagerImpl implements MapManager {
      * <ul>
      * <li>avc.spin.ttl - base definitions and customization</li>
      * <li>avc.lib.ttl - additional AVC functions</li>
-     * <li>avc.math.ttl - functions from xpath/math</li>
-     * <li>avc.fn.ttl - functions from xpath which were forgotten in http://topbraid.org/functions-afn</li>
-     * <li>spinmapl.spin.ttl - standard (composer) spin-family</li>
+     * <li>avc.math.ttl - functions from xquery/math</li>
+     * <li>avc.fn.ttl - functions from xquery which were forgotten in http://topbraid.org/functions-afn</li>
+     * <li>spinmapl.spin.ttl - standard (composer's) spin-family</li>
      * </ul>
      *
      * @return {@link UnionModel}
      */
     public UnionModel getLibrary() {
-        return graphLibrary;
+        return library;
     }
 
     /**
@@ -284,7 +293,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Creates a (SPIN-) mapping model in form of a rdf-ontology.
+     * Creates a fresh (SPIN-) mapping model in form of a rdf-ontology.
      * Uses {@link OntPersonality ont-personality} in order to reuse some owl2 resources
      * such as {@link ru.avicomp.ontapi.jena.model.OntID ontology id},
      * {@link ru.avicomp.ontapi.jena.model.OntCE ont class expression},
@@ -294,25 +303,30 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public MapModelImpl createMapModel() {
-        return createMapModel(Factory.createGraphMem(), ONT_PERSONALITY);
+        return makeMapModel(Factory.createGraphMem(), ONT_PERSONALITY);
     }
 
     /**
-     * Creates a fresh mapping model for the specified graph.
-     * Note: it adds {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} statement to the model,
-     * this is just in case only for Composer Inference Engine, ONT-Map Inference Engine does not use that setting.
+     * Creates a mapping model around the specified (fresh) graph.
+     * It is auxiliary method, not for public usage.
+     * Note that the graph will be modified:
+     * the method adds the statement {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int},
+     * which indicates to Topbraid Composer Engine that inference is need to be run two times.
+     * This is to be sure that all possible rule logical dependencies (e.g. in chained contexts) will be satisfied.
+     * Notice that ONT-MAP Inference Engine does not use that setting and inference will be run only once.
+     * Also this method ensures that the given graph contains http://topbraid.org/spin/spinmapl in import declarations.
      *
      * @param base           {@link Graph} base graph
      * @param owlPersonality {@link OntPersonality}
      * @return {@link MapModelImpl}
      */
-    protected MapModelImpl createMapModel(Graph base, OntPersonality owlPersonality) {
-        UnionGraph g = new UnionGraph(Graphs.getBase(base));
-        MapModelImpl res = new MapModelImpl(g, owlPersonality, this);
+    public MapModelImpl makeMapModel(Graph base, OntPersonality owlPersonality) {
+        UnionGraph union = new UnionGraph(Graphs.getBase(base));
+        MapModelImpl res = new MapModelImpl(union, owlPersonality, this);
         // do not add avc.*.ttl addition to the final graph
-        Graph map = getMapLibraryGraph();
-        g.addGraph(map);
-        AutoPrefixListener.addAutoPrefixListener(g, prefixes());
+        Graph lib = getMapLibraryGraph();
+        union.addGraph(lib);
+        AutoPrefixListener.addAutoPrefixListener(union, prefixes());
         // Set spin:rulePropertyMaxIterationCount to 2
         // to be sure that all the rules have been processed through TopBraid Composer Inference as expected,
         // even if they depend on other rules.
@@ -320,7 +334,7 @@ public class MapManagerImpl implements MapManager {
         // it provides own rules order, and each rule is processed only once.
         res.add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, res.createTypedLiteral(2));
         // add spinmapl (a top of library) to owl:imports:
-        res.getID().addImport(Graphs.getURI(map));
+        res.getID().addImport(Graphs.getURI(lib));
         return res;
     }
 
@@ -390,7 +404,7 @@ public class MapManagerImpl implements MapManager {
      * A {@link MapFunction MapFunction} attached to the manager.
      */
     public class FunctionImpl extends MapFunctionImpl {
-        private Boolean registered;
+        private Boolean canExec;
 
         public FunctionImpl(org.topbraid.spin.model.Function func) {
             super(func);
@@ -398,12 +412,12 @@ public class MapManagerImpl implements MapManager {
 
         @Override
         public String toString() {
-            return toString(prefixLibrary);
+            return toString(prefixes);
         }
 
-        public boolean isRegistered() {
-            if (registered != null) return registered;
-            return registered = MapManagerImpl.this.isRegistered(this);
+        public boolean isExecutable() {
+            if (canExec != null) return canExec;
+            return canExec = MapManagerImpl.this.isExecutable(this);
         }
     }
 }

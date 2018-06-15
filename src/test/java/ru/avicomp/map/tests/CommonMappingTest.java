@@ -1,15 +1,13 @@
 package ru.avicomp.map.tests;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.avicomp.map.Context;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapModel;
-import ru.avicomp.map.MapResource;
+import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntID;
 
@@ -25,6 +23,13 @@ public class CommonMappingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonMappingTest.class);
 
     private final Data data;
+
+    private static MapManager manager;
+
+    @BeforeClass
+    public static void before() {
+        manager = Managers.createMapManager();
+    }
 
     public CommonMappingTest(Data data) {
         this.data = data;
@@ -62,7 +67,7 @@ public class CommonMappingTest {
 
     @Test
     public void testListMapping() {
-        MapModel m = data.map.assembleMapping();
+        MapModel m = data.map.assembleMapping(manager, data.map.assembleSource(), data.map.assembleTarget());
         OntID id = m.getID();
         // list contexts
         info("Contexts:");

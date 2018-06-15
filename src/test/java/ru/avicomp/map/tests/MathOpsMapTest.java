@@ -1,6 +1,5 @@
 package ru.avicomp.map.tests;
 
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
@@ -9,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SpinModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.MATH;
@@ -130,8 +128,7 @@ public class MathOpsMapTest extends MapTestData5 {
         // no fn:abs, sp:sub, math:log, math:pi
         Assert.assertEquals(6, functions.size());
         // math:exp, avc:IRI and fn:format-number still there:
-        Model base = SpinModelConfig.createSpinModel(m.asOntModel().getBaseGraph());
-        Set<Resource> localFunctions = SpinModels.listSpinFunctions(base).collect(Collectors.toSet());
+        Set<Resource> localFunctions = SpinModels.listSpinFunctions(m.asOntModel().getBaseModel()).collect(Collectors.toSet());
         localFunctions.forEach(f -> LOGGER.debug("Local function: <{}>", m.asOntModel().shortForm(f.getURI())));
         Assert.assertEquals(3, localFunctions.size());
     }

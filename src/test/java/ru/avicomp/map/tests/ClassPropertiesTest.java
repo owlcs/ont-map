@@ -6,6 +6,7 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,12 @@ import java.util.stream.Stream;
  */
 public class ClassPropertiesTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClassPropertiesTest.class);
+    private static MapManager manager;
+
+    @BeforeClass
+    public static void before() {
+        manager = Managers.createMapManager();
+    }
 
     @Test
     public void testPizza() throws Exception {
@@ -147,7 +154,6 @@ public class ClassPropertiesTest {
 
     @Test
     public void testModifying() throws IOException {
-        MapManager manager = Managers.getMapManager();
         OntGraphModel sub = TestUtils.load("/pizza.ttl", Lang.TURTLE);
         OntGraphModel top = OntModelFactory.createModel();
         top.setID("http://test.x");
@@ -171,7 +177,7 @@ public class ClassPropertiesTest {
     }
 
     private static void validateClasses(OntGraphModel m, Map<String, Integer> expected) {
-        ClassPropertyMap map = Managers.getMapManager().getClassProperties(m);
+        ClassPropertyMap map = manager.getClassProperties(m);
         expected.forEach((c, v) -> {
             OntClass clazz = m.getOntEntity(OntClass.class, m.expandPrefix(c));
             Assert.assertNotNull("Can't find class " + c, clazz);
@@ -189,7 +195,7 @@ public class ClassPropertiesTest {
     private static String classProperties(OntCE ce) {
         OntGraphModel m = ce.getModel();
         return Stream.concat(Stream.of("[" + ((OntObjectImpl) ce).getActualClass().getSimpleName() + "]" + m.shortForm(ce.asNode().toString())),
-                Managers.getMapManager().getClassProperties(m)
+                manager.getClassProperties(m)
                         .properties(ce)
                         .sorted(Comparator.comparing(Resource::getURI))
                         .map(p -> m.shortForm(p.getURI())))
@@ -199,7 +205,7 @@ public class ClassPropertiesTest {
     private static String propertyClasses(OntPE pe) {
         OntGraphModel m = pe.getModel();
         return Stream.concat(Stream.of("[" + ((OntObjectImpl) pe).getActualClass().getSimpleName() + "]" + m.shortForm(pe.asNode().toString())),
-                Managers.getMapManager().getClassProperties(m)
+                manager.getClassProperties(m)
                         .classes(pe)
                         .map(FrontsNode::asNode)
                         .sorted(Comparator.comparing(Node::isURI).thenComparing((Function<Node, String>) Node::toString))

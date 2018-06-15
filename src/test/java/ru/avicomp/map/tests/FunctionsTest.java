@@ -3,6 +3,7 @@ package ru.avicomp.map.tests;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +28,12 @@ import java.util.stream.Collectors;
 public class FunctionsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(FunctionsTest.class);
     private final FuncTypeFilter data;
+    private static MapManager manager;
+
+    @BeforeClass
+    public static void before() {
+        manager = Managers.createMapManager();
+    }
 
     public FunctionsTest(FuncTypeFilter data) {
         this.data = data;
@@ -39,7 +46,6 @@ public class FunctionsTest {
 
     @Test
     public void testList() {
-        MapManager manager = Managers.getMapManager();
         List<MapFunction> functions = manager.functions()
                 .sorted(Comparator.comparing(MapFunction::type).thenComparing(MapFunction::name))
                 .filter(data::test).collect(Collectors.toList());

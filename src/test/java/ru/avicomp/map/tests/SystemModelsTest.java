@@ -36,7 +36,7 @@ public class SystemModelsTest {
         graphs.forEach((expected, g) -> Assert.assertEquals(expected, Graphs.getURI(g)));
         OntModelFactory.init();
         Assert.assertSame(graphs, SystemModels.graphs());
-        Model lib = ((MapManagerImpl) Managers.getMapManager()).getLibrary();
+        Model lib = ((MapManagerImpl) Managers.createMapManager()).getLibrary();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);
         Assert.assertEquals(32, tree.split("\n").length);
@@ -48,7 +48,7 @@ public class SystemModelsTest {
 
     @Test
     public void testListFunctions() { // todo: for debug right now
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = Managers.createMapManager();
         manager.functions()
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::type).thenComparing(MapFunction::name))
                 .forEach(System.out::println);

@@ -2,6 +2,7 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,13 @@ import static ru.avicomp.map.spin.Exceptions.Key;
 public class ExceptionsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionsTest.class);
 
+    private static MapManager manager;
+
+    @BeforeClass
+    public static void before() {
+        manager = Managers.createMapManager();
+    }
+
     @Test
     public void testNonTargetFuncError() {
         String uri = "ex://test";
@@ -35,7 +43,6 @@ public class ExceptionsTest {
         m.setID(uri);
         OntClass src = m.createOntEntity(OntClass.class, ns + "src");
         OntClass dst = m.createOntEntity(OntClass.class, ns + "dst");
-        MapManager manager = Managers.getMapManager();
         MapModel map = manager.createMapModel();
         Context context = map.createContext(src, dst);
         Assert.assertNotNull(context);
@@ -55,8 +62,7 @@ public class ExceptionsTest {
 
     @Test
     public void testBuildFunction() {
-        MapManager m = Managers.getMapManager();
-        MapFunction f = m.getFunction(m.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
+        MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
         try {
             f.create().build();
             Assert.fail("Expected error");
@@ -66,7 +72,7 @@ public class ExceptionsTest {
             Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
         }
         try {
-            f.create().add(m.prefixes().expandPrefix("sp:arg1"), "x").build();
+            f.create().add(manager.prefixes().expandPrefix("sp:arg1"), "x").build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) { // no required arg
             LOGGER.debug("Exception: {}", j.getMessage());
@@ -86,12 +92,12 @@ public class ExceptionsTest {
 
     @Test(expected = Exceptions.SpinMapException.class)
     public void testBuildCallNoRequiredArg() {
-        Managers.getMapManager().getFunction(SPINMAPL.buildURI1).create().build();
+        manager.getFunction(SPINMAPL.buildURI1).create().build();
     }
 
     @Test(expected = Exceptions.SpinMapException.class)
     public void testBuildCallNonExistArg() {
-        Managers.getMapManager().getFunction(SP.resource("contains"))
+        manager.getFunction(SP.resource("contains"))
                 .create()
                 .addLiteral(SP.arg1, "a")
                 .addLiteral(SP.arg2, "b")
@@ -101,7 +107,6 @@ public class ExceptionsTest {
 
     @Test
     public void testBuildImproperMapping() {
-        MapManager manager = Managers.getMapManager();
         PrefixMapping pm = manager.prefixes();
 
         AbstractMapTest test = new BuildURIMapTest();
@@ -209,19 +214,18 @@ public class ExceptionsTest {
         AbstractMapTest tc = new MathOpsMapTest();
         OntGraphModel src = tc.assembleSource();
         OntGraphModel dst = tc.assembleTarget();
-        MapManager man = Managers.getMapManager();
 
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
         OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty2");
         OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
 
-        MapModel map = tc.createMappingModel(man, "Wrong fn:format-number picture");
-        Context c = map.createContext(srcClass, dstClass, man.getFunction(SPINMAPL.self).create().build());
-        c.addPropertyBridge(man.getFunction(FN.format_number).create()
+        MapModel map = tc.createMappingModel(manager, "Wrong fn:format-number picture");
+        Context c = map.createContext(srcClass, dstClass, manager.getFunction(SPINMAPL.self).create().build());
+        c.addPropertyBridge(manager.getFunction(FN.format_number).create()
                 .addProperty(SP.arg1, srcProp2)
                 .addLiteral(SP.arg2, "9,9.000"), dstProp3);
-        man.getInferenceEngine().run(map, src, dst);
+        manager.getInferenceEngine().run(map, src, dst);
         TestUtils.debug(dst);
     }
 }

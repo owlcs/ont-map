@@ -28,7 +28,7 @@ public class PrefixesTest {
     @Test
     public void testPrefixes() {
         OntGraphModel m = OntModelFactory.createModel();
-        AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), Managers.getMapManager().prefixes());
+        AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), Managers.createMapManager().prefixes());
         m.getID().addImport(SPINMAPL.BASE_URI);
         LOGGER.debug("\n{}", TestUtils.asString(m));
         // rdf:type, owl:imports, owl:Ontology - 2 prefixes:
