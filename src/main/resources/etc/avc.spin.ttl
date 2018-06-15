@@ -172,7 +172,10 @@ sp:notIn  spin:constraint  [ a              spl:Argument ;
                            ] .
 
 spinmap:targetResource
-        avc:hidden    "This function should not be allowed to be used explicitly by API.\nAll cases when spinmap:targetResource might be used, should be described through other functions." ;
+        avc:hidden    "This function is not allowed to be used explicitly by the API.\nAll cases when <targetResource> might be used should be described through other functions." ;
+        spin:private  true .
+
+spin:eval  avc:hidden  "This function is not allowed to be used explicitly by the API.\nAll cases when <eval> might be used should be described through other functions." ;
         spin:private  true .
 
 spinmapl:relatedSubjectContext
@@ -215,11 +218,14 @@ spin:ask  avc:hidden  "Functions accepting or returning spin:Module or sp:Query 
 spin:violatesConstraints
         avc:hidden  "This function is not compatible with OWL2 world" .
 
-sp:coalesce  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+sp:coalesce  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" ;
+        spin:private  true .
 
-sp:exists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+sp:exists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" ;
+        spin:private  true .
 
-sp:notExists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" .
+sp:notExists  avc:hidden  "Part of SPARQL, which cannot be used explicitly in ONT-MAP" ;
+        spin:private  true .
 
 spif:buildStringFromRDFList
         avc:hidden  "Hidden: OWL2 does not support custom rdf:List" .

@@ -52,7 +52,7 @@ public class FunctionsTest {
      * @see ru.avicomp.map.spin.MapFunctionImpl#isInheritedOfClass(Resource)
      */
     enum FuncTypeFilter {
-        ALL(188) {
+        ALL(187) {
             @Override
             public boolean test(MapFunction f) {
                 return true;

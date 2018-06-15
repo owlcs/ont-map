@@ -32,6 +32,7 @@ public class ArgValidationHelper {
      * Validates function argument input against specified mapping model.
      *
      * @param call {@link MapFunction} argument value (nested function call)
+     * @throws MapJenaException if nested function return type does not match argument type
      */
     void testFunctionValue(MapFunction.Call call) throws MapJenaException {
         MapFunction function = call.getFunction();

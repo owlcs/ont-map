@@ -158,20 +158,16 @@ public class AVCLibraryMaker {
         // ARQ:pi replaced with MATH:pi
         ARQ.resource("pi").inModel(m).addProperty(AVC.hidden, "Use math:pi instead");
 
-        // SPINMAP:targetResource
-        SPINMAP.targetResource.inModel(m)
-                .addProperty(SPIN.private_, Models.TRUE)
-                .addProperty(hidden, "This function should not be allowed to be used explicitly by API.\n" +
-                        "All cases when spinmap:targetResource might be used, should be described through other functions.");
+        // Hide SPINMAP:targetResource and SPIN:eval
+        Stream.of(SPINMAP.targetResource, SPIN.eval).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, String.format("This function is not allowed to be used explicitly by the API.\n" +
+                        "All cases when <%s> might be used should be described through other functions.", r.getLocalName()))
+                        .addProperty(SPIN.private_, Models.TRUE));
 
-        // SPINMAPL:relatedSubjectContext
-        SPINMAPL.relatedSubjectContext.inModel(m)
-                .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
-                        "#createRelatedContext(...) methods.");
-        // SPINMAPL:relatedObjectContext
-        SPINMAPL.relatedObjectContext.inModel(m)
-                .addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
-                        "#createRelatedContext(...) methods.");
+        // SPINMAPL:relatedSubjectContext and SPINMAPL:relatedObjectContext
+        Stream.of(SPINMAPL.relatedSubjectContext, SPINMAPL.relatedObjectContext).map(r -> r.inModel(m))
+                .forEach(r -> r.addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
+                        "#createRelatedContext(...) methods."));
 
         // Exclude SPIN primary key functionality
         Stream.of(SPINMAPL.resource("resourceWithPrimaryKey"),
@@ -194,7 +190,8 @@ public class AVCLibraryMaker {
         SPIN.violatesConstraints.inModel(m).addProperty(hidden, "This function is not compatible with OWL2 world");
         // SP:coalesce, SP:exists, SP:notExists
         Stream.of("coalesce", "exists", "notExists").map(SP::resource).map(r -> r.inModel(m))
-                .forEach(r -> r.addProperty(hidden, "Part of SPARQL, which cannot be used explicitly in ONT-MAP"));
+                .forEach(r -> r.addProperty(hidden, "Part of SPARQL, which cannot be used explicitly in ONT-MAP")
+                        .addProperty(SPIN.private_, Models.TRUE));
         // SPIF:buildStringFromRDFList, SPIF:hasAllObjects
         Stream.of(SPIF.resource("buildStringFromRDFList"), SPIF.resource("hasAllObjects")).map(r -> r.inModel(m))
                 .forEach(r -> r.addProperty(hidden, "Hidden: OWL2 does not support custom rdf:List"));

@@ -164,6 +164,10 @@ public class MapManagerImpl implements MapManager {
      */
     public boolean isRegistered(FunctionImpl function) {
         if (function.isRegistered()) return true;
+        return function.registered = isRegistered((MapFunctionImpl) function);
+    }
+
+    protected boolean isRegistered(MapFunctionImpl function) {
         Resource func = function.asResource();
         // SPIN-indicator for SPARQL operator:
         if (func.hasProperty(SPIN.symbol)) return true;
@@ -173,7 +177,7 @@ public class MapManagerImpl implements MapManager {
         if (!func.hasProperty(SPIN.body)) return true;
         // it can be registered but depend on some other unregistered function
         Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
-        return function.registered = MapModelImpl.listProperties(body)
+        return MapModelImpl.listProperties(body)
                 .filter(s -> RDF.type.equals(s.getPredicate()))
                 .map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
