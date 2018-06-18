@@ -8,9 +8,15 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.MapFunctionImpl;
+import ru.avicomp.map.spin.SpinModelConfig;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.tests.ClassPropertiesTest;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
@@ -30,6 +36,15 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class TestUtils {
+    public static final PrefixMapping SPIN_MAP_PREFIXES = PrefixMapping.Factory.create()
+            .setNsPrefixes(OntModelFactory.STANDARD)
+            .setNsPrefix("sp", SP.NS)
+            .setNsPrefix("spl", SPL.NS)
+            .setNsPrefix("spin", SPIN.NS)
+            .setNsPrefix("spinmap", SPINMAP.NS)
+            .setNsPrefix("spinmapl", SPINMAPL.NS)
+            .lock();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
     public static String asString(Model m) {
@@ -132,4 +147,10 @@ public class TestUtils {
         return r.isURIResource() ? pm.shortForm(r.asResource().getURI()) : r.isAnon() ? r.asResource().getId().toString() : r.toString();
     }
 
+    public static OntGraphModel createMapModel(String uri) {
+        OntGraphModel res = OntModelFactory.createModel(Factory.createGraphMem(), SpinModelConfig.ONT_LIB_PERSONALITY);
+        res.setNsPrefixes(SPIN_MAP_PREFIXES);
+        res.setID(uri).addImport(SPINMAPL.BASE_URI);
+        return res;
+    }
 }

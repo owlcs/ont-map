@@ -1,7 +1,7 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.graph.Factory;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.vocabulary.RDFS;
@@ -18,10 +18,9 @@ import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.QueryHelper;
-import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.OntModelFactory;
+import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -39,7 +38,7 @@ public class CustomFunctionsTest {
         long g1 = Iter.count(FunctionRegistry.get().keys());
         long g2 = Iter.count(PropertyFunctionRegistry.get().keys());
 
-        OntGraphModel m1 = makeFuncModel();
+        OntGraphModel m1 = makeFuncModel1();
         TestUtils.debug(m1);
 
         MapModel m2 = manager.asMapModel(m1);
@@ -56,21 +55,13 @@ public class CustomFunctionsTest {
         Assert.assertEquals("Changes in FunctionRegistry", g1, Iter.count(FunctionRegistry.get().keys()));
     }
 
-    private OntGraphModel makeFuncModel() {
+    private static OntGraphModel makeFuncModel1() {
         String q = "SELECT (xsd:string(?untyped) AS ?result)\n" +
                 "WHERE {\n" +
                 "    BIND (CONCAT(xsd:string(?arg1), ?separator, xsd:string(?arg2), ?separator, xsd:string(?arg3)) AS ?untyped) .\n" +
                 "}";
         String uri = "http://test.func.com";
-        OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), SpinModelConfig.ONT_LIB_PERSONALITY);
-        m.setNsPrefixes(OntModelFactory.STANDARD);
-        m.setNsPrefix("sp", SP.NS);
-        m.setNsPrefix("spl", SPL.NS);
-        m.setNsPrefix("spin", SPIN.NS);
-        m.setNsPrefix("spinmap", SPINMAP.NS);
-        m.setNsPrefix("spinmapl", SPINMAPL.NS);
-
-        m.setID(uri).addImport(SPINMAPL.BASE_URI);
+        OntGraphModel m = TestUtils.createMapModel(uri);
 
         m.createResource(uri + "#concatWithSeparator_3")
                 .addProperty(RDF.type, SPIN.Function)
@@ -90,6 +81,40 @@ public class CustomFunctionsTest {
                         .addProperty(SPL.predicate, SP.arg2)
                         .addProperty(SPL.valueType, XSD.xstring))
                 .addProperty(SPIN.body, QueryHelper.parseQuery(q, m));
+        return m;
+    }
+
+    private static OntGraphModel makeFuncModel2(String uri, String val) {
+        String q = "SELECT (CONCAT(?arg1, \"" + val + "\"))\n" +
+                "WHERE {\n" +
+                "}";
+        OntGraphModel m = TestUtils.createMapModel(uri);
+        Resource function = m.createResource(uri)
+                .addProperty(RDF.type, SPIN.Function)
+                .addProperty(SPIN.returnType, XSD.xstring)
+                .addProperty(RDFS.subClassOf, SPIN.Functions)
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg1)
+                        .addProperty(SPL.valueType, XSD.xstring))
+                .addProperty(SPIN.body, QueryHelper.parseQuery(q, m));
+        OntClass clazz = m.createOntEntity(OntClass.class, uri + "#Class1");
+        Resource context = m.createResource(uri + "#Context1", SPINMAP.Context)
+                .addProperty(SPINMAP.sourceClass, clazz)
+                .addProperty(SPINMAP.targetClass, clazz)
+                .addProperty(SPINMAP.target, m.createResource()
+                        .addProperty(RDF.type, SPINMAPL.self)
+                        .addProperty(SPINMAP.source, SPINMAP.sourceVariable));
+        Resource rule = m.createResource().addProperty(RDF.type, SPINMAP.Mapping_1_1)
+                .addProperty(SPINMAP.context, context)
+                .addProperty(SPINMAP.sourcePredicate1, RDFS.label)
+                .addProperty(SPINMAP.targetPredicate1, RDFS.label)
+                .addProperty(SPINMAP.expression, m.createResource()
+                        .addProperty(RDF.type, function)
+                        .addProperty(SP.arg1, SPIN._arg1));
+
+        clazz.addProperty(SPINMAP.rule, rule);
+        clazz.createIndividual(uri + "#Individual1").addLabel("The label", null);
         return m;
     }
 
