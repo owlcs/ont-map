@@ -51,7 +51,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     @Override
     public Stream<OntGraphModel> ontologies() {
         Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
-        Stream<OntGraphModel> imports = super.imports(MapManagerImpl.ONT_PERSONALITY)
+        Stream<OntGraphModel> imports = super.imports(SpinModelConfig.ONT_PERSONALITY)
                 .filter(m -> !SystemModels.graphs().keySet().contains(m.getID().getURI()));
         return Stream.concat(res, imports);
     }
@@ -476,17 +476,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public Optional<RDFDatatype> datatype(String uri) {
         return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype);
-    }
-
-    /**
-     * Answers if specified datatype is numeric.
-     *
-     * @param type {@link RDFDatatype}
-     * @return boolean
-     */
-    public boolean isNumeric(RDFDatatype type) {
-        String dt = Objects.requireNonNull(type, "Null dt").getURI();
-        return getManager().numberDatatypes().map(OntDT::toRDFDatatype).map(RDFDatatype::getURI).anyMatch(dt::equals);
     }
 
     /**

@@ -107,7 +107,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
-        OntGraphModel src = OntModelFactory.createModel(source, MapManagerImpl.ONT_PERSONALITY);
+        OntGraphModel src = OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())

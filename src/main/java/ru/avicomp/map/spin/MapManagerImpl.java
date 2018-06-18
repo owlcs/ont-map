@@ -18,13 +18,13 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.map.utils.LocalClassPropertyMapImpl;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
-import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
@@ -44,11 +44,6 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapManagerImpl implements MapManager {
-
-    // OWL2 personality (lax version)
-    public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
-    // OWL2 + SPIN personality
-    public static final OntPersonality ONT_LIB_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy().add(SpinModelConfig.LIB_PERSONALITY);
 
     private final PrefixMapping prefixes;
     private final UnionModel library;
@@ -78,12 +73,12 @@ public class MapManagerImpl implements MapManager {
                 .map(s -> s.as(org.topbraid.spin.model.Function.class))
                 .forEach(f -> {
                     ExtraPrefixes.add(f);
-            register(functionRegistry, f);
-            if (f.isMagicProperty()) {
-                register(propertyFunctionRegistry, f);
-            }
+                    register(functionRegistry, f);
+                    if (f.isMagicProperty()) {
+                        register(propertyFunctionRegistry, f);
+                    }
                     functions.put(f.getURI(), new FunctionImpl(f));
-        });
+                });
     }
 
     /**
@@ -135,7 +130,7 @@ public class MapManagerImpl implements MapManager {
      *
      * @param graph {@link Graph} containing user-defined functions
      * @return {@link UnionModel}
-     * @see MapManagerImpl#ONT_LIB_PERSONALITY
+     * @see SpinModelConfig#ONT_LIB_PERSONALITY
      */
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
@@ -144,7 +139,7 @@ public class MapManagerImpl implements MapManager {
         additionLibraryGraphs().forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
-        return new OntGraphModelImpl(res, ONT_LIB_PERSONALITY);
+        return new OntGraphModelImpl(res, SpinModelConfig.ONT_LIB_PERSONALITY);
     }
 
     /**
@@ -220,6 +215,7 @@ public class MapManagerImpl implements MapManager {
     /**
      * Answers iff the specified function is registered (as ARQ or SPARQL) and therefore is executable.
      * Note that it is a recursive method.
+     *
      * @param function {@link MapFunctionImpl}
      * @return boolean
      */
@@ -303,7 +299,7 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public MapModelImpl createMapModel() {
-        return makeMapModel(Factory.createGraphMem(), ONT_PERSONALITY);
+        return makeMapModel(Factory.createGraphMem(), SpinModelConfig.ONT_PERSONALITY);
     }
 
     /**
@@ -316,13 +312,13 @@ public class MapManagerImpl implements MapManager {
      * Notice that ONT-MAP Inference Engine does not use that setting and inference will be run only once.
      * Also this method ensures that the given graph contains http://topbraid.org/spin/spinmapl in import declarations.
      *
-     * @param base           {@link Graph} base graph
-     * @param owlPersonality {@link OntPersonality}
+     * @param base        {@link Graph} base graph
+     * @param personality {@link OntPersonality}
      * @return {@link MapModelImpl}
      */
-    public MapModelImpl makeMapModel(Graph base, OntPersonality owlPersonality) {
+    public MapModelImpl makeMapModel(Graph base, OntPersonality personality) {
         UnionGraph union = new UnionGraph(Graphs.getBase(base));
-        MapModelImpl res = new MapModelImpl(union, owlPersonality, this);
+        MapModelImpl res = new MapModelImpl(union, personality, this);
         // do not add avc.*.ttl addition to the final graph
         Graph lib = getMapLibraryGraph();
         union.addGraph(lib);
@@ -336,6 +332,47 @@ public class MapManagerImpl implements MapManager {
         // add spinmapl (a top of library) to owl:imports:
         res.getID().addImport(Graphs.getURI(lib));
         return res;
+    }
+
+    /**
+     * Tests weather the given OWL2 model is also a mapping model.
+     * For the sake of simplicity assumes that map-model must have &lt;http://topbraid.org/spin/spinmapl&gt; in the imports.
+     * In general case it is not right, but both Topbraid Composer and ONT-MAP provides such mappings by default.
+     *
+     * @param m {@link OntGraphModel}
+     * @return true if it is also {@link MapModelImpl}
+     */
+    @Override
+    public boolean isMapModel(OntGraphModel m) {
+        if (m instanceof MapModelImpl) return true;
+        return m.getID().imports().anyMatch(SPINMAPL.BASE_URI::equals);
+    }
+
+    @Override
+    public MapModelImpl asMapModel(OntGraphModel m) throws MapJenaException {
+        return asMapModel(m, SpinModelConfig.ONT_PERSONALITY);
+    }
+
+    /**
+     * Wraps the given OWL2 model as a mapping model if it is possible.
+     * Also puts any local defined functions to the manager registry.
+     *
+     * @param m           {@link OntGraphModel}
+     * @param personality {@link OntPersonality}
+     * @return {@link MapModelImpl}
+     * @throws MapJenaException in case model can not be wrap as MapModelImpl
+     */
+    public MapModelImpl asMapModel(OntGraphModel m, OntPersonality personality) throws MapJenaException {
+        if (!isMapModel(m)) throw new MapJenaException("<" + m.getID() + "> is not a mapping model");
+        if (m instanceof MapModelImpl && this.equals(((MapModelImpl) m).getManager())) return (MapModelImpl) m;
+        UnionGraph union = new UnionGraph(m.getBaseGraph());
+        m.imports()
+                .filter(i -> !SPINMAPL.BASE_URI.equals(i.getID().getURI()))
+                .map(ModelGraphInterface::getGraph)
+                .forEach(union::addGraph);
+        union.addGraph(getMapLibraryGraph());
+        register(SpinModelConfig.createSpinModel(m.getBaseGraph()));
+        return new MapModelImpl(union, personality, this);
     }
 
     /**

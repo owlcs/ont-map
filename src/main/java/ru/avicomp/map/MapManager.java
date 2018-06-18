@@ -41,6 +41,24 @@ public interface MapManager {
     MapModel createMapModel();
 
     /**
+     * Wraps an ontology model to the map model interface.
+     *
+     * @param m {@link OntGraphModel}
+     * @return {@link MapModel}
+     * @throws MapJenaException if such wrapping is not possible
+     */
+    MapModel asMapModel(OntGraphModel m) throws MapJenaException;
+
+    /**
+     * Answers {@code true} if the given ontology model is also a mapping model.
+     *
+     * @param m {@link OntGraphModel}
+     * @return boolean indicating whether the ontology contains mapping specific elements
+     * and therefore is assignable to the {@link MapModel mapping} interface
+     */
+    boolean isMapModel(OntGraphModel m);
+
+    /**
      * Provides a class-properties mapping.
      * <p>
      * Used directly by API to build mappings rules:
