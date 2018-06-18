@@ -9,6 +9,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.arq.SPINFunctionDrivers;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.QueryWrapper;
@@ -296,10 +297,11 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Created by @szuev on 27.05.2018.
      */
     public static class MapInferenceHelper extends SPINInferenceHelper {
-        protected final FunctionRegistry jenaFunctionRegistry;
+        protected final FunctionRegistry functionRegistry;
 
         public MapInferenceHelper(MapManagerImpl manager) {
-            this.jenaFunctionRegistry = manager.functionRegistry;
+            super(manager.spinARQFactory);
+            this.functionRegistry = manager.functionRegistry;
         }
 
         /**
@@ -354,9 +356,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         }
 
         protected void register(Resource r) {
-            synchronized (spinARQFactory) {
+            synchronized (ARQFactory.class) {
+                // thanks to topbraid guys to provide this amazing way to customise that factory.
+                // for big collection of singletons in every places also many thanks
+                ARQFactory.set(spinARQFactory);
                 spinARQFactory.clearCaches();
-                jenaFunctionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r));
+                functionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r));
             }
         }
     }

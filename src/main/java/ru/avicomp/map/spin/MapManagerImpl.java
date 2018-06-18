@@ -1,18 +1,22 @@
 package ru.avicomp.map.spin;
 
+import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.query.ARQ;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphMapLink;
 import org.apache.jena.sparql.function.FunctionFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionFactory;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
-import org.topbraid.spin.arq.SPINARQPFunction;
-import org.topbraid.spin.arq.SPINARQPFunctionFactory;
-import org.topbraid.spin.arq.SPINFunctionDrivers;
-import org.topbraid.spin.arq.SPINFunctionFactory;
+import org.apache.jena.sparql.util.Context;
+import org.topbraid.spin.arq.*;
 import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -49,8 +53,9 @@ public class MapManagerImpl implements MapManager {
     private final UnionModel library;
     private final Map<String, FunctionImpl> functions;
 
-    protected final FunctionRegistry functionRegistry = FunctionRegistry.get();
-    protected final PropertyFunctionRegistry propertyFunctionRegistry = PropertyFunctionRegistry.get();
+    protected final FunctionRegistry functionRegistry;
+    protected final PropertyFunctionRegistry propertyFunctionRegistry;
+    protected final ARQFactory spinARQFactory;
 
     protected final TypeMapper types = TypeMapper.getInstance();
 
@@ -58,8 +63,52 @@ public class MapManagerImpl implements MapManager {
         this.library = createLibraryModel(Factory.createGraphMem());
         this.prefixes = collectPrefixes(SystemModels.graphs().values());
         this.functions = new HashMap<>();
+        Context context = createARQContext(ARQ.getContext());
+        this.functionRegistry = FunctionRegistry.get(context);
+        this.propertyFunctionRegistry = PropertyFunctionRegistry.get(context);
+        this.spinARQFactory = new ARQFactory() {
+            @Override
+            public Dataset getDataset(Model m) {
+                DatasetGraph dg = new DatasetGraphMapLink(m.getGraph()) {
+
+                    @Override
+                    public Context getContext() {
+                        return context;
+                    }
+                };
+                return DatasetFactory.wrap(dg);
+            }
+        };
         SPINRegistry.init(this.functionRegistry, this.propertyFunctionRegistry);
         register(library);
+    }
+
+
+    public static Context createARQContext(Context base) {
+        FunctionRegistry fr = copy(FunctionRegistry.get(base));
+        PropertyFunctionRegistry pfr = copy(PropertyFunctionRegistry.get(base));
+        Context res = new Context(base) {
+
+            @Override
+            public String toString() {
+                return String.format("%s:::%s", getClass().getName(), super.toString());
+            }
+        };
+        FunctionRegistry.set(res, fr);
+        PropertyFunctionRegistry.set(res, pfr);
+        return res;
+    }
+
+    public static FunctionRegistry copy(FunctionRegistry base) {
+        FunctionRegistry res = new FunctionRegistry();
+        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
+        return res;
+    }
+
+    public static PropertyFunctionRegistry copy(PropertyFunctionRegistry base) {
+        PropertyFunctionRegistry res = new PropertyFunctionRegistry();
+        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
+        return res;
     }
 
     /**
@@ -381,7 +430,9 @@ public class MapManagerImpl implements MapManager {
      * @return Stream of all number datatypes
      * @see AVC#numeric
      * @see <a href='https://www.w3.org/TR/sparql11-query/#operandDataTypes'>SPARQL Operand Data Types</a>
+     * @deprecated no need any more
      */
+    @Deprecated
     public Stream<OntDT> numberDatatypes() {
         OntDT res = AVC.numeric.inModel(getLibrary()).as(OntDT.class);
         OntDR dr = res.equivalentClass().findFirst()

@@ -29,7 +29,15 @@ import java.util.stream.Stream;
 public class SPINInferenceHelper {
 
     // just in case as local variable (although it is a singleton in spin-api):
-    protected final ARQFactory spinARQFactory = ARQFactory.get();
+    protected final ARQFactory spinARQFactory;
+
+    public SPINInferenceHelper() {
+        this(ARQFactory.get());
+    }
+
+    public SPINInferenceHelper(ARQFactory factory) {
+        this.spinARQFactory = factory;
+    }
 
     /**
      * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}
