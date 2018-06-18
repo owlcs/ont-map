@@ -1,4 +1,4 @@
-package ru.avicomp.map.tools.spin;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
@@ -37,7 +37,6 @@ import org.topbraid.spin.util.JenaUtil;
 import org.topbraid.spin.util.SPTextUtil;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
-import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.ontapi.jena.utils.Iter;
 
 import java.util.*;

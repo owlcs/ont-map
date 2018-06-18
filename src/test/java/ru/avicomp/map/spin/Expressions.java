@@ -1,4 +1,4 @@
-package ru.avicomp.map.tools.spin;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;

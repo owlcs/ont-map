@@ -1,4 +1,4 @@
-package ru.avicomp.map.tools.spin;
+package ru.avicomp.map.spin;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.mem.GraphMem;
@@ -8,7 +8,6 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 
 import java.io.IOException;
