@@ -62,7 +62,7 @@ public class LoadMapTestData extends AbstractMapTest {
     }
 
     void validateResult(OntGraphModel res) {
-        res.getGraph().find(Triple.ANY).forEachRemaining(t -> LOGGER.debug("{}", t));
+        res.getGraph().find(Triple.ANY).forEachRemaining(t -> LOGGER.debug("TRIPLE: {}", t));
         Assert.assertEquals(1, res.size());
         OntStatement s = res.statements().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(individualIRI, s.getSubject().getURI());

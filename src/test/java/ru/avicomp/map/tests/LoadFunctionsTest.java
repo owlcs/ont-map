@@ -20,6 +20,14 @@ import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 /**
  * Created by @szuev on 15.06.2018.
  */
@@ -70,6 +78,35 @@ public class LoadFunctionsTest {
 
         OntGraphModel res = data.assembleTarget();
         manager.getInferenceEngine().run(m, m.asOntModel().getGraph(), res.getGraph());
+        data.validateResult(res);
+    }
+
+    @Test
+    public void testConcurrentLoading() throws ExecutionException, InterruptedException {
+        simpleTestInference(Managers.createMapManager(), "A");
+        simpleTestInference(Managers.createMapManager(), "B");
+
+        int threadsNum = 8;
+        int iterNum = 3;
+        ExecutorService service = Executors.newFixedThreadPool(threadsNum);
+        Set<Future<?>> res = IntStream.rangeClosed(0, threadsNum)
+                .mapToObj(i -> service.submit(() -> IntStream.rangeClosed(0, iterNum)
+                        .forEach(j -> {
+                            LOGGER.debug("Test thread #{}, iter #{}", i, j);
+                            simpleTestInference(Managers.createMapManager(), "Test#" + i + "-" + j);
+                        }))).collect(Collectors.toSet());
+        service.shutdown();
+        for (Future<?> f : res) {
+            f.get();
+        }
+    }
+
+    private void simpleTestInference(MapManager manager, String suffix) {
+        final String uri = "http://test.com/some-function3";
+        LoadMapTestData data = new LoadMapTestData(uri, suffix);
+        MapModel map = data.assembleMapping(manager, null, null);
+        OntGraphModel res = data.assembleTarget();
+        manager.getInferenceEngine().run(map, map.asOntModel().getGraph(), res.getGraph());
         data.validateResult(res);
     }
 
