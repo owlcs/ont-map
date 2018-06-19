@@ -2,6 +2,7 @@ package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.datatypes.TypeMapper;
+import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.query.ARQ;
@@ -16,6 +17,8 @@ import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionFactory;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.util.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.*;
 import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -48,6 +51,7 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class MapManagerImpl implements MapManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapModelImpl.class);
 
     private final PrefixMapping prefixes;
     private final UnionModel library;
@@ -80,7 +84,7 @@ public class MapManagerImpl implements MapManager {
             }
         };
         SPINRegistry.init(this.functionRegistry, this.propertyFunctionRegistry);
-        register(library);
+        SpinModels.listSpinFunctions(library).forEach(this::register);
     }
 
 
@@ -112,22 +116,20 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Registers in the manager all functions described in the given model.
+     * Registers a spin-function in the manager.
      *
-     * @param model {@link Model} with spin-personality inside
+     * @param inModel {@link Resource} with {@code rdf:type = spin:Function}
+     * @throws UnsupportedPolymorphismException - wrong resource or personality
      * @see SpinModelConfig#LIB_PERSONALITY
      */
-    protected void register(Model model) {
-        SpinModels.listSpinFunctions(model)
-                .map(s -> s.as(org.topbraid.spin.model.Function.class))
-                .forEach(f -> {
-                    ExtraPrefixes.add(f);
-                    register(functionRegistry, f);
-                    if (f.isMagicProperty()) {
-                        register(propertyFunctionRegistry, f);
-                    }
-                    functions.put(f.getURI(), new FunctionImpl(f));
-                });
+    protected void register(Resource inModel) throws UnsupportedPolymorphismException {
+        org.topbraid.spin.model.Function f = inModel.as(org.topbraid.spin.model.Function.class);
+        ExtraPrefixes.add(f);
+        register(functionRegistry, f);
+        if (f.isMagicProperty()) {
+            register(propertyFunctionRegistry, f);
+        }
+        functions.put(f.getURI(), new FunctionImpl(f));
     }
 
     /**
@@ -420,8 +422,16 @@ public class MapManagerImpl implements MapManager {
                 .map(ModelGraphInterface::getGraph)
                 .forEach(union::addGraph);
         union.addGraph(getMapLibraryGraph());
-        register(SpinModelConfig.createSpinModel(m.getBaseGraph()));
-        return new MapModelImpl(union, personality, this);
+        MapModelImpl res = new MapModelImpl(union, personality, this);
+        Model full = SpinModelConfig.createSpinModel(res.getGraph());
+        SpinModels.listSpinFunctions(m.getBaseModel())
+                .map(r -> r.inModel(full))
+                .forEach(r -> {
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("Add function <{}>.", r);
+                    register(r);
+                });
+        return res;
     }
 
     /**

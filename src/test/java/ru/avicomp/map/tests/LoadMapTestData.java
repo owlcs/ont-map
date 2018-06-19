@@ -27,7 +27,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 public class LoadMapTestData extends AbstractMapTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadMapTestData.class);
 
-    private final String uri, val;
+    private final String val;
     private final String individualIRI, classIRI, contextIRI, ontologyIRI, functionIRI;
     private final String individualLabel;
 
@@ -36,7 +36,6 @@ public class LoadMapTestData extends AbstractMapTest {
     }
 
     LoadMapTestData(String uri, String val) {
-        this.uri = uri;
         this.val = val;
         this.individualIRI = uri + "#Individ-X";
         this.classIRI = uri + "#Class-X";
@@ -58,6 +57,7 @@ public class LoadMapTestData extends AbstractMapTest {
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(RDFS.label, p.getTarget());
         Assert.assertEquals(RDFS.label, p.sources().findFirst().orElseThrow(AssertionError::new));
+        Assert.assertTrue(m.asOntModel().contains(m.asOntModel().getResource(individualIRI), RDFS.label, individualLabel));
         Assert.assertEquals(functionIRI, p.getMapping().getFunction().name());
     }
 
@@ -67,7 +67,7 @@ public class LoadMapTestData extends AbstractMapTest {
         OntStatement s = res.statements().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(individualIRI, s.getSubject().getURI());
         Assert.assertEquals(RDFS.label, s.getPredicate());
-        Assert.assertEquals(individualLabel, s.getObject().asLiteral().getString());
+        Assert.assertEquals(individualLabel + val, s.getObject().asLiteral().getString());
     }
 
     @Override

@@ -119,6 +119,12 @@ public class FunctionsTest {
                 return ((MapFunctionImpl) f).isInheritedOfClass(AVC.AggregateFunctions);
             }
         },
+        VARARG(3) {
+            @Override
+            public boolean test(MapFunction f) {
+                return f.isVararg();
+            }
+        },
         TARGET(10) {
             @Override
             public boolean test(MapFunction f) {
