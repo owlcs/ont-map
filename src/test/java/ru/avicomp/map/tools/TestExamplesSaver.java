@@ -44,19 +44,25 @@ public class TestExamplesSaver {
                 new MathOpsMapTest(),
                 new MultiContextMapTest(),
                 new PropertyChainMapTest(),
-                new VarArgMapTest()
+                new VarArgMapTest(),
+                new LoadMapTestData()
         );
 
         for (AbstractMapTest mapTest : mapTests) {
             OntGraphModel src = mapTest.assembleSource();
             OntGraphModel dst = mapTest.assembleTarget();
             OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asOntModel();
-            Path srcFile = makeTurtleFile(dir, src);
-            Path dstFile = makeTurtleFile(dir, dst);
-            Path mapFile = makeTurtleFile(dir, map);
-            saveTurtle(srcFile, src);
-            saveTurtle(dstFile, dst);
-            saveTurtle(mapFile, map);
+
+            saveTurtle(makeTurtleFile(dir, map), map);
+
+            if (!src.isEmpty()) {
+                Path f = makeTurtleFile(dir, src);
+                saveTurtle(f, src);
+            }
+            if (!dst.isEmpty()) {
+                Path f = makeTurtleFile(dir, dst);
+                saveTurtle(f, dst);
+            }
         }
     }
 

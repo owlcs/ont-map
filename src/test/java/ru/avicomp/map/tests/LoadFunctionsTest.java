@@ -1,7 +1,6 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.vocabulary.RDFS;
@@ -12,33 +11,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
-import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.QueryHelper;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 /**
  * Created by @szuev on 15.06.2018.
  */
-public class CustomFunctionsTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomFunctionsTest.class);
+public class LoadFunctionsTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadFunctionsTest.class);
 
     @Test
-    public void testAddFunction() {
+    public void testLoadSingleFunction() {
         MapManager manager = Managers.createMapManager();
         long c1 = manager.functions().count();
         LOGGER.debug("Count before adding model: {}", c1);
         long g1 = Iter.count(FunctionRegistry.get().keys());
         long g2 = Iter.count(PropertyFunctionRegistry.get().keys());
 
-        OntGraphModel m1 = makeFuncModel1();
+        OntGraphModel m1 = makeSingleFunctionModel();
         TestUtils.debug(m1);
 
         MapModel m2 = manager.asMapModel(m1);
@@ -55,7 +51,29 @@ public class CustomFunctionsTest {
         Assert.assertEquals("Changes in FunctionRegistry", g1, Iter.count(FunctionRegistry.get().keys()));
     }
 
-    private static OntGraphModel makeFuncModel1() {
+    @Test
+    public void testLoadAndInference() {
+        LoadMapTestData data = new LoadMapTestData("http://test.com/some-function2", "--suff");
+        MapManager manager = Managers.createMapManager();
+        long c1 = manager.functions().count();
+        LOGGER.debug("Count before adding model: {}", c1);
+
+        String uri = "http://test.com/some-function2";
+        MapModel m = data.assembleMapping(manager, null, null);
+        TestUtils.debug(m);
+
+        Assert.assertEquals(1, manager.getFunction(uri).args().count());
+        long c2 = manager.functions().count();
+        Assert.assertEquals(c1 + 1, c2);
+
+        data.validateMapping(m);
+
+        OntGraphModel res = data.assembleTarget();
+        manager.getInferenceEngine().run(m, m.asOntModel().getGraph(), res.getGraph());
+        data.validateResult(res);
+    }
+
+    private static OntGraphModel makeSingleFunctionModel() {
         String q = "SELECT (xsd:string(?untyped) AS ?result)\n" +
                 "WHERE {\n" +
                 "    BIND (CONCAT(xsd:string(?arg1), ?separator, xsd:string(?arg2), ?separator, xsd:string(?arg3)) AS ?untyped) .\n" +
@@ -84,38 +102,5 @@ public class CustomFunctionsTest {
         return m;
     }
 
-    private static OntGraphModel makeFuncModel2(String uri, String val) {
-        String q = "SELECT (CONCAT(?arg1, \"" + val + "\"))\n" +
-                "WHERE {\n" +
-                "}";
-        OntGraphModel m = TestUtils.createMapModel(uri);
-        Resource function = m.createResource(uri)
-                .addProperty(RDF.type, SPIN.Function)
-                .addProperty(SPIN.returnType, XSD.xstring)
-                .addProperty(RDFS.subClassOf, SPIN.Functions)
-                .addProperty(SPIN.constraint, m.createResource()
-                        .addProperty(RDF.type, SPL.Argument)
-                        .addProperty(SPL.predicate, SP.arg1)
-                        .addProperty(SPL.valueType, XSD.xstring))
-                .addProperty(SPIN.body, QueryHelper.parseQuery(q, m));
-        OntClass clazz = m.createOntEntity(OntClass.class, uri + "#Class1");
-        Resource context = m.createResource(uri + "#Context1", SPINMAP.Context)
-                .addProperty(SPINMAP.sourceClass, clazz)
-                .addProperty(SPINMAP.targetClass, clazz)
-                .addProperty(SPINMAP.target, m.createResource()
-                        .addProperty(RDF.type, SPINMAPL.self)
-                        .addProperty(SPINMAP.source, SPINMAP.sourceVariable));
-        Resource rule = m.createResource().addProperty(RDF.type, SPINMAP.Mapping_1_1)
-                .addProperty(SPINMAP.context, context)
-                .addProperty(SPINMAP.sourcePredicate1, RDFS.label)
-                .addProperty(SPINMAP.targetPredicate1, RDFS.label)
-                .addProperty(SPINMAP.expression, m.createResource()
-                        .addProperty(RDF.type, function)
-                        .addProperty(SP.arg1, SPIN._arg1));
-
-        clazz.addProperty(SPINMAP.rule, rule);
-        clazz.createIndividual(uri + "#Individual1").addLabel("The label", null);
-        return m;
-    }
 
 }
