@@ -6,11 +6,8 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphEventManager;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.sparql.function.FunctionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.topbraid.spin.arq.ARQFactory;
-import org.topbraid.spin.arq.SPINFunctionDrivers;
 import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.QueryWrapper;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -100,7 +97,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // re-register runtime functions
         Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
                 .map(r -> r.inModel(query))
-                .forEach(helper::register);
+                .forEach(manager.factory::replace);
 
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -297,11 +294,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Created by @szuev on 27.05.2018.
      */
     public static class MapInferenceHelper extends SPINInferenceHelper {
-        protected final FunctionRegistry functionRegistry;
 
         public MapInferenceHelper(MapManagerImpl manager) {
-            super(manager.spinARQFactory);
-            this.functionRegistry = manager.functionRegistry;
+            super(manager.factory);
+        }
+
+        public MapARQFactory factory() {
+            return (MapARQFactory) arqFactory;
         }
 
         /**
@@ -320,10 +319,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          * @param query    {@link QueryWrapper}
          * @param instance {@link Resource}
          * @return {@link Model} new triples
+         * @throws MapJenaException in case exception occurred while inference
          * @see SPINInferenceHelper#runQueryOnInstance(QueryWrapper, Resource)
          * @see AVC#currentIndividual
          * @see AVC#MagicFunctions
-         * @throws MapJenaException in case exception occurred while inference
          */
         @Override
         public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
@@ -333,7 +332,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             try {
                 vars.forEach((a, b) -> model.add(b).remove(a));
                 if (!vars.isEmpty()) {
-                    register(get);
+                    factory().replace(get);
                 }
                 try {
                     return super.runQueryOnInstance(query, instance);
@@ -355,14 +354,5 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                     .collect(Collectors.toMap(x -> x, x -> m.createStatement(x.getSubject(), x.getPredicate(), instance)));
         }
 
-        protected void register(Resource r) {
-            synchronized (ARQFactory.class) {
-                // thanks to topbraid guys to provide this amazing way to customise that factory.
-                // for big collection of singletons in every places also many thanks
-                ARQFactory.set(spinARQFactory);
-                spinARQFactory.clearCaches();
-                functionRegistry.put(r.getURI(), SPINFunctionDrivers.get().create(r));
-            }
-        }
     }
 }

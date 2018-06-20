@@ -11,9 +11,9 @@ import java.util.stream.Stream;
 
 /**
  * A Map Manager.
- * This should be the only place to provide everything that required to build and conduct OWL2 mapping
- * including map inferencing, functions, and tools to create new functions.
- * TODO: not ready: everything can change
+ * This is the only place to provide everything that required to build and conduct OWL2 mapping
+ * including map inference, functions, class-property mappings and tools to create new functions.
+ *
  * Created by @szuev on 06.04.2018.
  */
 public interface MapManager {
@@ -79,18 +79,27 @@ public interface MapManager {
      */
     InferenceEngine getInferenceEngine();
 
-    default MapFunction getFunction(Resource resource) {
+    /**
+     * Gets a MapFunction by IRI Resource.
+     *
+     * @param resource {@link Resource}
+     * @return {@link MapFunction}
+     * @throws MapJenaException if no function found
+     */
+    default MapFunction getFunction(Resource resource) throws MapJenaException {
         if (!Objects.requireNonNull(resource, "Null function resource").isURIResource())
             throw new IllegalArgumentException("Not an iri");
         return getFunction(resource.getURI());
     }
 
     /**
-     * Gets function by name (an iri in our single implementation).
+     * Gets function by given name (an IRI in our single implementation).
+     * The implementation is free to override it in order to provide access to hidden functions,
+     * i.e. those which are not listed by {@link #functions()} method.
      *
      * @param name String, not null
      * @return {@link MapFunction}
-     * @throws MapJenaException if no function found.
+     * @throws MapJenaException if no function found
      */
     default MapFunction getFunction(String name) throws MapJenaException {
         return functions()
@@ -101,7 +110,7 @@ public interface MapManager {
 
     /**
      * An inference engine.
-     * In our (currently single) implementation it is SPIN.
+     * In our (currently single) implementation it is SPIN based inference engine.
      */
     interface InferenceEngine {
 

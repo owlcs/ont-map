@@ -28,15 +28,14 @@ import java.util.stream.Stream;
 @SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 public class SPINInferenceHelper {
 
-    // just in case as local variable (although it is a singleton in spin-api):
-    protected final ARQFactory spinARQFactory;
+    protected final ARQFactory arqFactory;
 
     public SPINInferenceHelper() {
         this(ARQFactory.get());
     }
 
     public SPINInferenceHelper(ARQFactory factory) {
-        this.spinARQFactory = factory;
+        this.arqFactory = factory;
     }
 
     /**
@@ -103,30 +102,30 @@ public class SPINInferenceHelper {
                                                   String label,
                                                   Command spinCommand,
                                                   Resource source) {
-        String queryString = spinARQFactory.createCommandString(spinCommand);
+        String queryString = arqFactory.createCommandString(spinCommand);
         boolean thisUnbound = spinCommand.hasProperty(SPIN.thisUnbound, JenaDatatypes.TRUE);
         if (spinQueryText == null) {
             spinQueryText = queryString;
         }
         if (spinCommand instanceof Query) {
-            org.apache.jena.query.Query arqQuery = spinARQFactory.createQuery(queryString);
+            org.apache.jena.query.Query arqQuery = arqFactory.createQuery(queryString);
             if (arqQuery.isConstructType() || (allowAsk && arqQuery.isAskType())) {
                 boolean thisDeep = NestedQueries.hasNestedBlocksUsingThis(arqQuery.getQueryPattern());
                 if (isAddThisTypeClause(thisUnbound, withClass, thisDeep, spinCommand)) {
                     queryString = SPINUtil.addThisTypeClause(queryString);
-                    arqQuery = spinARQFactory.createQuery(queryString);
+                    arqQuery = arqFactory.createQuery(queryString);
                 }
                 return new QueryWrapper(arqQuery, source, spinQueryText,
                         (Query) spinCommand, label, statement, thisUnbound, thisDeep);
             }
         }
         if (spinCommand instanceof Update) {
-            org.apache.jena.update.UpdateRequest updateRequest = spinARQFactory.createUpdateRequest(queryString);
+            org.apache.jena.update.UpdateRequest updateRequest = arqFactory.createUpdateRequest(queryString);
             org.apache.jena.update.Update operation = updateRequest.getOperations().get(0);
             boolean thisDeep = NestedQueries.hasNestedBlocksUsingThis(operation);
             if (isAddThisTypeClause(thisUnbound, withClass, thisDeep, spinCommand)) {
                 queryString = SPINUtil.addThisTypeClause(queryString);
-                updateRequest = spinARQFactory.createUpdateRequest(queryString);
+                updateRequest = arqFactory.createUpdateRequest(queryString);
                 operation = updateRequest.getOperations().get(0);
             }
             return new UpdateWrapper(operation, source, spinQueryText,
@@ -175,14 +174,13 @@ public class SPINInferenceHelper {
      */
     public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
         Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
-        //ARQFactory.LOG_QUERIES = true;
         Map<String, RDFNode> initialBindings = query.getTemplateBinding();
         QuerySolutionMap bindings = new QuerySolutionMap();
         if (initialBindings != null) {
             initialBindings.forEach(bindings::add);
         }
         bindings.add(SPIN.THIS_VAR_NAME, instance);
-        QueryExecution qexec = spinARQFactory.createQueryExecution(query.getQuery(), model, bindings);
+        QueryExecution qexec = arqFactory.createQueryExecution(query.getQuery(), model, bindings);
         return qexec.execConstruct();
     }
 

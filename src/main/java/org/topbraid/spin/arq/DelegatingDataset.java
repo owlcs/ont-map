@@ -86,8 +86,7 @@ public abstract class DelegatingDataset implements Dataset {
     }
 
     @Override
-    public DelegatingDataset addNamedModel(String uri, Model model)
-            throws LabelExistsException {
+    public DelegatingDataset addNamedModel(String uri, Model model) throws LabelExistsException {
         delegate.addNamedModel(uri, model);
         return this;
     }

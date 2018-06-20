@@ -1,25 +1,12 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.atlas.iterator.Iter;
-import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.query.ARQ;
-import org.apache.jena.query.Dataset;
-import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
-import org.apache.jena.sparql.core.DatasetGraph;
-import org.apache.jena.sparql.core.DatasetGraphMapLink;
-import org.apache.jena.sparql.function.FunctionFactory;
-import org.apache.jena.sparql.function.FunctionRegistry;
-import org.apache.jena.sparql.pfunction.PropertyFunctionFactory;
-import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
-import org.apache.jena.sparql.util.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.topbraid.spin.arq.*;
 import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -57,62 +44,15 @@ public class MapManagerImpl implements MapManager {
     private final UnionModel library;
     private final Map<String, FunctionImpl> functions;
 
-    protected final FunctionRegistry functionRegistry;
-    protected final PropertyFunctionRegistry propertyFunctionRegistry;
-    protected final ARQFactory spinARQFactory;
-
-    protected final TypeMapper types = TypeMapper.getInstance();
+    protected final MapARQFactory factory;
 
     public MapManagerImpl() {
         this.library = createLibraryModel(Factory.createGraphMem());
         this.prefixes = collectPrefixes(SystemModels.graphs().values());
         this.functions = new HashMap<>();
-        Context context = createARQContext(ARQ.getContext());
-        this.functionRegistry = FunctionRegistry.get(context);
-        this.propertyFunctionRegistry = PropertyFunctionRegistry.get(context);
-        this.spinARQFactory = new ARQFactory() {
-            @Override
-            public Dataset getDataset(Model m) {
-                DatasetGraph dg = new DatasetGraphMapLink(m.getGraph()) {
-
-                    @Override
-                    public Context getContext() {
-                        return context;
-                    }
-                };
-                return DatasetFactory.wrap(dg);
-            }
-        };
-        SPINRegistry.init(this.functionRegistry, this.propertyFunctionRegistry);
+        this.factory = new MapARQFactory();
+        SPINRegistry.putAll(factory.getFunctionRegistry(), factory.getPropertyFunctionRegistry());
         SpinModels.listSpinFunctions(library).forEach(this::register);
-    }
-
-
-    public static Context createARQContext(Context base) {
-        FunctionRegistry fr = copy(FunctionRegistry.get(base));
-        PropertyFunctionRegistry pfr = copy(PropertyFunctionRegistry.get(base));
-        Context res = new Context(base) {
-
-            @Override
-            public String toString() {
-                return String.format("%s:::%s", getClass().getName(), super.toString());
-            }
-        };
-        FunctionRegistry.set(res, fr);
-        PropertyFunctionRegistry.set(res, pfr);
-        return res;
-    }
-
-    public static FunctionRegistry copy(FunctionRegistry base) {
-        FunctionRegistry res = new FunctionRegistry();
-        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
-        return res;
-    }
-
-    public static PropertyFunctionRegistry copy(PropertyFunctionRegistry base) {
-        PropertyFunctionRegistry res = new PropertyFunctionRegistry();
-        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
-        return res;
     }
 
     /**
@@ -123,53 +63,13 @@ public class MapManagerImpl implements MapManager {
      * @see SpinModelConfig#LIB_PERSONALITY
      */
     protected void register(Resource inModel) throws UnsupportedPolymorphismException {
+        ExtraPrefixes.add(inModel);
         org.topbraid.spin.model.Function f = inModel.as(org.topbraid.spin.model.Function.class);
-        ExtraPrefixes.add(f);
-        register(functionRegistry, f);
-        if (f.isMagicProperty()) {
-            register(propertyFunctionRegistry, f);
-        }
         functions.put(f.getURI(), new FunctionImpl(f));
-    }
-
-    /**
-     * Registers an ARQ function.
-     * If the provided Function has an executable body (spin:body), then registers an ARQ function for it with the current FunctionRegistry.
-     * If there is an existing function with the same URI already registered, then it will only be replaced if it is also a SPINARQFunction.
-     *
-     * @param reg  {@link FunctionRegistry}
-     * @param func the function to register
-     * @see org.topbraid.spin.system.SPINModuleRegistry#registerARQFunction(org.topbraid.spin.model.Function)
-     */
-    protected static void register(FunctionRegistry reg, org.topbraid.spin.model.Function func) {
-        FunctionFactory old = reg.get(func.getURI());
-        // Never overwrite native Java functions
-        if (old != null && !(old instanceof SPINFunctionFactory)) {
-            return;
-        }
-        SPINFunctionFactory arq = SPINFunctionDrivers.get().create(func);
-        if (arq != null) {
-            reg.put(func.getURI(), arq);
-        }
-    }
-
-    /**
-     * Registers an ARQ property function.
-     * If the provided Function has an executable body (spin:body), then registers an ARQ function for it with the current FunctionRegistry.
-     * If there is an existing function with the same URI already registered, then it will only be replaced if it is also a SPINARQPFunction.
-     *
-     * @param reg  {@link PropertyFunctionRegistry}
-     * @param func the function to register
-     * @see org.topbraid.spin.system.SPINModuleRegistry#registerARQPFunction(org.topbraid.spin.model.Function)
-     */
-    protected static void register(PropertyFunctionRegistry reg, org.topbraid.spin.model.Function func) {
-        if (!func.hasProperty(SPIN.body)) {
-            return;
-        }
-        PropertyFunctionFactory old = reg.get(func.getURI());
-        if (old == null || old instanceof SPINARQPFunction) {
-            SPINARQPFunction arq = SPINARQPFunctionFactory.get().create(func);
-            reg.put(func.getURI(), arq);
+        if (f.isMagicProperty()) {
+            factory.registerProperty(f);
+        } else {
+            factory.registerFunction(f);
         }
     }
 
@@ -276,7 +176,7 @@ public class MapManagerImpl implements MapManager {
         if (func.hasProperty(SPIN.symbol)) return true;
         String uri = function.name();
         // not registered:
-        if (!functionRegistry.isRegistered(uri)) return false;
+        if (!factory.getFunctionRegistry().isRegistered(uri)) return false;
         // registered, but no SPARQL body -> has a java ARQ body -> allow:
         if (!func.hasProperty(SPIN.body)) return true;
         // registered (has SPARQL body) but may depend on some other unregistered functions:
@@ -320,7 +220,7 @@ public class MapManagerImpl implements MapManager {
      * <li>avc.lib.ttl - additional AVC functions</li>
      * <li>avc.math.ttl - functions from xquery/math</li>
      * <li>avc.fn.ttl - functions from xquery which were forgotten in http://topbraid.org/functions-afn</li>
-     * <li>spinmapl.spin.ttl - standard (composer's) spin-family</li>
+     * <li>spinmapl.spin.ttl - a top of standard (composer's) spin-family</li>
      * </ul>
      *
      * @return {@link UnionModel}
@@ -482,7 +382,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Lists all associated (from {@code owl:imports}) models including specified as a flat stream.
+     * Lists all associated (with {@code owl:imports}) models including specified as a flat stream.
      * TODO: move to ONT-API
      *
      * @param m {@link OntGraphModel}

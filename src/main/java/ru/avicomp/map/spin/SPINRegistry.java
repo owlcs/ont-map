@@ -34,7 +34,7 @@ class SPINRegistry {
         this.propertyFunctionRegistry = Objects.requireNonNull(propertyFunctionRegistry, "Null " + PropertyFunctionRegistry.class.getName());
     }
 
-    static void init(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
+    static void putAll(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
         new SPINRegistry(functionRegistry, propertyFunctionRegistry).initSPIN().initSPIF();
     }
 
