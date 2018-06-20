@@ -105,9 +105,9 @@ public class MultiContextMapTest extends MapTestData6 {
         MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator);
 
         MapModel res = createMappingModel(manager, "Used functions: " + toMessage(manager.prefixes(), composeURI, self, equals, concatWithSeparator));
-        Context mainContext = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
+        MapContext mainContext = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
         // ship name
-        Context nameContext = mainContext.createRelatedContext(CDSPR_000011).createRelatedContext(CCPAS_000011, OAHUU);
+        MapContext nameContext = mainContext.createRelatedContext(CDSPR_000011).createRelatedContext(CCPAS_000011, OAHUU);
         nameContext.addPropertyBridge(equals.create().addProperty(SP.arg1, DEUUU).build(), nameProp);
         // ship latitude
         mainContext.createRelatedContext(CDSPR_000005).createRelatedContext(CCPAS_000005, OAHUU)
@@ -171,9 +171,9 @@ public class MultiContextMapTest extends MapTestData6 {
         OntClass Res = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "Res");
         OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CDSPR_000011");
         OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CCPAS_000011");
-        Context Res_2Res = find(m, Res, Res);
-        Context CDSPR_000011_2Res = find(m, CDSPR_000011, Res);
-        Context CCPAS_000011_2Res = find(m, CCPAS_000011, Res);
+        MapContext Res_2Res = find(m, Res, Res);
+        MapContext CDSPR_000011_2Res = find(m, CDSPR_000011, Res);
+        MapContext CCPAS_000011_2Res = find(m, CCPAS_000011, Res);
         // check can't delete CDSPR_000011->Res and CCPAS_000011->Res
         Stream.of(CCPAS_000011_2Res, CDSPR_000011_2Res).forEach(MultiContextMapTest::testDeleteDependentContext);
         // delete Res->Res context
@@ -192,7 +192,7 @@ public class MultiContextMapTest extends MapTestData6 {
         assertContext(m, --contextsNum, propertiesNum);
     }
 
-    private static void testDeleteDependentContext(Context context) {
+    private static void testDeleteDependentContext(MapContext context) {
         try {
             context.getModel().deleteContext(context);
             Assert.fail("Context " + context + " has been deleted!");
@@ -206,7 +206,7 @@ public class MultiContextMapTest extends MapTestData6 {
         Assert.assertEquals(contextsNum, m.contexts().count());
     }
 
-    private static Context find(MapModel m, OntClass src, OntClass dst) {
+    private static MapContext find(MapModel m, OntClass src, OntClass dst) {
         return m.contexts()
                 .filter(c -> Objects.equals(src, c.getSource()))
                 .filter(c -> Objects.equals(dst, c.getTarget()))

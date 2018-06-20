@@ -44,7 +44,7 @@ public class ExceptionsTest {
         OntClass src = m.createOntEntity(OntClass.class, ns + "src");
         OntClass dst = m.createOntEntity(OntClass.class, ns + "dst");
         MapModel map = manager.createMapModel();
-        Context context = map.createContext(src, dst);
+        MapContext context = map.createContext(src, dst);
         Assert.assertNotNull(context);
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("smf:currentUserName"));
         Assert.assertNotNull(f);
@@ -120,7 +120,7 @@ public class ExceptionsTest {
         OntNDP tp1 = TestUtils.findOntEntity(t, OntNDP.class, "targetDataProperty2");
 
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
-        Context c = m.createContext(sc1, tc1);
+        MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
         long count = m.asOntModel().statements().count();
 
@@ -221,7 +221,7 @@ public class ExceptionsTest {
         OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
 
         MapModel map = tc.createMappingModel(manager, "Wrong fn:format-number picture");
-        Context c = map.createContext(srcClass, dstClass, manager.getFunction(SPINMAPL.self).create().build());
+        MapContext c = map.createContext(srcClass, dstClass, manager.getFunction(SPINMAPL.self).create().build());
         c.addPropertyBridge(manager.getFunction(FN.format_number).create()
                 .addProperty(SP.arg1, srcProp2)
                 .addLiteral(SP.arg2, "9,9.000"), dstProp3);

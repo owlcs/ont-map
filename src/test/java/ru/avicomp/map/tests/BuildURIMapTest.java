@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -140,8 +140,8 @@ public class BuildURIMapTest extends MapTestData1 {
                 .addPropertyBridge(propertyFunction2, dst.getRDFSLabel());
         Assert.assertEquals(1, res.contexts().count());
         Assert.assertEquals(2, res.ontologies().count());
-        Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
-        Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(srcClass, res.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, res.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;
     }
 

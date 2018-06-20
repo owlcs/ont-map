@@ -69,8 +69,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public Stream<Context> contexts() {
-        return listContexts().map(Context.class::cast);
+    public Stream<MapContext> contexts() {
+        return listContexts().map(MapContext.class::cast);
     }
 
     public Stream<OntCE> classes() {
@@ -133,8 +133,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public MapModelImpl deleteContext(Context context) {
-        List<Context> related = context.dependentContexts().collect(Collectors.toList());
+    public MapModelImpl deleteContext(MapContext context) {
+        List<MapContext> related = context.dependentContexts().collect(Collectors.toList());
         if (!related.isEmpty()) {
             Exceptions.Builder error = Exceptions.CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES.create().addContext(context);
             related.forEach(error::addContext);
@@ -375,7 +375,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public MapModelImpl bindContexts(Context left, Context right) {
+    public MapModelImpl bindContexts(MapContext left, MapContext right) {
         OntCE leftClass = left.getTarget();
         OntCE rightClass = right.getTarget();
         List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());

@@ -3,7 +3,7 @@ package ru.avicomp.map.tests;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.Assert;
 import org.junit.Test;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.utils.TestUtils;
@@ -30,7 +30,7 @@ abstract class MapTestData1 extends AbstractMapTest {
         MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         Assert.assertEquals(2, mapping.ontologies().count());
-        List<Context> contexts = mapping.contexts().collect(Collectors.toList());
+        List<MapContext> contexts = mapping.contexts().collect(Collectors.toList());
         Assert.assertEquals(1, contexts.size());
         mapping = mapping.deleteContext(contexts.get(0));
         TestUtils.debug(mapping);

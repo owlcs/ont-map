@@ -75,7 +75,7 @@ public class FilterDefaultMapTest extends MapTestData2 {
         MapFunction gt = manager.getFunction(manager.prefixes().expandPrefix("sp:gt"));
 
         MapModel res = createMappingModel(manager, "Used functions: avc:UUID, avc:withDefault, spinmapl:concatWithSeparator, sp:gt");
-        Context context = res.createContext(person, user, uuid.create().build());
+        MapContext context = res.createContext(person, user, uuid.create().build());
         MapFunction.Call propertyMapFunc = concatWithSeparator.create()
                 .addFunction(SP.arg1, withDefault.create()
                         .addProperty(SP.arg1, firstName)
@@ -96,7 +96,7 @@ public class FilterDefaultMapTest extends MapTestData2 {
     public void testValidateMapping() {
         MapModel m = assembleMapping();
         Assert.assertEquals(2, m.rules().count());
-        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals("avc:UUID()", c.getMapping().toString());
         Assert.assertNull(c.getFilter());
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);

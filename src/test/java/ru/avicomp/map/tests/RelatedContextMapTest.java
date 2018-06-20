@@ -68,8 +68,8 @@ public class RelatedContextMapTest extends MapTestData2 {
         MapModel res = createMappingModel(manager,
                 "Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace, spinmap:equals");
 
-        Context person2user = res.createContext(person, user);
-        Context contact2user = person2user.createRelatedContext(contact);
+        MapContext person2user = res.createContext(person, user);
+        MapContext contact2user = person2user.createRelatedContext(contact);
 
         MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
         person2user.addClassBridge(changeNamespace
@@ -87,23 +87,23 @@ public class RelatedContextMapTest extends MapTestData2 {
                 .filter(s -> Objects.equals(s.getLocalName(), "Person")).findFirst().orElseThrow(AssertionError::new);
         OntClass contact = m.asOntModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
-        Function<List<Context>, Context> firstContext = contexts -> contexts.stream()
+        Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getSource(), contact)).findFirst().orElseThrow(AssertionError::new);
-        Function<List<Context>, Context> secondContext = contexts -> contexts.stream()
+        Function<List<MapContext>, MapContext> secondContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getSource(), person)).findFirst().orElseThrow(AssertionError::new);
         deleteDependentContextTest(m, firstContext, secondContext);
     }
 
-    static void deleteDependentContextTest(MapModel m, Function<List<Context>, Context> firstContext, Function<List<Context>, Context> secondContext) {
+    static void deleteDependentContextTest(MapModel m, Function<List<MapContext>, MapContext> firstContext, Function<List<MapContext>, MapContext> secondContext) {
         TestUtils.debug(m);
-        List<Context> contexts = m.contexts().collect(Collectors.toList());
+        List<MapContext> contexts = m.contexts().collect(Collectors.toList());
         LOGGER.debug("Contexts: {}", contexts);
         Assert.assertEquals(2, contexts.size());
 
-        Context context2 = secondContext.apply(contexts);
-        Context context1 = firstContext.apply(contexts);
-        List<Context> related2 = context2.dependentContexts().collect(Collectors.toList());
-        List<Context> related1 = context1.dependentContexts().collect(Collectors.toList());
+        MapContext context2 = secondContext.apply(contexts);
+        MapContext context1 = firstContext.apply(contexts);
+        List<MapContext> related2 = context2.dependentContexts().collect(Collectors.toList());
+        List<MapContext> related1 = context1.dependentContexts().collect(Collectors.toList());
         LOGGER.debug("Contexts, which dependent on {}: {}", context2, related2);
         LOGGER.debug("Contexts, which dependent on {}: {}", context1, related1);
         Assert.assertEquals(1, related2.size());

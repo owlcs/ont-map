@@ -55,9 +55,9 @@ public interface MapModel {
     /**
      * Lists all contexts.
      *
-     * @return Stream of {@link Context}
+     * @return Stream of {@link MapContext}
      */
-    Stream<Context> contexts();
+    Stream<MapContext> contexts();
 
     /**
      * Creates or finds context.
@@ -66,18 +66,18 @@ public interface MapModel {
      *
      * @param source {@link OntCE} a source class expression
      * @param target {@link OntCE} a target class expression
-     * @return {@link Context} existing or fresh context.
+     * @return {@link MapContext} existing or fresh context.
      */
-    Context createContext(OntCE source, OntCE target);
+    MapContext createContext(OntCE source, OntCE target);
 
     /**
      * Deletes the specified context and all related triples including property bindings.
      *
-     * @param context {@link Context}
+     * @param context {@link MapContext}
      * @return this model
      * @throws MapJenaException in case context cannot be deleted
      */
-    MapModel deleteContext(Context context) throws MapJenaException;
+    MapModel deleteContext(MapContext context) throws MapJenaException;
 
     /**
      * Binds contexts together.
@@ -86,13 +86,13 @@ public interface MapModel {
      * Bound contexts will produce object property assertions between individuals on inference.
      * If contexts target classes are not linked to each other or contexts sources classes are different, an exception are expected.
      *
-     * @param left  {@link Context}
-     * @param right {@link Context}
+     * @param left  {@link MapContext}
+     * @param right {@link MapContext}
      * @return this model
      * @throws MapJenaException if something goes wrong
-     * @see Context#attachContext(Context, OntOPE)
+     * @see MapContext#attachContext(MapContext, OntOPE)
      */
-    MapModel bindContexts(Context left, Context right) throws MapJenaException;
+    MapModel bindContexts(MapContext left, MapContext right) throws MapJenaException;
 
     /**
      * Answers the OWL2 model which wraps the same mapping graph.
@@ -103,11 +103,11 @@ public interface MapModel {
 
     /**
      * Lists all rules ({@link MapResource Mapping Resources}).
-     * A MapResource can be either {@link Context} or {@link PropertyBridge}.
+     * A MapResource can be either {@link MapContext} or {@link PropertyBridge}.
      * Incomplete contexts are not included to the result.
      *
      * @return Stream of {@link MapResource}s.
-     * @see Context#isValid()
+     * @see MapContext#isValid()
      */
     default Stream<MapResource> rules() {
         return contexts().flatMap(c -> c.isValid() ? Stream.concat(Stream.of(c), c.properties()) : c.properties());
@@ -119,10 +119,10 @@ public interface MapModel {
      * @param source             {@link OntCE} a source class expression
      * @param target             {@link OntCE} a target class expression
      * @param targetFunctionCall {@link MapFunction.Call}
-     * @return {@link Context} a new context instance.
+     * @return {@link MapContext} a new context instance.
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
-    default Context createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
+    default MapContext createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
         return createContext(source, target).addClassBridge(targetFunctionCall);
     }
 }

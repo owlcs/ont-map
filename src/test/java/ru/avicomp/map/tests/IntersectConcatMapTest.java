@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -90,7 +90,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
 
         MapModel res = createMappingModel(manager, "Concat data properties from different contexts.\n" +
                 "Used functions: spinmapl:composeURI, spl:object, spinmap:equals, spinmapl:concatWithSeparator");
-        Context context = res.createContext(persons, users).addClassBridge(composeURI.create().addLiteral(SPINMAPL.template, "users:{?1}").build());
+        MapContext context = res.createContext(persons, users).addClassBridge(composeURI.create().addLiteral(SPINMAPL.template, "users:{?1}").build());
         context.createRelatedContext(organizations);
         context.addPropertyBridge(equals.create().addProperty(SP.arg1, personsFirstName).build(), userName);
         context.addPropertyBridge(concatWithSeparator.create()

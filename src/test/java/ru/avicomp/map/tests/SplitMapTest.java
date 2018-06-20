@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -66,9 +66,9 @@ public class SplitMapTest extends MapTestData3 {
                 .filter(s -> Objects.equals(s.getLocalName(), "Address")).findFirst().orElseThrow(AssertionError::new);
         OntClass contact = m.asOntModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
-        Function<List<Context>, Context> firstContext = contexts -> contexts.stream()
+        Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getTarget(), contact)).findFirst().orElseThrow(AssertionError::new);
-        Function<List<Context>, Context> secondContext = contexts -> contexts.stream()
+        Function<List<MapContext>, MapContext> secondContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getTarget(), address)).findFirst().orElseThrow(AssertionError::new);
         RelatedContextMapTest.deleteDependentContextTest(m, firstContext, secondContext);
     }
@@ -90,13 +90,13 @@ public class SplitMapTest extends MapTestData3 {
         MapFunction equals = manager.getFunction(SPINMAP.equals.getURI());
 
         MapModel res = createMappingModel(manager, "Used functions: spinmapl:buildURI3, spinmapl:buildURI2, spinmap:equals");
-        Context context1 = res.createContext(srcPerson, dstContact, buildURI3.create()
+        MapContext context1 = res.createContext(srcPerson, dstContact, buildURI3.create()
                 .addProperty(SP.arg1, firstName)
                 .addProperty(SP.arg2, middleName)
                 .addProperty(SP.arg3, secondName)
                 .addLiteral(SPINMAPL.template, dstNS + ":{?1}-{?2}-{?3}").build());
         context1.addPropertyBridge(equals.create().addProperty(SP.arg1, firstName).build(), dstName);
-        Context context2 = res.createContext(srcPerson, dstAddress, buildURI1.create()
+        MapContext context2 = res.createContext(srcPerson, dstAddress, buildURI1.create()
                 .addProperty(SP.arg1, address)
                 .addLiteral(SPINMAPL.template, dstNS + ":{?1}").build());
 

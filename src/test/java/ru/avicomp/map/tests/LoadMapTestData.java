@@ -47,7 +47,7 @@ public class LoadMapTestData extends AbstractMapTest {
 
     void validateMapping(MapModel m) {
         Assert.assertEquals(2, m.rules().count());
-        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(c.getSource(), c.getTarget());
         Assert.assertEquals(classIRI, c.getSource().getURI());
         Assert.assertEquals(contextIRI, c.getURI());

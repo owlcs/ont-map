@@ -4,7 +4,7 @@ import org.apache.jena.vocabulary.RDF;
 import org.junit.Assert;
 import org.junit.Test;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -59,7 +59,7 @@ public class UUIDMapTest extends MapTestData1 {
 
         Assert.assertEquals(1, res.contexts().count());
         Assert.assertEquals(2, res.ontologies().count());
-        Context c = res.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = res.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(srcClass, c.getSource());
         Assert.assertEquals(dstClass, c.getTarget());
         // validate the graph has function body (svc:UUID) inside:

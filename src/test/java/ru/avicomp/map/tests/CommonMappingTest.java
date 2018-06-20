@@ -83,7 +83,7 @@ public class CommonMappingTest {
 
         // list properties mapping functions (including filters):
         info("PropertyMap function calls:");
-        m.contexts().flatMap(Context::properties).forEach(CommonMappingTest::printFunctions);
+        m.contexts().flatMap(MapContext::properties).forEach(CommonMappingTest::printFunctions);
 
         // list all functions:
         info("Functions:");
@@ -95,7 +95,7 @@ public class CommonMappingTest {
                 .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asOntModel(), r.getRoot())));
 
         Assert.assertEquals(data.contexts, m.contexts().count());
-        Assert.assertEquals(data.properties, m.contexts().flatMap(Context::properties).count());
+        Assert.assertEquals(data.properties, m.contexts().flatMap(MapContext::properties).count());
         Assert.assertEquals(data.functions, m.rules().flatMap(MapResource::functions).distinct().count());
     }
 

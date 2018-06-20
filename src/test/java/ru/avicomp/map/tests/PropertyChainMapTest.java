@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -89,7 +89,7 @@ public class PropertyChainMapTest extends MapTestData6 {
         MapModel res = createMappingModel(manager, "Used functions: " +
                 toMessage(manager.prefixes(), composeURI, concatWithSeparator, currentIndividual, asIRI, object, objectWithFilter));
 
-        Context context = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
+        MapContext context = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
         // name
         context.addPropertyBridge(object.create()
                 .addFunction(SP.arg1, objectWithFilter.create()

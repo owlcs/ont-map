@@ -6,7 +6,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.vocabulary.AVC;
@@ -64,7 +64,7 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
     }
 
     @Override
-    public Context getContext() {
+    public MapContext getContext() {
         return getModel().asContext(getRequiredProperty(SPINMAP.context).getObject().asResource());
     }
 

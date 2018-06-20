@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -62,7 +62,7 @@ public class VarArgMapTest extends AbstractMapTest {
         OntNDP dstProp1 = TestUtils.findOntEntity(dst, OntNDP.class, "tp1");
         OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "tp2");
 
-        Context c = res.createContext(srcClass, dstClass, changeNamespace.create()
+        MapContext c = res.createContext(srcClass, dstClass, changeNamespace.create()
                 .addLiteral(SPINMAPL.targetNamespace, "urn://x#")
                 .build());
         c.addPropertyBridge(concat.create()

@@ -36,7 +36,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Created by @szuev on 14.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapContextImpl extends OntObjectImpl implements Context {
+public class MapContextImpl extends OntObjectImpl implements MapContext {
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -215,7 +215,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
 
     /**
      * Gets a primary (class to class) mapping rule as ordinal resource.
-     * For a valid (see {@link Context#isValid()}) standalone context
+     * For a valid (see {@link MapContext#isValid()}) standalone context
      * the result should be present, otherwise it may be empty.
      * Example of such mapping:
      * <pre>{@code
@@ -252,7 +252,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
     }
 
     @Override
-    public Context deletePropertyBridge(PropertyBridge properties) throws MapJenaException {
+    public MapContext deletePropertyBridge(PropertyBridge properties) throws MapJenaException {
         Statement res = listRuleStatements()
                 .filter(s -> Objects.equals(s.getObject(), properties))
                 .findFirst().orElseThrow(() -> new MapJenaException("Can't find " + properties));
@@ -309,7 +309,7 @@ public class MapContextImpl extends OntObjectImpl implements Context {
     }
 
     @Override
-    public MapPropertiesImpl attachContext(Context other, OntOPE link) throws MapJenaException {
+    public MapPropertiesImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
         if (this.equals(other)) {
             throw exception(ATTACHED_CONTEXT_SELF_CALL).build();
         }
@@ -353,9 +353,9 @@ public class MapContextImpl extends OntObjectImpl implements Context {
     }
 
     @Override
-    public Stream<Context> dependentContexts() {
+    public Stream<MapContext> dependentContexts() {
         MapModelImpl m = getModel();
-        return Stream.concat(m.listChainedContexts(this), m.listRelatedContexts(this)).distinct().map(Context.class::cast);
+        return Stream.concat(m.listChainedContexts(this), m.listRelatedContexts(this)).distinct().map(MapContext.class::cast);
     }
 
     /**

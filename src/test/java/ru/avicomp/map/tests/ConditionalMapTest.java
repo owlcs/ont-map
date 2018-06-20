@@ -120,7 +120,7 @@ public class ConditionalMapTest extends MapTestData2 {
         MapFunction cast = manager.getFunction(SPIF.cast.getURI());
 
         MapModel res = createMappingModel(manager, "Used functions: spinmapl:composeURI, sp:eq, sp:datatype, spif:cast");
-        Context context = res.createContext(srcClass, dstClass, targetFunctionCall);
+        MapContext context = res.createContext(srcClass, dstClass, targetFunctionCall);
         propsMap.forEach((sourceDatatype, targetProperty) -> {
             MapFunction.Call filter = eq.create()
                     .add(SP.arg1.getURI(), sourceDatatype.getURI())
@@ -151,7 +151,7 @@ public class ConditionalMapTest extends MapTestData2 {
         OntDT dt = notNull(map.asOntModel().getOntEntity(OntDT.class, XSD.xstring));
 
         Assert.assertEquals(4, map.rules().count());
-        Context context = map.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext context = map.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(sC, context.getSource());
         Assert.assertEquals("Context: " + context, tC, context.getTarget());
 

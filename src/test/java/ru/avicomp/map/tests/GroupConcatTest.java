@@ -25,7 +25,7 @@ public class GroupConcatTest extends AbstractMapTest {
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
         OntNDP srcProp = TestUtils.findOntEntity(src, OntNDP.class, "sourceDataProperty1");
         OntNDP dstProp = TestUtils.findOntEntity(dst, OntNDP.class, "targetDataProperty1");
-        Context context = res.createContext(srcClass, dstClass,
+        MapContext context = res.createContext(srcClass, dstClass,
                 manager.getFunction(SPINMAPL.composeURI.getURI()).create()
                         .addLiteral(SPINMAPL.template, "http://{?1}").build());
 
@@ -66,7 +66,7 @@ public class GroupConcatTest extends AbstractMapTest {
     public void testDeleteContext() {
         MapModel m = assembleMapping();
         TestUtils.debug(m);
-        Context context = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext context = m.contexts().findFirst().orElseThrow(AssertionError::new);
         m.deleteContext(context);
         TestUtils.debug(m);
         Assert.assertEquals(0, m.contexts().count());
@@ -77,9 +77,9 @@ public class GroupConcatTest extends AbstractMapTest {
     @Test
     public void testDeletePropertyBridge() {
         MapModel m = assembleMapping();
-        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
-        Context c2 = c.deletePropertyBridge(p);
+        MapContext c2 = c.deletePropertyBridge(p);
         Assert.assertSame(c, c2);
         TestUtils.debug(m);
         Assert.assertEquals(1, m.contexts().count());

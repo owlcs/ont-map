@@ -18,6 +18,6 @@ public interface PropertyBridge extends MapResource {
 
     Property getTarget();
 
-    Context getContext();
+    MapContext getContext();
 
 }

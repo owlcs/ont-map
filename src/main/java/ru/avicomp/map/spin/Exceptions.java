@@ -1,7 +1,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.RDFNode;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 
@@ -51,7 +51,7 @@ public enum Exceptions {
             return add(Key.FUNCTION, func.name());
         }
 
-        Builder addContext(Context context) {
+        Builder addContext(MapContext context) {
             return add(Key.CONTEXT, context.getURI())
                     .add(Key.CONTEXT_SOURCE, context.getSource())
                     .add(Key.CONTEXT_TARGET, ((MapContextImpl) context).target());

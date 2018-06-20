@@ -69,8 +69,8 @@ public class NestedFuncMapTest extends MapTestData1 {
                 .addPropertyBridge(propertyFunction1, dstProp);
         Assert.assertEquals(1, res.contexts().count());
         Assert.assertEquals(2, res.ontologies().count());
-        Assert.assertEquals(srcClass, res.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new));
-        Assert.assertEquals(dstClass, res.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(srcClass, res.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, res.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;
     }
 
@@ -85,7 +85,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         OntNDP tp = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "targetDataProperty2");
 
         Assert.assertEquals(2, m.rules().count());
-        Context context = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext context = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(sc, context.getSource());
         Assert.assertEquals(tc, context.getTarget());
 
@@ -117,15 +117,15 @@ public class NestedFuncMapTest extends MapTestData1 {
     public void testChangeTargetFunction() {
         MapModel m = assembleMapping();
         MapManager manager = m.getManager();
-        OntCE sc = m.contexts().map(Context::getSource).findFirst().orElseThrow(AssertionError::new);
-        OntCE tc = m.contexts().map(Context::getTarget).findFirst().orElseThrow(AssertionError::new);
+        OntCE sc = m.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new);
+        OntCE tc = m.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new);
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
         MapFunction.Call targetFunction = composeURI.create().addLiteral(SPINMAPL.template, tc.getNameSpace() + "{?1}").build();
         m.createContext(sc, tc, targetFunction);
         TestUtils.debug(m);
 
         Assert.assertEquals(2, m.rules().count());
-        List<MapFunction> funcs = m.contexts().map(Context::getMapping).map(MapFunction.Call::getFunction).collect(Collectors.toList());
+        List<MapFunction> funcs = m.contexts().map(MapContext::getMapping).map(MapFunction.Call::getFunction).collect(Collectors.toList());
         Assert.assertEquals(1, funcs.size());
         Assert.assertEquals(composeURI, funcs.get(0));
         Assert.assertEquals(2, m.rules().flatMap(MapResource::functions).count());

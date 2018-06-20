@@ -6,7 +6,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.Context;
+import ru.avicomp.map.MapContext;
 import ru.avicomp.map.spin.vocabulary.*;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -166,7 +166,7 @@ public class AVCLibraryMaker {
 
         // SPINMAPL:relatedSubjectContext and SPINMAPL:relatedObjectContext
         Stream.of(SPINMAPL.relatedSubjectContext, SPINMAPL.relatedObjectContext).map(r -> r.inModel(m))
-                .forEach(r -> r.addProperty(hidden, "Instead of explicit calling this function, please use " + Context.class.getName() +
+                .forEach(r -> r.addProperty(hidden, "Instead of explicit calling this function, please use " + MapContext.class.getName() +
                         "#createRelatedContext(...) methods."));
 
         // Exclude SPIN primary key functionality

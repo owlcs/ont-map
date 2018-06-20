@@ -8,11 +8,10 @@ import java.util.stream.Stream;
 
 /**
  * A class expression binding, a primary component of mapping.
- * todo: rename not to be confused with org.apache.jena.sparql.util.Context (to MapContext?)
  * <p>
  * Created by @szuev on 14.04.2018.
  */
-public interface Context extends MapResource {
+public interface MapContext extends MapResource {
 
     /**
      * Answers an URI.
@@ -59,7 +58,7 @@ public interface Context extends MapResource {
      * @return this context
      * @throws MapJenaException if something goes wrong
      */
-    Context addClassBridge(MapFunction.Call filter, MapFunction.Call mapping) throws MapJenaException;
+    MapContext addClassBridge(MapFunction.Call filter, MapFunction.Call mapping) throws MapJenaException;
 
     /**
      * Adds a properties bridge.
@@ -75,7 +74,9 @@ public interface Context extends MapResource {
      * @return {@link PropertyBridge} a container with all input settings.
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
      */
-    PropertyBridge addPropertyBridge(MapFunction.Call filterFunctionCall, MapFunction.Call mappingFunctionCall, Property target) throws MapJenaException;
+    PropertyBridge addPropertyBridge(MapFunction.Call filterFunctionCall,
+                                     MapFunction.Call mappingFunctionCall,
+                                     Property target) throws MapJenaException;
 
     /**
      * Lists all property bridges.
@@ -91,7 +92,7 @@ public interface Context extends MapResource {
      * @return this context
      * @throws MapJenaException in case specified property bridge does not belong to this context
      */
-    Context deletePropertyBridge(PropertyBridge properties) throws MapJenaException;
+    MapContext deletePropertyBridge(PropertyBridge properties) throws MapJenaException;
 
     /**
      * Creates a context with the same target class expression and with source linked to the source of this context.
@@ -103,7 +104,7 @@ public interface Context extends MapResource {
      * @return <b>new</b> context
      * @throws MapJenaException unable to make reference context
      */
-    Context createRelatedContext(OntCE source) throws MapJenaException;
+    MapContext createRelatedContext(OntCE source) throws MapJenaException;
 
     /**
      * Creates a context associated with this one through the specified object property expression.
@@ -121,26 +122,26 @@ public interface Context extends MapResource {
      * @return <b>new</b> context with specified class as source and {@link #getTarget()} as target.
      * @throws MapJenaException unable to make reference context
      */
-    Context createRelatedContext(OntCE source, OntOPE link) throws MapJenaException;
+    MapContext createRelatedContext(OntCE source, OntOPE link) throws MapJenaException;
 
     /**
      * Binds this context and the specified with a link-property.
      * On inference these contexts together will produce consistent data:
      * the result individuals will be bound in an object property assertion.
      *
-     * @param other {@link Context} other context
+     * @param other {@link MapContext} other context
      * @param link  {@link OntOPE}, link property
      * @return {@link PropertyBridge} which connects this context and the specified
      * @throws MapJenaException if something goes wrong or input parameters are not correct
      */
-    PropertyBridge attachContext(Context other, OntOPE link) throws MapJenaException;
+    PropertyBridge attachContext(MapContext other, OntOPE link) throws MapJenaException;
 
     /**
      * Lists all contexts that depend on this.
      *
      * @return Stream of contexts
      */
-    Stream<Context> dependentContexts();
+    Stream<MapContext> dependentContexts();
 
     /**
      * Validates a function-call against this context.
@@ -158,7 +159,7 @@ public interface Context extends MapResource {
      * @return this context object
      * @throws MapJenaException if something goes wrong (e.g. incompatible function specified)
      */
-    default Context addClassBridge(MapFunction.Call func) throws MapJenaException {
+    default MapContext addClassBridge(MapFunction.Call func) throws MapJenaException {
         return addClassBridge(null, func);
     }
 

@@ -90,7 +90,7 @@ public class MathOpsMapTest extends MapTestData5 {
         OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty2");
         OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
 
-        Context c = res.createContext(srcClass, dstClass, iri.create().addLiteral(SP.arg1, RES_URI).build());
+        MapContext c = res.createContext(srcClass, dstClass, iri.create().addLiteral(SP.arg1, RES_URI).build());
         // e * exp($val) ::: src-prop1(=1) => dst-prop1 ::: 2.72 * exp(1) = e^2 = 7.39
         c.addPropertyBridge(mul.create()
                 .addFunction(SP.arg1, e.create())
@@ -116,7 +116,7 @@ public class MathOpsMapTest extends MapTestData5 {
         MapModel m = assembleMapping();
         m.rules().flatMap(MapResource::functions).distinct().forEach(f -> LOGGER.debug("{}", f));
         OntNDP prop = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "dstDataProperty2");
-        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         PropertyBridge p = c.properties().filter(x -> prop.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new);
         c.deletePropertyBridge(p);
         TestUtils.debug(m);

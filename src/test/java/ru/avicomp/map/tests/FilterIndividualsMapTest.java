@@ -52,7 +52,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         MapFunction uuid = manager.getFunction(AVC.UUID.getURI());
         MapFunction equals = manager.getFunction(SPINMAP.equals.getURI());
 
-        Context context = res.createContext(person, user);
+        MapContext context = res.createContext(person, user);
         context.addClassBridge(
                 and.create()
                         .addFunction(SP.arg1, gt.create()
@@ -74,7 +74,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
 
 
         Assert.assertEquals(2, m.rules().count());
-        Context c = m.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals("avc:UUID()", c.getMapping().toString());
         String srcAge = m.asOntModel().shortForm(TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "age").getURI());
         String contextFilterFunction = String.format("sp:and(?arg1=sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int), " +
