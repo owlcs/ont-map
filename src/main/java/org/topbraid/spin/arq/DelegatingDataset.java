@@ -13,7 +13,10 @@ import org.topbraid.spin.util.DatasetWrappingDatasetGraph;
 import java.util.Iterator;
 
 /**
- * TODO: need to make sure that this class goes before in classpath or replaces the original (topbraid) class
+ * A copy-paste in order to provide correct org.apache.jena.sparql.util.Context object and an upgrade to work with jena 3.7.0.
+ * WARNING: need to make sure that this class goes before in classpath or replaces the original (topbraid) class.
+ * To achieve this we use maven-dependency-plugin.
+ * <p>
  * A Dataset that simply delegates all its calls, allowing to wrap an existing Dataset (e.g. the TopBraid Dataset).
  *
  * @author Holger Knublauch

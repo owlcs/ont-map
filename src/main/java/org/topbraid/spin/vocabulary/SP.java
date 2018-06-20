@@ -1,7 +1,9 @@
 package org.topbraid.spin.vocabulary;
 
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDF;
+import org.topbraid.spin.model.Element;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.SystemModels;
 
@@ -10,10 +12,11 @@ import ru.avicomp.map.spin.SystemModels;
  * Two major differences:
  * <ul>
  * <li>It does not modify {@link org.apache.jena.enhanced.BuiltinPersonalities#model the standard global jena personality}.</li>
- * <li>Method {@link SP#getModel()}, which is called everywhere in spin, does not dive into the Internet if no /etc/sp.ttl resource found or reload data everytime from resources</li>
+ * <li>Method {@link SP#getModel()}, which is called everywhere in spin,
+ * does not dive into the Internet if no /etc/sp.ttl resource found and does not reload data everytime from resources</li>
  * </ul>
- * WARNING: need to make sure that this class goes before than corresponding topbraid class in classpath
- * (or - better - exclude topbraid variant from final jar).
+ * WARNING: need to make sure that this class goes before or instead than corresponding TopBraid class in classpath.
+ * To achieve this we use maven-dependency-plugin.
  * <p>
  * Created by @szuev on 05.04.2018.
  */
@@ -24,6 +27,9 @@ public class SP {
     public static final String PREFIX = "sp";
 
     public final static String ARG = "arg";
+
+    public final static String VAR_NS = "http://spinrdf.org/var#";
+    public final static String VAR_PREFIX = "var";
 
     public final static Resource Aggregation = resource("Aggregation");
     public final static Resource AltPath = resource("AltPath");
@@ -79,11 +85,11 @@ public class SP {
 
     public final static Property all = property("all");
     public final static Property arg = property(ARG);
-    public final static Property arg1 = arg(1);
-    public final static Property arg2 = arg(2);
-    public final static Property arg3 = arg(3);
-    public final static Property arg4 = arg(4);
-    public final static Property arg5 = arg(5);
+    public final static Property arg1 = getArgProperty(1);
+    public final static Property arg2 = getArgProperty(2);
+    public final static Property arg3 = getArgProperty(3);
+    public final static Property arg4 = getArgProperty(4);
+    public final static Property arg5 = getArgProperty(5);
     public final static Property as = property("as");
     public final static Property bindings = property("bindings");
     public final static Property data = property("data");
@@ -151,9 +157,13 @@ public class SP {
     public final static Resource isNumeric = resource("isNumeric");
     public final static Resource tz = resource("tz");
 
-    public static Property arg(int i) {
+    public static Property getArgProperty(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property(ARG + i);
+        return getArgProperty(ARG + i);
+    }
+
+    public static Property getArgProperty(String varName) {
+        return property(varName);
     }
 
     public static Integer getArgPropertyIndex(String varName) {
@@ -162,21 +172,6 @@ public class SP {
             return Integer.getInteger(varName.substring(3));
         }
         return null;
-    }
-
-    /**
-     * Not used by ONT-MAP api, but used by composer SPIN-API.
-     * Copy-pasted description:
-     * Checks whether the SP ontology is used in a given Model.
-     * This is true if the model defines the SP namespace prefix  and also has sp:Query defined with an rdf:type.
-     * The goal of this call is to be very fast when SP is not imported,
-     * i.e. it checks the namespace first and can then omit the type query.
-     *
-     * @param model the Model to check
-     * @return true if SP exists in model
-     */
-    public static boolean exists(Model model) {
-        return model != null && SP.NS.equals(model.getNsPrefixURI(SP.PREFIX)) && model.contains(SP.Query, RDF.type, (RDFNode) null);
     }
 
     public static Resource resource(String local) {
@@ -191,4 +186,41 @@ public class SP {
         return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
     }
 
+    public static String getURI() {
+        return NS;
+    }
+
+    /**
+     * Not used by ONT-MAP api, but used by composer SPIN-API.
+     * Copy-pasted description:
+     * Checks whether the SP ontology is used in a given Model.
+     * This is true if the model defines the SP namespace prefix  and also has sp:Query defined with an rdf:type.
+     * The goal of this call is to be very fast when SP is not imported,
+     * i.e. it checks the namespace first and can then omit the type query.
+     *
+     * @param model the Model to check
+     * @return {@code true} if SP exists in model
+     */
+    public static boolean exists(Model model) {
+        return model != null && SP.NS.equals(model.getNsPrefixURI(SP.PREFIX)) && model.contains(SP.Query, RDF.type, (RDFNode) null);
+    }
+
+    /**
+     * Not used by ONT-MAP api, but present in SPIN-API (shacl-1.0.1).
+     *
+     * @param buffer   {@link StringBuffer}
+     * @param resource {@link Resource}
+     * @deprecated don't use.
+     */
+    public static void toStringElementList(StringBuffer buffer, Resource resource) {
+        RDFList list = resource.as(RDFList.class);
+        for (ExtendedIterator<RDFNode> it = list.iterator(); it.hasNext(); ) {
+            Resource item = it.next().asResource();
+            Element e = org.topbraid.spin.model.SPINFactory.asElement(item);
+            buffer.append(e.toString());
+            if (it.hasNext()) {
+                buffer.append(" .\n");
+            }
+        }
+    }
 }

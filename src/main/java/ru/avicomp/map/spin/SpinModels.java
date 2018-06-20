@@ -113,7 +113,7 @@ public class SpinModels {
     }
 
     public static boolean isSourcePredicate(Property p) {
-        return p.getLocalName().matches("^" + SPINMAP.SOURCE_PREDICATE_PREFIX + "\\d+$");
+        return p.getLocalName().matches("^" + SPINMAP.SOURCE_PREDICATE + "\\d+$");
     }
 
     public static boolean isVariable(Resource inModel) {

@@ -24,6 +24,7 @@ import java.util.stream.Stream;
  *
  * @see MappingBuilder
  */
+@SuppressWarnings("WeakerAccess")
 class ContextMappingHelper {
     private final Resource mapping;
     private final MapContextImpl context;
@@ -120,7 +121,7 @@ class ContextMappingHelper {
      * @return {@link Property}
      * @throws JenaException in case no property found
      */
-    public static Property findProperty(Resource mapping, Resource var, boolean isFilter) throws JenaException {
+    static Property findProperty(Resource mapping, Resource var, boolean isFilter) throws JenaException {
         int index = Integer.parseInt(var.getLocalName().replace(SPIN._ARG, ""));
         Resource template;
         Property sourcePredicate;
@@ -157,11 +158,11 @@ class ContextMappingHelper {
     }
 
     Map<Property, Property> getSourcePredicatesMap() {
-        return getMapPredicates(SPINMAP.SOURCE_PREDICATE_PREFIX);
+        return getMapPredicates(SPINMAP.SOURCE_PREDICATE);
     }
 
     Map<Property, Property> getTargetPredicatesMap() {
-        return getMapPredicates(SPINMAP.TARGET_PREDICATE_PREFIX);
+        return getMapPredicates(SPINMAP.TARGET_PREDICATE);
     }
 
     boolean hasDefaults() {
@@ -176,7 +177,7 @@ class ContextMappingHelper {
      *
      * @return Set of properties
      */
-    public Set<? extends RDFNode> getSourceClassProperties() {
+    Set<? extends RDFNode> getSourceClassProperties() {
         return sourceClassProperties == null ? sourceClassProperties = getClassProperties(context.getSource()) : sourceClassProperties;
     }
 
@@ -185,7 +186,7 @@ class ContextMappingHelper {
      *
      * @return Set of properties
      */
-    public Set<? extends RDFNode> getTargetClassProperties() {
+    Set<? extends RDFNode> getTargetClassProperties() {
         return targetClassProperties == null ? targetClassProperties = getClassProperties(context.target()) : targetClassProperties;
     }
 

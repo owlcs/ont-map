@@ -136,7 +136,7 @@ public class MappingBuilder {
 
     public static String toShortString(Collection<Property> properties) {
         return properties.isEmpty() ? "0" : properties.stream()
-                .map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE_PREFIX, ""))
+                .map(p -> p.getLocalName().replace(SPINMAP.SOURCE_PREDICATE, ""))
                 .collect(Collectors.joining("-"));
     }
 

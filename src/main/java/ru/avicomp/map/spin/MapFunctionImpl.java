@@ -337,7 +337,7 @@ public class MapFunctionImpl implements MapFunction {
 
             if (arg.isVararg()) {
                 int index = nextIndex();
-                arg = new ArgImpl(arg, SP.arg(index).getURI());
+                arg = new ArgImpl(arg, SP.getArgProperty(index).getURI());
             }
 
             if (!(val instanceof String)) {

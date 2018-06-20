@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ru.avicomp</groupId>
-    <artifactId>ont-map</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>ontmap</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>A library to perform OWL2 -> OWL2 mapping</description>
+    <description>A library to perform OWL2 -> OWL2 data mapping</description>
 
     <repositories>
         <repository>
@@ -55,7 +55,7 @@
             <artifactId>ontapi</artifactId>
             <version>${version.ontapi}</version>
         </dependency>
-        <!-- the last available spin-api (now it is replaced by shacl)-->
+        <!-- the last available spin-api (now it is removed from shacl)-->
         <dependency>
             <groupId>org.topbraid</groupId>
             <artifactId>shacl</artifactId>
@@ -66,12 +66,14 @@
                     <artifactId>jena-arq</artifactId>
                 </exclusion>
             </exclusions>
+            <optional>true</optional>
         </dependency>
         <!-- from tbcfe-5.2.2 -->
         <dependency>
             <groupId>org.topbraid</groupId>
             <artifactId>spin.functions</artifactId>
             <version>5.2.2.v20170123-2101B</version>
+            <optional>true</optional>
         </dependency>
         <!-- used for class-properties map -->
         <dependency>
@@ -99,6 +101,9 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>lib/**</exclude>
+                </excludes>
             </resource>
         </resources>
         <testResources>
@@ -145,7 +150,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.1.0</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -153,6 +158,32 @@
                         </manifest>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.topbraid</groupId>
+                                    <artifactId>shacl</artifactId>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.topbraid</groupId>
+                                    <artifactId>spin.functions</artifactId>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

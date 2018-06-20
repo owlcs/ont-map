@@ -1,8 +1,11 @@
 package org.topbraid.spin.vocabulary;
 
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.OWL;
+import org.apache.jena.vocabulary.RDF;
 import ru.avicomp.map.spin.SystemModels;
 
 /**
@@ -17,8 +20,8 @@ public class SPINMAP {
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spinmap";
 
-    public static final String SOURCE_PREDICATE_PREFIX = "sourcePredicate";
-    public static final String TARGET_PREDICATE_PREFIX = "targetPredicate";
+    public static final String SOURCE_PREDICATE = "sourcePredicate";
+    public static final String TARGET_PREDICATE = "targetPredicate";
 
     public static final Resource Conditional_Mapping_1 = resource("Conditional-Mapping-1");
     public static final Resource Conditional_Mapping_1_1 = resource("Conditional-Mapping-1-1");
@@ -87,12 +90,20 @@ public class SPINMAP {
 
     public static Property targetPredicate(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property(TARGET_PREDICATE_PREFIX + i);
+        return property(TARGET_PREDICATE + i);
     }
 
     public static Property sourcePredicate(int i) {
         if (i <= 0) throw new IllegalArgumentException();
-        return property(SOURCE_PREDICATE_PREFIX + i);
+        return property(SOURCE_PREDICATE + i);
+    }
+
+    public static boolean exists(Model model) {
+        return model.contains(model.getResource(BASE_URI), RDF.type, OWL.Ontology);
+    }
+
+    public static String getURI() {
+        return NS;
     }
 
 }

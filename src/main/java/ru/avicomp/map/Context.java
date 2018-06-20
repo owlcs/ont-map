@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * A class expression binding, a primary component of mapping.
+ * todo: rename not to be confused with org.apache.jena.sparql.util.Context (to MapContext?)
  * <p>
  * Created by @szuev on 14.04.2018.
  */
