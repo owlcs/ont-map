@@ -51,7 +51,8 @@ public class CommonMappingTest {
                 of(MathOpsMapTest.class, 1, 3, 10),
                 of(MultiContextMapTest.class, 8, 4, 5),
                 of(PropertyChainMapTest.class, 1, 2, 6),
-                of(VarArgMapTest.class, 1, 2, 3)
+                of(VarArgMapTest.class, 1, 2, 3),
+                of(LoadMapTestData.class, 1, 1, 2)
         );
     }
 

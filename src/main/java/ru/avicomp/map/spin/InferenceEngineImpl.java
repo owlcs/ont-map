@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * An implementation of {@link MapManager.InferenceEngine} adapted to ontology data mapping.
+ *
  * Created by @szuev on 19.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
@@ -268,7 +270,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static List<QueryWrapper> select(List<QueryWrapper> all, Set<? extends Resource> classes) {
         return all.stream()
                 .filter(c -> classes.contains(c.getStatement().getSubject()))
-                //.sorted(MAP_COMPARATOR::compare)
                 .collect(Collectors.toList());
     }
 

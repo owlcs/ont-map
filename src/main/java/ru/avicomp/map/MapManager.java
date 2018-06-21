@@ -110,7 +110,7 @@ public interface MapManager {
 
     /**
      * An inference engine.
-     * In our (currently single) implementation it is SPIN based inference engine.
+     * In our (currently single) implementation it is based on Topbraid SPIN inference engine.
      */
     interface InferenceEngine {
 

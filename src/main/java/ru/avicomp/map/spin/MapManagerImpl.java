@@ -63,8 +63,8 @@ public class MapManagerImpl implements MapManager {
      * @see SpinModelConfig#LIB_PERSONALITY
      */
     protected void register(Resource inModel) throws UnsupportedPolymorphismException {
-        ExtraPrefixes.add(inModel);
         org.topbraid.spin.model.Function f = inModel.as(org.topbraid.spin.model.Function.class);
+        ExtraPrefixes.add(f);
         functions.put(f.getURI(), new FunctionImpl(f));
         if (f.isMagicProperty()) {
             factory.registerProperty(f);
