@@ -5,6 +5,9 @@
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
+<ttt://ex.com/test>  a  owl:Ontology ;
+        owl:versionIRI  <http://ex.com/test#ver2> .
+
 ex:CCRNU  a                  owl:Class ;
         rdfs:label           "XZ" ;
         rdfs:subClassOf      ex:CCRUU ;
@@ -61,9 +64,6 @@ ex:OBAUU  a                 owl:ObjectProperty ;
         rdfs:label          "SubjectRole" ;
         rdfs:range          ex:CCRSU ;
         rdfs:subPropertyOf  ex:OBUUU .
-
-<ttt://ex.com/test>  a  owl:Ontology ;
-        owl:versionIRI  <http://ex.com/test#ver2> .
 
 ex:CDSPR_000005  a       owl:Class ;
         rdfs:label       "Latitude str" ;

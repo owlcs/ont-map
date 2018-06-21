@@ -4,6 +4,7 @@
 ### Based on [ONT-API, ver 1.2.1](https://github.com/avicomp/ont-api)
 
 ### Notes, propositions and examples
+* _ru.avicomp.map.Managers_ is the main class to access to the system 
 * API should only provide access to the spin functions which acceptable with OWL2 model in mapping terms, all other should be hidden. 
 Examples of reasons of exclusion/hide:
     - `smf:lastModified` - function to get the file timestamp. It is excluded since API should not work with the file system. 

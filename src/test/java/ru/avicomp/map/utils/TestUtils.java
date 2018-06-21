@@ -6,6 +6,9 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shared.PrefixMapping;
+import org.semanticweb.owlapi.io.OWLOntologyDocumentSource;
+import org.semanticweb.owlapi.io.StringDocumentSource;
+import org.semanticweb.owlapi.model.OWLDocumentFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -18,6 +21,7 @@ import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.tests.ClassPropertiesTest;
+import ru.avicomp.ontapi.OntFormat;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
@@ -28,6 +32,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -152,5 +157,14 @@ public class TestUtils {
         res.setNsPrefixes(SPIN_MAP_PREFIXES);
         res.setID(uri).addImport(SPINMAPL.BASE_URI);
         return res;
+    }
+
+    public static OWLOntologyDocumentSource createTurtleDocumentSource(String txt) {
+        return new StringDocumentSource(txt) {
+            @Override
+            public Optional<OWLDocumentFormat> getFormat() {
+                return Optional.of(OntFormat.TURTLE.createOwlFormat());
+            }
+        };
     }
 }

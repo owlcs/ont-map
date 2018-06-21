@@ -7,6 +7,13 @@
 @prefix vocab: <http://d2rq.avc.ru/test/vocab#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+<http://iswc.test>
+  rdf:type owl:Ontology ;
+  rdfs:comment "From (ONT-)D2RQ Tests" ;
+  rdfs:comment "Database: <jdbc:mysql://127.0.0.1/iswc>" ;
+  rdfs:seeAlso <https://github.com/avicomp/ont-d2rq> ;
+.
+
 <http://d2rq.avc.ru/test#conferences/23541>
   rdf:type vocab:conferences ;
   rdf:type owl:NamedIndividual ;
@@ -928,10 +935,4 @@ vocab:topics_URI
   rdfs:domain vocab:topics ;
   rdfs:label "topics URI" ;
   rdfs:range xsd:string ;
-.
-<http://iswc.test>
-  rdf:type owl:Ontology ;
-  rdfs:comment "From (ONT-)D2RQ Tests" ;
-  rdfs:comment "Database: <jdbc:mysql://127.0.0.1/iswc>" ;
-  rdfs:seeAlso <https://github.com/avicomp/ont-d2rq> ;
 .

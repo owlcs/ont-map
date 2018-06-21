@@ -26,7 +26,11 @@ public abstract class AbstractMapTest {
 
     @BeforeClass
     public static void before() {
-        manager = Managers.createMapManager();
+        manager = createManager();
+    }
+
+    private static MapManager createManager() {
+        return Managers.createMapManager();
     }
 
     public abstract MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst);
@@ -36,7 +40,7 @@ public abstract class AbstractMapTest {
     public abstract OntGraphModel assembleTarget();
 
     MapManager manager() {
-        return manager;
+        return manager == null ? manager = createManager() : manager;
     }
 
     MapModel assembleMapping() {

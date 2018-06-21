@@ -44,6 +44,10 @@ public class PropertyChainMapTest extends MapTestData6 {
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
+        validate(dst);
+    }
+
+    void validate(OntGraphModel dst) {
         Assert.assertEquals(3, dst.listNamedIndividuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
         validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
@@ -139,7 +143,7 @@ public class PropertyChainMapTest extends MapTestData6 {
     }
 
 
-    private static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
+    static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
         OntNOP OASUU = TestUtils.findOntEntity(m, OntNOP.class, "OASUU");
         OntNDP DEUUU = TestUtils.findOntEntity(m, OntNDP.class, "DEUUU");
         OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_D00001");

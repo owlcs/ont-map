@@ -48,6 +48,10 @@ public class IntersectConcatMapTest extends MapTestData4 {
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
+        validate(map, src, dst);
+    }
+
+    void validate(MapModel map, OntGraphModel src, OntGraphModel dst) {
         PrefixMapping pm = map.asOntModel();
         dst.listNamedIndividuals()
                 .flatMap(TestUtils::plainAssertions)

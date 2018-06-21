@@ -61,12 +61,13 @@ public class LoadFunctionsTest {
 
     @Test
     public void testLoadAndInference() {
-        LoadMapTestData data = new LoadMapTestData("http://test.com/some-function2", "--suff");
+        String uri = "http://test.com/some-function1";
+
+        LoadMapTestData data = new LoadMapTestData(uri, "--suff");
         MapManager manager = Managers.createMapManager();
         long c1 = manager.functions().count();
         LOGGER.debug("Count before adding model: {}", c1);
 
-        String uri = "http://test.com/some-function2";
         MapModel m = data.assembleMapping(manager, null, null);
         TestUtils.debug(m);
 
@@ -102,7 +103,7 @@ public class LoadFunctionsTest {
     }
 
     private void simpleTestInference(MapManager manager, String suffix) {
-        final String uri = "http://test.com/some-function3";
+        final String uri = "http://test.com/some-function2";
         LoadMapTestData data = new LoadMapTestData(uri, suffix);
         MapModel map = data.assembleMapping(manager, null, null);
         OntGraphModel res = data.assembleTarget();

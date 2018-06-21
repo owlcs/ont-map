@@ -96,6 +96,7 @@ public interface MapModel {
 
     /**
      * Answers the OWL2 model which wraps the same mapping graph.
+     * TODO: rename to asGraphModel ?
      *
      * @return {@link OntGraphModel OWL2 jena model}
      */

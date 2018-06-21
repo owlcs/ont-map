@@ -10,6 +10,7 @@ import org.apache.jena.sparql.graph.UnmodifiableGraph;
 import org.apache.jena.system.JenaSubsystemLifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.avicomp.map.utils.ReadOnlyGraph;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,7 +72,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
                     throw new UncheckedIOException("Can't load " + f.path, e);
                 }
                 LOGGER.debug("Graph {} is loaded, size: {}", f.uri, g.size());
-                res.put(f.uri, new UnmodifiableGraph(g));
+                res.put(f.uri, new ReadOnlyGraph(g));
             }
             return Collections.unmodifiableMap(res);
         }

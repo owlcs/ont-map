@@ -52,23 +52,38 @@ public class CommonMappingTest {
                 of(MultiContextMapTest.class, 8, 4, 5),
                 of(PropertyChainMapTest.class, 1, 2, 6),
                 of(VarArgMapTest.class, 1, 2, 3),
-                of(LoadMapTestData.class, 1, 1, 2)
+                of(LoadMapTestData.class, 1, 1, 2, 1)
         );
     }
 
-    private static Data of(Class<? extends AbstractMapTest> clazz, int classBridgeNumber, int propertyBridgeNumber, int functionsNumber) {
+    private static Data of(Class<? extends AbstractMapTest> clazz,
+                           int classBridgeNumber,
+                           int propertyBridgeNumber,
+                           int functionsNumber) {
+        return of(clazz, classBridgeNumber, propertyBridgeNumber, functionsNumber, 3);
+    }
+
+    private static Data of(Class<? extends AbstractMapTest> clazz,
+                           int classBridgeNumber,
+                           int propertyBridgeNumber,
+                           int functionsNumber,
+                           int ontologiesCount) {
         AbstractMapTest m;
         try {
             m = clazz.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
             throw new AssertionError(e);
         }
-        return new Data(m, classBridgeNumber, propertyBridgeNumber, functionsNumber);
+        return new Data(m, classBridgeNumber, propertyBridgeNumber, functionsNumber, ontologiesCount);
+    }
+
+    private MapModel createMapping() {
+        return data.map.assembleMapping(manager, data.map.assembleSource(), data.map.assembleTarget());
     }
 
     @Test
     public void testListMapping() {
-        MapModel m = data.map.assembleMapping(manager, data.map.assembleSource(), data.map.assembleTarget());
+        MapModel m = createMapping();
         OntID id = m.getID();
         // list contexts
         info("Contexts:");
@@ -100,6 +115,19 @@ public class CommonMappingTest {
         Assert.assertEquals(data.functions, m.rules().flatMap(MapResource::functions).distinct().count());
     }
 
+    @Test
+    public void testLoadOWL() {
+        // TODO: there is a bug in ONT-API with version-IRI!
+        // TODO: MultiContextMapTest and PropertyChainMapTest will fail until fixing,
+        // TODO: since the source data has ontology with version IRI
+        OWLMapManager manager = Managers.createOWLMapManager();
+        manager.addOntology(createMapping().asOntModel().getGraph());
+        Assert.assertEquals(data.ontologies, manager.ontologies().count());
+        Assert.assertEquals(1, manager.mappings().count());
+        MapModel m = manager.mappings().findFirst().orElseThrow(AssertionError::new);
+        Assert.assertEquals(data.contexts, m.contexts().count());
+    }
+
     private static void printFunctions(MapResource r) {
         LOGGER.debug("{} Mapping Function :: {}", r, r.getMapping());
         MapFunction.Call f = r.getFilter();
@@ -113,13 +141,14 @@ public class CommonMappingTest {
 
     private static class Data {
         private final AbstractMapTest map;
-        private final int contexts, properties, functions;
+        private final int contexts, properties, functions, ontologies;
 
-        private Data(AbstractMapTest map, int contexts, int properties, int functions) {
+        private Data(AbstractMapTest map, int contexts, int properties, int functions, int ontologies) {
             this.map = map;
             this.contexts = contexts;
             this.properties = properties;
             this.functions = functions;
+            this.ontologies = ontologies;
         }
 
         @Override
