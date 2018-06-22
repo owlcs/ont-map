@@ -63,7 +63,7 @@ public class TestUtils {
     }
 
     public static void debug(MapModel m) {
-        debug(m.asOntModel());
+        debug(m.asGraphModel());
     }
 
     public static void debug(MapFunction.Call func, PrefixMapping pm) {

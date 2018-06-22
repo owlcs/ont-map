@@ -108,7 +108,7 @@ public class CommonMappingTest {
         // list resources
         info("Root statements:");
         m.rules().map(MapResource::asResource)
-                .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asOntModel(), r.getRoot())));
+                .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asGraphModel(), r.getRoot())));
 
         Assert.assertEquals(data.contexts, m.contexts().count());
         Assert.assertEquals(data.properties, m.contexts().flatMap(MapContext::properties).count());
@@ -121,7 +121,7 @@ public class CommonMappingTest {
         // TODO: MultiContextMapTest and PropertyChainMapTest will fail until fixing,
         // TODO: since the source data has ontology with version IRI
         OWLMapManager manager = Managers.createOWLMapManager();
-        manager.addOntology(createMapping().asOntModel().getGraph());
+        manager.addOntology(createMapping().asGraphModel().getGraph());
         Assert.assertEquals(data.ontologies, manager.ontologies().count());
         Assert.assertEquals(1, manager.mappings().count());
         MapModel m = manager.mappings().findFirst().orElseThrow(AssertionError::new);

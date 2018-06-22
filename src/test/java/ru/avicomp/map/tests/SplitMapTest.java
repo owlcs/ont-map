@@ -62,9 +62,9 @@ public class SplitMapTest extends MapTestData3 {
     @Test
     public void testDeleteContext() {
         MapModel m = assembleMapping();
-        OntClass address = m.asOntModel().listClasses()
+        OntClass address = m.asGraphModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Address")).findFirst().orElseThrow(AssertionError::new);
-        OntClass contact = m.asOntModel().listClasses()
+        OntClass contact = m.asGraphModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
         Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getTarget(), contact)).findFirst().orElseThrow(AssertionError::new);

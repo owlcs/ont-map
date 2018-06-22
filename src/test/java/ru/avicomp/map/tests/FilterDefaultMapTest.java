@@ -101,10 +101,10 @@ public class FilterDefaultMapTest extends MapTestData2 {
         Assert.assertNull(c.getFilter());
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
 
-        OntNDP firstName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "firstName");
-        OntNDP secondName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "secondName");
-        OntNDP age = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "age");
-        OntNDP resultName = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "user-name");
+        OntNDP firstName = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "firstName");
+        OntNDP secondName = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "secondName");
+        OntNDP age = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "age");
+        OntNDP resultName = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "user-name");
 
         Assert.assertEquals(resultName, p.getTarget());
 
@@ -112,13 +112,13 @@ public class FilterDefaultMapTest extends MapTestData2 {
                         "?arg1=avc:withDefault(?arg1=%s, ?arg2=\"%s\"), " +
                         "?arg2=avc:withDefault(?arg1=%s, ?arg2=\"%s\"), " +
                         "?separator=\"%s\")",
-                m.asOntModel().shortForm(firstName.getURI()),
+                m.asGraphModel().shortForm(firstName.getURI()),
                 DATA_FIRST_NAME_DEFAULT,
-                m.asOntModel().shortForm(secondName.getURI()),
+                m.asGraphModel().shortForm(secondName.getURI()),
                 DATA_SECOND_NAME_DEFAULT,
                 CONCAT_SEPARATOR);
         String filterMappingFunc = String.format("sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int)",
-                m.asOntModel().shortForm(age.getURI()), 30);
+                m.asGraphModel().shortForm(age.getURI()), 30);
 
         Assert.assertEquals(propertyMappingFunc, p.getMapping().toString());
         Assert.assertEquals(filterMappingFunc, p.getFilter().toString());

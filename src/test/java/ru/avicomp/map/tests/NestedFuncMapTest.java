@@ -77,12 +77,12 @@ public class NestedFuncMapTest extends MapTestData1 {
     @Test
     public void testValidateMapping() {
         MapModel m = assembleMapping();
-        OntClass sc = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "SourceClass1");
-        OntClass tc = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "TargetClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty2");
-        OntNDP sp3 = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "sourceDataProperty3");
-        OntNDP tp = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "targetDataProperty2");
+        OntClass sc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "SourceClass1");
+        OntClass tc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "TargetClass1");
+        OntNDP sp1 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty1");
+        OntNDP sp2 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty2");
+        OntNDP sp3 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty3");
+        OntNDP tp = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "targetDataProperty2");
 
         Assert.assertEquals(2, m.rules().count());
         MapContext context = m.contexts().findFirst().orElseThrow(AssertionError::new);
@@ -90,7 +90,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         Assert.assertEquals(tc, context.getTarget());
 
         Assert.assertEquals(String.format("spinmapl:changeNamespace(afn:namespace(%s))",
-                m.asOntModel().shortForm(tc.getURI())), context.getMapping().toString());
+                m.asGraphModel().shortForm(tc.getURI())), context.getMapping().toString());
         Assert.assertNull(context.getFilter());
 
         PropertyBridge p = context.properties().findFirst().orElseThrow(AssertionError::new);
@@ -103,10 +103,10 @@ public class NestedFuncMapTest extends MapTestData1 {
                         "?arg2=spinmapl:concatWithSeparator(?arg1=\"%s\", ?arg2=%s, ?separator=\"%s\"), " +
                         "?separator=\"%s\"), " +
                         "?separator=\"%s\")",
-                m.asOntModel().shortForm(sp2.getURI()),
-                m.asOntModel().shortForm(sp1.getURI()),
+                m.asGraphModel().shortForm(sp2.getURI()),
+                m.asGraphModel().shortForm(sp1.getURI()),
                 "SOME VALUE",
-                m.asOntModel().shortForm(sp3.getURI()),
+                m.asGraphModel().shortForm(sp3.getURI()),
                 "???", "--", ", ");
         LOGGER.debug(propertyMappingFunc);
         Assert.assertEquals(propertyMappingFunc, p.getMapping().toString());

@@ -137,7 +137,7 @@ public class ConditionalMapTest extends MapTestData2 {
     @Test
     public void testValidateMapping() {
         MapModel map = assembleMapping();
-        OntGraphModel m = map.asOntModel();
+        OntGraphModel m = map.asGraphModel();
 
         OntClass sC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("contacts:Contact")));
         OntClass tC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("users:User")));
@@ -148,7 +148,7 @@ public class ConditionalMapTest extends MapTestData2 {
         OntNDP tp1 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:skype")));
         OntNDP tp2 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:phone")));
         OntNDP tp3 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:email")));
-        OntDT dt = notNull(map.asOntModel().getOntEntity(OntDT.class, XSD.xstring));
+        OntDT dt = notNull(map.asGraphModel().getOntEntity(OntDT.class, XSD.xstring));
 
         Assert.assertEquals(4, map.rules().count());
         MapContext context = map.contexts().findFirst().orElseThrow(AssertionError::new);

@@ -115,7 +115,7 @@ public class MathOpsMapTest extends MapTestData5 {
     public void testDeletePropertyBridge() {
         MapModel m = assembleMapping();
         m.rules().flatMap(MapResource::functions).distinct().forEach(f -> LOGGER.debug("{}", f));
-        OntNDP prop = TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "dstDataProperty2");
+        OntNDP prop = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "dstDataProperty2");
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         PropertyBridge p = c.properties().filter(x -> prop.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new);
         c.deletePropertyBridge(p);
@@ -128,8 +128,8 @@ public class MathOpsMapTest extends MapTestData5 {
         // no fn:abs, sp:sub, math:log, math:pi
         Assert.assertEquals(6, functions.size());
         // math:exp, avc:IRI and fn:format-number still there:
-        Set<Resource> localFunctions = SpinModels.listSpinFunctions(m.asOntModel().getBaseModel()).collect(Collectors.toSet());
-        localFunctions.forEach(f -> LOGGER.debug("Local function: <{}>", m.asOntModel().shortForm(f.getURI())));
+        Set<Resource> localFunctions = SpinModels.listSpinFunctions(m.asGraphModel().getBaseModel()).collect(Collectors.toSet());
+        localFunctions.forEach(f -> LOGGER.debug("Local function: <{}>", m.asGraphModel().shortForm(f.getURI())));
         Assert.assertEquals(3, localFunctions.size());
     }
 }

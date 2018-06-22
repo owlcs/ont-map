@@ -52,7 +52,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
     }
 
     void validate(MapModel map, OntGraphModel src, OntGraphModel dst) {
-        PrefixMapping pm = map.asOntModel();
+        PrefixMapping pm = map.asGraphModel();
         dst.listNamedIndividuals()
                 .flatMap(TestUtils::plainAssertions)
                 .sorted(Comparator.comparing((Statement s) -> s.getPredicate().getURI()).thenComparing(s -> s.getSubject().getURI()))

@@ -34,7 +34,7 @@ public class OWLAPITest {
         String uri = "http://test.com/some-function3";
         OntGraphModel m = new LoadMapTestData(uri, "data-x")
                 .assembleMapping(Managers.createMapManager(), null, null)
-                .asOntModel();
+                .asGraphModel();
         String s = TestUtils.asString(m);
         OWLMapManager manager = Managers.createOWLMapManager();
         OntologyModel o = manager.loadOntologyFromOntologyDocument(TestUtils.createTurtleDocumentSource(s));
@@ -98,10 +98,10 @@ public class OWLAPITest {
         Assert.assertEquals(1, MapManagerImpl.flat(src1.asGraphModel()).count());
         Assert.assertEquals(1, MapManagerImpl.flat(dst1.asGraphModel()).count());
 
-        MapManagerImpl.flat(m1.asOntModel()).forEach(x -> LOGGER.debug("{}", x));
-        Assert.assertEquals(30, MapManagerImpl.flat(m1.asOntModel()).count());
+        MapManagerImpl.flat(m1.asGraphModel()).forEach(x -> LOGGER.debug("{}", x));
+        Assert.assertEquals(30, MapManagerImpl.flat(m1.asGraphModel()).count());
         MapModel m2 = manager.mappings().findFirst().orElseThrow(AssertionError::new);
-        String tree = Graphs.importsTreeAsString(m2.asOntModel().getGraph());
+        String tree = Graphs.importsTreeAsString(m2.asGraphModel().getGraph());
         LOGGER.debug("Imports-tree: \n{}", tree);
         Assert.assertEquals(30, tree.split("\n").length);
 

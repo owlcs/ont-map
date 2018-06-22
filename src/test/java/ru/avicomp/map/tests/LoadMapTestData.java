@@ -57,7 +57,7 @@ public class LoadMapTestData extends AbstractMapTest {
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(RDFS.label, p.getTarget());
         Assert.assertEquals(RDFS.label, p.sources().findFirst().orElseThrow(AssertionError::new));
-        Assert.assertTrue(m.asOntModel().contains(m.asOntModel().getResource(individualIRI), RDFS.label, individualLabel));
+        Assert.assertTrue(m.asGraphModel().contains(m.asGraphModel().getResource(individualIRI), RDFS.label, individualLabel));
         Assert.assertEquals(functionIRI, p.getMapping().getFunction().name());
     }
 

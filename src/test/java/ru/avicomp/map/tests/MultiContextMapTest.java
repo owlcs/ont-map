@@ -168,9 +168,9 @@ public class MultiContextMapTest extends MapTestData6 {
         int propertiesNum = 4;
         assertContext(m, contextsNum, propertiesNum);
 
-        OntClass Res = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "Res");
-        OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CDSPR_000011");
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asOntModel(), OntClass.class, "CCPAS_000011");
+        OntClass Res = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "Res");
+        OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "CDSPR_000011");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "CCPAS_000011");
         MapContext Res_2Res = find(m, Res, Res);
         MapContext CDSPR_000011_2Res = find(m, CDSPR_000011, Res);
         MapContext CCPAS_000011_2Res = find(m, CCPAS_000011, Res);

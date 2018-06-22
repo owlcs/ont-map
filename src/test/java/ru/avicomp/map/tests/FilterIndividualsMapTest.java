@@ -76,7 +76,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         Assert.assertEquals(2, m.rules().count());
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals("avc:UUID()", c.getMapping().toString());
-        String srcAge = m.asOntModel().shortForm(TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "age").getURI());
+        String srcAge = m.asGraphModel().shortForm(TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "age").getURI());
         String contextFilterFunction = String.format("sp:and(?arg1=sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int), " +
                         "?arg2=sp:lt(?arg1=%s, ?arg2=\"%s\"^^xsd:int))",
                 srcAge, 25, srcAge, 100);
@@ -84,7 +84,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
 
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
 
-        Assert.assertEquals(TestUtils.findOntEntity(m.asOntModel(), OntNDP.class, "user-age"), p.getTarget());
+        Assert.assertEquals(TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "user-age"), p.getTarget());
 
         Assert.assertEquals(String.format("spinmap:equals(%s)", srcAge), p.getMapping().toString());
         Assert.assertNull(p.getFilter());

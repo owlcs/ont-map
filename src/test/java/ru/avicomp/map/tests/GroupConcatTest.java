@@ -70,8 +70,8 @@ public class GroupConcatTest extends AbstractMapTest {
         m.deleteContext(context);
         TestUtils.debug(m);
         Assert.assertEquals(0, m.contexts().count());
-        Assert.assertEquals(4, m.asOntModel().getBaseGraph().size());
-        Assert.assertEquals(1, m.asOntModel().imports().count());
+        Assert.assertEquals(4, m.asGraphModel().getBaseGraph().size());
+        Assert.assertEquals(1, m.asGraphModel().imports().count());
     }
 
     @Test
@@ -85,7 +85,7 @@ public class GroupConcatTest extends AbstractMapTest {
         Assert.assertEquals(1, m.contexts().count());
         Assert.assertEquals(2, m.ontologies().count());
         Assert.assertEquals(1, m.rules().count());
-        Assert.assertEquals(29, m.asOntModel().getBaseGraph().size());
+        Assert.assertEquals(29, m.asGraphModel().getBaseGraph().size());
     }
 
     private void validateIndividual(OntGraphModel m, String name, String value) {

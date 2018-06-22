@@ -79,11 +79,11 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      */
     public UnionModel assembleQueryModel(MapModel mapping, Graph source, Graph target) {
         // spin mapping should be fully described inside base graph:
-        UnionGraph union = new UnionGraph(mapping.asOntModel().getBaseGraph());
+        UnionGraph union = new UnionGraph(mapping.asGraphModel().getBaseGraph());
         // pass prefixes:
-        union.getPrefixMapping().setNsPrefixes(mapping.asOntModel());
+        union.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
         // add everything from mapping:
-        Graphs.flat(((UnionGraph) mapping.asOntModel().getGraph()).getUnderlying()).forEach(union::addGraph);
+        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(union::addGraph);
         // add everything from source:
         Graphs.flat(source).forEach(union::addGraph);
         // add everything from targer:

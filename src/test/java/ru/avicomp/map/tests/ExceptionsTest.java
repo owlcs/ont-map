@@ -122,7 +122,7 @@ public class ExceptionsTest {
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
-        long count = m.asOntModel().statements().count();
+        long count = m.asGraphModel().statements().count();
 
         MapFunction.Call mapFunction, filterFunction;
 
@@ -140,7 +140,7 @@ public class ExceptionsTest {
         } catch (MapJenaException j) {
             print(j);
         }
-        Assert.assertEquals(count, m.asOntModel().statements().count());
+        Assert.assertEquals(count, m.asGraphModel().statements().count());
 
         LOGGER.debug("Class bridge: wrong mapping function.");
         filterFunction = manager.getFunction(pm.expandPrefix("sp:strends"))
@@ -159,7 +159,7 @@ public class ExceptionsTest {
         } catch (MapJenaException j) {
             print(j);
         }
-        Assert.assertEquals(count, m.asOntModel().statements().count());
+        Assert.assertEquals(count, m.asGraphModel().statements().count());
 
         LOGGER.debug("Property bridge: wrong mapping function.");
         mapFunction = manager.getFunction(pm.expandPrefix("spl:subClassOf")).create()
@@ -174,7 +174,7 @@ public class ExceptionsTest {
         } catch (MapJenaException j) {
             print(j);
         }
-        Assert.assertEquals(count, m.asOntModel().statements().count());
+        Assert.assertEquals(count, m.asGraphModel().statements().count());
 
         LOGGER.debug("Property bridge: wrong filter function.");
         filterFunction = manager.getFunction(pm.expandPrefix("spl:instanceOf")).create()
@@ -188,7 +188,7 @@ public class ExceptionsTest {
         } catch (MapJenaException j) {
             print(j);
         }
-        Assert.assertEquals(count, m.asOntModel().statements().count());
+        Assert.assertEquals(count, m.asGraphModel().statements().count());
 
         LOGGER.debug("Property bridge: wrong target property.");
         filterFunction = manager.getFunction(pm.expandPrefix("sp:isBlank")).create()
@@ -201,7 +201,7 @@ public class ExceptionsTest {
         } catch (MapJenaException j) {
             print(j);
         }
-        Assert.assertEquals(count, m.asOntModel().statements().count());
+        Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
 
     private static void print(MapJenaException j) {

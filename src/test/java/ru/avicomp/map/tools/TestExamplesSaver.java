@@ -51,7 +51,7 @@ public class TestExamplesSaver {
         for (AbstractMapTest mapTest : mapTests) {
             OntGraphModel src = mapTest.assembleSource();
             OntGraphModel dst = mapTest.assembleTarget();
-            OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asOntModel();
+            OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asGraphModel();
 
             saveTurtle(makeTurtleFile(dir, map), map);
 

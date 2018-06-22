@@ -179,7 +179,7 @@ public class Managers {
             getLock().writeLock().lock();
             try {
                 MapModel res = delegate.createMapModel();
-                OntGraphModel m = res.asOntModel();
+                OntGraphModel m = res.asGraphModel();
                 // `newOntologyModel` will wrap graph as ConcurrentGraph in case it is a concurrent manager
                 OntologyModel o = newOntologyModel(m.getGraph(), getOntologyLoaderConfiguration());
                 OWLDocumentFormat format = OntFormat.TURTLE.createOwlFormat();

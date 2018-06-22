@@ -41,7 +41,7 @@ public interface MapModel {
      *
      * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}s.
      * @see OntGraphModel#imports()
-     * @see #asOntModel()
+     * @see #asGraphModel()
      */
     Stream<OntGraphModel> ontologies();
 
@@ -96,11 +96,10 @@ public interface MapModel {
 
     /**
      * Answers the OWL2 model which wraps the same mapping graph.
-     * TODO: rename to asGraphModel ?
      *
      * @return {@link OntGraphModel OWL2 jena model}
      */
-    OntGraphModel asOntModel();
+    OntGraphModel asGraphModel();
 
     /**
      * Lists all rules ({@link MapResource Mapping Resources}).

@@ -83,9 +83,9 @@ public class RelatedContextMapTest extends MapTestData2 {
     @Test
     public void testDeleteContext() {
         MapModel m = assembleMapping();
-        OntClass person = m.asOntModel().listClasses()
+        OntClass person = m.asGraphModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Person")).findFirst().orElseThrow(AssertionError::new);
-        OntClass contact = m.asOntModel().listClasses()
+        OntClass contact = m.asGraphModel().listClasses()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
         Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getSource(), contact)).findFirst().orElseThrow(AssertionError::new);
@@ -128,7 +128,7 @@ public class RelatedContextMapTest extends MapTestData2 {
         m.deleteContext(context2);
         TestUtils.debug(m);
         Assert.assertEquals(0, m.contexts().count());
-        Assert.assertEquals(4, m.asOntModel().getBaseGraph().size());
-        Assert.assertEquals(1, m.asOntModel().imports().count());
+        Assert.assertEquals(4, m.asGraphModel().getBaseGraph().size());
+        Assert.assertEquals(1, m.asGraphModel().imports().count());
     }
 }
