@@ -99,7 +99,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // re-register runtime functions
         Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
                 .map(r -> r.inModel(query))
-                .forEach(manager.factory::replace);
+                .forEach(manager.arqFactory::replace);
 
         List<QueryWrapper> commands = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -297,7 +297,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     public static class MapInferenceHelper extends SPINInferenceHelper {
 
         public MapInferenceHelper(MapManagerImpl manager) {
-            super(manager.factory);
+            super(manager.arqFactory);
         }
 
         public MapARQFactory factory() {

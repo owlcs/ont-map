@@ -42,6 +42,7 @@ public interface MapManager {
 
     /**
      * Wraps an ontology model to the map model interface.
+     * If the specified model contains custom functions inside, they will be registered in the manager.
      *
      * @param model {@link OntGraphModel}
      * @return {@link MapModel}

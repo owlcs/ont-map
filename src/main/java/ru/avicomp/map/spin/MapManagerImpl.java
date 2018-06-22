@@ -26,6 +26,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,15 +45,32 @@ public class MapManagerImpl implements MapManager {
     private final UnionModel library;
     private final Map<String, FunctionImpl> functions;
 
-    protected final MapARQFactory factory;
+    protected final MapARQFactory arqFactory;
+    protected final Supplier<Graph> graphFactory;
 
     public MapManagerImpl() {
-        this.library = createLibraryModel(Factory.createGraphMem());
+        this(Factory::createGraphMem);
+    }
+
+    protected MapManagerImpl(Supplier<Graph> graphs) {
+        this(graphs.get(), graphs, new HashMap<>());
+    }
+
+    /**
+     * The main constructor.
+     *
+     * @param library {@link Graph} which will be used as primary in the library.
+     * @param graphs  a factory to produce Graphs
+     * @param map     Map to store map-functions
+     */
+    protected MapManagerImpl(Graph library, Supplier<Graph> graphs, Map<String, FunctionImpl> map) {
+        this.graphFactory = Objects.requireNonNull(graphs, "Null graph factory");
+        this.functions = Objects.requireNonNull(map, "Null map");
+        this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
         this.prefixes = collectPrefixes(SystemModels.graphs().values());
-        this.functions = new HashMap<>();
-        this.factory = new MapARQFactory();
-        SPINRegistry.putAll(factory.getFunctionRegistry(), factory.getPropertyFunctionRegistry());
-        SpinModels.listSpinFunctions(library).forEach(this::register);
+        this.arqFactory = new MapARQFactory();
+        SPINRegistry.putAll(arqFactory.getFunctionRegistry(), arqFactory.getPropertyFunctionRegistry());
+        SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 
     /**
@@ -67,9 +85,9 @@ public class MapManagerImpl implements MapManager {
         ExtraPrefixes.add(f);
         functions.put(f.getURI(), new FunctionImpl(f));
         if (f.isMagicProperty()) {
-            factory.registerProperty(f);
+            arqFactory.registerProperty(f);
         } else {
-            factory.registerFunction(f);
+            arqFactory.registerFunction(f);
         }
     }
 
@@ -147,20 +165,23 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public Stream<MapFunction> functions() {
-        return functions.values().stream()
-                // skip private:
-                .filter(f -> !f.isPrivate())
-                // skip abstract:
-                .filter(f -> !f.isAbstract())
-                // skip deprecated:
-                .filter(f -> !f.isDeprecated())
-                // skip hidden:
-                .filter(f -> !f.isHidden())
-                // skip properties:
-                .filter(f -> !f.isMagicProperty())
-                // only registered:
-                .filter(FunctionImpl::isExecutable)
-                .map(Function.identity());
+        return functions.values().stream().filter(this::filter).map(Function.identity());
+    }
+
+    /**
+     * Answers {@code true} if the given map-function is good enough to be used to build and inference mappings.
+     * Protected access to be able to override.
+     *
+     * @param f {@link FunctionImpl}
+     * @return boolean
+     */
+    protected boolean filter(FunctionImpl f) {
+        return !f.isPrivate() // skip private
+                && !f.isAbstract() // skip abstract
+                && !f.isDeprecated()  // skip deprecated
+                && !f.isHidden()  // skip hidden
+                && !f.isMagicProperty()  // skip properties
+                && f.isExecutable(); // only registered
     }
 
     /**
@@ -176,7 +197,7 @@ public class MapManagerImpl implements MapManager {
         if (func.hasProperty(SPIN.symbol)) return true;
         String uri = function.name();
         // not registered:
-        if (!factory.getFunctionRegistry().isRegistered(uri)) return false;
+        if (!arqFactory.getFunctionRegistry().isRegistered(uri)) return false;
         // registered, but no SPARQL body -> has a java ARQ body -> allow:
         if (!func.hasProperty(SPIN.body)) return true;
         // registered (has SPARQL body) but may depend on some other unregistered functions:
@@ -250,7 +271,7 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public MapModelImpl createMapModel() {
-        return makeMapModel(Factory.createGraphMem(), SpinModelConfig.ONT_PERSONALITY);
+        return makeMapModel(graphFactory.get(), SpinModelConfig.ONT_PERSONALITY);
     }
 
     /**
