@@ -59,7 +59,7 @@ public class ConditionalMapTest extends MapTestData2 {
 
         // Jane has only email as string
         OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-jane-contacts");
-        Assert.assertEquals(1, TestUtils.plainAssertions(iJane).count());
+        Assert.assertEquals(1, iJane.positiveAssertions().count());
         String janeEmail = iJane.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
                 .map(Literal::getString)
@@ -68,7 +68,7 @@ public class ConditionalMapTest extends MapTestData2 {
 
         // Jhon has email and skype
         OntIndividual.Named iJhon = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-jhons");
-        Assert.assertEquals(2, TestUtils.plainAssertions(iJhon).count());
+        Assert.assertEquals(2, iJhon.positiveAssertions().count());
         String jhonEmail = iJhon.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
                 .map(Literal::getString)
@@ -82,7 +82,7 @@ public class ConditionalMapTest extends MapTestData2 {
 
         // Bob has email and phone
         OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-bobs");
-        Assert.assertEquals(2, TestUtils.plainAssertions(iBob).count());
+        Assert.assertEquals(2, iBob.positiveAssertions().count());
         String bobEmail = iBob.objects(email, Literal.class)
                 .filter(l -> XSD.xstring.getURI().equals(l.getDatatypeURI()))
                 .map(Literal::getString)
@@ -96,7 +96,7 @@ public class ConditionalMapTest extends MapTestData2 {
 
         // Karl has no contacts:
         OntIndividual.Named iKarl = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-karls");
-        Assert.assertEquals(0, TestUtils.plainAssertions(iKarl).count());
+        Assert.assertEquals(0, iKarl.positiveAssertions().count());
 
     }
 

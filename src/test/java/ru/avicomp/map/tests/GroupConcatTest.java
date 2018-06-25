@@ -90,7 +90,7 @@ public class GroupConcatTest extends AbstractMapTest {
 
     private void validateIndividual(OntGraphModel m, String name, String value) {
         OntIndividual i = m.listNamedIndividuals().filter(s -> Objects.equals(s.getURI(), name)).findFirst().orElseThrow(AssertionError::new);
-        List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
+        List<OntStatement> assertions = i.positiveAssertions().collect(Collectors.toList());
         Assert.assertEquals(1, assertions.size());
         String actual = assertions.get(0).getObject().asLiteral().getString();
         Assert.assertEquals(value, actual);

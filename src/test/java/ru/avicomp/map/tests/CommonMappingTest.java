@@ -117,9 +117,6 @@ public class CommonMappingTest {
 
     @Test
     public void testLoadOWL() {
-        // TODO: there is a bug in ONT-API with version-IRI!
-        // TODO: MultiContextMapTest and PropertyChainMapTest will fail until fixing,
-        // TODO: since the source data has ontology with version IRI
         OWLMapManager manager = Managers.createOWLMapManager();
         manager.addOntology(createMapping().asGraphModel().getGraph());
         Assert.assertEquals(data.ontologies, manager.ontologies().count());

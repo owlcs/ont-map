@@ -52,7 +52,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
                         .filter(x -> x.canAs(OntOPE.class))
                         .map(x -> x.as(OntOPE.class))
                         .anyMatch(x -> containFirst(p, x)))
-                .map(ClassPropertyMap::toNamed).forEach(res::add);
+                .map(OntPE::asProperty).forEach(res::add);
 
         Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() : Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
 
@@ -82,31 +82,16 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * @return Stream of {@link Property properties}
      */
     protected static Stream<Property> directProperties(OntCE ce) {
-        Stream<Property> res = withDomain(ce).map(ClassPropertyMap::toNamed);
+        Stream<Property> res = ce.properties().map(OntPE::asProperty);
         if (ce instanceof OntCE.ONProperty) {
-            Property p = ClassPropertyMap.toNamed(((OntCE.ONProperty) ce).getOnProperty());
+            Property p = ((OntCE.ONProperty) ce).getOnProperty().asProperty();
             res = Stream.concat(res, Stream.of(p));
         }
         if (ce instanceof OntCE.ONProperties) { // OWL2
             Stream<? extends OntPE> props = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
-            res = Stream.concat(res, props.map(ClassPropertyMap::toNamed));
+            res = Stream.concat(res, props.map(OntPE::asProperty));
         }
         return res;
-    }
-
-    /**
-     * This is analogue of {@code ce.properties()} but with property declaration checking.
-     * TODO: move to ONT-API (#properties already fixed!)?
-     *
-     * @param ce {@link OntCE}
-     * @return Stream of {@link OntPE}s
-     * @see OntCE#properties()
-     */
-    protected static Stream<OntPE> withDomain(OntCE ce) {
-        return ce.getModel().statements(null, RDFS.domain, ce)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.canAs(OntPE.class))
-                .map(s -> s.as(OntPE.class));
     }
 
     /**

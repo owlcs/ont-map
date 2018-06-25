@@ -10,7 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.MapContext;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -386,7 +389,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
                     .addContext(left)
                     .addContext(right);
-            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
+            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, p.asProperty().getURI()));
             throw err.build();
         }
         OntOPE p = res.get(0);
@@ -525,7 +528,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @see ru.avicomp.map.utils.ClassPropertyMapImpl#directProperties(OntCE)
      */
     public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
-        Property p = ClassPropertyMap.toNamed(property);
+        Property p = property.asProperty();
         if (properties(domain).noneMatch(p::equals)) return false;
         // range
         if (property.range().anyMatch(r -> Objects.equals(r, range))) return true;

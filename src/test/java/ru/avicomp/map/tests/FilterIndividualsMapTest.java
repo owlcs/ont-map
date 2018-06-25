@@ -28,7 +28,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         OntNDP age = TestUtils.findOntEntity(result, OntNDP.class, "user-age");
         Assert.assertEquals(2, result.listNamedIndividuals().count());
         result.listNamedIndividuals().forEach(i -> {
-            List<Statement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
+            List<Statement> assertions = i.positiveAssertions().collect(Collectors.toList());
             Assert.assertEquals("Incorrect assertions for individual " + i, 1, assertions.size());
             Assert.assertEquals(age, assertions.get(0).getPredicate());
             int a = assertions.get(0).getObject().asLiteral().getInt();

@@ -36,18 +36,18 @@ public class RelatedContextMapTest extends MapTestData2 {
         OntIndividual.Named iKarl = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Karl");
 
         // no address for Jane and Jhon
-        Assert.assertEquals(0, TestUtils.plainAssertions(iJane).count());
-        Assert.assertEquals(0, TestUtils.plainAssertions(iJhon).count());
+        Assert.assertEquals(0, iJane.positiveAssertions().count());
+        Assert.assertEquals(0, iJhon.positiveAssertions().count());
 
         // Bob and Karl:
-        Assert.assertEquals(1, TestUtils.plainAssertions(iBob).count());
-        Assert.assertEquals(1, TestUtils.plainAssertions(iKarl).count());
+        Assert.assertEquals(1, iBob.positiveAssertions().count());
+        Assert.assertEquals(1, iKarl.positiveAssertions().count());
         Assert.assertEquals(DATA_ADDRESS_BOB, getString(iBob));
         Assert.assertEquals(DATA_ADDRESS_KARL, getString(iKarl));
     }
 
     private static String getString(OntIndividual i) {
-        return TestUtils.plainAssertions(i)
+        return i.positiveAssertions()
                 .map(Statement::getObject)
                 .filter(RDFNode::isLiteral)
                 .map(RDFNode::asLiteral)

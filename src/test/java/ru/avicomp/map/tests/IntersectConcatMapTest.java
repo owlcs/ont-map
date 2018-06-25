@@ -17,10 +17,7 @@ import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntNDP;
-import ru.avicomp.ontapi.jena.model.OntNOP;
+import ru.avicomp.ontapi.jena.model.*;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -54,7 +51,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
     void validate(MapModel map, OntGraphModel src, OntGraphModel dst) {
         PrefixMapping pm = map.asGraphModel();
         dst.listNamedIndividuals()
-                .flatMap(TestUtils::plainAssertions)
+                .flatMap(OntIndividual::positiveAssertions)
                 .sorted(Comparator.comparing((Statement s) -> s.getPredicate().getURI()).thenComparing(s -> s.getSubject().getURI()))
                 .forEach(a -> LOGGER.debug("Assertion: {}", TestUtils.toString(pm, a)));
         // number of source and target individuals are the same:

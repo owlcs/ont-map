@@ -48,7 +48,7 @@ public class SplitMapTest extends MapTestData3 {
         OntClass address = TestUtils.findOntEntity(t, OntClass.class, "Address");
         OntNOP link = TestUtils.findOntEntity(t, OntNOP.class, "contact-address");
         contact.individuals().forEach(p -> {
-            List<OntStatement> assertions = TestUtils.plainAssertions(p)
+            List<OntStatement> assertions = p.positiveAssertions()
                     .filter(s1 -> s1.getPredicate().canAs(OntNOP.class))
                     .collect(Collectors.toList());
             Assert.assertEquals(1, assertions.size());

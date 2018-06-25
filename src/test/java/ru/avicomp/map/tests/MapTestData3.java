@@ -27,13 +27,13 @@ abstract class MapTestData3 extends AbstractMapTest {
                 .addAssertion(firstName, xsdString.createLiteral("Bartholomew"))
                 .addAssertion(secondName, xsdString.createLiteral("Stotch"))
                 .addAssertion(middleName, xsdString.createLiteral("Reuel"))
-                .addAssertion(gender, xsdBoolean.createLiteral(false))
+                .addAssertion(gender, xsdBoolean.createLiteral(Boolean.FALSE.toString()))
                 .addAssertion(address, xsdString.createLiteral("EverGreen, 112, Springfield, Avalon, OZ"));
         person.createIndividual(ns + "Person-2")
                 .addAssertion(firstName, xsdString.createLiteral("Matthew"))
                 .addAssertion(secondName, xsdString.createLiteral("Scotch"))
                 .addAssertion(middleName, xsdString.createLiteral("Pavlovich"))
-                .addAssertion(gender, xsdBoolean.createLiteral(true))
+                .addAssertion(gender, xsdBoolean.createLiteral(Boolean.TRUE.toString()))
                 .addAssertion(address, xsdString.createLiteral("Oxford Rd, Manchester M13 9PL, GB"));
         //todo:
         return m;

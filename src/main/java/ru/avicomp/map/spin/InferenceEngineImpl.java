@@ -23,14 +23,12 @@ import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntIndividual;
-import ru.avicomp.ontapi.jena.model.OntStatement;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * An implementation of {@link MapManager.InferenceEngine} adapted to ontology data mapping.
@@ -128,7 +126,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected void run(List<QueryWrapper> queries, OntGraphModel src, Model dst) {
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:
-        listTypedIndividuals(src).forEach(i -> {
+        src.classAssertions().forEach(i -> {
             List<QueryWrapper> selected = select(queries, getClasses(i));
             Map<Resource, Set<QueryWrapper>> visited;
             process(selected, visited = new HashMap<>(), inMemory, dst, i);
@@ -191,25 +189,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             target.add(res);
             res.listSubjectsWithProperty(RDF.type).mapWith(FrontsNode::asNode).forEachRemaining(store::add);
         });
-    }
-
-    /**
-     * Lists all typed individuals from a model.
-     * The expression {@code model.ontObject(OntIndividual.class)} will return all individuals from a model,
-     * while we need only class-assertion individuals.
-     * Also please note: the order is unpredictable since it is determined by the graph,
-     * which may be huge and may not be in memory.
-     * TODO: move to ONT-API (already moved!)?
-     *
-     * @param m {@link OntGraphModel} ontology model
-     * @return Stream of {@link OntIndividual}s.
-     * @see ru.avicomp.ontapi.internal.ClassAssertionTranslator
-     */
-    public static Stream<OntIndividual> listTypedIndividuals(OntGraphModel m) {
-        return m.statements(null, RDF.type, null)
-                .filter(s -> s.getObject().canAs(OntCE.class))
-                .map(OntStatement::getSubject)
-                .map(s -> s.as(OntIndividual.class));
     }
 
     /**

@@ -25,13 +25,11 @@ import ru.avicomp.ontapi.OntFormat;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
-import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -105,10 +103,6 @@ public class TestUtils {
     public static Comparator<String> uriComparator(String first) {
         Comparator<String> res = Comparator.comparing(first::equals);
         return res.reversed().thenComparing(String::compareTo);
-    }
-
-    public static Stream<OntStatement> plainAssertions(OntIndividual i) { // todo: move to ONT-API (already done) ?
-        return i.statements().filter(st -> !Objects.equals(st.getPredicate(), RDF.type));
     }
 
     public static String getStringValue(OntIndividual i, OntNDP p) {

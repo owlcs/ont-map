@@ -24,8 +24,8 @@ abstract class MapTestData2 extends AbstractMapTest {
     static final String DATA_SKYPE_JHON = "jhon-skype";
     static final String DATA_FIRST_NAME_JHON = "Jhon";
     static final String DATA_SECOND_NAME_JHON = "Doe";
-    static final Long DATA_PHONE_BOB_LONG = 96_322_09_43_034L;
-    static final String DATA_PHONE_BOB = DATA_PHONE_BOB_LONG.toString();
+    static final String DATA_PHONE_BOB_LONG = Long.valueOf(96_322_09_43_034L).toString();
+    static final String DATA_PHONE_BOB = DATA_PHONE_BOB_LONG;
     static final String DATA_EMAIL_BOB = "bob@x-email.com";
     static final String DATA_ADDRESS_BOB = "1313 Disneyland Dr, Anaheim, CA 92802, USA";
     static final String DATA_ADDRESS_KARL = "Highgate Cemetery, London, UK";

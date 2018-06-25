@@ -9,7 +9,10 @@ import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
-import ru.avicomp.map.*;
+import ru.avicomp.map.MapContext;
+import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
@@ -284,7 +287,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         }
         if (res.size() != 1) {
             Exceptions.Builder err = exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK).add(Key.CONTEXT_SOURCE, src2);
-            res.forEach(p -> err.add(Key.LINK_PROPERTY, ClassPropertyMap.toNamed(p).getURI()));
+            res.forEach(p -> err.add(Key.LINK_PROPERTY, p.asProperty().getURI()));
             throw err.build();
         }
         return createRelatedContext(src2, res.get(0));
@@ -294,7 +297,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     public MapContextImpl createRelatedContext(OntCE source, OntOPE link) throws MapJenaException {
         MapModelImpl m = getModel();
         MapFunction.Builder builder;
-        Property property = ClassPropertyMap.toNamed(link);
+        Property property = link.asProperty();
         if (m.isLinkProperty(link, getSource(), source)) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedSubjectContext, property);
         } else if (m.isLinkProperty(link, source, getSource())) {
@@ -319,7 +322,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         if (!getSource().equals(source)) {
             throw exception(ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }
-        Property property = ClassPropertyMap.toNamed(link);
+        Property property = link.asProperty();
         if (!m.isLinkProperty(link, getTarget(), target)) {
             throw exception(ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(other)

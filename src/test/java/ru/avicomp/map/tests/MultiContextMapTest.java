@@ -65,7 +65,7 @@ public class MultiContextMapTest extends MapTestData6 {
         String s = "res-" + name.toLowerCase().replace(" ", "-");
         LOGGER.debug("Validate '{}'", s);
         OntIndividual.Named i = TestUtils.findOntEntity(m, OntIndividual.Named.class, s);
-        List<OntStatement> assertions = TestUtils.plainAssertions(i).collect(Collectors.toList());
+        List<OntStatement> assertions = i.positiveAssertions().collect(Collectors.toList());
         Assert.assertEquals("<" + m.shortForm(i.getURI()) + ">: wrong assertion number", 4, assertions.size());
         OntNDP nameProp = TestUtils.findOntEntity(m, OntNDP.class, "name");
         OntNDP latitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "latitude");

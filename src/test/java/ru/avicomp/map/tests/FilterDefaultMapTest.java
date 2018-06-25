@@ -37,7 +37,7 @@ public class FilterDefaultMapTest extends MapTestData2 {
         // expected 4 individuals, one of them are naked
         Assert.assertEquals(4, result.listNamedIndividuals().count());
         Map<Long, Long> map = result.listNamedIndividuals()
-                .map(i -> TestUtils.plainAssertions(i).count())
+                .map(i -> i.positiveAssertions().count())
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         Assert.assertEquals(2, map.size());
         Assert.assertTrue("Expected one naked individual", map.containsKey(0L));
