@@ -95,7 +95,7 @@ class ContextMappingHelper {
      */
     private static void simplify(Resource mapping) {
         Model m = mapping.getModel();
-        Set<Resource> expressions = MapModelImpl.listProperties(mapping)
+        Set<Resource> expressions = Models.listProperties(mapping)
                 .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
                 .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
                 .map(Statement::getSubject)
@@ -242,7 +242,7 @@ class ContextMappingHelper {
         Map<Property, Property> targetPredicatesMap = getTargetPredicatesMap();
         Statement expression = mapping.getRequiredProperty(expressionPredicate);
         // properties from expression, not distinct flat list, i.e. with possible repetitions
-        List<Statement> properties = Stream.concat(Stream.of(expression), MapModelImpl.listProperties(expression.getObject()))
+        List<Statement> properties = Stream.concat(Stream.of(expression), Models.listProperties(expression.getObject()))
                 .filter(s -> isContextProperty(s.getObject()))
                 .collect(Collectors.toList());
         int variableIndex = 1;

@@ -164,7 +164,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return this;
     }
 
-
     @Override
     public MapModelImpl removeImport(OntGraphModel m) {
         super.removeImport(m);
@@ -251,7 +250,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         Stream<Resource> otherExpressions = statements(null, SPINMAPL.context, context).map(Statement::getSubject);
         Stream<Resource> res = Stream.concat(targetResourceExpressions, otherExpressions)
                 .filter(RDFNode::isAnon)
-                .flatMap(e -> Stream.concat(Stream.of(e), listParents(e)))
+                .flatMap(e -> Stream.concat(Stream.of(e), Models.listSubjects(e)))
                 .flatMap(e -> Stream.concat(contextsByRuleExpression(e), contextsByTargetExpression(e)))
                 .filter(RDFNode::isURIResource)
                 .distinct();
@@ -277,42 +276,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public Stream<Resource> contextsByRuleExpression(RDFNode expression) {
         return statements(null, SPINMAP.expression, expression).map(OntStatement::getSubject)
                 .flatMap(s -> s.objects(SPINMAP.context, Resource.class));
-    }
-
-    public static Stream<Resource> subjects(RDFNode object) {
-        return Iter.asStream(object.getModel().listResourcesWithProperty(null, object));
-    }
-
-    /**
-     * Recursively lists all statements for specified subject.
-     * Note: a possibility of StackOverflowError in case graph contains a recursion.
-     * TODO: move to ONT-API?
-     *
-     * @param subject {@link RDFNode}, nullable
-     * @return Stream of {@link Statement}s
-     * @throws StackOverflowError in case graph contains recursion
-     * @see Models#getAssociatedStatements(Resource)
-     */
-    public static Stream<Statement> listProperties(RDFNode subject) {
-        if (subject == null || !subject.isAnon()) return Stream.empty();
-        return Iter.asStream(subject.asResource().listProperties())
-                .flatMap(s -> s.getObject().isAnon() ? listProperties(s.getObject().asResource()) : Stream.of(s));
-    }
-
-    /**
-     * Recursively lists all parent resources for specified object node.
-     * Note: a possibility of StackOverflowError in case graph contains a recursion.
-     * TODO: move to ONT-API?
-     *
-     * @param object {@link RDFNode}
-     * @return Stream of {@link Resource}s
-     * @throws StackOverflowError in case graph contains recursion
-     */
-    public static Stream<Resource> listParents(RDFNode object) {
-        return subjects(object).flatMap(s -> {
-            Stream<Resource> r = Stream.of(s);
-            return s.isAnon() ? Stream.concat(r, listParents(s)) : r;
-        });
     }
 
     /**
@@ -519,7 +482,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Answers if specified property links classes together through domain/range or restriction relationships.
-     * TODO: move to ONT-API?
      *
      * @param property {@link OntOPE} property to test
      * @param domain   {@link OntCE} "domain" candidate

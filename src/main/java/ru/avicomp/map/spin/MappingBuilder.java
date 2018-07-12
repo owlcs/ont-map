@@ -1,6 +1,5 @@
 package ru.avicomp.map.spin;
 
-import org.apache.jena.graph.Graph;
 import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
@@ -59,7 +58,7 @@ public class MappingBuilder {
      * a property mapping is processed only after a corresponding individual is created by class-map rule.
      * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
      * {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int} inside the graph model,
-     * see {@link MapManagerImpl#makeMapModel(Graph, ru.avicomp.ontapi.jena.impl.conf.OntPersonality)} for more details.
+     * see {@link MapManagerImpl#setupMapModel(ru.avicomp.ontapi.jena.impl.OntGraphModelImpl)} for more details.
      *
      * @param model             {@link MapModelImpl}
      * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct

@@ -22,6 +22,7 @@ import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
@@ -67,7 +68,7 @@ public class MapManagerImpl implements MapManager {
         this.graphFactory = Objects.requireNonNull(graphs, "Null graph factory");
         this.functions = Objects.requireNonNull(map, "Null map");
         this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
-        this.prefixes = collectPrefixes(SystemModels.graphs().values());
+        this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
         this.arqFactory = new MapARQFactory();
         SPINRegistry.putAll(arqFactory.getFunctionRegistry(), arqFactory.getPropertyFunctionRegistry());
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
@@ -135,19 +136,6 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Collects a prefixes library from a collection of graphs.
-     * TODO: move to ONT-API ?
-     *
-     * @param graphs {@link Iterable} a collection of graphs
-     * @return unmodifiable {@link PrefixMapping prefix mapping}
-     */
-    public static PrefixMapping collectPrefixes(Iterable<Graph> graphs) {
-        PrefixMapping res = PrefixMapping.Factory.create();
-        graphs.forEach(g -> res.setNsPrefixes(g.getPrefixMapping()));
-        return res.lock();
-    }
-
-    /**
      * Answers iff target individuals must be {@code owl:NamedIndividuals} also.
      *
      * @return boolean
@@ -202,7 +190,7 @@ public class MapManagerImpl implements MapManager {
         if (!func.hasProperty(SPIN.body)) return true;
         // registered (has SPARQL body) but may depend on some other unregistered functions:
         Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
-        return MapModelImpl.listProperties(body)
+        return Models.listProperties(body)
                 .filter(s -> RDF.type.equals(s.getPredicate()))
                 .map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
@@ -253,15 +241,19 @@ public class MapManagerImpl implements MapManager {
     /**
      * Gets a library graph without any inclusion (i.e. without avc additions).
      *
-     * @return {@link UnionGraph}
-     * @throws IllegalStateException wrong state
+     * @return {@link UnionGraph}, each call the same instance
+     * @throws IllegalStateException wrong state of manager
      */
     public Graph getMapLibraryGraph() throws IllegalStateException {
-        return getSpinLibraryGraph();
+        return getLibrary().getGraph().getUnderlying().graphs()
+                .filter(UnionGraph.class::isInstance)
+                .map(UnionGraph.class::cast)
+                .filter(g -> g.getUnderlying().graphs().count() != 0)
+                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find SPINMAPL graph"));
     }
 
     /**
-     * Creates a fresh (SPIN-) mapping model in form of a rdf-ontology.
+     * Creates and configures a fresh (SPIN-) mapping model in form of rdf-ontology.
      * Uses {@link OntPersonality ont-personality} in order to reuse some owl2 resources
      * such as {@link ru.avicomp.ontapi.jena.model.OntID ontology id},
      * {@link ru.avicomp.ontapi.jena.model.OntCE ont class expression},
@@ -271,11 +263,46 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public MapModelImpl createMapModel() {
-        return makeMapModel(graphFactory.get(), SpinModelConfig.ONT_PERSONALITY);
+        return createMapModel(graphFactory.get(), null);
     }
 
     /**
-     * Creates a mapping model around the specified (fresh) graph.
+     * Creates and configures a mapping model with the given graph and personalities
+     *
+     * @param graph       {@link Graph}, not null
+     * @param personality {@link OntPersonality} or {@code null} for default
+     * @return {@link MapModelImpl}
+     */
+    public MapModelImpl createMapModel(Graph graph, OntPersonality personality) {
+        MapModelImpl m = newMapModelImpl(graph, personality);
+        setupMapModel(m);
+        return m;
+    }
+
+    /**
+     * Wraps the given Ontology Model as Mapping model.
+     *
+     * @param m {@link OntGraphModel}, not null
+     * @return {@link MapModelImpl}
+     */
+    public MapModelImpl newMapModelImpl(OntGraphModel m) {
+        return newMapModelImpl(m.getGraph(), m instanceof OntGraphModelImpl ? ((OntGraphModelImpl) m).getPersonality() : null);
+    }
+
+    /**
+     * Creates Mapping Model from the given Graph and personalities.
+     *
+     * @param graph       {@link Graph}
+     * @param personality {@link OntPersonality} or {@code null} for default
+     * @return {@link MapModelImpl}
+     */
+    public MapModelImpl newMapModelImpl(Graph graph, OntPersonality personality) {
+        return new MapModelImpl(graph instanceof UnionGraph ? (UnionGraph) graph : new UnionGraph(Objects.requireNonNull(graph)),
+                personality == null ? SpinModelConfig.ONT_PERSONALITY : personality, this);
+    }
+
+    /**
+     * Configures the given mapping model before it is used by the manager.
      * It is auxiliary method, not for public usage.
      * Note that the graph will be modified:
      * the method adds the statement {@code spinmap:rule spin:rulePropertyMaxIterationCount "2"^^xsd:int},
@@ -284,26 +311,19 @@ public class MapManagerImpl implements MapManager {
      * Notice that ONT-MAP Inference Engine does not use that setting and inference will be run only once.
      * Also this method ensures that the given graph contains http://topbraid.org/spin/spinmapl in import declarations.
      *
-     * @param base        {@link Graph} base graph
-     * @param personality {@link OntPersonality}
-     * @return {@link MapModelImpl}
+     * @param res {@link OntGraphModelImpl} model instance
      */
-    public MapModelImpl makeMapModel(Graph base, OntPersonality personality) {
-        UnionGraph union = new UnionGraph(Graphs.getBase(base));
-        MapModelImpl res = new MapModelImpl(union, personality, this);
-        // do not add avc.*.ttl addition to the final graph
-        Graph lib = getMapLibraryGraph();
-        union.addGraph(lib);
-        AutoPrefixListener.addAutoPrefixListener(union, prefixes());
+    public void setupMapModel(OntGraphModelImpl res) {
+        // add prefix listener to the graph
+        AutoPrefixListener.addAutoPrefixListener(res.getGraph(), prefixes());
         // Set spin:rulePropertyMaxIterationCount to 2
         // to be sure that all the rules have been processed through TopBraid Composer Inference as expected,
         // even if they depend on other rules.
         // Note: this parameter is unused in our ONT-Map InferenceEngine:
         // it provides own rules order, and each rule is processed only once.
         res.add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, res.createTypedLiteral(2));
-        // add spinmapl (a top of library) to owl:imports:
-        res.getID().addImport(Graphs.getURI(lib));
-        return res;
+        // add spinmapl (a top of library,  do not add avc.*.ttl addition) to owl:imports:
+        res.addImport(new OntGraphModelImpl(getMapLibraryGraph(), res.getPersonality()));
     }
 
     /**
@@ -385,7 +405,7 @@ public class MapManagerImpl implements MapManager {
     @Override
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
         Stream<OntGraphModel> models = (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
-                .flatMap(MapManagerImpl::flat);
+                .flatMap(Models::flat);
         List<ClassPropertyMap> maps = models
                 .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(), () -> new LocalClassPropertyMapImpl(m)))
                 .collect(Collectors.toList());
@@ -400,18 +420,6 @@ public class MapManagerImpl implements MapManager {
                 return maps.stream().flatMap(m -> m.classes(pe)).distinct();
             }
         };
-    }
-
-    /**
-     * Lists all associated (with {@code owl:imports}) models including specified as a flat stream.
-     * TODO: move to ONT-API
-     *
-     * @param m {@link OntGraphModel}
-     * @return Stream of models
-     * @see Graphs#flat(Graph)
-     */
-    public static Stream<OntGraphModel> flat(OntGraphModel m) {
-        return Stream.concat(Stream.of(m), m.imports().map(MapManagerImpl::flat).flatMap(Function.identity()));
     }
 
     @Override

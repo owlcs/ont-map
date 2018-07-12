@@ -47,3 +47,10 @@ Anonymous individuals are theoretically possible, but currently are not supporte
         manager.functions()
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
                 .forEach(System.out::println);
+                
+### TODO:
+* more aggregate functions (currently there is only single)
+* spin-bodies for fn-functions
+* mechanism to save in a manager a function-call chain as a custom function       
+* bugfix and more tests 
+* etc         

@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
  * An implementation of {@link GraphListener} to provide a cached {@link ClassPropertyMap class-property-map}.
  * Any changes in a graph to which this listener is attached on will reset that cache.
  * Based on caffeine, sine it is used by OWL-API
- * TODO: something wrong in logic: top-level cache will not be reset in case of changes in sub-graphs
  * <p>
  * Created by @szuev on 19.04.2018.
  */

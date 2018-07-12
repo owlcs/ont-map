@@ -53,7 +53,7 @@ public enum SPINLibrary {
     }
 
     public static PrefixMapping prefixes() {
-        return MapManagerImpl.collectPrefixes(GRAPHS.values());
+        return Graphs.collectPrefixes(GRAPHS.values());
     }
 
     private static Map<String, Graph> load() throws UncheckedIOException {

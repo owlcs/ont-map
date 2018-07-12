@@ -5,24 +5,25 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.shared.PrefixMapping;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLDocumentFormat;
 import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyID;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.MapModelImpl;
 import ru.avicomp.map.spin.SystemModels;
 import ru.avicomp.ontapi.*;
 import ru.avicomp.ontapi.jena.ConcurrentGraph;
-import ru.avicomp.ontapi.jena.UnionGraph;
+import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
-import ru.avicomp.owlapi.NoOpReadWriteLock;
+import ru.avicomp.ontapi.transforms.GraphTransformers;
 
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -36,7 +37,9 @@ import java.util.stream.Stream;
 @SuppressWarnings("WeakerAccess")
 public class Managers {
 
-    private static final ReadWriteLock NO_OP = new NoOpReadWriteLock();
+    static { // force initialization
+        OntModelFactory.init();
+    }
 
     /**
      * The {@link OntologyManager.DocumentSourceMapping} to handle resources from file://resources/etc.
@@ -45,12 +48,11 @@ public class Managers {
     public static final OntologyManager.DocumentSourceMapping MAP_RESOURCES_MAPPING = id -> id.getOntologyIRI()
             .map(IRI::getIRIString)
             .map(uri -> SystemModels.graphs().get(uri))
-            .map(g -> new OntGraphDocumentSource() {
-                @Override
-                public Graph getGraph() {
-                    return g;
-                }
-            }).orElse(null);
+            .map(OntGraphDocumentSource::wrap).orElse(null);
+    /**
+     * The filter to skip transformations on system library graphs (from file://resources/etc)
+     */
+    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> !SystemModels.graphs().containsKey(Graphs.getURI(g));
 
     /**
      * Creates a spin-based {@link MapManager}.
@@ -63,51 +65,14 @@ public class Managers {
     }
 
     /**
-     * Creates a concurrent version of {@link MapManagerImpl}.
-     * Since only {@link MapManager#asMapModel(OntGraphModel)} can change the state of manager
-     * (if specified model has custom functions inside),
-     * and only {@link MapManager#functions()} returns that state (a list of functions),
-     * this two methods must be synchronized.
-     *
-     * @param lock {@link ReadWriteLock}
-     * @return {@link MapManager} instance with lock inside
-     */
-    public static MapManager createMapManager(ReadWriteLock lock) {
-        boolean noOp = Objects.equals(Objects.requireNonNull(lock, "Null lock").getClass(), NO_OP.getClass());
-        Supplier<Graph> factory = Factory::createGraphMem;
-        Graph library = noOp ? factory.get() : new ConcurrentGraph(factory.get(), lock);
-        return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>()) {
-            @Override
-            protected boolean filter(FunctionImpl f) {
-                lock.readLock().lock();
-                try {
-                    return super.filter(f);
-                } finally {
-                    lock.readLock().unlock();
-                }
-            }
-
-            @Override
-            public MapModelImpl asMapModel(OntGraphModel m) throws MapJenaException {
-                lock.writeLock().lock();
-                try {
-                    return super.asMapModel(m);
-                } finally {
-                    lock.writeLock().unlock();
-                }
-            }
-        };
-    }
-
-    /**
-     * Creates an {@link OWLMapManager} instance,
+     * Creates a SPIN-based {@link OWLMapManager} instance,
      * which implements {@link OntologyManager} and {@link MapManager} at the same time.
      * The result manager is not thread-safe.
      *
      * @return {@link OWLMapManager}
      */
     public static OWLMapManager createOWLMapManager() {
-        return createOWLMapManager(NO_OP);
+        return createOWLMapManager(NoOpReadWriteLock.NO_OP_RW_LOCK);
     }
 
     /**
@@ -118,105 +83,163 @@ public class Managers {
      * @see OntManagers.ONTManagerProfile#create(boolean)
      */
     public static OWLMapManager createOWLMapManager(ReadWriteLock lock) {
-        MapManager map = createMapManager(lock);
-        OWLDataFactory df = OntManagers.DEFAULT_PROFILE.dataFactory();
-        OWLMapManagerImpl res = new OWLMapManagerImpl(map, df, lock);
-        res.setOntologyStorers(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
-        res.setOntologyParsers(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
-        res.addDocumentSourceMapper(MAP_RESOURCES_MAPPING);
-        // TODO: this is a temporary solution:
-        // TODO: in ONT-API need to provide a general mechanism to disable transformations for a whole graph family.
-        res.getOntologyConfigurator().setPerformTransformation(false);
+        OntologyFactory.Builder builder = new OntologyBuilderImpl();
+        OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLLoaderImpl(builder));
+        OntologyFactory ontologyFactory = new OntologyFactoryImpl(builder, loader);
+        OWLDataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
+        OWLMapManagerImpl res = new OWLMapManagerImpl(dataFactory, ontologyFactory, lock);
+        res.getOntologyStorers().set(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
+        res.getOntologyParsers().set(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
+        res.getDocumentSourceMappers().set(MAP_RESOURCES_MAPPING);
+        GraphTransformers.Store store = res.getOntologyConfigurator().getGraphTransformers();
+        res.getOntologyConfigurator().setGraphTransformers(store.addFilter(TRANSFORM_FILTER));
         return res;
     }
 
     /**
-     * The implementation of {@link OWLMapManager} which is a {@link OntologyManager} and {@link MapManager} simultaneously.
+     * A SPIN-based implementation of {@link OWLMapManager} which is a {@link OntologyManager} and {@link MapManager} simultaneously.
      * Created by @szuev on 21.06.2018.
      */
     @SuppressWarnings({"NullableProblems", "WeakerAccess"})
     public static class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager {
-        private final MapManager delegate;
+        private final MapManagerImpl manager;
 
-        public OWLMapManagerImpl(MapManager manager, OWLDataFactory dataFactory, ReadWriteLock readWriteLock) {
-            super(dataFactory, readWriteLock);
-            this.delegate = manager;
+        protected OWLMapManagerImpl(OWLDataFactory dataFactory, OntologyFactory ontologyFactory, ReadWriteLock lock) {
+            super(dataFactory, ontologyFactory, lock);
+            this.manager = createMapManager(() -> {
+                throw new IllegalStateException("Direct model creation is not allowed");
+            }, lock);
         }
 
+        /**
+         * Creates a concurrent version of {@link MapManagerImpl}.
+         * Since only {@link MapManager#asMapModel(OntGraphModel)} can change the state of manager
+         * (if specified model has custom functions inside),
+         * and only {@link MapManager#functions()} returns that state (a list of functions),
+         * this two methods must be synchronized.
+         *
+         * @param factory to produce fresh {@link Graph}s
+         * @param lock    {@link ReadWriteLock}, not null
+         * @return {@link MapManager} instance with lock inside
+         */
+        public static MapManagerImpl createMapManager(Supplier<Graph> factory, ReadWriteLock lock) {
+            boolean noOp = Objects.equals(Objects.requireNonNull(lock, "Null lock").getClass(), NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
+            Graph library = Factory.createGraphMem();
+            if (!noOp)
+                library = new ConcurrentGraph(library, lock);
+            return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>()) {
+                @Override
+                protected boolean filter(FunctionImpl f) {
+                    lock.readLock().lock();
+                    try {
+                        return super.filter(f);
+                    } finally {
+                        lock.readLock().unlock();
+                    }
+                }
+
+                @Override
+                public MapModelImpl asMapModel(OntGraphModel m) throws MapJenaException {
+                    lock.writeLock().lock();
+                    try {
+                        return super.asMapModel(m);
+                    } finally {
+                        lock.writeLock().unlock();
+                    }
+                }
+            };
+        }
+
+        /**
+         * Post-processes an ontology.
+         * This method is called after each creation and loading.
+         *
+         * @param ont {@link OntologyModel}
+         */
         @Override
         public void ontologyCreated(OWLOntology ont) {
-            getLock().writeLock().lock();
+            lock.writeLock().lock();
             try {
                 OntGraphModel g = ((OntologyModel) ont).asGraphModel();
-                if (delegate.isMapModel(g)) {
+                if (manager.isMapModel(g)) {
                     // register custom functions
-                    delegate.asMapModel(g);
+                    manager.asMapModel(g);
                 }
                 content.add((OntologyModel) ont);
             } finally {
-                getLock().writeLock().unlock();
+                lock.writeLock().unlock();
             }
         }
 
         @Override
         public Stream<OWLOntology> ontologies() {
-            // TODO: (ONT-API) make OntologyCollection#values -> public
-            return super.ontologies().filter(x -> !isLibraryModel(x));
+            lock.readLock().lock();
+            try {
+                return content.values().filter(x -> !isLibraryModel(x.id())).map(OntInfo::get);
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public Stream<MapModel> mappings() {
+            lock.readLock().lock();
+            try {
+                return content.values()
+                        .map(OntInfo::get)
+                        .map(OntologyModel::asGraphModel)
+                        .filter(this::isMapModel)
+                        .map(manager::newMapModelImpl);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public PrefixMapping prefixes() {
-            return delegate.prefixes();
+            return manager.prefixes();
         }
 
         @Override
         public Stream<MapFunction> functions() {
-            return delegate.functions();
+            return manager.functions();
         }
 
         @Override
         public MapModel createMapModel() {
-            getLock().writeLock().lock();
+            lock.writeLock().lock();
             try {
-                MapModel res = delegate.createMapModel();
-                OntGraphModel m = res.asGraphModel();
-                // `newOntologyModel` will wrap graph as ConcurrentGraph in case it is a concurrent manager
-                OntologyModel o = newOntologyModel(m.getGraph(), getOntologyLoaderConfiguration());
-                OWLDocumentFormat format = OntFormat.TURTLE.createOwlFormat();
-                m.getNsPrefixMap().forEach(format.asPrefixOWLDocumentFormat()::setPrefix);
-                OntologyManagerImpl.setDefaultPrefix(format.asPrefixOWLDocumentFormat(), o);
-                super.ontologyCreated(o);
-                super.setOntologyFormat(o, format);
-                return res;
+                OntGraphModelImpl m = (OntGraphModelImpl) createGraphModel(null);
+                manager.setupMapModel(m);
+                return manager.newMapModelImpl(m);
             } finally {
-                getLock().writeLock().unlock();
+                lock.writeLock().unlock();
             }
         }
 
         @Override
         public MapModel asMapModel(OntGraphModel m) throws MapJenaException {
-            getLock().readLock().lock();
+            lock.readLock().lock();
             try {
-                if (delegate instanceof MapManagerImpl && contains(m)) {
-                    // already added -> no need to re-register the same functions,
-                    // therefore the state of manager is not changed -> no need in write lock
-                    return new MapModelImpl((UnionGraph) m.getGraph(),
-                            ((OntGraphModelImpl) m).getPersonality(),
-                            (MapManagerImpl) delegate);
+                if (contains(m)) {
+                    // already added -> no need to re-register the same functions (was handled by #ontologyCreated),
+                    // therefore the state of the manager is not changed -> no need in write lock
+                    return manager.newMapModelImpl(m);
                 }
             } finally {
-                getLock().readLock().unlock();
+                lock.readLock().unlock();
             }
-            getLock().writeLock().lock();
+            lock.writeLock().lock();
             try {
-                return delegate.asMapModel(m);
+                // external ontology -> just registers functions and return the map-model without any lock
+                return manager.asMapModel(m);
             } finally {
-                getLock().writeLock().unlock();
+                lock.writeLock().unlock();
             }
         }
 
         /**
-         * Answers iff model is present inside manager.
+         * Answers iff the model is present inside manager.
          * The check is performed by comparing the base graphs not ontology ids.
          *
          * @param m {@link OntGraphModel} to test
@@ -224,76 +247,45 @@ public class Managers {
          * @see OntologyManager#contains(OWLOntology)
          */
         public boolean contains(OntGraphModel m) {
-            return findOntology(m.getGraph()).isPresent();
-        }
-
-        /**
-         * Finds ontology by the given graph.
-         *
-         * @param graph {@link Graph}
-         * @return Optional around {@link OntologyModel}
-         */
-        public Optional<OntologyModel> findOntology(Graph graph) {
-            return this.ontologies()
-                    .map(OntologyModel.class::cast)
-                    .filter(m -> sameBase(graph, m.asGraphModel().getGraph()))
-                    .findFirst();
-        }
-
-        private static boolean sameBase(Graph left, Graph right) {
-            return Objects.equals(getBaseGraph(left), getBaseGraph(right));
-        }
-
-        /**
-         * Gets a base graph from any composite graph or concurrent wrapper.
-         * @param graph {@link Graph} to unclothe
-         * @return the base {@link Graph} or {@code null} if argument is also {@code null}
-         * @see Graphs#getBase(Graph)
-         * @see ConcurrentGraph
-         */
-        public static Graph getBaseGraph(Graph graph) {
-            if (graph == null) return null;
-            Graph res = Graphs.getBase(graph);
-            return res instanceof ConcurrentGraph ? ((ConcurrentGraph) res).get() : res;
+            return ontology(m.getGraph()).isPresent();
         }
 
         @Override
         public boolean isMapModel(OntGraphModel m) {
-            getLock().readLock().lock();
+            lock.readLock().lock();
             try {
-                return delegate.isMapModel(m);
+                return manager.isMapModel(m);
             } finally {
-                getLock().readLock().unlock();
+                lock.readLock().unlock();
             }
         }
 
-        public boolean isLibraryModel(OWLOntology o) {
-            getLock().readLock().lock();
+        public boolean isLibraryModel(OWLOntologyID id) {
+            lock.readLock().lock();
             try {
                 Set<String> libs = SystemModels.graphs().keySet();
-                return o.getOntologyID()
-                        .getOntologyIRI()
+                return id.getOntologyIRI()
                         .map(IRI::getIRIString)
                         .filter(libs::contains)
                         .isPresent();
             } finally {
-                getLock().readLock().unlock();
+                lock.readLock().unlock();
             }
         }
 
         @Override
         public ClassPropertyMap getClassProperties(OntGraphModel model) {
-            getLock().readLock().lock();
+            lock.readLock().lock();
             try {
-                return delegate.getClassProperties(model);
+                return manager.getClassProperties(model);
             } finally {
-                getLock().readLock().unlock();
+                lock.readLock().unlock();
             }
         }
 
         @Override
         public InferenceEngine getInferenceEngine() {
-            return new OWLInferenceEngineImpl(delegate.getInferenceEngine());
+            return new OWLInferenceEngineImpl(manager.getInferenceEngine());
         }
 
         public class OWLInferenceEngineImpl implements InferenceEngine {
@@ -303,24 +295,39 @@ public class Managers {
                 this.delegate = delegate;
             }
 
+            /**
+             * Runs inference process on the given mapping, source and target.
+             * Uses managers write lock, if the target graph belongs to the manager,
+             * otherwise, if the mapping or the source graph belong to the manager,
+             * uses read lock (manager does not change its state).
+             *
+             * @param mapping a mapping instructions in form of {@link MapModel}
+             * @param source  a graph with data to map.
+             * @param target  a graph to write mapping results.
+             */
             @Override
             public void run(MapModel mapping, Graph source, Graph target) {
-                ReadWriteLock lock;
-                Optional<OntologyModel> dst;
-                getLock().readLock().lock();
+                Lock lock = NoOpReadWriteLock.NO_OP_LOCK;
+                ReadWriteLock rwLock = getLock();
+                rwLock.readLock().lock();
                 try {
-                    dst = findOntology(target);
-                    // if target graph does not belong to the manager -> there is no need in lock
-                    lock = dst.isPresent() ? getLock() : NO_OP;
+                    if (isConcurrent()) {
+                        Optional<OntologyModel> dst = ontology(target);
+                        if (dst.isPresent()) {
+                            dst.get().clearCache(); // just in case
+                            lock = rwLock.writeLock();
+                        } else if (ontology(mapping.asGraphModel().getGraph()).isPresent() || ontology(source).isPresent()) {
+                            lock = rwLock.readLock();
+                        }
+                    }
                 } finally {
-                    getLock().readLock().unlock();
+                    rwLock.readLock().unlock();
                 }
-                lock.writeLock().lock();
+                lock.lock();
                 try {
-                    dst.ifPresent(OntologyModel::clearCache);
                     delegate.run(mapping, source, target);
                 } finally {
-                    lock.writeLock().unlock();
+                    lock.unlock();
                 }
             }
         }

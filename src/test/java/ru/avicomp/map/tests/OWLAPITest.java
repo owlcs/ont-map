@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.OWLMapManager;
-import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
+import ru.avicomp.ontapi.NoOpReadWriteLock;
 import ru.avicomp.ontapi.OntologyModel;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
-import ru.avicomp.owlapi.NoOpReadWriteLock;
+import ru.avicomp.ontapi.jena.utils.Models;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -30,12 +30,13 @@ public class OWLAPITest {
     private static final Logger LOGGER = LoggerFactory.getLogger(OWLAPITest.class);
 
     @Test
-    public void testLoad() throws OWLOntologyCreationException {
+    public void testLoadMapping() throws OWLOntologyCreationException {
         String uri = "http://test.com/some-function3";
         OntGraphModel m = new LoadMapTestData(uri, "data-x")
                 .assembleMapping(Managers.createMapManager(), null, null)
                 .asGraphModel();
         String s = TestUtils.asString(m);
+
         OWLMapManager manager = Managers.createOWLMapManager();
         OntologyModel o = manager.loadOntologyFromOntologyDocument(TestUtils.createTurtleDocumentSource(s));
         TestUtils.debug(o.asGraphModel());
@@ -44,6 +45,22 @@ public class OWLAPITest {
         Assert.assertEquals(1, manager.mappings().count());
         manager.createMapModel();
         Assert.assertEquals(2, manager.mappings().count());
+    }
+
+    @Test
+    public void testLoadFunction() {
+        String uri = "http://test.com/some-function4";
+        OntGraphModel m = new LoadMapTestData(uri, "data-x")
+                .assembleMapping(Managers.createMapManager(), null, null)
+                .asGraphModel();
+
+        OWLMapManager manager = Managers.createOWLMapManager();
+        manager.asMapModel(m);
+        Assert.assertEquals(uri, manager.getFunction(uri).name());
+        Assert.assertEquals(0, manager.ontologies().count());
+        Assert.assertEquals(0, manager.mappings().count());
+        manager.createMapModel();
+        Assert.assertEquals(1, manager.mappings().count());
     }
 
     @Test
@@ -77,7 +94,7 @@ public class OWLAPITest {
 
     @Test
     public void testInference() {
-        testInference(new NoOpReadWriteLock());
+        testInference(NoOpReadWriteLock.NO_OP_RW_LOCK);
     }
 
     @Test
@@ -95,11 +112,11 @@ public class OWLAPITest {
         Assert.assertEquals(3, manager.ontologies().count());
         Assert.assertEquals(1, manager.mappings().count());
 
-        Assert.assertEquals(1, MapManagerImpl.flat(src1.asGraphModel()).count());
-        Assert.assertEquals(1, MapManagerImpl.flat(dst1.asGraphModel()).count());
+        Assert.assertEquals(1, Models.flat(src1.asGraphModel()).count());
+        Assert.assertEquals(1, Models.flat(dst1.asGraphModel()).count());
 
-        MapManagerImpl.flat(m1.asGraphModel()).forEach(x -> LOGGER.debug("{}", x));
-        Assert.assertEquals(30, MapManagerImpl.flat(m1.asGraphModel()).count());
+        Models.flat(m1.asGraphModel()).forEach(x -> LOGGER.debug("{}", x));
+        Assert.assertEquals(30, Models.flat(m1.asGraphModel()).count());
         MapModel m2 = manager.mappings().findFirst().orElseThrow(AssertionError::new);
         String tree = Graphs.importsTreeAsString(m2.asGraphModel().getGraph());
         LOGGER.debug("Imports-tree: \n{}", tree);

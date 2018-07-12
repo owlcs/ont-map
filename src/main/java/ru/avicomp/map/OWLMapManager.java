@@ -17,9 +17,8 @@ import java.util.stream.Stream;
 public interface OWLMapManager extends OntologyManager, MapManager {
 
     /**
-     * Lists all ontologies inside manager.
+     * Lists all ontologies inside the manager.
      * Note: this method will not return system ontologies (i.e. library graphs).
-     * They are hidden but it is possible to access them, e.g. using the method {@link OntologyManager#getOntology(IRI)}.
      *
      * @return Stream of {@link OWLOntology}
      */
@@ -38,11 +37,11 @@ public interface OWLMapManager extends OntologyManager, MapManager {
     MapModel createMapModel();
 
     /**
-     * Wraps a given model as {@link MapModel}.
-     * This method does <b>not</b> add the given model to the manager,
+     * Wraps the given ontology model as {@link MapModel mapping model}.
+     * This method does <b>not</b> add the graph-model into the manager,
      * for such purposes there are {@link OntologyManager#addOntology(Graph)} or {@link OntologyManager#loadOntology(IRI)} methods.
-     * Instead, it registers in the manager all custom functions from specified graph
-     * and returns a {@link MapModel mapping} interface aroud the specified graph.
+     * Instead, it only registers in the manager all custom functions defined in that model
+     * and returns a {@link MapModel mapping} interface.
      *
      * @param model {@link OntGraphModel}
      * @return {@link MapModel}

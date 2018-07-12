@@ -7,7 +7,6 @@ import org.apache.jena.rdf.model.ResourceFactory;
  * The vocabulary which describes https://www.w3.org/2005/xpath-functions/math/.
  * An addition to the spin-family in order to provide access to math functions through spin-api.
  * See file://resources/etc/avc.math.ttl
- * TODO: not ready
  * <p>
  * Created by @szuev on 22.05.2018.
  *
