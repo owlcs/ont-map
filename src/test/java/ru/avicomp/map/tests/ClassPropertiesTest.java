@@ -112,7 +112,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testExTest() throws Exception {
-        OntGraphModel m = TestUtils.load("/ex-test.ttl", Lang.TURTLE);
+        OntGraphModel m = TestUtils.load("/ex-sup-test.ttl", Lang.TURTLE);
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("ex:CCPAS_000011", 11);

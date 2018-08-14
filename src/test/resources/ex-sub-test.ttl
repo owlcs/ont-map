@@ -1,0 +1,43 @@
+@prefix :      <ttt://ex.com/sub/test#> .
+@prefix sup:   <ttt://ex.com/sup/test#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xml:   <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<ttt://ex.com/sub/test>
+        a            owl:Ontology ;
+        owl:imports  <ttt://ex.com/sup/test> .
+
+:CCPIU_000012  a         owl:Class ;
+        rdfs:label       "Heading" ;
+        rdfs:subClassOf  sup:CCPIU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      sup:OABCU ;
+                           owl:someValuesFrom  :CAUUU_000012
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      sup:DEUUU ;
+                           owl:someValuesFrom  xsd:string
+                         ] .
+
+:CAUUU_000012  a         owl:Class ;
+        rdfs:label       "Degree" ;
+        rdfs:subClassOf  :CAUUU_000006 ;
+        rdfs:subClassOf  [ a               owl:Restriction ;
+                           owl:hasValue    "2209" ;
+                           owl:onProperty  sup:DBUUU
+                         ] .
+                         
+:CAUUU_000006  a         owl:Class ;
+        rdfs:label       "Units of measurement" ;
+        rdfs:subClassOf  sup:CAUUU ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      sup:OAAUU ;
+                           owl:someValuesFrom  :CCPAN_000002
+                         ] ;
+        rdfs:subClassOf  [ a                   owl:Restriction ;
+                           owl:onProperty      sup:OACUU ;
+                           owl:someValuesFrom  :CRNK_000006
+                         ] .                         

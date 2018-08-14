@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -106,9 +107,12 @@ public class Managers {
 
         protected OWLMapManagerImpl(OWLDataFactory dataFactory, OntologyFactory ontologyFactory, ReadWriteLock lock) {
             super(dataFactory, ontologyFactory, lock);
-            this.manager = createMapManager(() -> {
-                throw new IllegalStateException("Direct model creation is not allowed");
-            }, lock);
+            this.manager = createMapManager(
+                    () -> {
+                        throw new IllegalStateException("Direct model creation is not allowed");
+                    }
+                    , lock
+                    , m -> ontology(m.getBaseGraph()).map(OntologyModel::asGraphModel).orElse(m));
         }
 
         /**
@@ -123,6 +127,10 @@ public class Managers {
          * @return {@link MapManager} instance with lock inside
          */
         public static MapManagerImpl createMapManager(Supplier<Graph> factory, ReadWriteLock lock) {
+            return createMapManager(factory, lock, UnaryOperator.identity());
+        }
+
+        private static MapManagerImpl createMapManager(Supplier<Graph> factory, ReadWriteLock lock, UnaryOperator<OntGraphModel> map) {
             boolean noOp = Objects.equals(Objects.requireNonNull(lock, "Null lock").getClass(), NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
             Graph library = Factory.createGraphMem();
             if (!noOp)
@@ -147,12 +155,17 @@ public class Managers {
                         lock.writeLock().unlock();
                     }
                 }
+
+                @Override
+                public Stream<OntGraphModel> listRelatedModels(OntGraphModel model) {
+                    return super.listRelatedModels(model).map(map);
+                }
             };
         }
 
         /**
-         * Post-processes an ontology.
-         * This method is called after each creation and loading.
+         * Post-processes for the ontology.
+         * This method is called after each creation or loading.
          *
          * @param ont {@link OntologyModel}
          */

@@ -2,7 +2,10 @@ package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
+import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
@@ -26,6 +29,8 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class ClassPropertyMapImpl implements ClassPropertyMap {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClassPropertyMapImpl.class);
 
     // any named class expression in Topbraid Composer has a rdfs:label as attached property.
     public static final Set<Property> OWL_THING_PROPERTIES = Collections.singleton(RDFS.label);
@@ -58,7 +63,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
 
         Stream<OntCE> intersectionRestriction =
                 ce instanceof OntCE.IntersectionOf ? ((OntCE.IntersectionOf) ce).components()
-                        .filter(c -> OntCE.ONProperty.class.isInstance(c) || OntCE.ONProperties.class.isInstance(c))
+                        .filter(c -> c instanceof OntCE.ONProperty || c instanceof OntCE.ONProperties)
                         : Stream.empty();
         Stream<OntCE> equivalentIntersections = ce.equivalentClass().filter(OntCE.IntersectionOf.class::isInstance);
 
@@ -83,13 +88,20 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      */
     protected static Stream<Property> directProperties(OntCE ce) {
         Stream<Property> res = ce.properties().map(OntPE::asProperty);
-        if (ce instanceof OntCE.ONProperty) {
-            Property p = ((OntCE.ONProperty) ce).getOnProperty().asProperty();
-            res = Stream.concat(res, Stream.of(p));
-        }
-        if (ce instanceof OntCE.ONProperties) { // OWL2
-            Stream<? extends OntPE> props = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
-            res = Stream.concat(res, props.map(OntPE::asProperty));
+        try {
+            if (ce instanceof OntCE.ONProperty) {
+                Property p = ((OntCE.ONProperty) ce).getOnProperty().asProperty();
+                res = Stream.concat(res, Stream.of(p));
+            }
+            if (ce instanceof OntCE.ONProperties) { // OWL2
+                Stream<? extends OntPE> props = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
+                res = Stream.concat(res, props.map(OntPE::asProperty));
+            }
+        } catch (OntJenaException j) {
+            // Ignore. Somebody can broke class expression manually, for example by deleting property declaration,
+            // In that case ONT-API throws exception on calling method ONProperty#asProperty
+            // TODO: (ONT-API hint) maybe need discard the restriction with the broken content
+            LOGGER.warn("Can't find properties for restriction {}: {}", ce, j.getMessage());
         }
         return res;
     }

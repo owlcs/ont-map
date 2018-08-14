@@ -28,7 +28,7 @@ abstract class MapTestData6 extends AbstractMapTest {
     public OntGraphModel assembleSource() {
         OntGraphModel m;
         try {
-            m = TestUtils.load("/ex-test.ttl", Lang.TURTLE);
+            m = TestUtils.load("/ex-sup-test.ttl", Lang.TURTLE);
         } catch (IOException e) {
             throw new AssertionError(e);
         }

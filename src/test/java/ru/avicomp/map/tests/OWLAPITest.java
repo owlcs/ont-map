@@ -2,32 +2,50 @@ package ru.avicomp.map.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.semanticweb.owlapi.model.AxiomType;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.OWLMapManager;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
-import ru.avicomp.ontapi.NoOpReadWriteLock;
 import ru.avicomp.ontapi.OntologyModel;
+import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.OntNOP;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Models;
 
-import java.util.concurrent.locks.ReadWriteLock;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by @szuev on 21.06.2018.
  */
+@RunWith(Parameterized.class)
 public class OWLAPITest {
     private static final Logger LOGGER = LoggerFactory.getLogger(OWLAPITest.class);
+
+    private final ManagerProvider factory;
+
+    public OWLAPITest(ManagerProvider factory) {
+        this.factory = factory;
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static ManagerProvider[] getTestData() {
+        return ManagerProvider.values();
+    }
 
     @Test
     public void testLoadMapping() throws OWLOntologyCreationException {
@@ -37,7 +55,7 @@ public class OWLAPITest {
                 .asGraphModel();
         String s = TestUtils.asString(m);
 
-        OWLMapManager manager = Managers.createOWLMapManager();
+        OWLMapManager manager = factory.create();
         OntologyModel o = manager.loadOntologyFromOntologyDocument(TestUtils.createTurtleDocumentSource(s));
         TestUtils.debug(o.asGraphModel());
         Assert.assertEquals(uri, manager.getFunction(uri).name());
@@ -54,7 +72,7 @@ public class OWLAPITest {
                 .assembleMapping(Managers.createMapManager(), null, null)
                 .asGraphModel();
 
-        OWLMapManager manager = Managers.createOWLMapManager();
+        OWLMapManager manager = factory.create();
         manager.asMapModel(m);
         Assert.assertEquals(uri, manager.getFunction(uri).name());
         Assert.assertEquals(0, manager.ontologies().count());
@@ -65,7 +83,7 @@ public class OWLAPITest {
 
     @Test
     public void testCreate() {
-        OWLMapManager manager = Managers.createOWLMapManager();
+        OWLMapManager manager = factory.create();
         MapModel m1 = manager.createMapModel();
         TestUtils.debug(m1);
         Assert.assertEquals(1, manager.ontologies().count());
@@ -94,16 +112,7 @@ public class OWLAPITest {
 
     @Test
     public void testInference() {
-        testInference(NoOpReadWriteLock.NO_OP_RW_LOCK);
-    }
-
-    @Test
-    public void testLockInference() {
-        testInference(new ReentrantReadWriteLock());
-    }
-
-    private void testInference(ReadWriteLock lock) {
-        OWLMapManager manager = Managers.createOWLMapManager(lock);
+        OWLMapManager manager = factory.create();
         PropertyChainMapTest test = new PropertyChainMapTest();
         OntologyModel src1 = manager.addOntology(test.assembleSource().getGraph());
         OntologyModel dst1 = manager.addOntology(test.assembleTarget().getGraph());
@@ -147,5 +156,72 @@ public class OWLAPITest {
         dst2.axioms().forEach(x -> LOGGER.debug("AXIOM: {}", x));
         Assert.assertEquals(8, dst1.axioms(AxiomType.DATA_PROPERTY_ASSERTION).count());
         Assert.assertEquals(4, dst2.individualsInSignature().count());
+    }
+
+    @Test
+    public void testClassPropertiesMap() throws Exception {
+        Path path_sup = Paths.get(OWLAPITest.class.getResource("/ex-sup-test.ttl").toURI()).toRealPath();
+        Path path_sub = Paths.get(OWLAPITest.class.getResource("/ex-sub-test.ttl").toURI()).toRealPath();
+
+        OWLMapManager manager = factory.create();
+        OntGraphModel sup = manager.loadOntologyFromOntologyDocument(path_sup.toFile()).asGraphModel();
+        OntGraphModel sub = manager.loadOntologyFromOntologyDocument(path_sub.toFile()).asGraphModel();
+
+        UnionGraph g_sup = (UnionGraph) sup.getGraph();
+        UnionGraph g_sub = (UnionGraph) sub.getGraph();
+        ClassPropertyMap map_sub = manager.getClassProperties(sub);
+        ClassPropertyMap map_sup = manager.getClassProperties(sup);
+
+        // ensure graphs have ClassProperty listener attached:
+        Assert.assertEquals(2, g_sub.getEventManager().listeners().count());
+        Assert.assertEquals(2, g_sup.getEventManager().listeners().count());
+
+        OntClass CCPIU_000012 = sub.getOntEntity(OntClass.class, "ttt://ex.com/sub/test#CCPIU_000012");
+        Assert.assertNotNull(CCPIU_000012);
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(sub, OntClass.class, "CCPAS_000006");
+        OntNDP DAUUU = TestUtils.findOntEntity(sup, OntNDP.class, "DAUUU");
+
+        Assert.assertEquals(19, map_sub.properties(CCPIU_000012)
+                .peek(p -> LOGGER.debug("1::{}-property {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+        Assert.assertEquals(11, map_sup.properties(CCPAS_000006)
+                .peek(p -> LOGGER.debug("1::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+
+        sup.removeOntObject(DAUUU);
+
+        Assert.assertEquals(18, map_sub.properties(CCPIU_000012)
+                .peek(p -> LOGGER.debug("2::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+        Assert.assertEquals(10, map_sup.properties(CCPAS_000006)
+                .peek(p -> LOGGER.debug("2::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+
+        String ns = sup.getID().getURI() + "#";
+        OntClass c = sup.createOntEntity(OntClass.class, ns + "OneMoreClass");
+        sup.createOntEntity(OntNOP.class, ns + "OneMoreProperty1").addDomain(c);
+        sub.createOntEntity(OntNOP.class, sub.getID().getURI() + "#OneMorePropery2").addDomain(CCPIU_000012);
+        CCPIU_000012.addSubClassOf(c);
+
+        TestUtils.debug(sub);
+        Assert.assertEquals(20, map_sub.properties(CCPIU_000012)
+                .peek(p -> LOGGER.debug("3::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+        Assert.assertEquals(10, map_sup.properties(CCPAS_000006)
+                .peek(p -> LOGGER.debug("3::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
+
+    }
+
+    enum ManagerProvider {
+        COMMON {
+            @Override
+            public OWLMapManager create() {
+                return Managers.createOWLMapManager();
+            }
+        },
+        CONCURRENT {
+            @Override
+            public OWLMapManager create() {
+                return Managers.createOWLMapManager(new ReentrantReadWriteLock());
+            }
+        },
+        ;
+
+        public abstract OWLMapManager create();
     }
 }

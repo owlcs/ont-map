@@ -20,6 +20,7 @@ import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -294,7 +295,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         Stream.of(MapJenaException.notNull(source, "Null source CE"),
                 MapJenaException.notNull(target, "Null target CE"))
                 .map(OntObject::getModel)
-                .filter(m -> !Objects.equals(m, this))
+                .filter(m -> !Graphs.isSameBase(m.getBaseGraph(), getBaseGraph()))
                 .filter(m -> MapModelImpl.this.imports().noneMatch(i -> Objects.equals(i.getID(), m.getID())))
                 .peek(m -> {
                     if (!LOGGER.isDebugEnabled()) return;

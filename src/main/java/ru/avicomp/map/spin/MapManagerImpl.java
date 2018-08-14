@@ -404,10 +404,9 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
-        Stream<OntGraphModel> models = (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
-                .flatMap(Models::flat);
+        Stream<OntGraphModel> models = listRelatedModels(model);
         List<ClassPropertyMap> maps = models
-                .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(), () -> new LocalClassPropertyMapImpl(m)))
+                .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(), () -> new LocalClassPropertyMapImpl(m, model)))
                 .collect(Collectors.toList());
         return new ClassPropertyMap() {
             @Override
@@ -420,6 +419,10 @@ public class MapManagerImpl implements MapManager {
                 return maps.stream().flatMap(m -> m.classes(pe)).distinct();
             }
         };
+    }
+
+    public Stream<OntGraphModel> listRelatedModels(OntGraphModel model) {
+        return (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model)).flatMap(Models::flat);
     }
 
     @Override
