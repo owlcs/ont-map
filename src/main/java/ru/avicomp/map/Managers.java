@@ -4,15 +4,14 @@ import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.shared.PrefixMapping;
 import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyID;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.MapModelImpl;
 import ru.avicomp.map.spin.SystemModels;
 import ru.avicomp.ontapi.*;
-import ru.avicomp.ontapi.jena.ConcurrentGraph;
 import ru.avicomp.ontapi.jena.OntModelFactory;
+import ru.avicomp.ontapi.jena.RWLockedGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
@@ -81,13 +80,13 @@ public class Managers {
      *
      * @param lock {@link ReadWriteLock}
      * @return {@link OWLMapManager}
-     * @see OntManagers.ONTManagerProfile#create(boolean)
+     * @see OntManagers.ONTAPIProfile#create(boolean)
      */
     public static OWLMapManager createOWLMapManager(ReadWriteLock lock) {
         OntologyFactory.Builder builder = new OntologyBuilderImpl();
         OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLLoaderImpl(builder));
         OntologyFactory ontologyFactory = new OntologyFactoryImpl(builder, loader);
-        OWLDataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
+        DataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
         OWLMapManagerImpl res = new OWLMapManagerImpl(dataFactory, ontologyFactory, lock);
         res.getOntologyStorers().set(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
         res.getOntologyParsers().set(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
@@ -105,7 +104,7 @@ public class Managers {
     public static class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager {
         private final MapManagerImpl manager;
 
-        protected OWLMapManagerImpl(OWLDataFactory dataFactory, OntologyFactory ontologyFactory, ReadWriteLock lock) {
+        protected OWLMapManagerImpl(DataFactory dataFactory, OntologyFactory ontologyFactory, ReadWriteLock lock) {
             super(dataFactory, ontologyFactory, lock);
             this.manager = createMapManager(
                     () -> {
@@ -134,7 +133,7 @@ public class Managers {
             boolean noOp = Objects.equals(Objects.requireNonNull(lock, "Null lock").getClass(), NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
             Graph library = Factory.createGraphMem();
             if (!noOp)
-                library = new ConcurrentGraph(library, lock);
+                library = new RWLockedGraph(library, lock);
             return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>()) {
                 @Override
                 protected boolean filter(FunctionImpl f) {

@@ -7,7 +7,7 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.stream.LocationMapper;
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
-import org.apache.jena.system.JenaSubsystemLifecycle;
+import org.apache.jena.sys.JenaSubsystemLifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.utils.ReadOnlyGraph;
