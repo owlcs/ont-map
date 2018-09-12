@@ -1,4 +1,4 @@
-# ONT-MAP - an OWL2 ontology to ontology data mapper (builder and inferencing engine).
+# ONT-MAP - an OWL2 ontology to ontology data mapper (builder and inference engine).
 
 ## Summary
 **ONT-MAP** provides a convenient way to build a mapping between two [OWL2](https://www.w3.org/TR/owl2-overview/) ontologies 
@@ -68,7 +68,9 @@ but currently are not supported due to SPIN-API limitations related to target fu
 
         MapManager manager = Managers.getMapManager();
         manager.functions()
-                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget()).thenComparing(MapFunction::returnType).thenComparing(MapFunction::name))
+                .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget())
+                .thenComparing(MapFunction::returnType)
+                .thenComparing(MapFunction::name))
                 .forEach(System.out::println);
                 
 ### TODO:
