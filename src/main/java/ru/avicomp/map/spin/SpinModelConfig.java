@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * @see OntModelConfig
  */
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "deprecation"})
 public class SpinModelConfig {
     // OWL2 personality (lax version)
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();

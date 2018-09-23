@@ -9,10 +9,7 @@ import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,7 +53,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
                 .filter(p -> res.stream()
                         .filter(x -> x.canAs(OntOPE.class))
                         .map(x -> x.as(OntOPE.class))
-                        .anyMatch(x -> containFirst(p, x)))
+                        .anyMatch(x -> isHeadOfPropertyChain(p, x)))
                 .map(OntPE::asProperty).forEach(res::add);
 
         Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() : Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
@@ -121,15 +118,18 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
     }
 
     /**
-     * Answers iff left argument has a {@code owl:propertyChainAxiom} list which contains right argument in the first position.
-     * TODO: move to ONT-API ?
+     * Answers if the left argument has a {@code owl:propertyChainAxiom} list
+     * that contains the right argument in the first position.
      *
-     * @param left  {@link OntOPE}
-     * @param right {@link OntOPE}
+     * @param superProperty  {@link OntOPE}, not {@code null}
+     * @param candidate {@link OntOPE}
      * @return boolean
      */
-    public static boolean containFirst(OntOPE left, OntOPE right) {
-        return left.superPropertyOf().findFirst().map(right::equals).orElse(false);
+    public static boolean isHeadOfPropertyChain(OntOPE superProperty, OntOPE candidate) {
+        return superProperty.listPropertyChains()
+                .map(OntList::first)
+                .filter(Optional::isPresent)
+                .map(Optional::get).anyMatch(p -> Objects.equals(p, candidate));
     }
 
 }

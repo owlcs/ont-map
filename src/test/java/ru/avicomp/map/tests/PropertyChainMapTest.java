@@ -135,7 +135,7 @@ public class PropertyChainMapTest extends MapTestData6 {
         OASUU.addSubPropertyOf(m.getOntEntity(OntNOP.class, OWL.topObjectProperty));
         OASUU.setTransitive(true);
         // add property chain relationship:
-        OASUU.addSuperPropertyOf(Arrays.asList(OAGUU, OAHUU));
+        OASUU.addSuperPropertyOf(OAGUU, OAHUU);
         addDataIndividual(m, SHIP_1_NAME, SHIP_1_COORDINATES);
         addDataIndividual(m, SHIP_2_NAME, SHIP_2_COORDINATES);
         addDataIndividual(m, SHIP_3_NAME, SHIP_3_COORDINATES);

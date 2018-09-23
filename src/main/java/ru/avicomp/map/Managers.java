@@ -48,7 +48,17 @@ public class Managers {
     public static final OntologyManager.DocumentSourceMapping MAP_RESOURCES_MAPPING = id -> id.getOntologyIRI()
             .map(IRI::getIRIString)
             .map(uri -> SystemModels.graphs().get(uri))
-            .map(OntGraphDocumentSource::wrap).orElse(null);
+            .map(g -> new OntGraphDocumentSource() {
+                @Override
+                public Graph getGraph() {
+                    return g;
+                }
+
+                @Override
+                public boolean withTransforms() {
+                    return false;
+                }
+            }).orElse(null);
     /**
      * The filter to skip transformations on system library graphs (from file://resources/etc)
      */
