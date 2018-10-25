@@ -12,7 +12,7 @@ import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 /**
  * Auxiliary class, a helper to validate a {@link MapFunction.Arg function-call argument} values,
@@ -62,7 +62,7 @@ public class ArgValidationHelper {
             throw error.build();
         }
         if (RDF.Property.equals(type)) {
-            if (Stream.of(RDF.Property, OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).anyMatch(value::equals))
+            if (Arrays.asList(RDF.Property, OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).contains(value))
                 return;
             throw error.build();
         }

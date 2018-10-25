@@ -1,13 +1,15 @@
 package ru.avicomp.map.utils;
 
-import org.apache.jena.graph.Capabilities;
-import org.apache.jena.graph.Graph;
-import org.apache.jena.graph.Node;
-import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.*;
+import org.apache.jena.shared.AccessDeniedException;
+import org.apache.jena.shared.AddDeniedException;
+import org.apache.jena.shared.DeleteDeniedException;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
 
 /**
  * Read-only graph implementation.
+ * No modification (including changing prefixes) is not allowed for this graph.
  * <p>
  * Created by @szuev on 21.06.2018.
  */
@@ -61,33 +63,41 @@ public class ReadOnlyGraph extends UnmodifiableGraph {
         }
     };
 
+    protected PrefixMapping pm;
+
     public ReadOnlyGraph(Graph base) {
         super(base);
+        this.pm = base.getPrefixMapping();
     }
 
     @Override
     public void add(Triple t) {
-        throw new UnsupportedOperationException("Read only graph: can't add triple " + t);
+        throw new AddDeniedException("Read only graph: can't add triple " + t);
     }
 
     @Override
     public void remove(Node s, Node p, Node o) {
-        delete(Triple.createMatch(s, p, o));
+        GraphUtil.remove(this, s, p, o);
     }
 
     @Override
     public void delete(Triple t) {
-        throw new UnsupportedOperationException("Read only graph: can't delete triple " + t);
+        throw new DeleteDeniedException("Read only graph: can't delete triple " + t);
     }
 
     @Override
     public void clear() {
-        throw new UnsupportedOperationException("Read only graph: can't clear");
+        throw new AccessDeniedException("Read only graph: can't clear");
     }
 
     @Override
     public Capabilities getCapabilities() {
         return READ_ONLY_CAPABILITIES;
+    }
+
+    @Override
+    public PrefixMapping getPrefixMapping() {
+        return PrefixMapping.Factory.create().setNsPrefixes(pm).lock();
     }
 
 }

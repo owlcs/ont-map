@@ -39,7 +39,7 @@ public class ClassPropertyMapListener extends BaseGraphListener {
      * @param <K>    any key type
      * @param <V>    any value type
      * @return {@link LoadingCache}
-     * @see ru.avicomp.ontapi.internal.InternalModel.CacheDataFactory
+     * @see ru.avicomp.ontapi.internal.CacheDataFactory
      */
     static <K, V> LoadingCache<K, V> buildCache(CacheLoader<K, V> loader) {
         return Caffeine.newBuilder()

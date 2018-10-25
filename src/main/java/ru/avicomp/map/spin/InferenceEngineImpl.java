@@ -66,29 +66,31 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Reassemblies an union graph.
+     * Assemblies a query model in the form of {@link UnionGraph union graph}.
      * It is just in case, the input mapping should already contain everything needed.
      *
      * @param mapping {@link MapModel} mapping model
-     * @param source  {@link Graph} graph with data to inference
+     * @param source  {@link Graph} graph with data to infer
      * @param target  {@link Graph} graph to put inference results
      * @return {@link UnionModel} with SPIN personalities
      * @see SpinModelConfig#LIB_PERSONALITY
      */
     public UnionModel assembleQueryModel(MapModel mapping, Graph source, Graph target) {
-        // spin mapping should be fully described inside base graph:
-        UnionGraph union = new UnionGraph(mapping.asGraphModel().getBaseGraph());
+        // spin mapping should be fully described inside the base graph.
+        // also note that the return graph should not be distinct
+        // (the nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage):
+        UnionGraph res = new UnionGraph(mapping.asGraphModel().getBaseGraph(), null, null, false);
         // pass prefixes:
-        union.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
+        res.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
         // add everything from mapping:
-        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(union::addGraph);
+        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(res::addGraph);
         // add everything from source:
-        Graphs.flat(source).forEach(union::addGraph);
+        Graphs.flat(source).forEach(res::addGraph);
         // add everything from targer:
-        Graphs.flat(target).forEach(union::addGraph);
+        Graphs.flat(target).forEach(res::addGraph);
         // all from library with except of avc (also, just in case):
-        Graphs.flat(manager.getMapLibraryGraph()).forEach(union::addGraph);
-        return new UnionModel(union, SpinModelConfig.LIB_PERSONALITY);
+        Graphs.flat(manager.getMapLibraryGraph()).forEach(res::addGraph);
+        return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
 
     @Override
