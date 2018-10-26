@@ -8,6 +8,7 @@
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 @prefix avc:   <http://avc.ru/spin#> .
+@prefix afn:   <http://jena.hpl.hp.com/ARQ/function#> .
 
 <http://avc.ru/lib>  a   owl:Ontology ;
         rdfs:comment     "An additional library of functions that can be expressed through SPARQL or the other functions from a standard spin-library.\nIt is assumed that this ontology will not be included to the \"owl:import\" statement of mappings, produces by the API.\nInstead, any of the functions below will be printed directly to the graph of mapping, which use that function, and therefore the library can be considered just as templates collection." ;
@@ -16,7 +17,7 @@
         owl:versionInfo  "version 1.0" .
 
 avc:UUID  a                 spinmap:TargetFunction ;
-        rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>." ;
+        rdfs:comment        "A target function.\nGenerates an IRI from the UUID URN scheme based on source individual MD5 sum.\nEach call of AVC:UUID returns the same UUID IRI.\nExample: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.\nCan work both with named and anonymous individuals." ;
         rdfs:label          "MD5 UUID" ;
         rdfs:seeAlso        <https://www.w3.org/TR/sparql11-query/#func-uuid> , sp:UUID ;
         rdfs:subClassOf     spinmap:TargetFunctions ;
@@ -26,10 +27,22 @@ avc:UUID  a                 spinmap:TargetFunction ;
                                                     ]
                                                   ) ;
                               sp:where            ( [ a              sp:Bind ;
-                                                      sp:expression  [ a        sp:md5 ;
-                                                                       sp:arg1  [ a        sp:str ;
+                                                      sp:expression  [ a        sp:if ;
+                                                                       sp:arg1  [ a        sp:isBlank ;
+                                                                                  sp:arg1  [ sp:varName  "source" ]
+                                                                                ] ;
+                                                                       sp:arg2  [ a        afn:bnode ;
+                                                                                  sp:arg1  [ sp:varName  "source" ]
+                                                                                ] ;
+                                                                       sp:arg3  [ a        sp:str ;
                                                                                   sp:arg1  [ sp:varName  "source" ]
                                                                                 ]
+                                                                     ] ;
+                                                      sp:variable    [ sp:varName  "s" ]
+                                                    ]
+                                                    [ a              sp:Bind ;
+                                                      sp:expression  [ a        sp:md5 ;
+                                                                       sp:arg1  [ sp:varName  "s" ]
                                                                      ] ;
                                                       sp:variable    [ sp:varName  "value" ]
                                                     ]

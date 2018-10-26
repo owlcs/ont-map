@@ -10,6 +10,7 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.AdjustGroupConcatImpl;
 import ru.avicomp.map.spin.QueryHelper;
 import ru.avicomp.map.spin.SPINLibrary;
+import ru.avicomp.map.spin.vocabulary.ARQ;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -42,6 +43,7 @@ public class LIBLibraryMaker {
         id.addAnnotation(m.getAnnotationProperty(OWL.versionInfo), "version 1.0", null);
         id.addImport(AVC.BASE_URI);
         ((UnionGraph) m.getGraph()).addGraph(SPINLibrary.SPL.getGraph());
+        m.setNsPrefix("afn", ARQ.NS);
 
         // AVC:withDefault
         AVC.withDefault.inModel(m)
@@ -151,11 +153,13 @@ public class LIBLibraryMaker {
                 .addProperty(RDFS.comment, "A target function.\n" +
                         "Generates an IRI from the UUID URN scheme based on source individual MD5 sum.\n" +
                         "Each call of AVC:UUID returns the same UUID IRI.\n" +
-                        "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.")
+                        "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.\n" +
+                        "Can work both with named and anonymous individuals.")
                 .addProperty(SPIN.body,
                         QueryHelper.parseQuery("SELECT IRI(?uri)\n" +
                                 "WHERE {\n" +
-                                "    BIND (MD5(str(?source)) AS ?value) .\n" +
+                                "    BIND (IF(isBlank(?source), afn:bnode(?source), str(?source)) AS ?s) .\n" +
+                                "    BIND (MD5(?s) AS ?value) .\n" +
                                 "    BIND (CONCAT(\"urn:uuid:\", ?value) AS ?uri) .\n" +
                                 "}", m));
 

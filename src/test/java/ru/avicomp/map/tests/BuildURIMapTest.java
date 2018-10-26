@@ -40,10 +40,14 @@ public class BuildURIMapTest extends MapTestData1 {
     public void testInference() {
         OntGraphModel src = assembleSource();
         TestUtils.debug(src);
-        List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        List<OntIndividual.Named> individuals = src.listNamedIndividuals().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
+        List<OntNDP> props = src.listDataProperties()
+                .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
+        List<OntIndividual.Named> named = src.listNamedIndividuals()
+                .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
+        List<OntIndividual.Anonymous> anons = src.ontObjects(OntIndividual.Anonymous.class).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
-        Assert.assertEquals(3, individuals.size());
+        Assert.assertEquals(3, named.size());
+        Assert.assertEquals(1, anons.size());
 
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(dst);
@@ -59,32 +63,40 @@ public class BuildURIMapTest extends MapTestData1 {
 
         LOGGER.info("Validate.");
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
-        // one individual is skipped from inferincing:
-        Assert.assertEquals(2, dst.statements(null, RDF.type, dstClass).count());
+        // one individual is skipped from inferencing:
+        Assert.assertEquals(3, dst.statements(null, RDF.type, dstClass).count());
 
-        String v11 = getDataPropertyAssertionStringValue(individuals.get(0), props.get(0));
-        String v12 = getDataPropertyAssertionStringValue(individuals.get(0), props.get(1));
-        String v21 = getDataPropertyAssertionStringValue(individuals.get(1), props.get(0));
-        String v22 = getDataPropertyAssertionStringValue(individuals.get(1), props.get(1));
+        String v11 = getDataPropertyAssertionStringValue(named.get(0), props.get(0));
+        String v12 = getDataPropertyAssertionStringValue(named.get(0), props.get(1));
+        String v21 = getDataPropertyAssertionStringValue(named.get(1), props.get(0));
+        String v22 = getDataPropertyAssertionStringValue(named.get(1), props.get(1));
+        String v31 = getDataPropertyAssertionStringValue(anons.get(0), props.get(0));
+        String v32 = getDataPropertyAssertionStringValue(anons.get(0), props.get(1));
 
         String ns = dst.getID().getURI() + "#";
         Resource i1 = ResourceFactory.createResource(ns + String.format(TEMPLATE, v11, v12).replace(" ", "_"));
         Resource i2 = ResourceFactory.createResource(ns + String.format(TEMPLATE, v21, v22).replace(" ", "_"));
+        Resource i3 = ResourceFactory.createResource(ns + String.format(TEMPLATE, v31, v32).replace(" ", "_"));
         Literal v1 = ResourceFactory.createStringLiteral(v12 + SEPARATOR + v11);
         Literal v2 = ResourceFactory.createStringLiteral(v22 + SEPARATOR + v21);
+        Literal v3 = ResourceFactory.createStringLiteral(v32 + SEPARATOR + v31);
 
         assertDataPropertyAssertion(dst, i1, dstProp, v1);
         assertDataPropertyAssertion(dst, i2, dstProp, v2);
+        assertDataPropertyAssertion(dst, i3, dstProp, v3);
         assertIndividualLabel(dst, i1);
         assertIndividualLabel(dst, i2);
+        assertIndividualLabel(dst, i3);
 
+        OntIndividual in3 = i3.inModel(dst).as(OntIndividual.Named.class);
         OntIndividual in2 = i2.inModel(dst).as(OntIndividual.Named.class);
         OntIndividual in1 = i1.inModel(dst).as(OntIndividual.Named.class);
+        Assert.assertEquals(dstClass, in3.classes().findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, in2.classes().findFirst().orElseThrow(AssertionError::new));
         Assert.assertEquals(dstClass, in1.classes().findFirst().orElseThrow(AssertionError::new));
     }
 
-    private static String getDataPropertyAssertionStringValue(OntIndividual.Named individual, OntNDP property) {
+    private static String getDataPropertyAssertionStringValue(OntIndividual individual, OntNDP property) {
         return individual.objects(property, Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
     }
 

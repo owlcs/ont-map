@@ -39,11 +39,11 @@ public class UUIDMapTest extends MapTestData1 {
 
         manager.getInferenceEngine().run(mapping, src, dst);
         TestUtils.debug(dst);
-        Assert.assertEquals(3, dst.listNamedIndividuals().count());
+        Assert.assertEquals(4, dst.listNamedIndividuals().count());
 
         manager.getInferenceEngine().run(mapping, src, dst);
-        Assert.assertEquals(3, dst.listNamedIndividuals().count());
-        Assert.assertEquals(3, dstClass.individuals().count());
+        Assert.assertEquals(4, dst.listNamedIndividuals().count());
+        Assert.assertEquals(4, dstClass.individuals().count());
     }
 
     @Override
@@ -67,7 +67,7 @@ public class UUIDMapTest extends MapTestData1 {
                 .filter(OntStatement::isLocal)
                 .collect(Collectors.toList());
         Assert.assertEquals(1, statements.size());
-        Assert.assertEquals(38, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
+        Assert.assertEquals(55, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
         return res;
     }
 

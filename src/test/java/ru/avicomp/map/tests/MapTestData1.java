@@ -44,6 +44,7 @@ abstract class MapTestData1 extends AbstractMapTest {
     public OntGraphModel assembleSource() {
         OntGraphModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
+
         OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
         OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty1");
         OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty2");
@@ -53,17 +54,23 @@ abstract class MapTestData1 extends AbstractMapTest {
         prop3.addDomain(class1);
         OntClass class2 = m.createOntEntity(OntClass.class, ns + "SubClass1");
         class2.addSubClassOf(class1);
-        OntIndividual.Named individual1 = class2.createIndividual(ns + "a");
-        OntIndividual.Named individual2 = class2.createIndividual(ns + "b");
+
+        // individuals:
+        OntIndividual individual1 = class2.createIndividual(ns + "a");
+        OntIndividual individual2 = class2.createIndividual(ns + "b");
+        OntIndividual individual3 = class2.createIndividual();
         class1.createIndividual(ns + "c");
+
         // data property assertions:
         individual1.addProperty(prop1, "x y z", "e");
         individual1.addProperty(prop2, ResourceFactory.createTypedLiteral(2));
         individual1.addProperty(prop3, "individual#1 - property#3 value");
-
         individual2.addProperty(prop1, "A");
         individual2.addProperty(prop2, "B");
         individual2.addProperty(prop3, "individual#2 - property#3 value");
+        individual3.addProperty(prop1, "dp1");
+        individual3.addProperty(prop2, "dp2");
+        individual3.addProperty(prop3, "dp3");
         return m;
     }
 
