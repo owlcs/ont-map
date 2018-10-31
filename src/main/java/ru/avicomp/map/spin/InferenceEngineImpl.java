@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link MapManager.InferenceEngine} adapted to ontology data mapping.
- *
+ * <p>
  * Created by @szuev on 19.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
@@ -83,57 +83,82 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         this.helper = new MapInferenceHelper(manager);
     }
 
-    /**
-     * Assemblies a query model in the form of {@link UnionGraph union graph}.
-     * It is just in case, the input mapping should already contain everything needed.
-     *
-     * @param mapping {@link MapModel} mapping model
-     * @param source  {@link Graph} graph with data to infer
-     * @param target  {@link Graph} graph to put inference results
-     * @return {@link UnionModel} with SPIN personalities
-     * @see SpinModelConfig#LIB_PERSONALITY
-     */
-    public UnionModel assembleQueryModel(MapModel mapping, Graph source, Graph target) {
-        // spin mapping should be fully described inside the base graph.
-        // also note that the return graph should not be distinct
-        // (the nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage):
-        UnionGraph res = new UnionGraph(mapping.asGraphModel().getBaseGraph(), null, null, false);
-        // pass prefixes:
-        res.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
-        // add everything from mapping:
-        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(res::addGraph);
-        // add everything from source:
-        Graphs.flat(source).forEach(res::addGraph);
-        // add everything from targer:
-        Graphs.flat(target).forEach(res::addGraph);
-        // all from library with except of avc (also, just in case):
-        Graphs.flat(manager.getMapLibraryGraph()).forEach(res::addGraph);
-        return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
-    }
-
     @Override
     public void run(MapModel mapping, Graph source, Graph target) {
-        UnionModel query = assembleQueryModel(mapping, source, target);
+        UnionModel query = assembleQueryModel(mapping);
         // re-register runtime functions
         Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
                 .map(r -> r.inModel(query))
                 .forEach(manager.arqFactory::replace);
 
-        List<QueryWrapper> commands = getSpinMapRules(query);
+        List<QueryWrapper> rules = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
-            commands.forEach(c -> LOGGER.debug("Rule for <{}>: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
+            rules.forEach(c -> LOGGER.debug("Rule for <{}>: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
+        // todo: what if rules is empty ?
 
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
-        OntGraphModel src = OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
+        OntGraphModel src = assembleDataModel(mapping, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())
                 events.register(logs);
-            run(commands, src, dst);
+            run(rules, src, dst);
         } finally {
             events.unregister(logs);
         }
+    }
+
+    /**
+     * TODO: fix description
+     * Assemblies a query model in the form of {@link UnionGraph union graph}.
+     * It is just in case, the input mapping should already contain everything needed.
+     *
+     * @param mapping {@link MapModel} mapping model
+     * @return {@link UnionModel} with SPIN personalities
+     * @see SpinModelConfig#LIB_PERSONALITY
+     */
+    public UnionModel assembleQueryModel(MapModel mapping) {
+        // spin mapping should be fully described inside the base graph.
+        // also note that the return graph should not be distinct
+        // (the nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage):
+        UnionGraph res = new UnionGraph(mapping.asGraphModel().getBaseGraph(), null, null, false);
+        // add everything from mapping:
+        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(res::addGraph);
+        // pass prefixes:
+        res.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
+        // to ensure that all graphs from the library (with except of avc.*) are present (just in case) :
+        Graphs.flat(manager.getMapLibraryGraph()).forEach(res::addGraph);
+        return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
+    }
+
+    /**
+     * TODO: fix description
+     * The mapping contains both source and target schema, but may also contain source data.
+     * This method should return OWL model with schema and data and without any other additions.
+     *
+     * @param mapping {@link MapModel}
+     * @param source  {@link Graph}
+     * @param target  {@link Graph}
+     * @return {@link OntGraphModel}
+     */
+    public OntGraphModel assembleDataModel(MapModel mapping, Graph source, Graph target) {
+        Set<Graph> mappings = mapping.ontologies()
+                .flatMap(o -> Graphs.flat(o.getGraph())).collect(Collectors.toSet());
+        List<Graph> sources = Graphs.flat(source).collect(Collectors.toList());
+        if (mappings.containsAll(sources)) { // the source contains schema
+            return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
+        }
+        // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
+        Set<Graph> exclude = Graphs.flat(manager.getMapLibraryGraph()).collect(Collectors.toSet());
+        Graphs.flat(target).forEach(exclude::add);
+        List<Graph> schemas = mappings.stream().filter(x -> !exclude.contains(x)).collect(Collectors.toList());
+        // the result is not distinct, since the nature of source is unknown,
+        // and the distinct mode might unpredictable degrade performance and memory usage:
+        UnionGraph res = new UnionGraph(sources.remove(0), null, null, false);
+        sources.forEach(res::addGraph);
+        schemas.forEach(res::addGraph);
+        return OntModelFactory.createModel(res, SpinModelConfig.ONT_PERSONALITY);
     }
 
     /**
@@ -166,17 +191,17 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @param queries     List of {@link QueryWrapper}s
      * @param processed   Map of already processed individual-queries to prevent recursion
      * @param individuals List of {@link Resource}s
-     * @param model       {@link Model} to write
+     * @param target       {@link Model} to write
      */
     protected void process(List<QueryWrapper> queries,
                            Map<Resource, Set<QueryWrapper>> processed,
                            Set<Node> individuals,
-                           Model model) {
+                           Model target) {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
-            Resource i = model.asRDFNode(iterator.next()).asResource();
+            Resource i = target.asRDFNode(iterator.next()).asResource();
             List<QueryWrapper> selected = select(queries, getClasses(i));
-            process(selected, processed, individuals, model, i);
+            process(selected, processed, individuals, target, i);
             iterator.remove();
         }
     }
@@ -212,7 +237,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Gets all object resources from {@code rdf:type} statement for a specified subject in model.
+     * Gets all object resources from {@code rdf:type} statement for a specified subject in the model.
      *
      * @param i {@link Resource}, individual
      * @return Set of {@link Resource}, classes
@@ -229,12 +254,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Gets all types (classes) for an individual, taken into account class hierarchy.
      * TODO: move to ONT-API?
      *
-     * @param i {@link OntIndividual}
+     * @param individual {@link OntIndividual}
      * @return Set of {@link OntCE class expressions}
      */
-    public static Set<OntCE> getClasses(OntIndividual i) {
+    public static Set<OntCE> getClasses(OntIndividual individual) {
         Set<OntCE> res = new HashSet<>();
-        i.classes().forEach(c -> collectSuperClasses(c, res));
+        individual.classes().forEach(c -> collectSuperClasses(c, res));
         return res;
     }
 
@@ -279,7 +304,8 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @return {@link Comparator} comparator for {@link CommandWrapper}s
      */
     public static Comparator<CommandWrapper> createMapComparator() {
-        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r).map(String::valueOf).orElse("Unknown"))
+        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
+                .map(String::valueOf).orElse("Unknown"))
                 .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
         Comparator<CommandWrapper> res = (left, right) -> {
             Optional<Resource> r1 = SpinModels.rule(left);

@@ -18,6 +18,7 @@
 
 package ru.avicomp.map;
 
+import org.apache.jena.graph.Graph;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntID;
@@ -142,5 +143,15 @@ public interface MapModel {
      */
     default MapContext createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
         return createContext(source, target).addClassBridge(targetFunctionCall);
+    }
+
+    /**
+     * TODO: description!
+     *
+     * @param source {@link Graph}
+     * @param target {@link Graph}
+     */
+    default void runInference(Graph source, Graph target) {
+        getManager().getInferenceEngine().run(this, source, target);
     }
 }

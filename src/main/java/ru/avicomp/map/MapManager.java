@@ -135,6 +135,7 @@ public interface MapManager {
 
         /**
          * Runs inference process.
+         * todo: more description
          *
          * @param mapping a mapping instructions in form of {@link MapModel}
          * @param source  a graph with data to map.
