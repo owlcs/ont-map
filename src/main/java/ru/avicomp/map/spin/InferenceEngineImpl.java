@@ -84,91 +84,74 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     @Override
-    public void run(MapModel mapping, Graph source, Graph target) {
+    public void run(MapModel mapping, Graph source, Graph target) throws MapJenaException {
         UnionModel query = assembleQueryModel(mapping);
         // re-register runtime functions
         Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
                 .map(r -> r.inModel(query))
                 .forEach(manager.arqFactory::replace);
-
+        // find rules:
         List<QueryWrapper> rules = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
             rules.forEach(c -> LOGGER.debug("Rule for <{}>: '{}'", c.getStatement().getSubject(), SpinModels.toString(c)));
-        // todo: what if rules is empty ?
-
+        if (rules.isEmpty()) {
+            throw Exceptions.INFERENCE_NO_RULES.create()
+                    .add(Exceptions.Key.MAPPING, String.valueOf(mapping))
+                    .build();
+        }
+        // run rules:
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
-        OntGraphModel src = assembleDataModel(mapping, source, target);
-        Model dst = ModelFactory.createModelForGraph(target);
         try {
             if (LOGGER.isDebugEnabled())
                 events.register(logs);
-            run(rules, src, dst);
+            run(rules, source, target);
         } finally {
             events.unregister(logs);
         }
     }
 
     /**
-     * TODO: fix description
-     * Assemblies a query model in the form of {@link UnionGraph union graph}.
-     * It is just in case, the input mapping should already contain everything needed.
+     * Assemblies a query {@link UnionModel union model} from the given {@link MapModel mapping}.
+     * The returned model has a flat graph structure without repetitions,
+     * while the mapping graph has tree-like structure of dependency graphs with duplicated leaves.
+     * Also notice that the result graph is not distinct,
+     * since the mapping may contain also a source data (in additional to the schema, that is required for a mapping).
+     * The nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage.
+     * Therefore, it is expected that an iterator over query model must be faster.
      *
-     * @param mapping {@link MapModel} mapping model
+     * @param mapping {@link MapModel} mapping model, not {@code null}
      * @return {@link UnionModel} with SPIN personalities
      * @see SpinModelConfig#LIB_PERSONALITY
      */
     public UnionModel assembleQueryModel(MapModel mapping) {
-        // spin mapping should be fully described inside the base graph.
-        // also note that the return graph should not be distinct
-        // (the nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage):
-        UnionGraph res = new UnionGraph(mapping.asGraphModel().getBaseGraph(), null, null, false);
-        // add everything from mapping:
-        Graphs.flat(((UnionGraph) mapping.asGraphModel().getGraph()).getUnderlying()).forEach(res::addGraph);
+        UnionGraph g = (UnionGraph) mapping.asGraphModel().getGraph();
+        // no distinct:
+        UnionGraph res = new UnionGraph(g.getBaseGraph(), null, null, false);
         // pass prefixes:
         res.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
+        // add everything from the mapping:
+        g.getUnderlying().graphs().flatMap(Graphs::flat).forEach(res::addGraph);
         // to ensure that all graphs from the library (with except of avc.*) are present (just in case) :
         Graphs.flat(manager.getMapLibraryGraph()).forEach(res::addGraph);
         return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
 
     /**
-     * TODO: fix description
-     * The mapping contains both source and target schema, but may also contain source data.
-     * This method should return OWL model with schema and data and without any other additions.
+     * Runs the given query collection on the {@code source} model and stores the result to the {@code target}.
      *
-     * @param mapping {@link MapModel}
-     * @param source  {@link Graph}
-     * @param target  {@link Graph}
-     * @return {@link OntGraphModel}
+     * @param queries List of {@link QueryWrapper}s, must not be empty
+     * @param source  {@link Graph} containing source individuals
+     * @param target  {@link Graph} to write resulting individuals
      */
-    public OntGraphModel assembleDataModel(MapModel mapping, Graph source, Graph target) {
-        Set<Graph> mappings = mapping.ontologies()
-                .flatMap(o -> Graphs.flat(o.getGraph())).collect(Collectors.toSet());
-        List<Graph> sources = Graphs.flat(source).collect(Collectors.toList());
-        if (mappings.containsAll(sources)) { // the source contains schema
-            return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
+    protected void run(List<QueryWrapper> queries, Graph source, Graph target) {
+        UnionGraph queryGraph = (UnionGraph) SpinModels.getModel(queries.iterator().next()).getGraph();
+        OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
+        Model dst = ModelFactory.createModelForGraph(target);
+        // insets source data into the query model, if it is absent:
+        if (!containsAll(queryGraph, source)) {
+            queryGraph.addGraph(source);
         }
-        // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
-        Set<Graph> exclude = Graphs.flat(manager.getMapLibraryGraph()).collect(Collectors.toSet());
-        Graphs.flat(target).forEach(exclude::add);
-        List<Graph> schemas = mappings.stream().filter(x -> !exclude.contains(x)).collect(Collectors.toList());
-        // the result is not distinct, since the nature of source is unknown,
-        // and the distinct mode might unpredictable degrade performance and memory usage:
-        UnionGraph res = new UnionGraph(sources.remove(0), null, null, false);
-        sources.forEach(res::addGraph);
-        schemas.forEach(res::addGraph);
-        return OntModelFactory.createModel(res, SpinModelConfig.ONT_PERSONALITY);
-    }
-
-    /**
-     * Runs a query collection on one model and stores the result to another.
-     *
-     * @param queries List of {@link QueryWrapper}s
-     * @param src     {@link OntGraphModel} containing source individuals
-     * @param dst     {@link Model} to write
-     */
-    protected void run(List<QueryWrapper> queries, OntGraphModel src, Model dst) {
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
@@ -185,13 +168,65 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
+     * Assembles the source model from the given source graph, that may contain either raw data or data with schema.
+     * The mapping must contain both the source and the target schemas,
+     * but may also include source data in case it is in the same graph with the schema.
+     * This method returns an OWL model both with the schema and data and without any other additions.
+     *
+     * @param query  {@link UnionGraph}, the query model, not {@code null}
+     * @param source {@link Graph}, not {@code null}
+     * @param target {@link Graph}, not {@code null}
+     * @return {@link OntGraphModel}, not {@code null}
+     * @see #assembleQueryModel(MapModel)
+     */
+    public OntGraphModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
+        if (containsAll(query, source)) { // the source contains schema
+            return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
+        }
+        // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
+        Set<Graph> exclude = Graphs.flat(manager.getMapLibraryGraph()).collect(Collectors.toSet());
+        Graphs.flat(target).forEach(exclude::add);
+        List<Graph> schemas = Graphs.flat(query).filter(x -> !exclude.contains(x)).collect(Collectors.toList());
+        List<Graph> sources = Graphs.flat(source).collect(Collectors.toList());
+        // the result is not distinct, since the nature of source is unknown,
+        // and the distinct mode might unpredictable degrade performance and memory usage:
+        UnionGraph res = new UnionGraph(sources.remove(0), null, null, false);
+        sources.forEach(res::addGraph);
+        schemas.forEach(res::addGraph);
+        return OntModelFactory.createModel(res, SpinModelConfig.ONT_PERSONALITY);
+    }
+
+    /**
+     * Answers {@code true} of the {@code left} graph contains everything from the {@code right} graph.
+     *
+     * @param left  {@link Graph}, not {@code null}
+     * @param right {@link Graph}, not {@code null}
+     * @return boolean
+     */
+    public static boolean containsAll(Graph left, Graph right) {
+        Set<Graph> set = Graphs.flat(left).collect(Collectors.toSet());
+        return containsAll(right, set);
+    }
+
+    /**
+     * Answers {@code true} of all parts of the {@code test} graph are containing in the given collection.
+     *
+     * @param test {@link Graph} to test, not {@code null}
+     * @param in   Collection of {@link Graph}s
+     * @return boolean
+     */
+    private static boolean containsAll(Graph test, Collection<Graph> in) {
+        return Graphs.flat(test).allMatch(in::contains);
+    }
+
+    /**
      * Runs a query collection for a collection of individuals (in form of regular resources),
      * stores the result to the specified model.
      *
      * @param queries     List of {@link QueryWrapper}s
      * @param processed   Map of already processed individual-queries to prevent recursion
      * @param individuals List of {@link Resource}s
-     * @param target       {@link Model} to write
+     * @param target      {@link Model} to write
      */
     protected void process(List<QueryWrapper> queries,
                            Map<Resource, Set<QueryWrapper>> processed,
@@ -220,14 +255,14 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                            Set<Node> store,
                            Model target,
                            Resource individual) {
-        queries.forEach(c -> {
-            if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(c)) {
-                LOGGER.warn("The query '{}' has been already processed for individual {}", SpinModels.toString(c), individual);
+        queries.forEach(q -> {
+            if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(q)) {
+                LOGGER.warn("The query '{}' has been already processed for individual {}", SpinModels.toString(q), individual);
                 return;
             }
-            LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(c));
-            Model res = helper.runQueryOnInstance(c, individual);
-            processed.get(individual).add(c);
+            LOGGER.debug("RUN: {} ::: '{}'", individual, SpinModels.toString(q));
+            Model res = helper.runQueryOnInstance(q, individual);
+            processed.get(individual).add(q);
             if (res.isEmpty()) {
                 return;
             }
@@ -269,7 +304,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Lists all valid spin map rules ({@code spinmap:rule}).
+     * Lists all valid spin map rules (i.e. {@code spinmap:rule}).
      *
      * @param model {@link UnionModel} a query model
      * @return List of {@link QueryWrapper}s
@@ -352,11 +387,11 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          */
         @Override
         public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
-            Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
-            Resource get = AVC.currentIndividual.inModel(model);
+            Model mapping = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
+            Resource get = AVC.currentIndividual.inModel(mapping);
             Map<Statement, Statement> vars = getThisVarReplacement(get, instance);
             try {
-                vars.forEach((a, b) -> model.add(b).remove(a));
+                vars.forEach((a, b) -> mapping.add(b).remove(a));
                 if (!vars.isEmpty()) {
                     factory().replace(get);
                 }
@@ -369,13 +404,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                             .build(ex);
                 }
             } finally {
-                vars.forEach((a, b) -> model.add(a).remove(b));
+                vars.forEach((a, b) -> mapping.add(a).remove(b));
             }
         }
 
         private static Map<Statement, Statement> getThisVarReplacement(Resource function, Resource instance) {
             Model m = function.getModel();
-            return SpinModels.getFunctionBody(m, function).stream()
+            return SpinModels.getLocalFunctionBody(m, function).stream()
                     .filter(s -> Objects.equals(s.getObject(), SPIN._this))
                     .collect(Collectors.toMap(x -> x, x -> m.createStatement(x.getSubject(), x.getPredicate(), instance)));
         }

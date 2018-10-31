@@ -20,7 +20,6 @@ package ru.avicomp.map.tests;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
-import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.graph.compose.Union;
 import org.apache.jena.graph.impl.WrappedGraph;
@@ -44,7 +43,6 @@ import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 import java.util.List;
@@ -67,14 +65,18 @@ public class DiffInferenceTest {
         Graph data = assembleSrcData(schema);
         OntGraphModel target = assembleTargetModel();
 
-        LoggedGraph logGraph = new LoggedGraph(data);
         MapModel mapping = assembleMapping(schema, target.getGraph());
         TestUtils.debug(mapping);
-        LOGGER.debug("Before : {}", logGraph.counter.longValue());
+        LoggedGraph logGraph = new LoggedGraph(data);
         mapping.runInference(logGraph, target.getGraph());
-        LOGGER.debug("Done. Count : {}", logGraph.counter.longValue());
+        LOGGER.debug("Inference is done. Find count : {}", logGraph.counter.longValue());
 
         validate(target);
+
+        Graph t = new GraphMem();
+        mapping.runInference(data, t);
+        TestUtils.debug(ModelFactory.createModelForGraph(t));
+        Assert.assertEquals((numberNamedIndividuals + numberAnonymousIndividuals) * 3, t.size());
     }
 
     @Test
@@ -85,12 +87,15 @@ public class DiffInferenceTest {
 
         OntGraphModel withData = OntModelFactory.createModel(schema);
         withData.add(ModelFactory.createModelForGraph(data));
+        LoggedGraph logGraph = new LoggedGraph(withData.getGraph());
 
-        MapModel mapping = assembleMapping(withData.getGraph(), target.getGraph());
+        MapModel mapping = assembleMapping(logGraph, target.getGraph());
         TestUtils.debug(mapping);
 
-        mapping.runInference(withData.getGraph(), target.getGraph());
-        LOGGER.info("Done");
+        long before = logGraph.counter.longValue();
+        LOGGER.debug("Count before : {}", before);
+        mapping.runInference(logGraph, target.getGraph());
+        LOGGER.debug("Inference is done. Find count : {}", logGraph.counter.longValue() - before);
 
         validate(target);
     }
@@ -200,34 +205,7 @@ public class DiffInferenceTest {
 
         void debug(Triple m) {
             LOGGER.debug("Triple pattern: {}", m);
-            if (isPred("http://spinrdf.org/sp#predicate", m)) {
-                System.err.println("P:: " + m);
-            }
-            if (isSubj("http://spinrdf.org/spin#ConstructTemplates", m)) {
-                System.err.println("S:: " + m);
-            }
-            if (isPred("http://spinrdf.org/spinmap#target", m)) {
-                System.err.println("P:: " + m);
-            }
-            if (isSubj("http://avc.ru/spin#UUID", m)) {
-                System.err.println("U:: " + m);
-            }
-            if (isObj(OWL.Ontology.getURI(), m)) {
-                System.err.println("O:: " + m);
-            }
             counter.increment();
-        }
-
-        private boolean isPred(String uri, Triple m) {
-            return NodeFactory.createURI(uri).equals(m.getPredicate());
-        }
-
-        private boolean isSubj(String uri, Triple m) {
-            return NodeFactory.createURI(uri).equals(m.getSubject());
-        }
-
-        private boolean isObj(String uri, Triple m) {
-            return NodeFactory.createURI(uri).equals(m.getObject());
         }
 
     }

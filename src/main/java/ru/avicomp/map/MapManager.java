@@ -134,13 +134,18 @@ public interface MapManager {
     interface InferenceEngine {
 
         /**
-         * Runs inference process.
-         * todo: more description
+         * Performs an inference of the {@code source} data graph, using the {@link MapModel mapping} instructions and
+         * putting the result into the {@code target} graph.
+         * Both {@code source} and {@code target} graphs may be raw
+         * (i.e. only data without any schema) or full (i.e. data plus schema).
+         * The {@link MapModel mapping} should contain all required schemas.
+         * If no mapping rules, that are suitable for the specified {@code source} data, are found,
+         * then {@link MapJenaException Map Exception} is expected.
          *
-         * @param mapping a mapping instructions in form of {@link MapModel}
-         * @param source  a graph with data to map.
-         * @param target  a graph to write mapping results.
-         * @throws MapJenaException in case of something is wrong.
+         * @param mapping a mapping instructions in form of the {@link MapModel}
+         * @param source  a graph with data to map, not {@code null}
+         * @param target  a graph to write mapping results, not {@code null}
+         * @throws MapJenaException in case if something goes wrong
          */
         void run(MapModel mapping, Graph source, Graph target) throws MapJenaException;
 

@@ -56,7 +56,7 @@ public class AdjustGroupConcatImpl implements AdjustFunctionBody {
             throw new MapJenaException("Null or wrong value for separator");
         }
         String separator = (String) value;
-        List<Statement> prev = SpinModels.getFunctionBody(model, resource)
+        List<Statement> prev = SpinModels.getLocalFunctionBody(model, resource)
                 .stream()
                 .filter(s -> Objects.equals(s.getPredicate(), SP.separator))
                 .filter(s -> s.getObject().isLiteral())

@@ -52,7 +52,9 @@ public enum Exceptions {
     FUNCTION_SELF_CALL,
     FUNCTION_NO_REQUIRED_ARG,
 
-    INFERENCE_FAIL;
+    INFERENCE_FAIL,
+    INFERENCE_NO_RULES,
+    ;
 
     public Builder create() {
         return new Builder();
@@ -106,6 +108,7 @@ public enum Exceptions {
     }
 
     public enum Key {
+        MAPPING,
         CONTEXT,
         CONTEXT_SOURCE,
         CONTEXT_TARGET,

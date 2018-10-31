@@ -89,8 +89,6 @@ public class FilterIndividualsMapTest extends MapTestData2 {
     @Test
     public void testValidateMapping() {
         MapModel m = assembleMapping();
-
-
         Assert.assertEquals(2, m.rules().count());
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals("avc:UUID()", c.getMapping().toString());

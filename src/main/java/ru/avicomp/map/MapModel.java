@@ -146,10 +146,12 @@ public interface MapModel {
     }
 
     /**
-     * TODO: description!
+     * Performs an inference of the given {@code source} graph,
+     * putting the result into the specified {@code target} graph.
      *
-     * @param source {@link Graph}
-     * @param target {@link Graph}
+     * @param source {@link Graph}, not {@code null}
+     * @param target {@link Graph}, not {@code null}
+     * @see ru.avicomp.map.MapManager.InferenceEngine#run(MapModel, Graph, Graph)
      */
     default void runInference(Graph source, Graph target) {
         getManager().getInferenceEngine().run(this, source, target);

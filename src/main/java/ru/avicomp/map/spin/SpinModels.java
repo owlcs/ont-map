@@ -24,6 +24,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -109,17 +110,18 @@ public class SpinModels {
         return isDeclarationMapping(rule) && context(rule).filter(SpinModels::isNamedIndividualSelfContext).isPresent();
     }
 
-    public static Set<Statement> getFunctionBody(Model m, Resource function) {
-        return Iter.asStream(m.listStatements(function, RDF.type, SPIN.Function))
-                .map(Statement::getSubject)
-                .filter(r -> r.hasProperty(SPIN.body))
-                .map(r -> r.getRequiredProperty(SPIN.body))
-                .map(Statement::getObject)
-                .filter(RDFNode::isAnon)
-                .map(RDFNode::asResource)
-                .map(Models::getAssociatedStatements)
-                .findFirst()
-                .orElse(Collections.emptySet());
+    public static Set<Statement> getLocalFunctionBody(Model m, Resource function) {
+        if (m instanceof UnionModel) {
+            m = ((UnionModel) m).getBaseModel();
+        }
+        Optional<Resource> res = Iter.findFirst(m.listStatements(function, RDF.type, SPIN.Function)
+                .mapWith(Statement::getSubject)
+                .filterKeep(r -> r.hasProperty(SPIN.body))
+                .mapWith(r -> r.getRequiredProperty(SPIN.body))
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isAnon)
+                .mapWith(RDFNode::asResource));
+        return res.map(Models::getAssociatedStatements).orElse(Collections.emptySet());
     }
 
     public static String toString(CommandWrapper w) {
@@ -128,6 +130,10 @@ public class SpinModels {
         if (w.getText() != null)
             return w.getText();
         return Optional.ofNullable(w.getStatement()).map(Object::toString).orElse("Unknown mapping");
+    }
+
+    public static Model getModel(CommandWrapper w) {
+        return w.getSPINCommand().getModel();
     }
 
     public static boolean isSourcePredicate(Property p) {
