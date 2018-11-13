@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * A Map Manager.
  * This is the only place to provide everything that required to build and conduct OWL2 mapping
  * including map inference, functions, class-property mappings and tools to create new functions.
- *
+ * <p>
  * Created by @szuev on 06.04.2018.
  */
 public interface MapManager {
@@ -128,7 +128,8 @@ public interface MapManager {
     }
 
     /**
-     * An inference engine.
+     * An inference engine, that is an auxiliary class-helper to conduct transferring data from source to target
+     * according to the map-instructions.
      * In our (currently single) implementation it is based on Topbraid SPIN inference engine.
      */
     interface InferenceEngine {
@@ -149,6 +150,16 @@ public interface MapManager {
          */
         void run(MapModel mapping, Graph source, Graph target) throws MapJenaException;
 
+        /**
+         * Performs an inference of the {@code source} data model, using the {@link MapModel mapping} instructions and
+         * putting the result into the {@code target} model.
+         *
+         * @param mapping a {@link MapModel mapping}
+         * @param source  a data {@link Model} to infer, not {@code null}
+         * @param target  a {@link Model} to write mapping inference results, not {@code null}
+         * @throws MapJenaException some error occurs during inference
+         * @see #run(MapModel, Graph, Graph)
+         */
         default void run(MapModel mapping, Model source, Model target) throws MapJenaException {
             run(mapping, source.getGraph(), target.getGraph());
         }

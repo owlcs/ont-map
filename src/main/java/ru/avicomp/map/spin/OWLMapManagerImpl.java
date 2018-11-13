@@ -74,8 +74,11 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
         return createMapManager(factory, lock, UnaryOperator.identity());
     }
 
-    private static MapManagerImpl createMapManager(Supplier<Graph> factory, ReadWriteLock lock, UnaryOperator<OntGraphModel> map) {
-        boolean noOp = Objects.equals(Objects.requireNonNull(lock, "Null lock").getClass(), NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
+    private static MapManagerImpl createMapManager(Supplier<Graph> factory,
+                                                   ReadWriteLock lock,
+                                                   UnaryOperator<OntGraphModel> map) {
+        boolean noOp = Objects.requireNonNull(lock, "Null lock").getClass()
+                .equals(NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
         Graph library = Factory.createGraphMem();
         if (!noOp)
             library = new RWLockedGraph(library, lock);
@@ -270,10 +273,13 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             try {
                 if (isConcurrent()) {
                     Optional<OntologyModel> dst = ontology(target);
-                    if (dst.isPresent()) {
-                        dst.get().clearCache(); // just in case
+                    if (dst.isPresent()) { // <- if the target belongs to the manager
+                        // clears the cache (just in case): new axioms will be added to that ontology
+                        dst.get().clearCache();
                         lock = rwLock.writeLock();
-                    } else if (ontology(mapping.asGraphModel().getGraph()).isPresent() || ontology(source).isPresent()) {
+                    } else if (ontology(mapping.asGraphModel().getGraph()).isPresent() // <- mapping belongs to manager
+                            || ontology(source).isPresent()) { // <- source belongs to manager
+                        // no need in write lock
                         lock = rwLock.readLock();
                     }
                 }

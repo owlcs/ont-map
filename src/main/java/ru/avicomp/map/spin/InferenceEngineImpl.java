@@ -67,7 +67,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
     protected final MapManagerImpl manager;
     protected final MapInferenceHelper helper;
-    protected static final Comparator<CommandWrapper> MAP_COMPARATOR = createMapComparator();
+    protected static final Comparator<CommandWrapper> MAP_RULE_COMPARATOR = createMapComparator();
     // Assume there is Hotspot Java 6 VM (x32)
     // Then java6 (actually java8 much less, java9 even less) approximate String memory size would be: 8 * (int) ((((no chars) * 2) + 45) / 8)
     // org.apache.jena.graph.Node_Blank contains BlankNodeId which in turn contains a String (id) ~ size: 8 (header) + 8 + (string size)
@@ -76,7 +76,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     // the average size of node would be ~ 160 bytes.
     // Let it be ten times more ~ 1024 byte, i.e. 1MB ~= 1000 nodes (Wow! It is very very understated. But whatever)
     // Then 50MB threshold:
-    protected static final int INTERMEDIATE_STORE_THRESHOLD = 50_000;
+    protected static final int INTERMEDIATE_NODES_STORE_THRESHOLD = 50_000;
 
     public InferenceEngineImpl(MapManagerImpl manager) {
         this.manager = manager;
@@ -87,9 +87,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     public void run(MapModel mapping, Graph source, Graph target) throws MapJenaException {
         UnionModel query = assembleQueryModel(mapping);
         // re-register runtime functions
-        Iter.asStream(query.getBaseModel().listResourcesWithProperty(AVC.runtime))
-                .map(r -> r.inModel(query))
-                .forEach(manager.arqFactory::replace);
+        query.getBaseModel().listResourcesWithProperty(AVC.runtime)
+                .mapWith(r -> r.inModel(query))
+                .forEachRemaining(manager.arqFactory::replace);
         // find rules:
         List<QueryWrapper> rules = getSpinMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -159,7 +159,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             Map<Resource, Set<QueryWrapper>> visited;
             process(selected, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush them immediately:
-            if (inMemory.size() > INTERMEDIATE_STORE_THRESHOLD) {
+            if (inMemory.size() > INTERMEDIATE_NODES_STORE_THRESHOLD) {
                 process(queries, visited, inMemory, dst);
             }
         });
@@ -197,7 +197,8 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Answers {@code true} of the {@code left} graph contains everything from the {@code right} graph.
+     * Answers {@code true} if the {@code left} composite graph
+     * contains all components from the {@code right} composite graph.
      *
      * @param left  {@link Graph}, not {@code null}
      * @param right {@link Graph}, not {@code null}
@@ -314,7 +315,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                 .flatMap(t -> helper.listCommands(t, model, true, false))
                 .filter(QueryWrapper.class::isInstance)
                 .map(QueryWrapper.class::cast)
-                .sorted(MAP_COMPARATOR::compare)
+                .sorted(MAP_RULE_COMPARATOR::compare)
                 .collect(Collectors.toList());
     }
 

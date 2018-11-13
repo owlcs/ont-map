@@ -78,8 +78,8 @@ public class MapManagerImpl implements MapManager {
     /**
      * The main constructor.
      *
-     * @param library {@link Graph} which will be used as primary in the library.
-     * @param graphs  a factory to produce Graphs
+     * @param library {@link Graph} to use as primary in the library
+     * @param graphs  a factory to produce Graphs for mappings
      * @param map     Map to store map-functions
      */
     protected MapManagerImpl(Graph library, Supplier<Graph> graphs, Map<String, FunctionImpl> map) {
@@ -154,7 +154,7 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Answers iff target individuals must be {@code owl:NamedIndividuals} also.
+     * Answers {@code true} if target individuals must be {@code owl:NamedIndividuals} also.
      *
      * @return boolean
      */
