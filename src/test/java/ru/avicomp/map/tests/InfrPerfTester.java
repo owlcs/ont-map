@@ -1,3 +1,21 @@
+/*
+ * This file is part of the ONT MAP.
+ * The contents of this file are subject to the Apache License, Version 2.0.
+ * Copyright (c) 2018, Avicomp Services, AO
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ru.avicomp.map.tests;
 
 import org.apache.jena.graph.Graph;
@@ -32,8 +50,12 @@ import java.util.stream.Collectors;
 /**
  * A tester (not a test) for checking inference performance,
  * for investigation and finding an optimal way.
- * this (100_000) ~ 6m52s, 7m9s, 6m26s, 5m57s
+ *
+ * this (100_000) ~ 6m52s, 7m9s, 6m26s, 5m57s; 5m14,5m14s
+ * n-i ~ 4:50s, 4m37s, 3m53s, 3m48s, 3m51s
+ * classic ~ 5m50s,5m:29s
  * d2rq (100_000) - 10m43s (cache), 11m9s (no cache)
+ *
  * <p>
  * Created by @szz on 13.11.2018.
  */
@@ -55,7 +77,7 @@ public class InfrPerfTester {
 
     @BeforeClass
     public static void before() {
-        LOGGER.info("Start");
+        LOGGER.info("Start.");
         log4jLevel = org.apache.log4j.Logger.getRootLogger().getLevel();
         org.apache.log4j.Logger.getRootLogger().setLevel(Level.INFO);
     }

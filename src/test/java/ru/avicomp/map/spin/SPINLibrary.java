@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Not a part of tests : used in tools.
+ *
  * Created by @szuev on 14.06.2018.
  *
  * @see ru.avicomp.map.spin.SystemModels

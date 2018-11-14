@@ -155,10 +155,27 @@ public class MapManagerImpl implements MapManager {
 
     /**
      * Answers {@code true} if target individuals must be {@code owl:NamedIndividuals} also.
+     * This is a configuration option.
      *
      * @return boolean
      */
     public boolean generateNamedIndividuals() {
+        return true;
+    }
+
+    /**
+     * Answers {@code true}
+     * if inference must be optimized, which includes replacing some spin queries with direct operations on a graph.
+     * An example of such optimization is replacement processing {@link SPINMAPL#self spinmapl:self} map-instructions,
+     * that produces {@link ru.avicomp.ontapi.jena.vocabulary.OWL#NamedIndividual owl:NamedIndividuals} declarations,
+     * with direct writing a correspondig triple into a graph.
+     * Please note: the result of inference must not be differ depending on whether this option is enabled or not.
+     * <p>
+     * This is a configuration option.
+     *
+     * @return boolean
+     */
+    public boolean optimizeInference() {
         return true;
     }
 

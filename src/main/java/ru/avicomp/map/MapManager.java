@@ -128,7 +128,7 @@ public interface MapManager {
     }
 
     /**
-     * An inference engine, that is an auxiliary class-helper to conduct transferring data from source to target
+     * An inference engine, that is a service to conduct transferring data from source to target
      * according to the map-instructions.
      * In our (currently single) implementation it is based on Topbraid SPIN inference engine.
      */

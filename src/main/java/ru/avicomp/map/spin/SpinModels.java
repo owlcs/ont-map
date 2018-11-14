@@ -19,7 +19,6 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.*;
-import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -36,7 +35,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Utility to work with {@link org.apache.jena.rdf.model.Model}s encapsulating spin/spinmap rules.
+ * Utility to work with {@link Model Jena Model}s
+ * encapsulating spin/spinmap rules (in the form of {@link Resource Jena Resource}s).
+ *
  * Created by @szuev on 13.05.2018.
  */
 @SuppressWarnings("WeakerAccess")
@@ -45,22 +46,6 @@ public class SpinModels {
     public static final Set<Resource> FUNCTION_TYPES = Stream.of(SPIN.Function,
             SPIN.MagicProperty,
             SPINMAP.TargetFunction).collect(Iter.toUnmodifiableSet());
-
-    /**
-     * Gets a {@code spinmap:rule} from CommandWrapper.
-     *
-     * @param cw {@link CommandWrapper}, not null
-     * @return Optional around {@link Resource} describing rule
-     */
-    public static Optional<Resource> rule(CommandWrapper cw) {
-        return Optional.ofNullable(cw.getStatement())
-                .filter(s -> SPINMAP.rule.equals(s.getPredicate()))
-                .map(Statement::getObject)
-                .filter(RDFNode::isAnon)
-                .map(RDFNode::asResource)
-                .filter(r -> r.hasProperty(SPINMAP.context))
-                .filter(r -> r.getRequiredProperty(SPINMAP.context).getObject().isURIResource());
-    }
 
     /**
      * Answers if specified rule-resource derives {@code rdf:type} declaration.
@@ -122,18 +107,6 @@ public class SpinModels {
                 .filterKeep(RDFNode::isAnon)
                 .mapWith(RDFNode::asResource));
         return res.map(Models::getAssociatedStatements).orElse(Collections.emptySet());
-    }
-
-    public static String toString(CommandWrapper w) {
-        if (w.getLabel() != null)
-            return w.getLabel();
-        if (w.getText() != null)
-            return w.getText();
-        return Optional.ofNullable(w.getStatement()).map(Object::toString).orElse("Unknown mapping");
-    }
-
-    public static Model getModel(CommandWrapper w) {
-        return w.getSPINCommand().getModel();
     }
 
     public static boolean isSourcePredicate(Property p) {
