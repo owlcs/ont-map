@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,25 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.spin;
+package ru.avicomp.map.spin.infer;
 
 import org.apache.jena.enhanced.BuiltinPersonalities;
-import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphEventManager;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.topbraid.spin.util.CommandWrapper;
 import org.topbraid.spin.util.QueryWrapper;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.Exceptions;
+import ru.avicomp.map.spin.MapManagerImpl;
+import ru.avicomp.map.spin.SpinModelConfig;
+import ru.avicomp.map.spin.SpinModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.GraphLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -51,7 +53,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * An implementation of {@link MapManager.InferenceEngine} adapted to ontology data mapping.
+ * An implementation of {@link MapManager.InferenceEngine} adapted to the ontology (OWL2) data mapping paradigm.
  * <p>
  * Created by @szuev on 19.05.2018.
  */
@@ -82,7 +84,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
     public InferenceEngineImpl(MapManagerImpl manager) {
         this.manager = manager;
-        this.helper = new SPINInferenceHelper(manager.arqFactory);
+        this.helper = new SPINInferenceHelper(manager.getFactory());
     }
 
     @Override
@@ -91,7 +93,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // re-register runtime functions
         query.getBaseModel().listResourcesWithProperty(AVC.runtime)
                 .mapWith(r -> r.inModel(query))
-                .forEachRemaining(manager.arqFactory::replace);
+                .forEachRemaining(manager.getFactory()::replace);
         // find rules:
         Set<ProcessedQuery> rules = selectMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -158,14 +160,15 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
             List<ProcessedQuery> selected = select(queries, getClasses(i));
-            Map<Resource, Set<QueryWrapper>> visited;
+            Map<String, Set<QueryWrapper>> visited;
             process(selected, visited = new HashMap<>(), inMemory, dst, i);
-            // in case no enough memory to keep temporary objects, flush them immediately:
+            // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
             if (inMemory.size() > INTERMEDIATE_NODES_STORE_THRESHOLD) {
                 process(queries, visited, inMemory, dst);
             }
         });
-        // next iteration: flush temporary stored individuals, which appeared while the first process
+        // next iteration: flush temporarily stored individuals that are appeared on first pass,
+        // this time it is for dependent queries:
         process(queries, new HashMap<>(), inMemory, dst);
     }
 
@@ -228,13 +231,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Runs a query collection for a collection of individuals (in form of regular resources),
      * stores the result to the specified model.
      *
-     * @param queries     List of {@link QueryWrapper}s
+     * @param queries     List of {@link ProcessedQuery}s
      * @param processed   Map of already processed individual-queries to prevent recursion
      * @param individuals List of {@link Resource}s
      * @param target      {@link Model} to write
      */
     protected void process(Collection<ProcessedQuery> queries,
-                           Map<Resource, Set<QueryWrapper>> processed,
+                           Map<String, Set<QueryWrapper>> processed,
                            Set<Node> individuals,
                            Model target) {
         Iterator<Node> iterator = individuals.iterator();
@@ -247,33 +250,40 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Processes inference on individual.
+     * Processes inference on the individual.
      *
-     * @param queries    List of {@link QueryWrapper}, queries to be run on specified individual
-     * @param processed  Map of already processed individual-queries to prevent recursion
-     * @param store      Set of {@link Node}s, the collection of result individuals to process in next step
-     * @param target     {@link Model} to write inference result
-     * @param individual {@link Resource} individual to process
+     * @param queries    List of {@link ProcessedQuery}, queries to be run on specified individual
+     * @param processed  Map of already processed individual-queries to prevent possible recursion,
+     *                   it is not expected to be large
+     * @param store      Set of {@link Node}s, the collection of result individuals to process in the next step
+     * @param target     {@link Model} to write inference result (individuals and property assertions)
+     * @param individual {@link Resource} the current individual to process
      */
     protected void process(Collection<ProcessedQuery> queries,
-                           Map<Resource, Set<QueryWrapper>> processed,
+                           Map<String, Set<QueryWrapper>> processed,
                            Set<Node> store,
                            Model target,
                            Resource individual) {
         queries.forEach(q -> {
-            if (processed.computeIfAbsent(individual, i -> new HashSet<>()).contains(q)) {
-                LOGGER.warn("The query '{}' has been already processed for individual {}", q, individual);
+            if (!processed.computeIfAbsent(getResourceID(individual), i -> new HashSet<>()).add(q)) {
+                LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
                 return;
             }
             LOGGER.debug("RUN: {} ::: '{}'", individual, q);
+            // use a fresh model, otherwise there is a danger of java.util.ConcurrentModificationException
+            // while graph iterating by some unclear reason if there are dependent rules in the mapping
             Model res = q.run(individual);
-            processed.get(individual).add(q);
-            if (res.isEmpty()) {
-                return;
-            }
-            target.add(res);
-            res.listSubjectsWithProperty(RDF.type).mapWith(FrontsNode::asNode).forEachRemaining(store::add);
+            res.listStatements().forEachRemaining(s -> {
+                if (RDF.type.equals(s.getPredicate())) {
+                    store.add(s.getSubject().asNode());
+                }
+                target.add(s);
+            });
         });
+    }
+
+    private static String getResourceID(Resource res) {
+        return res.isURIResource() ? res.getURI() : res.getId().getLabelString();
     }
 
     /**
@@ -329,7 +339,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @return List of {@link QueryWrapper}s
      */
     public Set<ProcessedQuery> selectMapRules(UnionModel model) {
-        return selectMapRules(model, qw -> (manager.optimizeInference() && isNamedIndividualDeclaration(qw)) ?
+        return selectMapRules(model, qw -> (manager.optimizeInference() && SPINInferenceHelper.isNamedIndividualDeclaration(qw)) ?
                 new NamedIndividualQuery(qw) : new ProcessedQuery(qw));
     }
 
@@ -339,100 +349,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                 .filter(cw -> cw instanceof QueryWrapper)
                 .map(cw -> factory.apply((QueryWrapper) cw))
                 .collect(Collectors.toCollection(TreeSet::new));
-    }
-
-    /**
-     * Answers {@code true} if the given query is
-     * for generating {@link OWL#NamedIndividual owl:NamedIndividuals} declarations.
-     *
-     * @param cw {@link CommandWrapper}, not {@code null}
-     * @return boolean
-     */
-    public static boolean isNamedIndividualDeclaration(CommandWrapper cw) {
-        Map<String, RDFNode> map = cw.getTemplateBinding();
-        return OWL.NamedIndividual.equals(map.get(SPINMAP.expression.getLocalName()))
-                && RDF.type.equals(map.get(SPINMAP.targetPredicate1.getLocalName()));
-    }
-
-    /**
-     * An extended comparable {@link QueryWrapper SPIN Query},
-     * that is a common super type for all mapping queries used while inference in this API.
-     * Created by @ssz on 14.11.2018.
-     */
-    public static class ExtendedQuery extends QueryWrapper implements Comparable<ExtendedQuery> {
-        protected static final Comparator<CommandWrapper> MAP_RULE_COMPARATOR = createMapComparator();
-
-        public ExtendedQuery(QueryWrapper qw) {
-            super(qw.getQuery(),
-                    qw.getSource(),
-                    qw.getText(),
-                    qw.getSPINQuery(),
-                    qw.getLabel(),
-                    qw.getStatement(),
-                    qw.isThisUnbound(),
-                    qw.isThisDeep());
-            setTemplateBinding(qw.getTemplateBinding());
-        }
-
-        /**
-         * Gets a {@code spinmap:rule} from this CommandWrapper.
-         *
-         * @param cw {@link CommandWrapper}, not null
-         * @return Optional around {@link Resource} describing rule
-         */
-        public static Optional<Resource> rule(CommandWrapper cw) {
-            return Optional.ofNullable(cw.getStatement())
-                    .filter(s -> SPINMAP.rule.equals(s.getPredicate()))
-                    .map(Statement::getObject)
-                    .filter(RDFNode::isAnon)
-                    .map(RDFNode::asResource)
-                    .filter(r -> r.hasProperty(SPINMAP.context))
-                    .filter(r -> r.getRequiredProperty(SPINMAP.context).getObject().isURIResource());
-        }
-
-        /**
-         * Creates a rule ({@code spin:rule}) comparator which sorts queries by contexts and puts declaration map rules
-         * (i.e. {@code spinmap:rule} with {@code spinmap:targetPredicate1 rdf:type}) first
-         * and dependent rules last.
-         *
-         * @return {@link Comparator} comparator for {@link CommandWrapper}s
-         */
-        public static Comparator<CommandWrapper> createMapComparator() {
-            Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
-                    .map(String::valueOf).orElse("Unknown"))
-                    .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
-            Comparator<CommandWrapper> res = (left, right) -> {
-                Optional<Resource> r1 = rule(left);
-                Optional<Resource> r2 = rule(right);
-                return r1.isPresent() && r2.isPresent() ? mapRuleComparator.compare(r1.get(), r2.get()) : 10;
-            };
-            return res.thenComparing(Object::toString);
-        }
-
-        @Override
-        public String toString() {
-            String res;
-            if ((res = getLabel()) != null)
-                return res;
-            if ((res = getText()) != null)
-                return res;
-            Statement st = getStatement();
-            if (st != null) return st.toString();
-            return "Unknown mapping";
-        }
-
-        public Model getModel() {
-            return getSPINCommand().getModel();
-        }
-
-        public Resource getSubject() {
-            return getStatement().getSubject();
-        }
-
-        @Override
-        public int compareTo(@SuppressWarnings("NullableProblems") ExtendedQuery o) {
-            return MAP_RULE_COMPARATOR.compare(this, Objects.requireNonNull(o));
-        }
     }
 
     /**
@@ -464,9 +380,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          * that has no been cloned with changing namespace to local mapping model.
          *
          * @param instance {@link Resource}, an individual to process, not {@code null}
-         * @return {@link Model}, new triples
+         * @return {@link Model}, new triples, not {@code null}
          * @throws MapJenaException in case exception occurred while inference
-         * @see SPINInferenceHelper#runQueryOnInstance(QueryWrapper, Resource)
+         * @see SPINInferenceHelper#runQueryOnInstance(QueryWrapper, Resource, Model)
          * @see AVC#currentIndividual
          * @see AVC#MagicFunctions
          */
@@ -477,7 +393,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             try {
                 vars.forEach((a, b) -> mapping.add(b).remove(a));
                 if (!vars.isEmpty()) {
-                    manager.arqFactory.replace(get);
+                    manager.getFactory().replace(get);
                 }
                 try {
                     return helper.runQueryOnInstance(this, instance);

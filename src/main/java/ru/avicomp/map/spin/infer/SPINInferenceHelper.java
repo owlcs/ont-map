@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,25 +16,29 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.spin;
+package ru.avicomp.map.spin.infer;
 
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
 import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.model.*;
 import org.topbraid.spin.model.update.Update;
 import org.topbraid.spin.system.SPINLabels;
 import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.SpinModelConfig;
+import ru.avicomp.map.spin.SpinModels;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -48,17 +52,63 @@ public class SPINInferenceHelper {
 
     protected final ARQFactory arqFactory;
 
-    public SPINInferenceHelper() {
-        this(ARQFactory.get());
+    public SPINInferenceHelper(ARQFactory factory) {
+        this.arqFactory = Objects.requireNonNull(factory);
     }
 
-    public SPINInferenceHelper(ARQFactory factory) {
-        this.arqFactory = factory;
+    /**
+     * Answers {@code true} if the given query is
+     * for generating {@link OWL#NamedIndividual owl:NamedIndividuals} declarations.
+     *
+     * @param cw {@link CommandWrapper}, not {@code null}
+     * @return boolean
+     */
+    public static boolean isNamedIndividualDeclaration(CommandWrapper cw) {
+        Map<String, RDFNode> map = cw.getTemplateBinding();
+        // todo: add more accurate checking (query must be self, but without filters)
+        return OWL.NamedIndividual.equals(map.get(SPINMAP.expression.getLocalName()))
+                && RDF.type.equals(map.get(SPINMAP.targetPredicate1.getLocalName()));
+    }
+
+    /**
+     * Creates a rule ({@code spin:rule}) comparator which sorts queries by contexts and puts declaration map rules
+     * (i.e. {@code spinmap:rule} with {@code spinmap:targetPredicate1 rdf:type}) first
+     * and dependent rules last.
+     *
+     * @return {@link Comparator} comparator for {@link CommandWrapper}s
+     */
+    public static Comparator<CommandWrapper> createMapComparator() {
+        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
+                .map(String::valueOf).orElse("Unknown"))
+                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
+        Comparator<CommandWrapper> res = (left, right) -> {
+            java.util.Optional<Resource> r1 = rule(left);
+            Optional<Resource> r2 = rule(right);
+            return r1.isPresent() && r2.isPresent() ? mapRuleComparator.compare(r1.get(), r2.get()) : 10;
+        };
+        return res.thenComparing(Object::toString);
+    }
+
+    /**
+     * Gets a {@code spinmap:rule} from this CommandWrapper.
+     *
+     * @param cw {@link CommandWrapper}, not null
+     * @return Optional around {@link Resource} describing rule
+     */
+    public static Optional<Resource> rule(CommandWrapper cw) {
+        return Optional.ofNullable(cw.getStatement())
+                .filter(s -> SPINMAP.rule.equals(s.getPredicate()))
+                .map(Statement::getObject)
+                .filter(RDFNode::isAnon)
+                .map(RDFNode::asResource)
+                .filter(r -> r.hasProperty(SPINMAP.context))
+                .filter(r -> r.getRequiredProperty(SPINMAP.context).getObject().isURIResource());
     }
 
     /**
      * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}
-     * @param model     query model, must contain spin stuff (functions, templates, rules, etc), built on top of {@link SpinModelConfig#LIB_PERSONALITY}
+     * @param model     query model, must contain spin stuff (functions, templates, rules, etc),
+     *                  built on top of {@link SpinModelConfig#LIB_PERSONALITY}
      * @param withClass if true {@code ?this a ?TYPE_CLASS} will be added to query
      * @param allowAsk  to allow ASK sparql
      * @return Stream of {@link CommandWrapper}s, possible empty
@@ -71,7 +121,8 @@ public class SPINInferenceHelper {
         if (templateCall == null) {
             Command spinCommand = SPINFactory.asCommand(statement.getResource());
             if (spinCommand == null) return Stream.empty();
-            CommandWrapper wrapper = createCommandWrapper(statement, withClass, allowAsk, null, spinCommand.getComment(), spinCommand, spinCommand);
+            CommandWrapper wrapper = createCommandWrapper(statement, withClass, allowAsk, null,
+                    spinCommand.getComment(), spinCommand, spinCommand);
             if (wrapper == null) {
                 return Stream.empty();
             }
@@ -152,7 +203,10 @@ public class SPINInferenceHelper {
         return null;
     }
 
-    private static boolean isAddThisTypeClause(boolean thisUnbound, boolean withClass, boolean thisDeep, Command command) {
+    private static boolean isAddThisTypeClause(boolean thisUnbound,
+                                               boolean withClass,
+                                               boolean thisDeep,
+                                               Command command) {
         return !thisUnbound && withClass && !thisDeep && SPINUtil.containsThis((CommandWithWhere) command);
     }
 
@@ -168,29 +222,32 @@ public class SPINInferenceHelper {
     }
 
     /**
-     * Runs a given Jena Query on a given instance and adds the inferred triples to a given Model.
-     *
-     * @param queryWrapper {@link CommandWrapper} command to run
-     * @param newTriples   {@link Model} to add result of inference
-     * @param instance     {@link Resource} individual to infer
-     * @return true if changes were done
-     * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
-     */
-    public boolean runQueryOnInstance(QueryWrapper queryWrapper, Model newTriples, Resource instance) {
-        Model res = runQueryOnInstance(queryWrapper, instance);
-        res.listStatements().forEachRemaining(newTriples::add);
-        return !res.isEmpty();
-    }
-
-    /**
      * Runs a given Jena Query on a given individual and returns the inferred triples as a Model.
      *
-     * @param query    {@link QueryWrapper}
-     * @param instance {@link Resource}
-     * @return {@link Model} new triples
+     * @param query    {@link QueryWrapper} command to run
+     * @param instance {@link Resource} individual to infer
+     * @return a fresh in-memory {@link Model} with new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      */
     public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
+        return runQueryOnInstance(query, instance, null);
+    }
+
+    /**
+     * Runs a given Jena Query (wrapped as {@link QueryWrapper SPIN Query})
+     * on a given individual (as a {@link Resource}) and
+     * puts the inferred triples to the specified {@link Model} ({@code res}).
+     *
+     * @param query    {@link QueryWrapper} command to run, not {@code null}
+     * @param instance {@link Resource} individual to infer, not {@code null}
+     * @param res      {@link   Model} a storage to put new triples or {@code null} to create a fresh model
+     * @return {@link Model} the same model as {@code res} or fresh one, if the {@code res} is {@code null}
+     * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
+     */
+    public Model runQueryOnInstance(QueryWrapper query, Resource instance, Model res) {
+        if (res == null) {
+            res = ModelFactory.createDefaultModel();
+        }
         Model model = MapJenaException.notNull(query.getSPINQuery().getModel(), "Unattached query: " + query);
         Map<String, RDFNode> initialBindings = query.getTemplateBinding();
         QuerySolutionMap bindings = new QuerySolutionMap();
@@ -199,7 +256,7 @@ public class SPINInferenceHelper {
         }
         bindings.add(SPIN.THIS_VAR_NAME, instance);
         QueryExecution qexec = arqFactory.createQueryExecution(query.getQuery(), model, bindings);
-        return qexec.execConstruct();
+        return qexec.execConstruct(res);
     }
 
 }

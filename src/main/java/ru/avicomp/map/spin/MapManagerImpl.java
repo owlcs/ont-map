@@ -29,6 +29,7 @@ import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.infer.InferenceEngineImpl;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -90,6 +91,10 @@ public class MapManagerImpl implements MapManager {
         this.arqFactory = new MapARQFactory();
         SPINRegistry.putAll(arqFactory.getFunctionRegistry(), arqFactory.getPropertyFunctionRegistry());
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
+    }
+
+    public MapARQFactory getFactory() {
+        return arqFactory;
     }
 
     /**

@@ -176,7 +176,7 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      * @param inModel {@link Resource} with {@code rdf:type = spin:Function} in model with {@link SpinModelConfig#LIB_PERSONALITY spin-personality}.
      * @throws UnsupportedPolymorphismException in case of incompatible resource in model
      */
-    protected void replace(Resource inModel) throws UnsupportedPolymorphismException {
+    public void replace(Resource inModel) throws UnsupportedPolymorphismException {
         org.topbraid.spin.model.Function func = inModel.as(org.topbraid.spin.model.Function.class);
         clearCaches();
         getFunctionRegistry().put(func.getURI(), asARQFunction(func));

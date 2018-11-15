@@ -29,6 +29,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.infer.InferenceEngineImpl;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
