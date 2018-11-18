@@ -150,7 +150,7 @@ public class OWLAPITest {
         Assert.assertEquals(30, tree.split("\n").length);
 
         LOGGER.debug("Run");
-        manager.getInferenceEngine().run(m2, src1.asGraphModel(), dst1.asGraphModel());
+        manager.getInferenceEngine(m2).run(src1.asGraphModel(), dst1.asGraphModel());
         LOGGER.debug("Validate");
         test.validate(dst1.asGraphModel());
         dst1.axioms().forEach(x -> LOGGER.debug("AXIOM: {}", x));
@@ -166,7 +166,7 @@ public class OWLAPITest {
         PropertyChainMapTest.addDataIndividual(src2.asGraphModel(), "Tirpitz", new double[]{56.23, 34.2});
 
         LOGGER.debug("Re-Run");
-        manager.getInferenceEngine().run(m1, src2.asGraphModel(), dst1.asGraphModel());
+        manager.getInferenceEngine(m1).run(src2.asGraphModel(), dst1.asGraphModel());
         LOGGER.debug("Validate");
         TestUtils.debug(dst1.asGraphModel());
         OntologyModel dst2 = manager.getOntology(dst1.getOntologyID());

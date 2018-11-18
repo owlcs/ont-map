@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
  * for investigation and finding an optimal way.
  *
  * this (100_000) ~ 6m52s, 7m9s, 6m26s, 5m57s; 5m14,5m14s
- * n-i ~ 4:50s, 4m37s, 3m53s, 3m48s, 3m51s
+ * n-i ~ 4:50s, 4m37s, 3m53s, 3m48s, 3m51s, 3m47s
  * classic ~ 5m50s,5m:29s
  * d2rq (100_000) - 10m43s (cache), 11m9s (no cache)
  *
@@ -96,7 +96,7 @@ public class InfrPerfTester {
         MapModel map = composeMapping(manager, source, target);
         Graph data = (Graph) ((Union) source.getBaseGraph()).getR();
 
-        manager.getInferenceEngine().run(map, data, target.getBaseGraph());
+        map.runInference(data, target.getBaseGraph());
         validate(target, individualsNum);
     }
 

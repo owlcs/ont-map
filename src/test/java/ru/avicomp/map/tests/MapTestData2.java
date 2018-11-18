@@ -61,7 +61,7 @@ abstract class MapTestData2 extends AbstractMapTest {
         TestUtils.debug(m);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
+        manager.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
 
         LOGGER.info("Validate.");

@@ -96,7 +96,7 @@ public class LoadFunctionsTest {
         data.validateMapping(m);
 
         OntGraphModel res = data.assembleTarget();
-        manager.getInferenceEngine().run(m, m.asGraphModel().getGraph(), res.getGraph());
+        m.runInference(m.asGraphModel().getGraph(), res.getGraph());
         data.validateResult(res);
     }
 
@@ -125,7 +125,7 @@ public class LoadFunctionsTest {
         LoadMapTestData data = new LoadMapTestData(uri, suffix);
         MapModel map = data.assembleMapping(manager, null, null);
         OntGraphModel res = data.assembleTarget();
-        manager.getInferenceEngine().run(map, map.asGraphModel().getGraph(), res.getGraph());
+        map.runInference(map.asGraphModel().getGraph(), res.getGraph());
         data.validateResult(res);
     }
 

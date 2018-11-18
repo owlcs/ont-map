@@ -28,9 +28,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * A Map Manager.
- * This is the only place to provide everything that required to build and conduct OWL2 mapping
- * including map inference, functions, class-property mappings and tools to create new functions.
+ * A Mapping Manager.
+ * This is the only place to manage everything that required to build and conduct {@link MapModel OWL2 Mapping Model}s
+ * including {@link InferenceEngine map inference}, {@link MapFunction map-function}s,
+ * {@link ClassPropertyMap class-property mapping}s and tools to create/delete new map-functions.
+ * Please note: unlike a {@link ru.avicomp.ontapi.OntologyManager OWL Obtology Manager} this manager
+ * is not a model storage, and does not responsible for models loading and saving.
  * <p>
  * Created by @szuev on 06.04.2018.
  */
@@ -92,11 +95,13 @@ public interface MapManager {
     ClassPropertyMap getClassProperties(OntGraphModel model);
 
     /**
-     * Creates an engine to inference mappings.
+     * Gets an engine to conduct inference on top of the specified {@link MapModel Mapping Model}.
      *
-     * @return {@link InferenceEngine}
+     * @param mapping {@link MapModel}, not {@code null}
+     * @return {@link InferenceEngine}, not {@code null}
+     * @throws MapJenaException in case the mapping is not ready for inference
      */
-    InferenceEngine getInferenceEngine();
+    InferenceEngine getInferenceEngine(MapModel mapping) throws MapJenaException;
 
     /**
      * Gets a MapFunction by IRI Resource.
@@ -128,40 +133,43 @@ public interface MapManager {
     }
 
     /**
-     * An inference engine, that is a service to conduct transferring data from source to target
-     * according to the map-instructions.
-     * In our (currently single) implementation it is based on Topbraid SPIN inference engine.
+     * An inference engine,
+     * that is a service-model to conduct transferring and transforming data
+     * from source to target according to the encapsulated mapping-instructions.
+     *
+     * In our (currently single) implementation it is a SPIN-based inference engine.
+     * @see #getInferenceEngine(MapModel)
      */
     interface InferenceEngine {
 
         /**
-         * Performs an inference of the {@code source} data graph, using the {@link MapModel mapping} instructions and
+         * Performs an inference operation over the {@code source} data graph
          * putting the result into the {@code target} graph.
-         * Both {@code source} and {@code target} graphs may be raw
-         * (i.e. only data without any schema) or full (i.e. data plus schema).
-         * The {@link MapModel mapping} should contain all required schemas.
+         * The term 'inference' here means sequential processing
+         * of the mapping instructions, that are internal to the engine, over the data from the {@code source} graph.
+         * <p>
+         * Both the {@code source} and the {@code target} graphs may be raw
+         * (i.e. only data without schema) or full (i.e. data plus schema).
          * If no mapping rules, that are suitable for the specified {@code source} data, are found,
          * then {@link MapJenaException Map Exception} is expected.
          *
-         * @param mapping a mapping instructions in form of the {@link MapModel}
-         * @param source  a graph with data to map, not {@code null}
-         * @param target  a graph to write mapping results, not {@code null}
+         * @param source a graph with data to infer, not {@code null}
+         * @param target a graph to write mapping results, not {@code null}
          * @throws MapJenaException in case if something goes wrong
          */
-        void run(MapModel mapping, Graph source, Graph target) throws MapJenaException;
+        void run(Graph source, Graph target) throws MapJenaException;
 
         /**
-         * Performs an inference of the {@code source} data model, using the {@link MapModel mapping} instructions and
+         * Performs an inference operation over the {@code source} data model
          * putting the result into the {@code target} model.
          *
-         * @param mapping a {@link MapModel mapping}
-         * @param source  a data {@link Model} to infer, not {@code null}
-         * @param target  a {@link Model} to write mapping inference results, not {@code null}
+         * @param source a data {@link Model} to infer, not {@code null}
+         * @param target a {@link Model} to write mapping inference results, not {@code null}
          * @throws MapJenaException some error occurs during inference
-         * @see #run(MapModel, Graph, Graph)
+         * @see #run(Graph, Graph)
          */
-        default void run(MapModel mapping, Model source, Model target) throws MapJenaException {
-            run(mapping, source.getGraph(), target.getGraph());
+        default void run(Model source, Model target) throws MapJenaException {
+            run(source.getGraph(), target.getGraph());
         }
     }
 

@@ -58,7 +58,7 @@ public class MathOpsMapTest extends MapTestData5 {
         TestUtils.debug(m);
 
         LOGGER.info("Run inference");
-        man.getInferenceEngine().run(m, s, t);
+        man.getInferenceEngine(m).run(s, t);
 
         TestUtils.debug(t);
 

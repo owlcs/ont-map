@@ -146,14 +146,15 @@ public interface MapModel {
     }
 
     /**
-     * Performs an inference of the given {@code source} graph,
+     * Performs an inference operation over the given {@code source} graph,
      * putting the result into the specified {@code target} graph.
      *
      * @param source {@link Graph}, not {@code null}
      * @param target {@link Graph}, not {@code null}
-     * @see ru.avicomp.map.MapManager.InferenceEngine#run(MapModel, Graph, Graph)
+     * @see ru.avicomp.map.MapManager.InferenceEngine#run(Graph, Graph)
+     * @throws MapJenaException unable to perform inference
      */
-    default void runInference(Graph source, Graph target) {
-        getManager().getInferenceEngine().run(this, source, target);
+    default void runInference(Graph source, Graph target) throws MapJenaException {
+        getManager().getInferenceEngine(this).run(source, target);
     }
 }

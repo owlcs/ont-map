@@ -59,7 +59,7 @@ public class IntersectConcatMapTest extends MapTestData4 {
         TestUtils.debug(map);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(map, src, dst);
+        manager.getInferenceEngine(map).run(src, dst);
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");

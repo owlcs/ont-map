@@ -57,7 +57,7 @@ public class SplitMapTest extends MapTestData3 {
         TestUtils.debug(m);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
+        manager.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
 
         LOGGER.info("Validate.");

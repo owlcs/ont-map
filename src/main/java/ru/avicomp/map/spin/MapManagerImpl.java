@@ -466,8 +466,13 @@ public class MapManagerImpl implements MapManager {
     }
 
     @Override
-    public InferenceEngine getInferenceEngine() {
-        return new InferenceEngineImpl(this);
+    public InferenceEngine getInferenceEngine(MapModel mapping) throws MapJenaException {
+        if (MapJenaException.notNull(mapping, "Null mapping").contexts().noneMatch(MapContext::isValid)) {
+            throw Exceptions.INFERENCE_NO_CONTEXTS.create()
+                    .add(Exceptions.Key.MAPPING, String.valueOf(mapping))
+                    .build();
+        }
+        return new InferenceEngineImpl(mapping, this);
     }
 
     /**

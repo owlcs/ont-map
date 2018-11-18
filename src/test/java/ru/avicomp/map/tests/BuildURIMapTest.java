@@ -76,7 +76,7 @@ public class BuildURIMapTest extends MapTestData1 {
         TestUtils.debug(mapping);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(mapping, src, dst);
+        manager.getInferenceEngine(mapping).run(src, dst);
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");

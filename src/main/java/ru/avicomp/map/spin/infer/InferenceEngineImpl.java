@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,6 +70,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(InferenceEngineImpl.class);
 
     protected final MapManagerImpl manager;
+    protected final MapModel mapping;
     protected final SPINInferenceHelper helper;
 
     // Assume there is Hotspot Java 6 VM (x32)
@@ -82,14 +83,15 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     // Then 50MB threshold:
     protected static final int INTERMEDIATE_NODES_STORE_THRESHOLD = 50_000;
 
-    public InferenceEngineImpl(MapManagerImpl manager) {
-        this.manager = manager;
+    public InferenceEngineImpl(MapModel mapping, MapManagerImpl manager) {
+        this.mapping = Objects.requireNonNull(mapping);
+        this.manager = Objects.requireNonNull(manager);
         this.helper = new SPINInferenceHelper(manager.getFactory());
     }
 
     @Override
-    public void run(MapModel mapping, Graph source, Graph target) throws MapJenaException {
-        UnionModel query = assembleQueryModel(mapping);
+    public void run(Graph source, Graph target) throws MapJenaException {
+        UnionModel query = assembleQueryModel();
         // re-register runtime functions
         query.getBaseModel().listResourcesWithProperty(AVC.runtime)
                 .mapWith(r -> r.inModel(query))
@@ -124,11 +126,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * The nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage.
      * Therefore, it is expected that an iterator over query model must be faster.
      *
-     * @param mapping {@link MapModel} mapping model, not {@code null}
      * @return {@link UnionModel} with SPIN personalities
      * @see SpinModelConfig#LIB_PERSONALITY
      */
-    public UnionModel assembleQueryModel(MapModel mapping) {
+    public UnionModel assembleQueryModel() {
         UnionGraph g = (UnionGraph) mapping.asGraphModel().getGraph();
         // no distinct:
         UnionGraph res = new UnionGraph(g.getBaseGraph(), null, null, false);
@@ -182,7 +183,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @param source {@link Graph}, not {@code null}
      * @param target {@link Graph}, not {@code null}
      * @return {@link OntGraphModel}, not {@code null}
-     * @see #assembleQueryModel(MapModel)
+     * @see #assembleQueryModel()
      */
     public OntGraphModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
         if (containsAll(query, source)) { // the source contains schema

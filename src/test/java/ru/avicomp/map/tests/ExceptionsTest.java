@@ -243,7 +243,7 @@ public class ExceptionsTest {
         c.addPropertyBridge(manager.getFunction(FN.format_number).create()
                 .addProperty(SP.arg1, srcProp2)
                 .addLiteral(SP.arg2, "9,9.000"), dstProp3);
-        manager.getInferenceEngine().run(map, src, dst);
+        manager.getInferenceEngine(map).run(src, dst);
         TestUtils.debug(dst);
     }
 }

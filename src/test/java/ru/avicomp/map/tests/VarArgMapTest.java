@@ -48,7 +48,7 @@ public class VarArgMapTest extends AbstractMapTest {
         TestUtils.debug(m);
 
         LOGGER.info("Run inference");
-        man.getInferenceEngine().run(m, s, t);
+        man.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
         LOGGER.info("Validate");
 

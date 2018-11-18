@@ -55,11 +55,11 @@ public class UUIDMapTest extends MapTestData1 {
         MapModel mapping = assembleMapping(manager, src, dst);
         TestUtils.debug(mapping);
 
-        manager.getInferenceEngine().run(mapping, src, dst);
+        manager.getInferenceEngine(mapping).run(src, dst);
         TestUtils.debug(dst);
         Assert.assertEquals(4, dst.listNamedIndividuals().count());
 
-        manager.getInferenceEngine().run(mapping, src, dst);
+        manager.getInferenceEngine(mapping).run(src, dst);
         Assert.assertEquals(4, dst.listNamedIndividuals().count());
         Assert.assertEquals(4, dstClass.individuals().count());
     }

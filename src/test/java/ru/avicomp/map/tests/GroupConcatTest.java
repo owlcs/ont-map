@@ -70,7 +70,7 @@ public class GroupConcatTest extends AbstractMapTest {
         MapModel map = assembleMapping(manager, s, t);
         TestUtils.debug(map);
 
-        manager.getInferenceEngine().run(map, s.getGraph(), t.getGraph());
+        map.runInference(s.getGraph(), t.getGraph());
         TestUtils.debug(t);
         List<OntIndividual> individuals = t.listNamedIndividuals().collect(Collectors.toList());
         Assert.assertEquals(3, individuals.size());

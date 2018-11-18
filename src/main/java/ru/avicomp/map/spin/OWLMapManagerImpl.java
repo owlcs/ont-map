@@ -244,54 +244,65 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     }
 
     @Override
-    public InferenceEngine getInferenceEngine() {
-        return new OWLInferenceEngineImpl(manager.getInferenceEngine());
+    public InferenceEngine getInferenceEngine(MapModel mapping) {
+        return new OWLInferenceEngineImpl(mapping);
     }
 
     public class OWLInferenceEngineImpl implements InferenceEngine {
-        private final InferenceEngine delegate;
+        protected final InferenceEngine delegate;
+        protected final Lock mappingLock;
 
-        public OWLInferenceEngineImpl(InferenceEngine delegate) {
-            this.delegate = delegate;
+        public OWLInferenceEngineImpl(MapModel mapping) {
+            lock.readLock().lock();
+            try {
+                // Use a write lock in case the given mapping belongs to the manager,
+                // since inference engine may add temporary triples into the mapping main graph
+                this.mappingLock = ontology(Objects.requireNonNull(mapping, "Null mapping").asGraphModel().getGraph()).isPresent() ?
+                        lock.writeLock() : NoOpReadWriteLock.NO_OP_LOCK;
+                this.delegate = manager.getInferenceEngine(mapping);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         /**
-         * Runs inference process on the given mapping, source and target.
-         * Uses managers write lock, if the target graph belongs to the manager,
-         * otherwise, if the mapping or the source graph belong to the manager,
-         * uses read lock (manager does not change its state).
+         * Runs an inference process on the given mapping, source and target.
+         * Uses manager's write lock, if the target graph or the mapping belongs to the manager;
+         * or manager's read lock, if the the source graph belongs to the manager,
+         * otherwise uses no-op lock instance.
          *
-         * @param mapping a mapping instructions in form of {@link MapModel}
          * @param source  a graph with data to map.
          * @param target  a graph to write mapping results.
          */
         @Override
-        public void run(MapModel mapping, Graph source, Graph target) {
-            Lock lock = NoOpReadWriteLock.NO_OP_LOCK;
-            ReadWriteLock rwLock = getLock();
-            rwLock.readLock().lock();
+        public void run(Graph source, Graph target) {
+            Lock inferLock;
+            lock.readLock().lock();
             try {
-                if (isConcurrent()) {
-                    Optional<OntologyModel> dst = ontology(target);
-                    if (dst.isPresent()) { // <- if the target belongs to the manager
-                        // clears the cache (just in case): new axioms will be added to that ontology
-                        dst.get().clearCache();
-                        lock = rwLock.writeLock();
-                    } else if (ontology(mapping.asGraphModel().getGraph()).isPresent() // <- mapping belongs to manager
-                            || ontology(source).isPresent()) { // <- source belongs to manager
-                        // no need in write lock
-                        lock = rwLock.readLock();
+                Optional<OntologyModel> dst = ontology(target);
+                // clears the cache (just in case): new axioms will be added to that ontology
+                dst.ifPresent(OntologyModel::clearCache);
+                if (mappingLock != NoOpReadWriteLock.NO_OP_LOCK) { // then write lock (mapping is in the manager)
+                    inferLock = mappingLock;
+                } else {
+                    if (dst.isPresent()) { // the target belongs to the manager
+                        inferLock = lock.writeLock();
+                    } else if (ontology(source).isPresent()) {  // the source belongs to manager
+                        inferLock = lock.readLock();
+                    } else { // all - the mapping, the source and the target - are external to the manager
+                        inferLock = NoOpReadWriteLock.NO_OP_LOCK;
                     }
                 }
             } finally {
-                rwLock.readLock().unlock();
+                lock.readLock().unlock();
             }
-            lock.lock();
+            inferLock.lock();
             try {
-                delegate.run(mapping, source, target);
+                delegate.run(source, target);
             } finally {
-                lock.unlock();
+                inferLock.unlock();
             }
         }
+
     }
 }

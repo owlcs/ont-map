@@ -152,7 +152,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         OntGraphModel dst = m.ontologies().filter(o -> o.listClasses().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, src, dst);
+        manager.getInferenceEngine(m).run(src, dst);
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
@@ -174,7 +174,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         TestUtils.debug(mapping);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(mapping, src, dst);
+        manager.getInferenceEngine(mapping).run(src, dst);
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");

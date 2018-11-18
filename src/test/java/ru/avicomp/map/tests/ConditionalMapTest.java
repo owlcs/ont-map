@@ -55,13 +55,13 @@ public class ConditionalMapTest extends MapTestData2 {
         TestUtils.debug(m);
 
         LOGGER.info("Run inference.");
-        manager.getInferenceEngine().run(m, s, t);
+        manager.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
 
         Assert.assertEquals(4, t.listNamedIndividuals().count());
 
         LOGGER.info("Re-run inference and validate.");
-        manager.getInferenceEngine().run(m, s, t);
+        manager.getInferenceEngine(m).run(s, t);
 
         validate(t);
     }
