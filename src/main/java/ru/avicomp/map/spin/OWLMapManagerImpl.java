@@ -82,7 +82,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
         Graph library = Factory.createGraphMem();
         if (!noOp)
             library = new RWLockedGraph(library, lock);
-        return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>()) {
+        return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>(), MapConfigImpl.INSTANCE) {
             @Override
             protected boolean filter(FunctionImpl f) {
                 lock.readLock().lock();

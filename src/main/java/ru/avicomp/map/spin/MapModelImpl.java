@@ -163,7 +163,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             throw error.build();
         }
         MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
-        if (getManager().generateNamedIndividuals()) {
+        if (getManager().getConfig().generateNamedIndividuals()) {
             findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
         }
         deleteContext(c);
@@ -300,7 +300,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Creates a {@code spinmap:Context} which binds specified class-expressions.
      * It also adds imports for ontologies where arguments are declared in.
-     * In case {@link MapManagerImpl#generateNamedIndividuals()}{@code == true}
+     * In case {@link MapConfigImpl#generateNamedIndividuals()}{@code == true}
      * an additional hidden contexts to generate {@code owl:NamedIndividuals} is created.
      *
      * @param source {@link OntCE}
@@ -321,7 +321,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 })
                 .forEach(MapModelImpl.this::addImport);
         Resource res = makeContext(source.asResource(), target.asResource());
-        if (getManager().generateNamedIndividuals() && !findContext(target.asResource(), OWL.NamedIndividual).isPresent()) {
+        if (getManager().getConfig().generateNamedIndividuals()
+                && !findContext(target.asResource(), OWL.NamedIndividual).isPresent()) {
             MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).create().build();
             asContext(makeContext(target.asResource(), OWL.NamedIndividual)).addClassBridge(expr);
         }

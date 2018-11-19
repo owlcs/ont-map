@@ -19,7 +19,6 @@
 package ru.avicomp.map.spin.infer;
 
 import org.apache.jena.graph.Triple;
-import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.*;
 import org.topbraid.spin.arq.ARQFactory;
@@ -50,8 +49,6 @@ import java.util.stream.Stream;
 @SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 public class SPINInferenceHelper {
 
-    protected final ARQFactory arqFactory;
-
     private static final String SELF_QUERY = "CONSTRUCT \n" +
             "  { \n" +
             "    ?target ?targetPredicate1 ?newValue .\n" +
@@ -61,10 +58,6 @@ public class SPINInferenceHelper {
             "    BIND(<http://spinrdf.org/spin#eval>(?expression, <http://spinrdf.org/sp#arg1>, ?this) AS ?newValue)\n" +
             "    BIND(<http://spinrdf.org/spinmap#targetResource>(?this, ?context) AS ?target)\n" +
             "  }\n";
-
-    public SPINInferenceHelper(ARQFactory factory) {
-        this.arqFactory = Objects.requireNonNull(factory);
-    }
 
     /**
      * Answers {@code true} if the given query is
@@ -133,6 +126,9 @@ public class SPINInferenceHelper {
     }
 
     /**
+     * Lists all {@link CommandWrapper}s for the given root triple.
+     *
+     * @param factory   {@link ARQFactory} to create {@link CommandWrapper}s, not {@code null}
      * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}
      * @param model     query model, must contain spin stuff (functions, templates, rules, etc),
      *                  built on top of {@link SpinModelConfig#LIB_PERSONALITY}
@@ -141,14 +137,18 @@ public class SPINInferenceHelper {
      * @return Stream of {@link CommandWrapper}s, possible empty
      * @see SPINQueryFinder#add(Map, Statement, Model, boolean, boolean)
      */
-    public Stream<CommandWrapper> listCommands(Triple triple, Model model, boolean withClass, boolean allowAsk) {
+    public static Stream<CommandWrapper> listCommands(ARQFactory factory,
+                                                      Triple triple,
+                                                      Model model,
+                                                      boolean withClass,
+                                                      boolean allowAsk) {
         Statement statement = model.asStatement(triple);
         if (!statement.getObject().isResource()) return Stream.empty();
         TemplateCall templateCall = SPINFactory.asTemplateCall(statement.getResource());
         if (templateCall == null) {
             Command spinCommand = SPINFactory.asCommand(statement.getResource());
             if (spinCommand == null) return Stream.empty();
-            CommandWrapper wrapper = createCommandWrapper(statement, withClass, allowAsk, null,
+            CommandWrapper wrapper = createCommandWrapper(factory, statement, withClass, allowAsk, null,
                     spinCommand.getComment(), spinCommand, spinCommand);
             if (wrapper == null) {
                 return Stream.empty();
@@ -170,8 +170,8 @@ public class SPINInferenceHelper {
                     return allowAsk && body instanceof Ask;
                 }).map(body -> {
                     String spinQueryText = SPINLabels.get().getLabel(templateCall);
-                    return createCommandWrapper(statement, withClass, allowAsk, spinQueryText, spinQueryText,
-                            body, templateCall);
+                    return createCommandWrapper(factory, statement, withClass, allowAsk, spinQueryText,
+                            spinQueryText, body, templateCall);
                 })
                 .filter(Objects::nonNull)
                 .peek(c -> {
@@ -181,6 +181,9 @@ public class SPINInferenceHelper {
     }
 
     /**
+     * Creates a {@link CommandWrapper} instance.
+     *
+     * @param factory       {@link ARQFactory}, not {@code null}
      * @param statement     the root {@link Statement} attached to the query model
      * @param withClass     boolean
      * @param allowAsk      boolean
@@ -191,37 +194,38 @@ public class SPINInferenceHelper {
      * @return new {@link CommandWrapper}
      * @see SPINQueryFinder#createCommandWrapper(Map, Statement, boolean, boolean, String, String, Command, Resource)
      */
-    protected CommandWrapper createCommandWrapper(Statement statement,
-                                                  boolean withClass,
-                                                  boolean allowAsk,
-                                                  String spinQueryText,
-                                                  String label,
-                                                  Command spinCommand,
-                                                  Resource source) {
-        String queryString = arqFactory.createCommandString(spinCommand);
+    public static CommandWrapper createCommandWrapper(ARQFactory factory,
+                                                      Statement statement,
+                                                      boolean withClass,
+                                                      boolean allowAsk,
+                                                      String spinQueryText,
+                                                      String label,
+                                                      Command spinCommand,
+                                                      Resource source) {
+        String queryString = factory.createCommandString(spinCommand);
         boolean thisUnbound = spinCommand.hasProperty(SPIN.thisUnbound, JenaDatatypes.TRUE);
         if (spinQueryText == null) {
             spinQueryText = queryString;
         }
         if (spinCommand instanceof Query) {
-            org.apache.jena.query.Query arqQuery = arqFactory.createQuery(queryString);
+            org.apache.jena.query.Query arqQuery = factory.createQuery(queryString);
             if (arqQuery.isConstructType() || (allowAsk && arqQuery.isAskType())) {
                 boolean thisDeep = NestedQueries.hasNestedBlocksUsingThis(arqQuery.getQueryPattern());
                 if (isAddThisTypeClause(thisUnbound, withClass, thisDeep, spinCommand)) {
                     queryString = SPINUtil.addThisTypeClause(queryString);
-                    arqQuery = arqFactory.createQuery(queryString);
+                    arqQuery = factory.createQuery(queryString);
                 }
                 return new QueryWrapper(arqQuery, source, spinQueryText,
                         (Query) spinCommand, label, statement, thisUnbound, thisDeep);
             }
         }
         if (spinCommand instanceof Update) {
-            org.apache.jena.update.UpdateRequest updateRequest = arqFactory.createUpdateRequest(queryString);
+            org.apache.jena.update.UpdateRequest updateRequest = factory.createUpdateRequest(queryString);
             org.apache.jena.update.Update operation = updateRequest.getOperations().get(0);
             boolean thisDeep = NestedQueries.hasNestedBlocksUsingThis(operation);
             if (isAddThisTypeClause(thisUnbound, withClass, thisDeep, spinCommand)) {
                 queryString = SPINUtil.addThisTypeClause(queryString);
-                updateRequest = arqFactory.createUpdateRequest(queryString);
+                updateRequest = factory.createUpdateRequest(queryString);
                 operation = updateRequest.getOperations().get(0);
             }
             return new UpdateWrapper(operation, source, spinQueryText,
@@ -250,14 +254,15 @@ public class SPINInferenceHelper {
 
     /**
      * Runs a given Jena Query on a given individual and returns the inferred triples as a Model.
+     * Use a global {@link ARQFactory}.
      *
      * @param query    {@link QueryWrapper} command to run
      * @param instance {@link Resource} individual to infer
      * @return a fresh in-memory {@link Model} with new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      */
-    public Model runQueryOnInstance(QueryWrapper query, Resource instance) {
-        return runQueryOnInstance(query, instance, null);
+    public static Model runQueryOnInstance(QueryWrapper query, Resource instance) {
+        return runQueryOnInstance(ARQFactory.get(), query, instance, null);
     }
 
     /**
@@ -265,13 +270,14 @@ public class SPINInferenceHelper {
      * on a given individual (as a {@link Resource}) and
      * puts the inferred triples to the specified {@link Model} ({@code res}).
      *
+     * @param factory  {@link ARQFactory}, not {@code null}
      * @param query    {@link QueryWrapper} command to run, not {@code null}
      * @param instance {@link Resource} individual to infer, not {@code null}
      * @param res      {@link   Model} a storage to put new triples or {@code null} to create a fresh model
      * @return {@link Model} the same model as {@code res} or fresh one, if the {@code res} is {@code null}
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      */
-    public Model runQueryOnInstance(QueryWrapper query, Resource instance, Model res) {
+    public static Model runQueryOnInstance(ARQFactory factory, QueryWrapper query, Resource instance, Model res) {
         if (res == null) {
             res = ModelFactory.createDefaultModel();
         }
@@ -282,8 +288,7 @@ public class SPINInferenceHelper {
             initialBindings.forEach(bindings::add);
         }
         bindings.add(SPIN.THIS_VAR_NAME, instance);
-        QueryExecution qexec = arqFactory.createQueryExecution(query.getQuery(), model, bindings);
-        return qexec.execConstruct(res);
+        return factory.createQueryExecution(query.getQuery(), model, bindings).execConstruct(res);
     }
 
 }

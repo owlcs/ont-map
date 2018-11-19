@@ -25,16 +25,14 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.util.QueryWrapper;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.Exceptions;
-import ru.avicomp.map.spin.MapManagerImpl;
-import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SpinModels;
+import ru.avicomp.map.spin.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.GraphLogListener;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -69,9 +67,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InferenceEngineImpl.class);
 
-    protected final MapManagerImpl manager;
     protected final MapModel mapping;
-    protected final SPINInferenceHelper helper;
+    protected final Graph library;
+    protected final MapConfigImpl config;
+    protected final MapARQFactory factory;
 
     // Assume there is Hotspot Java 6 VM (x32)
     // Then java6 (actually java8 much less, java9 even less) approximate String memory size would be: 8 * (int) ((((no chars) * 2) + 45) / 8)
@@ -84,9 +83,14 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected static final int INTERMEDIATE_NODES_STORE_THRESHOLD = 50_000;
 
     public InferenceEngineImpl(MapModel mapping, MapManagerImpl manager) {
+        this(mapping, manager.getMapLibraryGraph(), manager.getFactory(), manager.getConfig());
+    }
+
+    public InferenceEngineImpl(MapModel mapping, Graph library, MapARQFactory factory, MapConfigImpl config) {
         this.mapping = Objects.requireNonNull(mapping);
-        this.manager = Objects.requireNonNull(manager);
-        this.helper = new SPINInferenceHelper(manager.getFactory());
+        this.library = Objects.requireNonNull(library);
+        this.factory = Objects.requireNonNull(factory);
+        this.config = Objects.requireNonNull(config);
     }
 
     @Override
@@ -95,7 +99,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // re-register runtime functions
         query.getBaseModel().listResourcesWithProperty(AVC.runtime)
                 .mapWith(r -> r.inModel(query))
-                .forEachRemaining(manager.getFactory()::replace);
+                .forEachRemaining(factory::replace);
         // find rules:
         Set<ProcessedQuery> rules = selectMapRules(query);
         if (LOGGER.isDebugEnabled())
@@ -108,9 +112,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // run rules:
         GraphEventManager events = target.getEventManager();
         GraphLogListener logs = new GraphLogListener(LOGGER::debug);
+        if (LOGGER.isDebugEnabled())
+            events.register(logs);
         try {
-            if (LOGGER.isDebugEnabled())
-                events.register(logs);
             run(rules, source, target);
         } finally {
             events.unregister(logs);
@@ -138,7 +142,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // add everything from the mapping:
         g.getUnderlying().graphs().flatMap(Graphs::flat).forEach(res::addGraph);
         // to ensure that all graphs from the library (with except of avc.*) are present (just in case) :
-        Graphs.flat(manager.getMapLibraryGraph()).forEach(res::addGraph);
+        Graphs.flat(library).forEach(res::addGraph);
         return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
 
@@ -190,7 +194,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         }
         // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
-        Set<Graph> exclude = Graphs.flat(manager.getMapLibraryGraph()).collect(Collectors.toSet());
+        Set<Graph> exclude = Graphs.flat(library).collect(Collectors.toSet());
         if (target != null) {
             Graphs.flat(target).forEach(exclude::add);
         }
@@ -330,13 +334,14 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @return List of {@link QueryWrapper}s
      */
     public Set<ProcessedQuery> selectMapRules(UnionModel model) {
-        return selectMapRules(model, qw -> (manager.optimizeInference() && SPINInferenceHelper.isNamedIndividualDeclaration(qw)) ?
+        return selectMapRules(model, qw -> (config.optimizeQueries()
+                && SPINInferenceHelper.isNamedIndividualDeclaration(qw)) ?
                 new NamedIndividualQuery(qw) : new ProcessedQuery(qw));
     }
 
     public Set<ProcessedQuery> selectMapRules(UnionModel model, Function<QueryWrapper, ProcessedQuery> factory) {
         return Iter.asStream(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY))
-                .flatMap(t -> helper.listCommands(t, model, true, false))
+                .flatMap(t -> SPINInferenceHelper.listCommands(InferenceEngineImpl.this.factory, t, model, true, false))
                 .filter(cw -> cw instanceof QueryWrapper)
                 .map(cw -> factory.apply((QueryWrapper) cw))
                 .collect(Collectors.toCollection(TreeSet::new));
@@ -373,7 +378,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          * @param instance {@link Resource}, an individual to process, not {@code null}
          * @return {@link Model}, new triples, not {@code null}
          * @throws MapJenaException in case exception occurred while inference
-         * @see SPINInferenceHelper#runQueryOnInstance(QueryWrapper, Resource, Model)
+         * @see SPINInferenceHelper#runQueryOnInstance(ARQFactory, QueryWrapper, Resource, Model)
          * @see AVC#currentIndividual
          * @see AVC#MagicFunctions
          */
@@ -384,10 +389,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             try {
                 vars.forEach((a, b) -> mapping.add(b).remove(a));
                 if (!vars.isEmpty()) {
-                    manager.getFactory().replace(get);
+                    factory.replace(get);
                 }
                 try {
-                    return helper.runQueryOnInstance(this, instance);
+                    return SPINInferenceHelper.runQueryOnInstance(factory, this, instance, null);
                 } catch (RuntimeException ex) {
                     throw Exceptions.INFERENCE_FAIL.create()
                             .add(Exceptions.Key.QUERY, String.valueOf(this))

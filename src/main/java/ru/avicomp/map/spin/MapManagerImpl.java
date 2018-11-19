@@ -61,9 +61,10 @@ import java.util.stream.Stream;
 public class MapManagerImpl implements MapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapModelImpl.class);
 
-    private final PrefixMapping prefixes;
-    private final UnionModel library;
-    private final Map<String, FunctionImpl> functions;
+    protected final PrefixMapping prefixes;
+    protected final UnionModel library;
+    protected final Map<String, FunctionImpl> functions;
+    protected final MapConfigImpl config;
 
     protected final MapARQFactory arqFactory;
     protected final Supplier<Graph> graphFactory;
@@ -73,28 +74,37 @@ public class MapManagerImpl implements MapManager {
     }
 
     protected MapManagerImpl(Supplier<Graph> graphs) {
-        this(graphs.get(), graphs, new HashMap<>());
+        this(graphs.get(), graphs, new HashMap<>(), MapConfigImpl.INSTANCE);
     }
 
     /**
      * The main constructor.
      *
-     * @param library {@link Graph} to use as primary in the library
-     * @param graphs  a factory to produce Graphs for mappings
-     * @param map     Map to store map-functions
+     * @param library {@link Graph} to use as primary in the library, not {@code null}
+     * @param graphs  a factory to produce Graphs for mappings, not {@code null}
+     * @param map     Map to store map-functions, not {@code null}
+     * @param conf    {@link MapConfigImpl}, configuration, not {@code null}
      */
-    protected MapManagerImpl(Graph library, Supplier<Graph> graphs, Map<String, FunctionImpl> map) {
+    protected MapManagerImpl(Graph library,
+                             Supplier<Graph> graphs,
+                             Map<String, FunctionImpl> map,
+                             MapConfigImpl conf) {
         this.graphFactory = Objects.requireNonNull(graphs, "Null graph factory");
         this.functions = Objects.requireNonNull(map, "Null map");
         this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
         this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
         this.arqFactory = new MapARQFactory();
+        this.config = Objects.requireNonNull(conf, "Null config");
         SPINRegistry.putAll(arqFactory.getFunctionRegistry(), arqFactory.getPropertyFunctionRegistry());
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 
     public MapARQFactory getFactory() {
         return arqFactory;
+    }
+
+    public MapConfigImpl getConfig() {
+        return config;
     }
 
     /**
@@ -156,32 +166,6 @@ public class MapManagerImpl implements MapManager {
         return Arrays.stream(SystemModels.Resources.values())
                 .filter(s -> s.name().startsWith("AVC"))
                 .map(SystemModels::get);
-    }
-
-    /**
-     * Answers {@code true} if target individuals must be {@code owl:NamedIndividuals} also.
-     * This is a configuration option.
-     *
-     * @return boolean
-     */
-    public boolean generateNamedIndividuals() {
-        return true;
-    }
-
-    /**
-     * Answers {@code true}
-     * if inference must be optimized, which includes replacing some spin queries with direct operations on a graph.
-     * An example of such optimization is replacement processing {@link SPINMAPL#self spinmapl:self} map-instructions,
-     * that produces {@link ru.avicomp.ontapi.jena.vocabulary.OWL#NamedIndividual owl:NamedIndividuals} declarations,
-     * with direct writing a correspondig triple into a graph.
-     * Please note: the result of inference must not be differ depending on whether this option is enabled or not.
-     * <p>
-     * This is a configuration option.
-     *
-     * @return boolean
-     */
-    public boolean optimizeInference() {
-        return true;
     }
 
     /**
