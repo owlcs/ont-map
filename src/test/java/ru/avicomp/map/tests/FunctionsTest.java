@@ -77,7 +77,7 @@ public class FunctionsTest {
      */
     enum FuncTypeFilter {
         ALL(187, f -> true),
-        BOOLEAN_TYPE(38, FunctionFilter.BOOLEAN),
+        BOOLEAN_TYPE(39, FunctionFilter.BOOLEAN),
         BOOLEAN_CLASS(25, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions)),
         DATE(13, FunctionFilter.DATE),
         MATH(35, FunctionFilter.MATH),

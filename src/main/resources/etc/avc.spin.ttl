@@ -141,6 +141,8 @@ afn:pi  avc:hidden  "Use math:pi instead" .
 
 sp:isNumeric  avc:returnType  xsd:boolean .
 
+sp:contains  avc:returnType  xsd:boolean .
+
 sp:tz   avc:returnType   xsd:string ;
         spin:constraint  [ a              spl:Argument ;
                            spl:predicate  sp:arg1 ;

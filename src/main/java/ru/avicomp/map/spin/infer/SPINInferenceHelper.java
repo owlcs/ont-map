@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,6 +52,16 @@ public class SPINInferenceHelper {
 
     protected final ARQFactory arqFactory;
 
+    private static final String SELF_QUERY = "CONSTRUCT \n" +
+            "  { \n" +
+            "    ?target ?targetPredicate1 ?newValue .\n" +
+            "  }\n" +
+            "WHERE\n" +
+            "  { ?this  a                     ?TYPE_CLASS\n" +
+            "    BIND(<http://spinrdf.org/spin#eval>(?expression, <http://spinrdf.org/sp#arg1>, ?this) AS ?newValue)\n" +
+            "    BIND(<http://spinrdf.org/spinmap#targetResource>(?this, ?context) AS ?target)\n" +
+            "  }\n";
+
     public SPINInferenceHelper(ARQFactory factory) {
         this.arqFactory = Objects.requireNonNull(factory);
     }
@@ -60,14 +70,31 @@ public class SPINInferenceHelper {
      * Answers {@code true} if the given query is
      * for generating {@link OWL#NamedIndividual owl:NamedIndividuals} declarations.
      *
-     * @param cw {@link CommandWrapper}, not {@code null}
+     * @param cw {@link QueryWrapper}, not {@code null}
      * @return boolean
      */
-    public static boolean isNamedIndividualDeclaration(CommandWrapper cw) {
-        Map<String, RDFNode> map = cw.getTemplateBinding();
-        // todo: add more accurate checking (query must be self, but without filters)
-        return OWL.NamedIndividual.equals(map.get(SPINMAP.expression.getLocalName()))
-                && RDF.type.equals(map.get(SPINMAP.targetPredicate1.getLocalName()));
+    public static boolean isNamedIndividualDeclaration(QueryWrapper cw) {
+        return isDeclaration(cw, OWL.NamedIndividual);
+    }
+
+    /**
+     * Answers {@code true} if the given query is for generating {@code rdf:type} declarations.
+     * Such query corresponds the {@code spinmap:Mapping-0-1} with {@code spinmapl:self} target function.
+     *
+     * @param cw   {@link QueryWrapper}, not {@code null}
+     * @param type {@link Resource} type to check
+     * @return boolean
+     */
+    public static boolean isDeclaration(QueryWrapper cw, Resource type) {
+        Map<String, RDFNode> input = cw.getTemplateBinding();
+        return input.size() == 3
+                && type.equals(input.get(SPINMAP.expression.getLocalName()))
+                && RDF.type.equals(input.get(SPINMAP.targetPredicate1.getLocalName()))
+                && isSelfQuery(cw.getQuery());
+    }
+
+    private static boolean isSelfQuery(org.apache.jena.query.Query query) {
+        return query != null && SELF_QUERY.equals(query.toString());
     }
 
     /**

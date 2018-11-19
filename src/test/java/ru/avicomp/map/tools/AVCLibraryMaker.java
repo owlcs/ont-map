@@ -149,6 +149,7 @@ public class AVCLibraryMaker {
 
         // Boolean functions:
         SP.isNumeric.inModel(m).addProperty(AVC.returnType, XSD.xboolean);
+        SP.resource("contains").inModel(m).addProperty(AVC.returnType, XSD.xboolean);
 
         // Datatime functions:
         SP.tz.inModel(m)

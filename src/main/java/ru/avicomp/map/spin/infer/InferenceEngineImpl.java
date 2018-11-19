@@ -160,17 +160,17 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
-            List<ProcessedQuery> selected = select(queries, getClasses(i));
+            Set<OntCE> classes = getClasses(i);
             Map<String, Set<QueryWrapper>> visited;
-            process(selected, visited = new HashMap<>(), inMemory, dst, i);
+            processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
             if (inMemory.size() > INTERMEDIATE_NODES_STORE_THRESHOLD) {
-                process(queries, visited, inMemory, dst);
+                processMany(queries, visited, dst, inMemory);
             }
         });
         // next iteration: flush temporarily stored individuals that are appeared on first pass,
         // this time it is for dependent queries:
-        process(queries, new HashMap<>(), inMemory, dst);
+        processMany(queries, new HashMap<>(), dst, inMemory);
     }
 
     /**
@@ -229,58 +229,62 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Runs a query collection for a collection of individuals (in form of regular resources),
-     * stores the result to the specified model.
+     * Runs a query collection against a collection of individuals (in the form of regular resources),
+     * writes the result into the specified {@code target} model.
      *
-     * @param queries     List of {@link ProcessedQuery}s
+     * @param queries     Collection of all {@link ProcessedQuery}s found in the {@link #mapping}
      * @param processed   Map of already processed individual-queries to prevent recursion
-     * @param individuals List of {@link Resource}s
      * @param target      {@link Model} to write
+     * @param individuals List of {@link Resource}s
      */
-    protected void process(Collection<ProcessedQuery> queries,
-                           Map<String, Set<QueryWrapper>> processed,
-                           Set<Node> individuals,
-                           Model target) {
+    protected void processMany(Collection<ProcessedQuery> queries,
+                               Map<String, Set<QueryWrapper>> processed,
+                               Model target,
+                               Set<Node> individuals) {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
             Resource i = target.asRDFNode(iterator.next()).asResource();
-            List<ProcessedQuery> selected = select(queries, getClasses(i));
-            process(selected, processed, individuals, target, i);
+            Set<Resource> classes = getClasses(i);
+            processOne(queries, classes, processed, individuals, target, i);
             iterator.remove();
         }
     }
 
     /**
-     * Processes inference on the individual.
+     * Runs a query collection against the single individual.
      *
-     * @param queries    List of {@link ProcessedQuery}, queries to be run on specified individual
+     * @param queries    Collection of all {@link ProcessedQuery}s found in the {@link #mapping}
+     * @param classes    Set of class expressions, which the given individual is belonged to
      * @param processed  Map of already processed individual-queries to prevent possible recursion,
      *                   it is not expected to be large
      * @param store      Set of {@link Node}s, the collection of result individuals to process in the next step
      * @param target     {@link Model} to write inference result (individuals and property assertions)
      * @param individual {@link Resource} the current individual to process
      */
-    protected void process(Collection<ProcessedQuery> queries,
-                           Map<String, Set<QueryWrapper>> processed,
-                           Set<Node> store,
-                           Model target,
-                           Resource individual) {
-        queries.forEach(q -> {
-            if (!processed.computeIfAbsent(getResourceID(individual), i -> new HashSet<>()).add(q)) {
-                LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
-                return;
-            }
-            LOGGER.debug("RUN: {} ::: '{}'", individual, q);
-            // use a fresh model, otherwise there is a danger of java.util.ConcurrentModificationException
-            // while graph iterating by some unclear reason if there are dependent rules in the mapping
-            Model res = q.run(individual);
-            res.listStatements().forEachRemaining(s -> {
-                if (RDF.type.equals(s.getPredicate())) {
-                    store.add(s.getSubject().asNode());
-                }
-                target.add(s);
-            });
-        });
+    protected void processOne(Collection<ProcessedQuery> queries,
+                              Set<? extends Resource> classes,
+                              Map<String, Set<QueryWrapper>> processed,
+                              Set<Node> store,
+                              Model target,
+                              Resource individual) {
+        queries.stream()
+                .filter(c -> classes.contains(c.getSubject()))
+                .forEach(q -> {
+                    if (!processed.computeIfAbsent(getResourceID(individual), i -> new HashSet<>()).add(q)) {
+                        LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
+                        return;
+                    }
+                    LOGGER.debug("RUN: {} ::: '{}'", individual, q);
+                    // use a fresh model, otherwise there is a danger of java.util.ConcurrentModificationException
+                    // while graph iterating by some unclear reason if there are dependent rules in the mapping
+                    Model res = q.run(individual);
+                    res.listStatements().forEachRemaining(s -> {
+                        if (RDF.type.equals(s.getPredicate())) {
+                            store.add(s.getSubject().asNode());
+                        }
+                        target.add(s);
+                    });
+                });
     }
 
     private static String getResourceID(Resource res) {
@@ -317,20 +321,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
         if (!res.add(ce)) return;
         ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
-    }
-
-    /**
-     * Selects those queries whose source classes are in the the given list.
-     * Auxiliary method.
-     *
-     * @param all     List of {@link ProcessedQuery}s
-     * @param classes List of class expressions
-     * @return List of {@link ProcessedQuery}
-     */
-    private static List<ProcessedQuery> select(Collection<ProcessedQuery> all, Set<? extends Resource> classes) {
-        return all.stream()
-                .filter(c -> classes.contains(c.getSubject()))
-                .collect(Collectors.toList());
     }
 
     /**
