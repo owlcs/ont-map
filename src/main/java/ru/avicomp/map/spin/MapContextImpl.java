@@ -141,6 +141,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
             m.remove(s);
         });
         writeFunctionBody(mappingFunction);
+        writeFunctionBody(filterFunction);
         return this;
     }
 
@@ -159,6 +160,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         RDFNode mappingExpression = m.createExpression(mappingFunction);
         Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
         writeFunctionBody(mappingFunction);
+        writeFunctionBody(filterFunction);
         return asPropertyBridge(mapping);
     }
 
@@ -168,6 +170,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
      * @param call {@link MapFunction.Call}
      */
     protected void writeFunctionBody(MapFunction.Call call) {
+        if (call == null) return;
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
             MapModelImpl m = getModel();

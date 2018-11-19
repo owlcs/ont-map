@@ -40,12 +40,16 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Auxiliary class-helper to build a custom spin construct mapping template, which extends {@code spinmap:Mapping-1} and is optimised to ONT-MAP API logic.
- * In addition to common inherited capabilities the result template must be able to accept and evaluate filter expression and default values.
- * Also it should be able to deal with the right-part (target) property assertions, but currently this is not supported (todo!).
+ * Auxiliary class-helper to build a custom spin construct mapping template,
+ * which extends {@code spinmap:Mapping-1} and is optimised to ONT-MAP API logic.
+ * In addition to common inherited capabilities
+ * the result template must be able to accept and evaluate filter expression and default values.
+ * Also it should be able to deal with the right-part (target) property assertions,
+ * but currently this is not supported (todo!).
  * <p>
  * Notice that provided functionality is absent in the standard spin-library supply:
- * a spinmap conditional mapping (see {@code spinmap:Conditional-Mapping-1-1}) can only accept ASK query, not abstract expression;
+ * a spinmap conditional mapping (see {@code spinmap:Conditional-Mapping-1-1}) can only accept ASK query,
+ * not abstract expression;
  * no default values are supported by all others standard mappings (e.g. {@code spinmap:Mapping-2-1}) -
  * i.e. if there is no data assertion on source individual then no mapping is performed.
  * <p>
@@ -72,7 +76,8 @@ public class MappingBuilder {
      * The result template is written directly into the specified model graph.
      * If {@code isPropertyMapping = false} it produces an universal mapping ({@code avc:Mapping-...-t1}),
      * which can be used in any case - both for class and property mappings,
-     * otherwise a more specific property template ({@code avc:PropertyMapping-...-t1}) with a class assertion filter in addition is provided.
+     * otherwise a more specific property template ({@code avc:PropertyMapping-...-t1})
+     * with a class assertion filter in addition is provided.
      * Since the order of inference has been changed (see {@link InferenceEngineImpl}),
      * a property mapping is processed only after a corresponding individual is created by class-map rule.
      * Note, that for compatibility with TopBraid Composer Inference there is also a special setting
@@ -81,8 +86,10 @@ public class MappingBuilder {
      *
      * @param model             {@link MapModelImpl}
      * @param isPropertyMapping if true a class assertion filter is added into the SPARQL construct
-     * @param filterPredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while filtering
-     * @param sourcePredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}), which are used while mapping
+     * @param filterPredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}),
+     *                          which are used while filtering
+     * @param sourcePredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}),
+     *                          which are used while mapping
      * @return {@link Resource} a fresh or found mapping template resource in model
      * @throws MapJenaException if something goes wrong
      */
@@ -92,7 +99,8 @@ public class MappingBuilder {
                                                  List<Property> sourcePredicates) throws MapJenaException {
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
-        Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources)).inModel(model);
+        Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources))
+                .inModel(model);
         if (model.contains(res, RDF.type, SPIN.ConstructTemplate)) {
             return res;
         }
@@ -133,7 +141,8 @@ public class MappingBuilder {
                         }
                     } else {
                         // default value is optional:
-                        Property defaultValue = model.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI());
+                        Property defaultValue = model
+                                .createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI());
                         res.addProperty(SPIN.constraint, model.createResource()
                                 .addProperty(RDF.type, SPL.Argument)
                                 .addProperty(SPL.predicate, defaultValue)
@@ -305,9 +314,10 @@ public class MappingBuilder {
                 requireClassAssertion ? "Property " : "",
                 asLabeledVariable("context"),
                 asLabeledVariable(targetPredicate),
-                sourcePredicates.stream().map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
+                sourcePredicates.isEmpty() ? "self" :
+                        sourcePredicates.stream()
+                                .map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
     }
-
 
     private static String asOptional(String expr) {
         return String.format("\tOPTIONAL {\n\t\t%s\n\t} .", expr);

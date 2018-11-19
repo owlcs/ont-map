@@ -34,9 +34,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * An utility class to save tests examples to some directory in order to test in Composer.
+ * An utility class to save tests examples to some directory in order to test or show in Composer.
  * For developing and demonstration.
- * Can be removed.
+ * Not a test or part of system: can be removed.
  * Created by @szuev on 24.04.2018.
  */
 public class TestExamplesSaver {
@@ -49,21 +49,22 @@ public class TestExamplesSaver {
         }
         MapManager manager = Managers.createMapManager();
         Collection<AbstractMapTest> mapTests = Arrays.asList(
-                new UUIDMapTest(),
+                new UUIDMapTest(),              //1
                 new BuildURIMapTest(),
                 new NestedFuncMapTest(),
                 new ConditionalMapTest(),
-                new RelatedContextMapTest(),
+                new RelatedContextMapTest(),    //5
                 new FilterDefaultMapTest(),
-                new FilterIndividualsMapTest(),
+                new FilterIndividualsMapTest(), //7
                 new SplitMapTest(),
                 new IntersectConcatMapTest(),
-                new GroupConcatTest(),
+                new GroupConcatTest(),          //10
                 new MathOpsMapTest(),
                 new MultiContextMapTest(),
                 new PropertyChainMapTest(),
-                new VarArgMapTest(),
-                new LoadMapTestData()
+                new VarArgMapTest(),            //14
+                new LoadMapTestData(),
+                new SelfMapTest()      //16
         );
 
         for (AbstractMapTest mapTest : mapTests) {
@@ -71,14 +72,20 @@ public class TestExamplesSaver {
             OntGraphModel dst = mapTest.assembleTarget();
             OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asGraphModel();
 
-            saveTurtle(makeTurtleFile(dir, map), map);
+            String mappingFile;
+            if (map.getID().isAnon()) {
+                mappingFile = mapTest.getClass().getSimpleName() + "-map";
+            } else {
+                mappingFile = makeTurtleFileName(map.getID().getURI());
+            }
+            saveTurtle(dir.resolve(mappingFile + ".ttl"), map);
 
             if (!src.isEmpty()) {
-                Path f = makeTurtleFile(dir, src);
+                Path f = dir.resolve(makeTurtleFileName(src.getID().getURI()) + ".ttl");
                 saveTurtle(f, src);
             }
             if (!dst.isEmpty()) {
-                Path f = makeTurtleFile(dir, dst);
+                Path f = dir.resolve(makeTurtleFileName(dst.getID().getURI()) + ".ttl");
                 saveTurtle(f, dst);
             }
         }
@@ -91,14 +98,6 @@ public class TestExamplesSaver {
         }
     }
 
-    private static Path makeTurtleFile(Path dir, OntGraphModel m) {
-        return dir.resolve(makeTurtleFileName(m));
-    }
-
-    private static String makeTurtleFileName(OntGraphModel m) {
-        return makeTurtleFileName(m.getID().getURI());
-    }
-
     private static String makeTurtleFileName(String url) {
         return url.replaceFirst("^\\w+://[^/]+/+(.+)$", "$1")
                 .replaceFirst("^\\w+://", "")
@@ -106,8 +105,7 @@ public class TestExamplesSaver {
                 .replaceFirst("^/+", "")
                 .replaceFirst("/+$", "")
                 .replace("#", "-")
-                .replace("/", "-")
-                + ".ttl";
+                .replace("/", "-");
     }
 
 }
