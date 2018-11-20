@@ -22,13 +22,15 @@ import org.apache.jena.enhanced.BuiltinPersonalities;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphEventManager;
 import org.apache.jena.graph.Node;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.util.QueryWrapper;
 import org.topbraid.spin.vocabulary.SPIN;
-import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
@@ -40,7 +42,6 @@ import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntIndividual;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -158,13 +159,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
         // insets source data into the query model, if it is absent:
-        if (!containsAll(queryGraph, source)) {
+        if (!MapGraphUtils.containsAll(queryGraph, source)) {
             queryGraph.addGraph(source);
         }
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
-            Set<OntCE> classes = getClasses(i);
+            Set<OntCE> classes = MapGraphUtils.getClasses(i);
             Map<String, Set<QueryWrapper>> visited;
             processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
@@ -190,7 +191,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @see #assembleQueryModel()
      */
     public OntGraphModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
-        if (containsAll(query, source)) { // the source contains schema
+        if (MapGraphUtils.containsAll(query, source)) { // the source contains schema
             return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         }
         // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
@@ -209,30 +210,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Answers {@code true} if the {@code left} composite graph
-     * contains all components from the {@code right} composite graph.
-     *
-     * @param left  {@link Graph}, not {@code null}
-     * @param right {@link Graph}, not {@code null}
-     * @return boolean
-     */
-    public static boolean containsAll(Graph left, Graph right) {
-        Set<Graph> set = Graphs.flat(left).collect(Collectors.toSet());
-        return containsAll(right, set);
-    }
-
-    /**
-     * Answers {@code true} if all parts of the {@code test} graph are containing in the given graph collection.
-     *
-     * @param test {@link Graph} to test, not {@code null}
-     * @param in   Collection of {@link Graph}s
-     * @return boolean
-     */
-    private static boolean containsAll(Graph test, Collection<Graph> in) {
-        return Graphs.flat(test).allMatch(in::contains);
-    }
-
-    /**
      * Runs a query collection against a collection of individuals (in the form of regular resources),
      * writes the result into the specified {@code target} model.
      *
@@ -248,7 +225,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
             Resource i = target.asRDFNode(iterator.next()).asResource();
-            Set<Resource> classes = getClasses(i);
+            Set<Resource> classes = MapGraphUtils.getClasses(i);
             processOne(queries, classes, processed, individuals, target, i);
             iterator.remove();
         }
@@ -274,7 +251,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         queries.stream()
                 .filter(c -> classes.contains(c.getSubject()))
                 .forEach(q -> {
-                    if (!processed.computeIfAbsent(getResourceID(individual), i -> new HashSet<>()).add(q)) {
+                    if (!processed.computeIfAbsent(MapGraphUtils.getResourceID(individual), i -> new HashSet<>()).add(q)) {
                         LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
                         return;
                     }
@@ -291,42 +268,6 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                 });
     }
 
-    private static String getResourceID(Resource res) {
-        return res.isURIResource() ? res.getURI() : res.getId().getLabelString();
-    }
-
-    /**
-     * Gets all object resources from {@code rdf:type} statement for a specified subject in the model.
-     *
-     * @param i {@link Resource}, individual
-     * @return Set of {@link Resource}, classes
-     */
-    private static Set<Resource> getClasses(Resource i) {
-        return i.listProperties(RDF.type)
-                .mapWith(Statement::getObject)
-                .filterKeep(RDFNode::isResource)
-                .mapWith(RDFNode::asResource)
-                .toSet();
-    }
-
-    /**
-     * Gets all types (classes) for an individual, taken into account class hierarchy.
-     * TODO: move to ONT-API?
-     *
-     * @param individual {@link OntIndividual}
-     * @return Set of {@link OntCE class expressions}
-     */
-    public static Set<OntCE> getClasses(OntIndividual individual) {
-        Set<OntCE> res = new HashSet<>();
-        individual.classes().forEach(c -> collectSuperClasses(c, res));
-        return res;
-    }
-
-    private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
-        if (!res.add(ce)) return;
-        ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
-    }
-
     /**
      * Lists all valid spin map rules (i.e. {@code spinmap:rule}).
      *
@@ -339,11 +280,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
                 new NamedIndividualQuery(qw) : new ProcessedQuery(qw));
     }
 
-    public Set<ProcessedQuery> selectMapRules(UnionModel model, Function<QueryWrapper, ProcessedQuery> factory) {
-        return Iter.asStream(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY))
-                .flatMap(t -> SPINInferenceHelper.listCommands(InferenceEngineImpl.this.factory, t, model, true, false))
-                .filter(cw -> cw instanceof QueryWrapper)
-                .map(cw -> factory.apply((QueryWrapper) cw))
+    public Set<ProcessedQuery> selectMapRules(UnionModel model, Function<QueryWrapper, ProcessedQuery> mapper) {
+        return Iter.asStream(SPINInferenceHelper.listMappingRules(factory, model))
+                .map(mapper)
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 

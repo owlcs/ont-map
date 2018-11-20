@@ -18,9 +18,11 @@
 
 package ru.avicomp.map.spin.infer;
 
-import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.Node;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.util.iterator.ExtendedIterator;
+import org.apache.jena.util.iterator.NullIterator;
 import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.model.*;
 import org.topbraid.spin.model.update.Update;
@@ -29,8 +31,8 @@ import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SpinModels;
+import ru.avicomp.ontapi.jena.impl.UnionModel;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -38,7 +40,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * An ONT-MAP replacement for several Topbraid-SPIN common classes to conduct inference.
@@ -58,6 +59,7 @@ public class SPINInferenceHelper {
             "    BIND(<http://spinrdf.org/spin#eval>(?expression, <http://spinrdf.org/sp#arg1>, ?this) AS ?newValue)\n" +
             "    BIND(<http://spinrdf.org/spinmap#targetResource>(?this, ?context) AS ?target)\n" +
             "  }\n";
+    private static final ExtendedIterator<CommandWrapper> EMPTY_ITERATOR = NullIterator.instance();
 
     /**
      * Answers {@code true} if the given query is
@@ -98,9 +100,9 @@ public class SPINInferenceHelper {
      * @return {@link Comparator} comparator for {@link CommandWrapper}s
      */
     public static Comparator<CommandWrapper> createMapComparator() {
-        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
+        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> MapGraphUtils.context(r)
                 .map(String::valueOf).orElse("Unknown"))
-                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
+                .thenComparing(Comparator.comparing(MapGraphUtils::isDeclarationMapping).reversed());
         Comparator<CommandWrapper> res = (left, right) -> {
             java.util.Optional<Resource> r1 = rule(left);
             Optional<Resource> r2 = rule(right);
@@ -110,7 +112,7 @@ public class SPINInferenceHelper {
     }
 
     /**
-     * Gets a {@code spinmap:rule} from this CommandWrapper.
+     * Finds a {@code spinmap:rule} from this CommandWrapper.
      *
      * @param cw {@link CommandWrapper}, not null
      * @return Optional around {@link Resource} describing rule
@@ -126,58 +128,68 @@ public class SPINInferenceHelper {
     }
 
     /**
-     * Lists all {@link CommandWrapper}s for the given root triple.
+     * Lists all mapping rules in the form of {@link QueryWrapper}s.
+     *
+     * @param factory {@link ARQFactory}, not {@code null}
+     * @param model   {@link UnionModel} with {@link SPINMAP#rule spinmap:rule}s
+     * @return {@link ExtendedIterator} of {@link QueryWrapper}s
+     */
+    public static ExtendedIterator<QueryWrapper> listMappingRules(ARQFactory factory, UnionModel model) {
+        return Iter.flatMap(model.getBaseGraph().find(Node.ANY, SPINMAP.rule.asNode(), Node.ANY),
+                t -> listCommands(factory, model.asStatement(t), true, false))
+                .filterKeep(c -> c instanceof QueryWrapper)
+                .mapWith(c -> (QueryWrapper) c);
+    }
+
+    /**
+     * Lists all {@link CommandWrapper}s for the given root triple (statement).
      *
      * @param factory   {@link ARQFactory} to create {@link CommandWrapper}s, not {@code null}
-     * @param triple    root rule triple, e.g. {@code C spinmap:rule _:x}
-     * @param model     query model, must contain spin stuff (functions, templates, rules, etc),
-     *                  built on top of {@link SpinModelConfig#LIB_PERSONALITY}
+     * @param statement {@link Statement}, root rule triple, e.g. {@code C spinmap:rule _:x}, not {@code null}
      * @param withClass if true {@code ?this a ?TYPE_CLASS} will be added to query
      * @param allowAsk  to allow ASK sparql
      * @return Stream of {@link CommandWrapper}s, possible empty
      * @see SPINQueryFinder#add(Map, Statement, Model, boolean, boolean)
      */
-    public static Stream<CommandWrapper> listCommands(ARQFactory factory,
-                                                      Triple triple,
-                                                      Model model,
-                                                      boolean withClass,
-                                                      boolean allowAsk) {
-        Statement statement = model.asStatement(triple);
-        if (!statement.getObject().isResource()) return Stream.empty();
+    public static ExtendedIterator<CommandWrapper> listCommands(ARQFactory factory,
+                                                                Statement statement,
+                                                                boolean withClass,
+                                                                boolean allowAsk) {
+
+        if (!statement.getObject().isResource()) return EMPTY_ITERATOR;
         TemplateCall templateCall = SPINFactory.asTemplateCall(statement.getResource());
         if (templateCall == null) {
             Command spinCommand = SPINFactory.asCommand(statement.getResource());
-            if (spinCommand == null) return Stream.empty();
+            if (spinCommand == null) return EMPTY_ITERATOR;
             CommandWrapper wrapper = createCommandWrapper(factory, statement, withClass, allowAsk, null,
                     spinCommand.getComment(), spinCommand, spinCommand);
             if (wrapper == null) {
-                return Stream.empty();
+                return EMPTY_ITERATOR;
             }
-            return Stream.of(wrapper);
+            return Iter.of(wrapper);
         }
         Template baseTemplate = templateCall.getTemplate();
-        if (baseTemplate == null) return Stream.empty();
+        if (baseTemplate == null) return EMPTY_ITERATOR;
         Map<String, RDFNode> bindings = templateCall.getArgumentsMapByVarNames();
-        return JenaUtil.getAllSuperClassesStar(baseTemplate)
-                .stream()
-                .filter(r -> JenaUtil.hasIndirectType(r, SPIN.Template))
-                .map(r -> r.as(Template.class))
-                .filter(t -> hasAllNonOptionalArguments(t, bindings))
-                .map(Module::getBody)
-                .filter(body -> {
+        ExtendedIterator<CommandWrapper> res = MapGraphUtils.listSuperClasses(baseTemplate)
+                .filterKeep(r -> MapGraphUtils.hasIndirectType(r, SPIN.Template))
+                .mapWith(r -> r.as(Template.class))
+                .filterKeep(t -> hasAllNonOptionalArguments(t, bindings))
+                .mapWith(Module::getBody)
+                .filterKeep(body -> {
                     if (body instanceof Construct) return true;
                     if (body instanceof Update) return true;
                     return allowAsk && body instanceof Ask;
-                }).map(body -> {
+                }).mapWith(body -> {
                     String spinQueryText = SPINLabels.get().getLabel(templateCall);
                     return createCommandWrapper(factory, statement, withClass, allowAsk, spinQueryText,
                             spinQueryText, body, templateCall);
                 })
-                .filter(Objects::nonNull)
-                .peek(c -> {
-                    if (bindings.isEmpty()) return;
-                    c.setTemplateBinding(bindings);
-                });
+                .filterKeep(Objects::nonNull);
+        return Iter.peek(res, c -> {
+            if (bindings.isEmpty()) return;
+            c.setTemplateBinding(bindings);
+        });
     }
 
     /**

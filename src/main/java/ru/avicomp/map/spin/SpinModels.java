@@ -48,31 +48,6 @@ public class SpinModels {
             SPINMAP.TargetFunction).collect(Iter.toUnmodifiableSet());
 
     /**
-     * Answers if specified rule-resource derives {@code rdf:type} declaration.
-     *
-     * @param rule {@link Resource}
-     * @return boolean
-     */
-    public static boolean isDeclarationMapping(Resource rule) {
-        return rule.hasProperty(SPINMAP.targetPredicate1, RDF.type);
-    }
-
-    /**
-     * Answers a {@code _:x rdf:type spinmap:Context} resource which is attached to the specified rule.
-     *
-     * @param rule {@link Resource}, rule, not null
-     * @return Optional around contexts resource declaration.
-     */
-    public static Optional<Resource> context(Resource rule) {
-        return Iter.asStream(rule.listProperties(SPINMAP.context))
-                .map(Statement::getObject)
-                .filter(RDFNode::isResource)
-                .map(RDFNode::asResource)
-                .filter(r -> r.hasProperty(RDF.type, SPINMAP.Context))
-                .findFirst();
-    }
-
-    /**
      * Checks if the specified resource describes a self mapping context to produce {@code owl:NamedIndividual}s.
      *
      * @param context {@link Resource}
@@ -83,16 +58,6 @@ public class SpinModels {
                 .map(Statement::getObject)
                 .filter(RDFNode::isAnon).map(RDFNode::asResource)
                 .map(s -> s.hasProperty(RDF.type, SPINMAPL.self)).findFirst().isPresent();
-    }
-
-    /**
-     * Checks if the specified resource describes a self mapping rule to produce {@code owl:NamedIndividual}s.
-     *
-     * @param rule Resource
-     * @return boolean
-     */
-    public static boolean isNamedIndividualSelfMapping(Resource rule) {
-        return isDeclarationMapping(rule) && context(rule).filter(SpinModels::isNamedIndividualSelfContext).isPresent();
     }
 
     public static Set<Statement> getLocalFunctionBody(Model m, Resource function) {
@@ -118,7 +83,9 @@ public class SpinModels {
     }
 
     public static boolean isSpinArgVariable(Resource isModel) {
-        return isVariable(isModel) && SPIN.NS.equals(isModel.getNameSpace()) && isModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
+        return isVariable(isModel)
+                && SPIN.NS.equals(isModel.getNameSpace())
+                && isModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
     }
 
     /**

@@ -706,4 +706,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             }
         };
     }
+
+    @Override
+    public String toString() {
+        return String.format("MapModel{%s}", Graphs.getName(getBaseGraph()));
+    }
 }
