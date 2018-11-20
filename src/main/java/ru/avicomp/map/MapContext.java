@@ -162,12 +162,16 @@ public interface MapContext extends MapResource {
     Stream<MapContext> dependentContexts();
 
     /**
-     * Validates a function-call against this context.
+     * Validates the specified function-call against this context.
+     * It is here just for convenience.
      *
      * @param func {@link MapFunction.Call} an expression.
-     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     * @throws MapJenaException if something is wrong with the function, e.g. wrong argument types.
+     * @see MapModel#validate(MapFunction.Call)
      */
-    void validate(MapFunction.Call func) throws MapJenaException;
+    default void validate(MapFunction.Call func) throws MapJenaException {
+        getModel().validate(func);
+    }
 
     /**
      * Adds a primary rule to bind two class expressions.

@@ -121,6 +121,15 @@ public interface MapModel {
     OntGraphModel asGraphModel();
 
     /**
+     * Validates the given {@link MapFunction.Call function-call} against mapping model.
+     * Throws {@link MapJenaException} in case the function-call has wrong arguments.
+     *
+     * @param func {@link MapFunction.Call} the expression to test
+     * @throws MapJenaException iif the given function is not good enough to be used in this mapping
+     */
+    void validate(MapFunction.Call func) throws MapJenaException;
+
+    /**
      * Lists all rules ({@link MapResource Mapping Resources}).
      * A MapResource can be either {@link MapContext} or {@link PropertyBridge}.
      * Incomplete contexts are not included to the result.
@@ -141,7 +150,9 @@ public interface MapModel {
      * @return {@link MapContext} a new context instance.
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
-    default MapContext createContext(OntCE source, OntCE target, MapFunction.Call targetFunctionCall) throws MapJenaException {
+    default MapContext createContext(OntCE source,
+                                     OntCE target,
+                                     MapFunction.Call targetFunctionCall) throws MapJenaException {
         return createContext(source, target).addClassBridge(targetFunctionCall);
     }
 
@@ -151,8 +162,8 @@ public interface MapModel {
      *
      * @param source {@link Graph}, not {@code null}
      * @param target {@link Graph}, not {@code null}
-     * @see ru.avicomp.map.MapManager.InferenceEngine#run(Graph, Graph)
      * @throws MapJenaException unable to perform inference
+     * @see ru.avicomp.map.MapManager.InferenceEngine#run(Graph, Graph)
      */
     default void runInference(Graph source, Graph target) throws MapJenaException {
         getManager().getInferenceEngine(this).run(source, target);

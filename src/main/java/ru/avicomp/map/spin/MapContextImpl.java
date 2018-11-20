@@ -98,7 +98,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     /**
-     * Returns a target class resource, which may not be {@link OntCE} in special case of {@code owl:NamedIndividual} mapping.
+     * Returns a target class resource, which may not be {@link OntCE}
+     * in the special case of {@code owl:NamedIndividual} mapping.
      *
      * @return {@link Resource} for predicate {@code spinmap:targetClass}
      * @throws JenaException illegal state - no resource found
@@ -108,8 +109,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     @Override
-    public MapContextImpl addClassBridge(MapFunction.Call filterFunction, MapFunction.Call mappingFunction) throws MapJenaException {
-        if (!testFunction(mappingFunction).getFunction().isTarget()) {
+    public MapContextImpl addClassBridge(MapFunction.Call filterFunction,
+                                         MapFunction.Call mappingFunction) throws MapJenaException {
+        if (!testMappingFunction(mappingFunction).getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(mappingFunction.getFunction()).build();
         }
         testFilterFunction(filterFunction);
@@ -154,9 +156,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         if (!helper.isTargetProperty(target)) {
             throw exception(CONTEXT_WRONG_TARGET_PROPERTY).add(Key.TARGET_PROPERTY, target.getURI()).build();
         }
-        testFunction(mappingFunction);
+        testMappingFunction(mappingFunction);
         MapModelImpl m = getModel();
-        RDFNode filterExpression = testFilterFunction(filterFunction) != null ? m.createExpression(filterFunction) : null;
+        RDFNode filterExpression = testFilterFunction(filterFunction) != null ?
+                m.createExpression(filterFunction) : null;
         RDFNode mappingExpression = m.createExpression(mappingFunction);
         Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
         writeFunctionBody(mappingFunction);
@@ -200,11 +203,13 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
      * @return {@link AdjustFunctionBody}
      * @throws MapJenaException can't fetch runtime body
      */
-    protected static AdjustFunctionBody findRuntimeBody(MapFunctionImpl func, String classPath) throws MapJenaException {
+    protected static AdjustFunctionBody findRuntimeBody(MapFunctionImpl func,
+                                                        String classPath) throws MapJenaException {
         try {
             Class<?> res = Class.forName(classPath);
             if (!AdjustFunctionBody.class.isAssignableFrom(res)) {
-                throw new MapJenaException(func.name() + ": incompatible class type: " + classPath + " <> " + res.getName());
+                throw new MapJenaException(func.name() +
+                        ": incompatible class type: " + classPath + " <> " + res.getName());
             }
             return (AdjustFunctionBody) res.newInstance();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
@@ -223,7 +228,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public MapFunction.Call getFilter() {
         Optional<Resource> mapping = primaryRule().filter(r -> r.hasProperty(AVC.filter));
-        return mapping.map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true)).orElse(null);
+        return mapping
+                .map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true))
+                .orElse(null);
     }
 
     @Override
@@ -233,7 +240,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
 
     public Stream<MapPropertiesImpl> listPropertyBridges() {
         return listRules() // skip primary rule:
-                .filter(r -> !(r.hasProperty(SPINMAP.expression, target()) && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
+                .filter(r -> !(r.hasProperty(SPINMAP.expression, target())
+                        && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
                 .map(this::asPropertyBridge);
     }
 
@@ -304,10 +312,11 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         OntCE src1 = getSource();
         List<OntOPE> res = getModel().linkProperties(src1, src2).collect(Collectors.toList());
         if (res.isEmpty()) {
-            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
+            throw exception(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = exception(RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK).add(Key.CONTEXT_SOURCE, src2);
+            Exceptions.Builder err = exception(CONTEXT_RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
+                    .add(Key.CONTEXT_SOURCE, src2);
             res.forEach(p -> err.add(Key.LINK_PROPERTY, p.asProperty().getURI()));
             throw err.build();
         }
@@ -324,7 +333,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         } else if (m.isLinkProperty(link, source, getSource())) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
         } else {
-            throw exception(RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
+            throw exception(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
                     .add(Key.LINK_PROPERTY, property)
                     .add(Key.CONTEXT_SOURCE, source).build();
         }
@@ -335,17 +344,17 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public MapPropertiesImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
         if (this.equals(other)) {
-            throw exception(ATTACHED_CONTEXT_SELF_CALL).build();
+            throw exception(CONTEXT_ATTACHED_CONTEXT_SELF_CALL).build();
         }
         MapModelImpl m = getModel();
         OntCE target = other.getTarget();
         OntCE source = other.getSource();
         if (!getSource().equals(source)) {
-            throw exception(ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
+            throw exception(CONTEXT_ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }
         Property property = link.asProperty();
         if (!m.isLinkProperty(link, getTarget(), target)) {
-            throw exception(ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
+            throw exception(CONTEXT_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(other)
                     .add(Key.LINK_PROPERTY, property).build();
         }
@@ -379,7 +388,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public Stream<MapContext> dependentContexts() {
         MapModelImpl m = getModel();
-        return Stream.concat(m.listChainedContexts(this), m.listRelatedContexts(this)).distinct().map(MapContext.class::cast);
+        return Stream.concat(m.listChainedContexts(this),
+                m.listRelatedContexts(this)).distinct().map(MapContext.class::cast);
     }
 
     /**
@@ -392,17 +402,6 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }
 
-    /**
-     * Validates a function-call against this context.
-     *
-     * @param func {@link MapFunction.Call} an expression.
-     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
-     */
-    @Override
-    public void validate(MapFunction.Call func) throws MapJenaException {
-        testFunction(func);
-    }
-
     public MapFunction.Call testFilterFunction(MapFunction.Call func) throws MapJenaException {
         if (func == null) {
             return null;
@@ -411,33 +410,16 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         if (!f.isBoolean()) {
             throw exception(CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION).addFunction(f).build();
         }
-        return testFunction(func);
+        return testFunction(func, CONTEXT_WRONG_FILTER_MAP_FUNCTION);
     }
 
-    public MapFunction.Call testFunction(MapFunction.Call func) throws MapJenaException {
-        MapJenaException holder = exception(CONTEXT_WRONG_EXPRESSION_ARGUMENT).addFunction(func.getFunction()).build();
-        MapJenaException.notNull(func, "Null function call").asMap().forEach((arg, value) -> {
-            try {
-                MapModelImpl m = getModel();
-                ArgValidationHelper v = new ArgValidationHelper(m, arg);
-                if (value instanceof String) {
-                    v.testStringValue((String) value);
-                    return;
-                }
-                if (value instanceof MapFunction.Call) {
-                    MapFunction.Call call = (MapFunction.Call) value;
-                    v.testFunctionValue(call);
-                    testFunction(call);
-                    return;
-                }
-                throw new IllegalStateException("Should never happen");
-            } catch (MapJenaException e) {
-                holder.addSuppressed(e);
-            }
-        });
-        if (holder.getSuppressed().length == 0)
-            return func;
-        throw holder;
+    public MapFunction.Call testMappingFunction(MapFunction.Call func) throws MapJenaException {
+        return testFunction(func, CONTEXT_WRONG_MAPPING_MAP_FUNCTION);
+    }
+
+    public MapFunction.Call testFunction(MapFunction.Call func, Exceptions code) throws MapJenaException {
+        return getModel().testFunction(func,
+                exception(code).addFunction(func.getFunction()).build());
     }
 
     protected Exceptions.Builder exception(Exceptions code) {

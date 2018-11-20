@@ -48,8 +48,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ru.avicomp.map.spin.Exceptions.ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK;
-import static ru.avicomp.map.spin.Exceptions.ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED;
+import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
  * Created by @szuev on 10.04.2018.
@@ -158,7 +157,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl deleteContext(MapContext context) {
         List<MapContext> related = context.dependentContexts().collect(Collectors.toList());
         if (!related.isEmpty()) {
-            Exceptions.Builder error = Exceptions.CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES.create().addContext(context);
+            Exceptions.Builder error = exception(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES)
+                    .addContext(context);
             related.forEach(error::addContext);
             throw error.build();
         }
@@ -366,13 +366,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         OntCE rightClass = right.getTarget();
         List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
         if (res.isEmpty()) {
-            throw ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED.create().addContext(left).addContext(right).build();
+            throw exception(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED).addContext(left).addContext(right).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK.create()
+            Exceptions.Builder err = exception(MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK)
                     .addContext(left)
                     .addContext(right);
-            res.forEach(p -> err.add(Exceptions.Key.LINK_PROPERTY, p.asProperty().getURI()));
+            res.forEach(p -> err.add(Key.LINK_PROPERTY, p.asProperty().getURI()));
             throw err.build();
         }
         OntOPE p = res.get(0);
@@ -705,6 +705,46 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 return toString(m);
             }
         };
+    }
+
+    /**
+     * Validates a function-call against this model
+     *
+     * @param func {@link MapFunction.Call} an expression.
+     * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
+     */
+    @Override
+    public void validate(MapFunction.Call func) throws MapJenaException {
+        testFunction(func, exception(MAPPING_MAP_FUNCTION_VALIDATION_FAIL).addFunction(func.getFunction()).build());
+    }
+
+    public MapFunction.Call testFunction(MapFunction.Call func, MapJenaException error) throws MapJenaException {
+        MapJenaException.notNull(func, "Null function call").asMap().forEach((arg, value) -> {
+            try {
+                ArgValidationHelper v = new ArgValidationHelper(this, arg);
+                if (value instanceof String) {
+                    v.testStringValue((String) value);
+                    return;
+                }
+                if (value instanceof MapFunction.Call) {
+                    MapFunction.Call nested = (MapFunction.Call) value;
+                    v.testFunctionValue(nested);
+                    testFunction(nested, FUNCTION_CALL_WRONG_MAP_FUNCTION
+                            .create().addFunction(nested.getFunction()).build());
+                    return;
+                }
+                throw new IllegalStateException("Should never happen, unexpected value: " + value);
+            } catch (MapJenaException e) {
+                error.addSuppressed(e);
+            }
+        });
+        if (error.getSuppressed().length == 0)
+            return func;
+        throw error;
+    }
+
+    protected Exceptions.Builder exception(Exceptions code) {
+        return code.create().add(Key.MAPPING, String.valueOf(this));
     }
 
     @Override

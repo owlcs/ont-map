@@ -42,6 +42,7 @@ import static ru.avicomp.map.spin.Exceptions.Key;
 
 /**
  * Created by @szuev on 18.04.2018.
+ * TODO: add tests for {@link MapModel#validate(MapFunction.Call)} (issue https://github.com/avicomp/ont-map/issues/7)
  */
 public class ExceptionsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionsTest.class);
