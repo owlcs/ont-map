@@ -49,7 +49,13 @@ avc:MagicFunctions  a    spin:Function ;
         rdfs:subClassOf  spin:Functions ;
         spin:abstract    true .
 
-sp:abs  avc:hidden  "Duplicates the function fn:abs, which is preferable, since it has information about return types." .
+fn:abs  avc:hidden  "Duplicates the function sp:abs." .
+
+sp:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  avc:numeric
+                        ] ;
+        avc:returnType  avc:numeric .
 
 sp:sub  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions/#func-numeric-subtract> ;
         avc:constraint  [ spl:predicate  sp:arg2 ;
@@ -111,10 +117,14 @@ sp:ceil  avc:constraint  [ spl:predicate  sp:arg1 ;
                          ] ;
         avc:returnType  avc:numeric .
 
+fn:ceiling  avc:hidden  "Duplicates the function sp:ceil." .
+
 sp:floor  avc:constraint  [ spl:predicate  sp:arg1 ;
                             spl:valueType  avc:numeric
                           ] ;
         avc:returnType  avc:numeric .
+
+fn:floor  avc:hidden  "Duplicates the function sp:floor." .
 
 sp:round  avc:constraint  [ spl:predicate  sp:arg1 ;
                             spl:valueType  avc:numeric
@@ -142,6 +152,19 @@ afn:pi  avc:hidden  "Use math:pi instead" .
 sp:isNumeric  avc:returnType  xsd:boolean .
 
 sp:contains  avc:returnType  xsd:boolean .
+
+fn:contains  avc:hidden  "Duplicates the function sp:contains." .
+
+fn:starts-with  avc:hidden  "Duplicates the function sp:strstarts." .
+
+fn:ends-with  avc:hidden  "Duplicates the function sp:strends." .
+
+sp:not  rdfs:seeAlso    fn:boolean ;
+        avc:constraint  [ spl:predicate  sp:arg1 ;
+                          spl:valueType  rdfs:Literal
+                        ] .
+
+fn:not  avc:hidden  "Duplicates the function sp:not." .
 
 sp:tz   avc:returnType   xsd:string ;
         spin:constraint  [ a              spl:Argument ;
@@ -233,12 +256,6 @@ spif:buildStringFromRDFList
         avc:hidden  "Hidden: OWL2 does not support custom rdf:List" .
 
 spif:hasAllObjects  avc:hidden  "Hidden: OWL2 does not support custom rdf:List" .
-
-fn:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
-        avc:constraint  [ spl:predicate  sp:arg1 ;
-                          spl:valueType  avc:numeric
-                        ] ;
-        avc:returnType  avc:numeric .
 
 fn:round  rdfs:comment   "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near." ;
         rdfs:seeAlso     <https://www.w3.org/2005/xpath-functions/#round> ;

@@ -37,9 +37,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * An utility class to produce avc.spin.ttl (see resources/etc directory).
+ * An utility class to produce <p>avc.spin.ttl</p> (see {@code resources/etc} directory).
  * For developing and demonstration.
  * NOTE: Not a part of API or APIs Tests: will be removed.
+ * <p>
+ * A library <p>avc.spin.ttl</p> intended for basic ONT-MAP definitions and customization.
+ * Customization means hiding functional duplicates and setting correct return types and descriptions.
+ * If there is a pair of duplicate functions from {@link SP sp} and {@link FN fn} vocabulary,
+ * the sp should be chosen, as it must be used more commonly.
  * <p>
  * Created by @szuev on 07.04.2018.
  *
@@ -102,9 +107,16 @@ public class AVCLibraryMaker {
                         "A collection of functions that uses SPARQL aggregate functionality (i.e. COUNT, SUM, MIN, MAX, GROUP_CONCAT).");
 
         // Customize mathematical functions:
-        // SP:abs
-        SP.resource("abs").inModel(m).addProperty(hidden,
-                "Duplicates the function fn:abs, which is preferable, since it has information about return types.");
+
+        // FN:abs (sp:abs and fn:abs both uses org.apache.jena.sparql.expr.nodevalue.XSDFuncOp#abs()).
+        // Choose sp:abs since it must be used more commonly
+        FN.resource("abs").inModel(m).addProperty(hidden, "Duplicates the function sp:abs.");
+        // SP:abs takes a number, not any literal
+        SP.resource("abs").inModel(m)
+                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions-31/#func-abs"))
+                .addProperty(AVC.returnType, AVC.numeric)
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
+
         // SP:max & SP:min can handle also xsd:string since it is SPARQL which is used overloaded operators ">" and "<"
         Stream.of(SPL.max, SPL.min).map(r -> r.inModel(m))
                 .forEach(r -> r.addProperty(RDFS.comment, "Can work both with numeric datatypes and xsd:string.")
@@ -146,10 +158,25 @@ public class AVCLibraryMaker {
         Stream.of(SP.ceil, SP.floor, SP.round).map(r -> r.inModel(m))
                 .forEach(r -> r.addProperty(AVC.returnType, AVC.numeric)
                         .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric)));
+        // hide FN:floor and FN:ceiling in favor of sp:floor and sp:ceil (sp must be more commonly used)
+        FN.resource("floor").inModel(m).addProperty(hidden, "Duplicates the function sp:floor.");
+        FN.resource("ceiling").inModel(m).addProperty(hidden, "Duplicates the function sp:ceil.");
 
         // Boolean functions:
         SP.isNumeric.inModel(m).addProperty(AVC.returnType, XSD.xboolean);
+        // SP:contains fn:contains and sp:contains are the same, choose sp
         SP.resource("contains").inModel(m).addProperty(AVC.returnType, XSD.xboolean);
+        FN.resource("contains").inModel(m).addProperty(hidden, "Duplicates the function sp:contains.");
+        // FN:start-with -> use sp:strstarts
+        FN.resource("starts-with").inModel(m).addProperty(hidden, "Duplicates the function sp:strstarts.");
+        // FN:ends-with -> use sp:strends
+        FN.resource("ends-with").inModel(m).addProperty(hidden, "Duplicates the function sp:strends.");
+        // SP:not may accept any literal, not necessary xsd:boolean,
+        // see org.apache.jena.sparql.expr.nodevalue.XSDFuncOp#not(..)
+        SP.not.inModel(m)
+                .addProperty(RDFS.seeAlso, FN.resource("boolean"))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, RDFS.Literal));
+        FN.resource("not").inModel(m).addProperty(hidden, "Duplicates the function sp:not.");
 
         // Datatime functions:
         SP.tz.inModel(m)
@@ -227,12 +254,6 @@ public class AVCLibraryMaker {
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, AVC.vararg)
                         .addProperty(SPL.valueType, RDFS.Literal)));
-
-        // FN:abs takes a number, not any literal
-        FN.abs.inModel(m)
-                .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/xpath-functions-31/#func-abs"))
-                .addProperty(AVC.returnType, AVC.numeric)
-                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1, AVC.numeric));
 
         // FN:round
         FN.round.inModel(m)

@@ -36,7 +36,6 @@ public class FN {
     public static final String NS = BASE_URI + "#";
 
     // from Composer's functions-fn.ttl
-    public static final Resource abs = resource("abs");
     public static final Resource round = resource("round");
     // from avc.fn.ttl
     public static final Resource format_number = resource("format-number");
