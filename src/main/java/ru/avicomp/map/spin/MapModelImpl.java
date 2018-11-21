@@ -742,7 +742,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 if (value instanceof MapFunction.Call) {
                     MapFunction.Call nested = (MapFunction.Call) value;
                     v.testFunctionValue(nested);
-                    testFunction(nested, FUNCTION_CALL_WRONG_FUNCTION.create().addFunction(nested).build());
+                    testFunction(nested, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION.create().addFunction(nested).build());
                     return;
                 }
                 throw new IllegalStateException("Should never happen, unexpected value: " + value);

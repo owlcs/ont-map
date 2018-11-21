@@ -42,7 +42,6 @@ import static ru.avicomp.map.spin.Exceptions.Key;
 
 /**
  * Created by @szuev on 18.04.2018.
- * TODO: add tests for {@link MapModel#validate(MapFunction.Call)} (issue https://github.com/avicomp/ont-map/issues/7)
  */
 public class ExceptionsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionsTest.class);
@@ -240,6 +239,52 @@ public class ExceptionsTest {
                 .addLiteral(SP.arg2, "9,9.000"), dstProp3);
         manager.getInferenceEngine(map).run(src, dst);
         TestUtils.debug(dst);
+    }
+
+    @Test
+    public void testValidateFunction() {
+        MapManager m = Managers.createMapManager();
+
+        MapFunction.Call func1 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, "x").build();
+        try {
+            m.createMapModel().validate(func1);
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            Assert.assertEquals(1, j.getSuppressed().length);
+            assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+        }
+        MapFunction.Call func2 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, 2.3).build();
+        m.createMapModel().validate(func2);
+
+        MapFunction.Call func3 = m.getFunction(SP.floor).create()
+                .addFunction(SP.arg1, m.getFunction(SP.not)
+                        .create().addLiteral(SP.arg1, "x").build()).build();
+        try {
+            m.createMapModel().validate(func3);
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            Assert.assertEquals(1, j.getSuppressed().length);
+            assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
+        }
+        MapFunction.Call func4 = m.getFunction(SP.floor).create()
+                .addFunction(SP.arg1, m.getFunction(SP.ceil)
+                        .create().addLiteral(SP.arg1, "x").build()).build();
+
+        try {
+            m.createMapModel().validate(func4);
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            Assert.assertEquals(1, j.getSuppressed().length);
+            MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
+            assertCode(j2, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION);
+            Assert.assertEquals(1, j2.getSuppressed().length);
+            assertCode((MapJenaException) j2.getSuppressed()[0], Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+        }
+
+        MapFunction.Call func5 = m.getFunction(SP.floor).create()
+                .addFunction(SP.arg1, m.getFunction(SP.ceil)
+                        .create().addLiteral(SP.arg1, -1).build()).build();
+        m.createMapModel().validate(func5);
     }
 
     private static void assertCode(MapJenaException j, Exceptions code) {

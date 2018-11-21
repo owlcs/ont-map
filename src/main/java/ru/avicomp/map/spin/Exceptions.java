@@ -30,7 +30,7 @@ import java.util.*;
 import static ru.avicomp.map.spin.Exceptions.Key.*;
 
 /**
- * An exception builder and error code store.
+ * An exception builder and store for error codes.
  * <p>
  * Created by @szuev on 18.04.2018.
  */
@@ -56,9 +56,9 @@ public enum Exceptions {
     PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION,
     PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION,
 
-    FUNCTION_CALL_WRONG_FUNCTION,
     FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION,
     FUNCTION_CALL_WRONG_ARGUMENT_VALUE,
+    FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION,
 
     FUNCTION_NONEXISTENT_ARGUMENT,
     FUNCTION_WRONG_ARGUMENT,
@@ -66,8 +66,8 @@ public enum Exceptions {
     FUNCTION_NO_REQUIRED_ARG,
 
     INFERENCE_NO_CONTEXTS,
-    INFERENCE_FAIL,
     INFERENCE_NO_RULES,
+    INFERENCE_FAIL,
     ;
 
     public Builder create() {
