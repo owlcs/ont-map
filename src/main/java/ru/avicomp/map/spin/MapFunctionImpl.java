@@ -129,7 +129,7 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * Answers iff this function is custom, i.e. does not belong to the original spin family.
+     * Answers {@code true} if this function is custom, i.e. does not belong to the original spin family.
      * Custom functions must be directly added to the final mapping graph for compatibility with Topbraid Composer.
      *
      * @return boolean

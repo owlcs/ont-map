@@ -32,6 +32,7 @@ import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.UnionGraph;
@@ -364,18 +365,20 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl bindContexts(MapContext left, MapContext right) {
         OntCE leftClass = left.getTarget();
         OntCE rightClass = right.getTarget();
-        List<OntOPE> res = linkProperties(leftClass, rightClass).collect(Collectors.toList());
+        Set<OntOPE> res = getLinkProperties(leftClass, rightClass);
         if (res.isEmpty()) {
-            throw exception(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED).addContext(left).addContext(right).build();
+            throw exception(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
+                    .addContext(left)
+                    .addContext(right).build();
         }
         if (res.size() != 1) {
             Exceptions.Builder err = exception(MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK)
                     .addContext(left)
                     .addContext(right);
-            res.forEach(p -> err.add(Key.LINK_PROPERTY, p.asProperty().getURI()));
+            res.forEach(p -> err.addProperty(p.asProperty()));
             throw err.build();
         }
-        OntOPE p = res.get(0);
+        OntOPE p = res.iterator().next();
         if (isLinkProperty(p, leftClass, rightClass)) {
             left.attachContext(right, p);
         } else {
@@ -527,16 +530,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Lists all linked properties.
+     * Returns a Set of all linked properties.
      *
      * @param left  {@link OntCE}
      * @param right {@link OntCE}
-     * @return Stream of {@link OntOPE}s
+     * @return Set of {@link OntOPE}s
      */
-    public Stream<OntOPE> linkProperties(OntCE left, OntCE right) {
+    public Set<OntOPE> getLinkProperties(OntCE left, OntCE right) {
         return ontObjects(OntOPE.class)
                 .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))
-                .distinct();
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -708,18 +711,28 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Validates a function-call against this model
+     * Validates a function-call against this model.
      *
      * @param func {@link MapFunction.Call} an expression.
      * @throws MapJenaException if something is wrong with function, e.g. wrong argument types.
      */
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        testFunction(func, exception(MAPPING_MAP_FUNCTION_VALIDATION_FAIL).addFunction(func.getFunction()).build());
+        testFunction(func, exception(MAPPING_MAP_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
-    public MapFunction.Call testFunction(MapFunction.Call func, MapJenaException error) throws MapJenaException {
-        MapJenaException.notNull(func, "Null function call").asMap().forEach((arg, value) -> {
+    /**
+     * Tests the given function.
+     *
+     * @param function {@link MapFunction.Call} to test
+     * @param error    {@link MapJenaException} an error holder,
+     *                 this exception will be thrown in case validation is fail
+     * @return the same map-function as specified in first place
+     * @throws MapJenaException the same exception as specified in second place
+     */
+    public MapFunction.Call testFunction(MapFunction.Call function,
+                                         MapJenaException error) throws MapJenaException {
+        function.asMap().forEach((arg, value) -> {
             try {
                 ArgValidationHelper v = new ArgValidationHelper(this, arg);
                 if (value instanceof String) {
@@ -729,8 +742,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 if (value instanceof MapFunction.Call) {
                     MapFunction.Call nested = (MapFunction.Call) value;
                     v.testFunctionValue(nested);
-                    testFunction(nested, FUNCTION_CALL_WRONG_MAP_FUNCTION
-                            .create().addFunction(nested.getFunction()).build());
+                    testFunction(nested, FUNCTION_CALL_WRONG_FUNCTION.create().addFunction(nested).build());
                     return;
                 }
                 throw new IllegalStateException("Should never happen, unexpected value: " + value);
@@ -739,12 +751,61 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             }
         });
         if (error.getSuppressed().length == 0)
-            return func;
+            return function;
         throw error;
     }
 
     protected Exceptions.Builder exception(Exceptions code) {
-        return code.create().add(Key.MAPPING, String.valueOf(this));
+        return code.create().add(Key.MAPPING, toString());
+    }
+
+    /**
+     * Writes a custom function "as is" to the mapping graph.
+     *
+     * @param call {@link MapFunction.Call}
+     */
+    protected void writeFunctionBody(MapFunction.Call call) {
+        if (call == null) return;
+        MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
+        if (function.isCustom()) {
+            Resource res = addFunctionBody(function);
+            res.listProperties(AVC.runtime)
+                    .mapWith(Statement::getObject)
+                    .filterKeep(RDFNode::isLiteral)
+                    .mapWith(RDFNode::asLiteral)
+                    .mapWith(Literal::getString)
+                    .forEachRemaining(s -> findRuntimeBody(function, s).apply(this, call));
+            // subClassOf
+            res.listProperties(RDFS.subClassOf)
+                    .mapWith(Statement::getResource)
+                    .mapWith(Resource::getURI)
+                    .mapWith(manager::getFunction)
+                    .forEachRemaining(this::addFunctionBody);
+        }
+        call.asMap().values().stream()
+                .filter(MapFunction.Call.class::isInstance)
+                .map(MapFunction.Call.class::cast)
+                .forEach(this::writeFunctionBody);
+    }
+
+    /**
+     * @param func      {@link MapFunctionImpl}
+     * @param classPath String
+     * @return {@link AdjustFunctionBody}
+     * @throws MapJenaException can't fetch runtime body
+     */
+    protected static AdjustFunctionBody findRuntimeBody(MapFunctionImpl func,
+                                                        String classPath) throws MapJenaException {
+        try {
+            Class<?> res = Class.forName(classPath);
+            if (!AdjustFunctionBody.class.isAssignableFrom(res)) {
+                throw new MapJenaException(func.name() +
+                        ": incompatible class type: " + classPath + " <> " + res.getName());
+            }
+            return (AdjustFunctionBody) res.newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new MapJenaException(func.name() + ": can't init " + classPath, e);
+        }
     }
 
     @Override

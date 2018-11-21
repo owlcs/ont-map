@@ -32,6 +32,9 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Arrays;
 
+import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION;
+import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE;
+
 /**
  * Auxiliary class, a helper to validate a {@link MapFunction.Arg function-call argument} values,
  * which could be either nested function or string representation of literal or resource
@@ -56,11 +59,11 @@ public class ArgValidationHelper {
         MapFunction function = call.getFunction();
         Resource type = model.createResource(argument.type());
         Resource value = model.createResource(function.type());
-        Exceptions.Builder error = Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION.create()
-                .add(Exceptions.Key.ARG, argument.name())
+        Exceptions.Builder error = FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION.create()
+                .addArg(argument)
                 .addFunction(function)
-                .add(Exceptions.Key.ARG_TYPE, type.toString())
-                .add(Exceptions.Key.ARG_VALUE, value.toString());
+                .addArgType(type)
+                .addArgValue(value);
         if (type.equals(value)) {
             return;
         }
@@ -105,10 +108,10 @@ public class ArgValidationHelper {
     void testStringValue(String string) throws MapJenaException {
         Resource type = model.createResource(argument.type());
         RDFNode value = model.toNode(string);
-        Exceptions.Builder error = Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE.create()
-                .add(Exceptions.Key.ARG, argument.name())
-                .add(Exceptions.Key.ARG_TYPE, type.toString())
-                .add(Exceptions.Key.ARG_VALUE, value.toString());
+        Exceptions.Builder error = FUNCTION_CALL_WRONG_ARGUMENT_VALUE.create()
+                .addArg(argument)
+                .addArgType(type)
+                .addArgValue(value);
         // anything:
         if (AVC.undefined.equals(type)) {
             return;

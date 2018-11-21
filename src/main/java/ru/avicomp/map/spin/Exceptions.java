@@ -18,15 +18,19 @@
 
 package ru.avicomp.map.spin;
 
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
 import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 
 import java.util.*;
 
+import static ru.avicomp.map.spin.Exceptions.Key.*;
+
 /**
- * An exception builder.
+ * An exception builder and error code store.
  * <p>
  * Created by @szuev on 18.04.2018.
  */
@@ -37,9 +41,8 @@ public enum Exceptions {
     MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK,
 
     CONTEXT_REQUIRE_TARGET_FUNCTION,
-    CONTEXT_WRONG_TARGET_PROPERTY,
-    CONTEXT_WRONG_MAPPING_MAP_FUNCTION,
-    CONTEXT_WRONG_FILTER_MAP_FUNCTION,
+    CONTEXT_WRONG_MAPPING_FUNCTION,
+    CONTEXT_WRONG_FILTER_FUNCTION,
     CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION,
 
     CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED,
@@ -48,7 +51,12 @@ public enum Exceptions {
     CONTEXT_ATTACHED_CONTEXT_DIFFERENT_SOURCES,
     CONTEXT_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED,
 
-    FUNCTION_CALL_WRONG_MAP_FUNCTION,
+    PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY,
+    PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION,
+    PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION,
+    PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION,
+
+    FUNCTION_CALL_WRONG_FUNCTION,
     FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION,
     FUNCTION_CALL_WRONG_ARGUMENT_VALUE,
 
@@ -73,14 +81,34 @@ public enum Exceptions {
             this.map = new EnumMap<>(Key.class);
         }
 
+        Builder addFunction(MapFunction.Call func) {
+            return addFunction(func.getFunction());
+        }
+
         Builder addFunction(MapFunction func) {
-            return add(Key.FUNCTION, func.name());
+            return add(FUNCTION, func.name());
         }
 
         Builder addContext(MapContext context) {
-            return add(Key.CONTEXT, context.getURI())
-                    .add(Key.CONTEXT_SOURCE, context.getSource())
-                    .add(Key.CONTEXT_TARGET, ((MapContextImpl) context).target());
+            return add(CONTEXT, context.getURI())
+                    .add(CONTEXT_SOURCE, context.getSource())
+                    .add(CONTEXT_TARGET, ((MapContextImpl) context).target());
+        }
+
+        Builder addArg(MapFunction.Arg arg) {
+            return add(ARG, arg.name());
+        }
+
+        Builder addArgType(Resource value) {
+            return add(ARG_TYPE, value);
+        }
+
+        Builder addArgValue(RDFNode value) {
+            return add(ARG_VALUE, value);
+        }
+
+        Builder addProperty(Property property) {
+            return add(PROPERTY, property);
         }
 
         public Builder add(Key key, RDFNode n) {
@@ -108,7 +136,7 @@ public enum Exceptions {
             return new SpinMapException(Exceptions.this, map, message, cause);
         }
 
-        public String message() {
+        String message() {
             return name() + ": " + map;
         }
     }
@@ -119,8 +147,7 @@ public enum Exceptions {
         CONTEXT_SOURCE,
         CONTEXT_TARGET,
         FUNCTION,
-        TARGET_PROPERTY,
-        LINK_PROPERTY,
+        PROPERTY,
         ARG,
         ARG_TYPE,
         ARG_VALUE,

@@ -71,8 +71,7 @@ public class ExceptionsTest {
             context.addClassBridge(f.create().build());
             Assert.fail("Expression has been added successfully");
         } catch (Exceptions.SpinMapException e) {
-            LOGGER.debug("Exception: {}", e.getMessage());
-            Assert.assertSame(CONTEXT_REQUIRE_TARGET_FUNCTION, e.getCode());
+            assertCode(e, CONTEXT_REQUIRE_TARGET_FUNCTION);
             Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
             Assert.assertEquals(src.getURI(), e.getString(Key.CONTEXT_SOURCE));
             Assert.assertEquals(dst.getURI(), e.getString(Key.CONTEXT_TARGET));
@@ -86,7 +85,7 @@ public class ExceptionsTest {
             f.create().build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
-            LOGGER.debug("Exception: {}", j.getMessage());
+            assertCode(j, Exceptions.FUNCTION_NO_REQUIRED_ARG);
             Assert.assertEquals(3, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
             Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
         }
@@ -94,7 +93,7 @@ public class ExceptionsTest {
             f.create().add(manager.prefixes().expandPrefix("sp:arg1"), "x").build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) { // no required arg
-            LOGGER.debug("Exception: {}", j.getMessage());
+            assertCode(j, Exceptions.FUNCTION_NO_REQUIRED_ARG);
             Assert.assertEquals(2, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
             Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
         }
@@ -103,7 +102,7 @@ public class ExceptionsTest {
             f.create().add(p, "xxx");
             Assert.fail("Expected error");
         } catch (Exceptions.SpinMapException e) { // non existent arg
-            LOGGER.debug("Exception: {}", e.getMessage());
+            assertCode(e, Exceptions.FUNCTION_NONEXISTENT_ARGUMENT);
             Assert.assertEquals(p, e.getString(Key.ARG));
             Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
         }
@@ -157,7 +156,7 @@ public class ExceptionsTest {
             c.addClassBridge(filterFunction, mapFunction);
             Assert.fail("Class bridge is added successfully");
         } catch (MapJenaException j) {
-            print(j);
+            assertCode(j, Exceptions.CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
 
@@ -176,7 +175,7 @@ public class ExceptionsTest {
             c.addClassBridge(filterFunction, mapFunction);
             Assert.fail("Class bridge is added successfully");
         } catch (MapJenaException j) {
-            print(j);
+            assertCode(j, Exceptions.CONTEXT_REQUIRE_TARGET_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
 
@@ -191,7 +190,7 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            print(j);
+            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
 
@@ -205,7 +204,7 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            print(j);
+            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
 
@@ -218,14 +217,9 @@ public class ExceptionsTest {
             c.addPropertyBridge(filterFunction, mapFunction, sp2);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            print(j);
+            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
-    }
-
-    private static void print(MapJenaException j) {
-        LOGGER.debug("Exception: {}", j.getMessage());
-        Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
     }
 
     @Test(expected = Exceptions.SpinMapException.class)
@@ -246,6 +240,17 @@ public class ExceptionsTest {
                 .addLiteral(SP.arg2, "9,9.000"), dstProp3);
         manager.getInferenceEngine(map).run(src, dst);
         TestUtils.debug(dst);
+    }
+
+    private static void assertCode(MapJenaException j, Exceptions code) {
+        print(j);
+        Exceptions.SpinMapException s = (Exceptions.SpinMapException) j;
+        Assert.assertEquals(code, s.getCode());
+    }
+
+    private static void print(MapJenaException j) {
+        LOGGER.debug("Exception: {}", j.getMessage());
+        Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
     }
 }
 
