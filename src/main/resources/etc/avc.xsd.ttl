@@ -1,0 +1,76 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix spin:  <http://spinrdf.org/spin#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix spinmap: <http://spinrdf.org/spinmap#> .
+@prefix sp:    <http://spinrdf.org/sp#> .
+@prefix spl:   <http://spinrdf.org/spl#> .
+@prefix avc:   <http://avc.ru/spin#> .
+
+<http://avc.ru/xsd>  a   owl:Ontology ;
+        rdfs:comment     "A collection of XSD-cast functions.\nAn addition to the <http://topbraid.org/spinmapl> library." ;
+        rdfs:seeAlso     xsd: ;
+        owl:imports      <http://avc.ru/spin> ;
+        owl:versionIRI   <http://avc.ru/xsd#1.0> ;
+        owl:versionInfo  "version 1.0" .
+
+xsd:int  a                  spin:Function ;
+        rdfs:comment        "As a SPARQL function, this converts a given node (?arg1) to an xsd:int literal." ;
+        rdfs:label          "casts a given node to xsd:int" ;
+        rdfs:subClassOf     spin:Functions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The input value to cast" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:returnType     xsd:int ;
+        spinmap:shortLabel  "xsd:int" .
+
+xsd:byte  a                 spin:Function ;
+        rdfs:comment        "As a SPARQL function, this converts a given node (?arg1) to an xsd:byte literal." ;
+        rdfs:label          "casts a given node to xsd:byte" ;
+        rdfs:subClassOf     spin:Functions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The input value to cast" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:returnType     xsd:byte ;
+        spinmap:shortLabel  "xsd:byte" .
+
+xsd:short  a                spin:Function ;
+        rdfs:comment        "As a SPARQL function, this converts a given node (?arg1) to an xsd:short literal." ;
+        rdfs:label          "casts a given node to xsd:short" ;
+        rdfs:subClassOf     spin:Functions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The input value to cast" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:returnType     xsd:short ;
+        spinmap:shortLabel  "xsd:short" .
+
+xsd:long  a                 spin:Function ;
+        rdfs:comment        "As a SPARQL function, this converts a given node (?arg1) to an xsd:long literal." ;
+        rdfs:label          "casts a given node to xsd:long" ;
+        rdfs:subClassOf     spin:Functions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The input value to cast" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:returnType     xsd:long ;
+        spinmap:shortLabel  "xsd:long" .
+
+xsd:double  a               spin:Function ;
+        rdfs:comment        "As a SPARQL function, this converts a given node (?arg1) to an xsd:double literal." ;
+        rdfs:label          "casts a given node to xsd:double" ;
+        rdfs:subClassOf     spin:Functions ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "The input value to cast" ;
+                              spl:predicate  sp:arg1 ;
+                              spl:valueType  avc:undefined
+                            ] ;
+        spin:returnType     xsd:double ;
+        spinmap:shortLabel  "xsd:double" .

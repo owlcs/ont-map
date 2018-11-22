@@ -64,7 +64,8 @@ public class TestExamplesSaver {
                 new PropertyChainMapTest(),
                 new VarArgMapTest(),            //14
                 new LoadMapTestData(),
-                new SelfMapTest()      //16
+                new SelfMapTest(),              //16
+                new MathGeoMapTest()
         );
 
         for (AbstractMapTest mapTest : mapTests) {

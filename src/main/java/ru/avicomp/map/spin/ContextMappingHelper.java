@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  * Also a holder for class-properties maps related to the specified context.
  * Just to relieve the main (context) class.
  *
- * @see MappingBuilder
+ * @see TemplateBuilder
  */
 @SuppressWarnings("WeakerAccess")
 class ContextMappingHelper {
@@ -101,7 +101,7 @@ class ContextMappingHelper {
             template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
         } else {
             // use custom (avc) mapping
-            template = MappingBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
+            template = TemplateBuilder.createMappingTemplate(m, classMapRule.isPresent(), filterPredicates, mappingPredicates);
         }
         context.getSource().addProperty(SPINMAP.rule, mapping.addProperty(RDF.type, template));
         simplify(mapping);
@@ -146,7 +146,7 @@ class ContextMappingHelper {
 
         if (AVC.NS.equals((template = mapping.getPropertyResourceValue(RDF.type)).getNameSpace())) { // AVC supports filter
             String name = template.getLocalName();
-            int[] array = MappingBuilder.parsePredicatesFromTemplateName(name, isFilter);
+            int[] array = TemplateBuilder.parsePredicatesFromTemplateName(name, isFilter);
             if (array.length < index)
                 throw new MapJenaException(String.format("Unable to find predicate from mapping. " +
                                 "Mapping name=%s. " +
@@ -157,11 +157,10 @@ class ContextMappingHelper {
         } else {
             sourcePredicate = SPINMAP.sourcePredicate(index);
         }
-        Optional<Property> res = Iter.asStream(mapping.listProperties(sourcePredicate))
-                .map(Statement::getObject)
-                .filter(o -> o.canAs(Property.class))
-                .map(o -> o.as(Property.class))
-                .findFirst();
+        Optional<Property> res = Iter.findFirst(mapping.listProperties(sourcePredicate)
+                .mapWith(Statement::getObject)
+                .filterKeep(o -> o.canAs(Property.class))
+                .mapWith(o -> o.as(Property.class)));
         if (res.isPresent()) return res.get();
         // special case of spinmap:Mapping-0-1 and spinmap:targetResource, as a hotfix right now:
         if (mapping.hasProperty(RDF.type, SPINMAP.Mapping_0_1)) {
@@ -233,8 +232,8 @@ class ContextMappingHelper {
     }
 
     private Stream<Statement> properties() {
-        return Iter.asStream(mapping.listProperties())
-                .filter(s -> s.getObject().isURIResource());
+        return Iter.asStream(mapping.listProperties()
+                .filterKeep(s -> s.getObject().isURIResource()));
     }
 
     /**

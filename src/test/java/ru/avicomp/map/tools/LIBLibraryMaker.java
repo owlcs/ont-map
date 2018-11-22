@@ -40,10 +40,16 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 /**
- * An utility class to produce avc.lib.ttl (see resources/etc directory).
+ * An utility class to produce <p>avc.lib.ttl</p> (see {@code resources/etc} directory).
  * For developing and demonstration.
  * NOTE: Not a part of API or APIs Tests: will be removed.
  * <p>
+ * The library <p>avc.lib.ttl</p> is a collection of new ONT-MAP functions, that are absent in the standard spin-library.
+ * Each of the functions is SPARQL based.
+ * Also note: you do not need to have this file separately to force a mapping to work.
+ * Mappings, that are produced by the ONT-MAP, must contain everything needed, with except of spin-library,
+ * i.e. all needed functions are printed directly to mappings.
+ *
  * Created by @szuev on 14.06.2018.
  *
  * @see AVC

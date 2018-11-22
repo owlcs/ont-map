@@ -56,7 +56,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 05.05.2018.
  */
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
-public class MappingBuilder {
+public class TemplateBuilder {
     public static final String SOURCE_VALUE = "value";
     public static final String RESULT_VALUE = "result";
     public static final String TARGET_VALUE = "target";
@@ -104,7 +104,7 @@ public class MappingBuilder {
         if (model.contains(res, RDF.type, SPIN.ConstructTemplate)) {
             return res;
         }
-        MappingBuilder query = new MappingBuilder()
+        TemplateBuilder query = new TemplateBuilder()
                 .addMappingExpression(SPINMAP.expression.getLocalName())
                 .addTargetPredicate(SPINMAP.targetPredicate1.getLocalName())
                 .requireClassAssertion(isPropertyMapping);
@@ -187,43 +187,43 @@ public class MappingBuilder {
                 .toArray();
     }
 
-    public MappingBuilder addSourceDefaultValue(String sourcePredicateVariable, String defaultValueVariable) {
+    public TemplateBuilder addSourceDefaultValue(String sourcePredicateVariable, String defaultValueVariable) {
         addSourcePredicate(sourcePredicateVariable);
         defaultValues.put(sourcePredicateVariable, defaultValueVariable);
         return this;
     }
 
-    public MappingBuilder addSourcePredicate(String sourcePredicateVariable) {
+    public TemplateBuilder addSourcePredicate(String sourcePredicateVariable) {
         sourcePredicates.add(sourcePredicateVariable);
         return this;
     }
 
-    public MappingBuilder addTargetPredicate(String targetPredicateVariable) {
+    public TemplateBuilder addTargetPredicate(String targetPredicateVariable) {
         this.targetPredicate = targetPredicateVariable;
         return this;
     }
 
-    public MappingBuilder addFilterArgument(String filterPredicateVariable) {
+    public TemplateBuilder addFilterArgument(String filterPredicateVariable) {
         filterExpressionArguments.add(filterPredicateVariable);
         return this;
     }
 
-    public MappingBuilder addMappingArgument(String mapPredicateVariable) {
+    public TemplateBuilder addMappingArgument(String mapPredicateVariable) {
         mappingExpressionArguments.add(mapPredicateVariable);
         return this;
     }
 
-    public MappingBuilder addMappingExpression(String expression) {
+    public TemplateBuilder addMappingExpression(String expression) {
         this.mappingExpression = expression;
         return this;
     }
 
-    public MappingBuilder addFilterExpression(String expression) {
+    public TemplateBuilder addFilterExpression(String expression) {
         this.filterExpression = expression;
         return this;
     }
 
-    public MappingBuilder requireClassAssertion(boolean b) {
+    public TemplateBuilder requireClassAssertion(boolean b) {
         this.requireClassAssertion = b;
         return this;
     }
@@ -316,7 +316,7 @@ public class MappingBuilder {
                 asLabeledVariable(targetPredicate),
                 sourcePredicates.isEmpty() ? "self" :
                         sourcePredicates.stream()
-                                .map(MappingBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
+                                .map(TemplateBuilder::asLabeledVariable).collect(Collectors.joining(", ")));
     }
 
     private static String asOptional(String expr) {

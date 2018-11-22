@@ -35,6 +35,7 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 /**
+ * An utility class to produce <p>avc.fn.ttl</p> (see {@code resources/etc} directory).
  * For developing and demonstration.
  * NOTE: Not a part of API or APIs Tests: will be removed.
  * Created by @szuev on 09.06.2018.

@@ -55,6 +55,13 @@ public interface MapModel {
     OntID setID(String uri);
 
     /**
+     * Answers the OWL2 model which wraps the same mapping graph.
+     *
+     * @return {@link OntGraphModel OWL2 jena model}
+     */
+    OntGraphModel asGraphModel();
+
+    /**
      * Lists all linked (OWL-) ontologies,
      * i.e. all actual imports with exclusion of library plus this mapping model itself if it has its own OWL-declarations.
      *
@@ -112,13 +119,6 @@ public interface MapModel {
      * @see MapContext#attachContext(MapContext, OntOPE)
      */
     MapModel bindContexts(MapContext left, MapContext right) throws MapJenaException;
-
-    /**
-     * Answers the OWL2 model which wraps the same mapping graph.
-     *
-     * @return {@link OntGraphModel OWL2 jena model}
-     */
-    OntGraphModel asGraphModel();
 
     /**
      * Validates the given {@link MapFunction.Call function-call} against mapping model.

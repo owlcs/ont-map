@@ -27,10 +27,12 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
-import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION;
 import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE;
@@ -41,6 +43,9 @@ import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE;
  * Just to relieve the main (context) class.
  */
 public class ArgValidationHelper {
+    private static final Set<Resource> PROPERTIES = Stream.of(RDF.Property,
+            OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).collect(Iter.toUnmodifiableSet());
+
     private final MapModelImpl model;
     private final MapFunction.Arg argument;
 
@@ -83,7 +88,7 @@ public class ArgValidationHelper {
             throw error.build();
         }
         if (RDF.Property.equals(type)) {
-            if (Arrays.asList(RDF.Property, OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).contains(value))
+            if (PROPERTIES.contains(value))
                 return;
             throw error.build();
         }
@@ -192,7 +197,9 @@ public class ArgValidationHelper {
             return canSafeCast(XSD.integer, left);
         }
         if (XSD.integer.equals(right)) {
-            return canSafeCast(XSD.nonPositiveInteger, left) || canSafeCast(XSD.xlong, left) || canSafeCast(XSD.nonNegativeInteger, left);
+            return canSafeCast(XSD.nonPositiveInteger, left)
+                    || canSafeCast(XSD.xlong, left)
+                    || canSafeCast(XSD.nonNegativeInteger, left);
         }
         if (XSD.nonPositiveInteger.equals(right)) {
             return canSafeCast(XSD.negativeInteger, left);

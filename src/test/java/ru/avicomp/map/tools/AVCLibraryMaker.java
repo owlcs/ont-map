@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * For developing and demonstration.
  * NOTE: Not a part of API or APIs Tests: will be removed.
  * <p>
- * A library <p>avc.spin.ttl</p> intended for basic ONT-MAP definitions and customization.
+ * The library <p>avc.spin.ttl</p> intended for basic ONT-MAP definitions and customization.
  * Customization means hiding functional duplicates and setting correct return types and descriptions.
  * If there is a pair of duplicate functions from {@link SP sp} and {@link FN fn} vocabulary,
  * the sp should be chosen, as it must be used more commonly.

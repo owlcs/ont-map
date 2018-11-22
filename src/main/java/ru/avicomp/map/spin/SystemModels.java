@@ -101,6 +101,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
         AVC_LIB("/etc/avc.lib.ttl", "http://avc.ru/lib"),
         AVC_MATH("/etc/avc.math.ttl", "http://avc.ru/math"),
         AVC_FN("/etc/avc.fn.ttl", "http://avc.ru/fn"),
+        AVC_XSD("/etc/avc.xsd.ttl", "http://avc.ru/xsd"),
         SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
         SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
         SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),

@@ -76,7 +76,7 @@ public class FunctionsTest {
      * @see ru.avicomp.map.spin.MapFunctionImpl#isInheritedOfClass(Resource)
      */
     enum FuncTypeFilter {
-        ALL(181, f -> true),
+        ALL(186, f -> true),
         BOOLEAN_TYPE(35, FunctionFilter.BOOLEAN),
         BOOLEAN_CLASS(24, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions)),
         DATE(13, FunctionFilter.DATE),

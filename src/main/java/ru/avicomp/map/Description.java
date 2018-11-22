@@ -29,7 +29,7 @@ interface Description {
      * Returns a {@code rdfs:comment} concatenated for the specified lang with symbol '\n'.
      *
      * @param lang String or null to get default
-     * @return String comment
+     * @return String comment (or empty string if no {@code rdfs:comment})
      */
     String getComment(String lang);
 
@@ -37,7 +37,7 @@ interface Description {
      * Returns a {@code rdfs:label} concatenated for the specified lang with symbol '\n'.
      *
      * @param lang String or null to get default
-     * @return String label
+     * @return String label (or empty string if no {@code rdfs:label})
      */
     String getLabel(String lang);
 

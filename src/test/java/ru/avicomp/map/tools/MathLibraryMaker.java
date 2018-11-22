@@ -35,6 +35,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 /**
+ * An utility class to produce <p>avc.math.ttl</p> (see {@code resources/etc} directory).
  * For developing and demonstration.
  * NOTE: Not a part of API or APIs Tests: will be removed.
  * Created by @szuev on 22.05.2018.

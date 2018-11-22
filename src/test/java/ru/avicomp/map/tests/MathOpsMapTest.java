@@ -98,7 +98,8 @@ public class MathOpsMapTest extends MapTestData5 {
         MapFunction round = manager.getFunction(pm.expandPrefix("fn:round"));
         MapFunction formatNumber = manager.getFunction(pm.expandPrefix("fn:format-number"));
 
-        MapModel res = createMappingModel(manager, "Used functions: " + toMessage(pm, iri, mul, ln, exp, sub, p, e, abs, round, formatNumber));
+        MapModel res = createMappingModel(manager, "Used functions: " +
+                toMessage(pm, iri, mul, ln, exp, sub, p, e, abs, round, formatNumber));
 
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
