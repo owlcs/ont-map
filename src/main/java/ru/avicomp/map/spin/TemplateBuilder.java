@@ -18,6 +18,7 @@
 
 package ru.avicomp.map.spin;
 
+import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
@@ -25,6 +26,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
+import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
@@ -97,6 +99,7 @@ public class TemplateBuilder {
                                                  boolean isPropertyMapping,
                                                  List<Property> filterPredicates,
                                                  List<Property> sourcePredicates) throws MapJenaException {
+        ARQFactory factory = model.getManager().getFactory();
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
         Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources))
@@ -155,7 +158,7 @@ public class TemplateBuilder {
         Model m = SpinModelConfig.createSpinModel(model.getGraph());
         res.addProperty(RDF.type, SPIN.ConstructTemplate)
                 .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
-                .addProperty(SPIN.body, query.build(m));
+                .addProperty(SPIN.body, query.build(factory, m));
         // spin:labelTemplate
         res.addProperty(SPIN.labelTemplate, query.label());
         return res;
@@ -228,10 +231,11 @@ public class TemplateBuilder {
         return this;
     }
 
-    public RDFNode build(Model m) throws MapJenaException {
+    public RDFNode build(ARQFactory factory, Model m) throws MapJenaException {
         String query = build();
         try {
-            return ARQ2SPIN.parseQuery(query, m);
+            Query arq = factory.createQuery(m, query);
+            return new ARQ2SPIN(m).createQuery(arq, null);
         } catch (QueryException q) {
             throw new MapJenaException("Unable to parse '" + query + "'", q);
         }
