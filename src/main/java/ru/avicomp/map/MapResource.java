@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * Common interface for class and property bridges.
+ * Common interface for any mapping rule: class bridge (MapContext) and property bridge.
  * <p>
  * Created by @szuev on 05.06.2018.
  */
@@ -38,7 +38,6 @@ public interface MapResource {
      */
     OntObject asResource();
 
-
     /**
      * Returns a function call that describes this bridge.
      *
@@ -46,25 +45,26 @@ public interface MapResource {
      */
     MapFunction.Call getMapping();
 
-
     /**
      * Returns a filter function call.
      * Usually a mapping (class or property bridge) does not contain any filter and method returns {@code null}.
+     * A filter function must be boolean (i.e. {@code this.getFilter().isBoolean() = true})/
      *
-     * @return {@link MapFunction.Call} or null
+     * @return {@link MapFunction.Call} or {@code null}
+     * @see MapFunction#isBoolean()
      */
     MapFunction.Call getFilter();
 
     /**
-     * Return the map-model associated with this map-resource.
+     * Return the map-model associated with this {@code MapResource}.
      * The model cannot be null.
      *
-     * @return {@link MapModel}, not null
+     * @return {@link MapModel}, not {@code null}
      */
     MapModel getModel();
 
     /**
-     * Lists all functions which are used by this MapResource.
+     * Lists all functions which are used by this {@code MapResource}.
      *
      * @return <b>distinct</b> Stream of {@link MapFunction}s
      */

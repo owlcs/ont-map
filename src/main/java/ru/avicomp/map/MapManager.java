@@ -111,8 +111,8 @@ public interface MapManager {
      * @throws MapJenaException if no function found
      */
     default MapFunction getFunction(Resource resource) throws MapJenaException {
-        if (!Objects.requireNonNull(resource, "Null function resource").isURIResource())
-            throw new IllegalArgumentException("Not an iri");
+        if (!MapJenaException.notNull(resource, "Null function resource").isURIResource())
+            throw new MapJenaException.IllegalArgument("Not an iri");
         return getFunction(resource.getURI());
     }
 

@@ -53,7 +53,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
         super(dataFactory, ontologyFactory, lock);
         this.manager = createMapManager(
                 () -> {
-                    throw new IllegalStateException("Direct model creation is not allowed");
+                    throw new MapJenaException.IllegalState("Direct model creation is not allowed");
                 }
                 , lock
                 , m -> ontology(m.getBaseGraph()).map(OntologyModel::asGraphModel).orElse(m));

@@ -25,14 +25,15 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * An interface to provide mapping between class expression and properties, which supposed to be belonged to that expression.
+ * An interface to provide mapping between class expression and properties,
+ * that are supposed to be belonged to that expression.
  * <p>
  * Created by @szuev on 19.04.2018.
  */
 public interface ClassPropertyMap {
 
     /**
-     * Lists all properties by class.
+     * Lists all properties by a class.
      *
      * @param ce {@link OntCE} with a model inside
      * @return <b>distinct</b> Stream of {@link Property properties}
@@ -40,7 +41,7 @@ public interface ClassPropertyMap {
     Stream<Property> properties(OntCE ce);
 
     /**
-     * Lists all classes by property.
+     * Lists all classes by a property.
      * A reverse operation to the {@link #properties(OntCE)}.
      *
      * @param pe {@link OntPE} - an property, which in OWL2 can be either {@link OntNDP}, {@link OntNAP} or {@link OntOPE}

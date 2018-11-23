@@ -369,7 +369,8 @@ public class MapFunctionImpl implements MapFunction {
                         throw new MapJenaException("Void: " + ((Builder) val).getFunction());
                     }*/
                 } else {
-                    throw new IllegalArgumentException("Wrong argument type: " + val.getClass().getName() + ", " + val);
+                    throw new MapJenaException.IllegalState("Wrong argument type: "
+                            + val.getClass().getName() + ", " + val);
                 }
             }
             input.put(arg, val);
@@ -391,7 +392,7 @@ public class MapFunctionImpl implements MapFunction {
                 } else if ((value instanceof Call) || (value instanceof String)) {
                     v = value;
                 } else {
-                    throw new IllegalArgumentException("Wrong value: " + value);
+                    throw new MapJenaException.IllegalState("Wrong value: " + value);
                 }
                 map.put(key, v);
             });
@@ -416,7 +417,7 @@ public class MapFunctionImpl implements MapFunction {
             });
             if (error.has(Key.ARG))
                 throw error.build();
-            return new CallImpl(map);
+            return new CallImpl(MapFunctionImpl.this, map);
         }
 
         public int nextIndex() {
@@ -430,12 +431,18 @@ public class MapFunctionImpl implements MapFunction {
         }
     }
 
-    public class CallImpl implements Call {
+    /**
+     * An implementation of {@link MapFunction.Call},
+     * that is used as argument while building {@link MapModelImpl mapping model}.
+     */
+    public static class CallImpl implements Call {
         // values can be either string or another function calls
         protected final Map<ArgImpl, Object> parameters;
+        protected final MapFunctionImpl function;
 
-        public CallImpl(Map<ArgImpl, Object> args) {
-            this.parameters = args;
+        public CallImpl(MapFunctionImpl function, Map<ArgImpl, Object> args) {
+            this.function = Objects.requireNonNull(function);
+            this.parameters = Objects.requireNonNull(args);
         }
 
         @Override
@@ -476,7 +483,7 @@ public class MapFunctionImpl implements MapFunction {
 
         @Override
         public MapFunctionImpl getFunction() {
-            return MapFunctionImpl.this;
+            return function;
         }
 
         public Stream<ArgImpl> listArgs() {
@@ -520,7 +527,7 @@ public class MapFunctionImpl implements MapFunction {
 
                 @Override
                 public MapFunction getFunction() {
-                    return MapFunctionImpl.this;
+                    return function;
                 }
 
                 @Override

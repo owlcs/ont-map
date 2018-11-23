@@ -266,14 +266,14 @@ public class MapManagerImpl implements MapManager {
      * Gets a library graph without any inclusion (i.e. without avc additions).
      *
      * @return {@link UnionGraph}, each call the same instance
-     * @throws IllegalStateException wrong state of manager
+     * @throws ru.avicomp.map.MapJenaException.IllegalState wrong state of manager
      */
-    public Graph getMapLibraryGraph() throws IllegalStateException {
+    public Graph getMapLibraryGraph() throws MapJenaException.IllegalState {
         return getLibrary().getGraph().getUnderlying().graphs()
                 .filter(UnionGraph.class::isInstance)
                 .map(UnionGraph.class::cast)
                 .filter(g -> g.getUnderlying().graphs().count() != 0)
-                .findFirst().orElseThrow(() -> new IllegalStateException("Unable to find SPINMAPL graph"));
+                .findFirst().orElseThrow(() -> new MapJenaException.IllegalState("Unable to find SPINMAPL graph"));
     }
 
     /**
@@ -379,8 +379,12 @@ public class MapManagerImpl implements MapManager {
      * @throws MapJenaException in case model can not be wrap as MapModelImpl
      */
     public MapModelImpl asMapModel(OntGraphModel m, OntPersonality personality) throws MapJenaException {
-        if (!isMapModel(m)) throw new MapJenaException("<" + m.getID() + "> is not a mapping model");
-        if (m instanceof MapModelImpl && this.equals(((MapModelImpl) m).getManager())) return (MapModelImpl) m;
+        if (!isMapModel(m)) {
+            throw new MapJenaException("<" + m.getID() + "> is not a mapping model");
+        }
+        if (m instanceof MapModelImpl && this.equals(((MapModelImpl) m).getManager())) {
+            return (MapModelImpl) m;
+        }
         UnionGraph union = new UnionGraph(m.getBaseGraph());
         m.imports()
                 .filter(i -> !SPINMAPL.BASE_URI.equals(i.getID().getURI()))

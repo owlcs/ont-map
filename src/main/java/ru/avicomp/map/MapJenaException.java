@@ -25,6 +25,7 @@ import org.apache.jena.shared.JenaException;
  * <p>
  * Created by @szuev on 06.04.2018.
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class MapJenaException extends JenaException {
 
     public MapJenaException() {
@@ -44,7 +45,7 @@ public class MapJenaException extends JenaException {
 
     public static <T> T notNull(T obj, String message) {
         if (obj == null)
-            throw message == null ? new MapJenaException() : new MapJenaException(message);
+            throw message == null ? new IllegalArgument() : new IllegalArgument(message);
         return obj;
     }
 
@@ -55,6 +56,39 @@ public class MapJenaException extends JenaException {
 
         public Unsupported(String message) {
             super(message);
+        }
+    }
+
+    /**
+     * A Map Jena exception that indicates wrong input.
+     */
+    public static class IllegalArgument extends MapJenaException {
+        public IllegalArgument() {
+        }
+
+        public IllegalArgument(String message) {
+            super(message);
+        }
+
+        public IllegalArgument(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * An Map Jena exception that indicates that Jena-object state is broken,
+     * which may happen in multithreading or in other uncommon situations.
+     */
+    public static class IllegalState extends MapJenaException {
+        public IllegalState() {
+        }
+
+        public IllegalState(String message) {
+            super(message);
+        }
+
+        public IllegalState(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

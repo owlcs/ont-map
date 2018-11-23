@@ -25,7 +25,8 @@ import ru.avicomp.ontapi.jena.model.OntOPE;
 import java.util.stream.Stream;
 
 /**
- * A class expression binding, a primary component of mapping.
+ * A class expressions mapping (class bridge), that is a primary component of a {@link MapModel mapping model}.
+ * In GUI it can be represented as an arrow between source and target {@link OntCE class expression}s.
  * <p>
  * Created by @szuev on 14.04.2018.
  */
@@ -35,7 +36,7 @@ public interface MapContext extends MapResource {
      * Answers an URI.
      * A context cannot be anonymous since it is used as parameter in internal mechanisms.
      *
-     * @return String, not null
+     * @return String, not {@code null}
      */
     String getURI();
 
@@ -54,12 +55,13 @@ public interface MapContext extends MapResource {
     OntCE getTarget();
 
     /**
-     * Answers a context' expression in form of function-call object.
-     * A valid (ready to use) context must have one and only one target expression
-     * (i.e {@code MapFunction#isTarget() == true}).
+     * Answers a context' expression in the form of function-call object.
+     * A valid (ready to use) context must have one and only one mapping function,
+     * that must be a target (i.e. {@code this.getMapping().isTarget() = true}).
      *
-     * @return {@link MapFunction.Call} or null in case context are not fully completed
+     * @return {@link MapFunction.Call} or {@code null} in case the context are not fully completed
      * @see #isValid()
+     * @see MapFunction#isTarget()
      */
     @Override
     MapFunction.Call getMapping();

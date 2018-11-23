@@ -20,9 +20,7 @@ package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.XSD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -35,6 +33,7 @@ import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
+import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
@@ -79,7 +78,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Answers iff this mapping model has local defined owl-entities declarations.
+     * Answers {@code true} if this mapping model has local defined owl-entities declarations.
      * TODO: move to ONT-API?
      *
      * @return boolean
@@ -197,7 +196,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     private OntID getOntologyID(OntCE ce) {
-        return findModelByClass(ce).map(OntGraphModel::getID).orElseThrow(() -> new IllegalStateException("Can't find ontology for " + ce));
+        return findModelByClass(ce).map(OntGraphModel::getID)
+                .orElseThrow(() -> new OntJenaException.IllegalState("Can't find ontology for " + ce));
     }
 
     protected Optional<OntGraphModel> findModelByClass(Resource ce) {
@@ -576,14 +576,14 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         call.asMap().forEach((arg, value) -> {
             RDFNode param = null;
             if (value instanceof MapFunction.Call) {
-                if (Objects.equals(value, call)) throw new IllegalArgumentException("Self call");
+                if (Objects.equals(value, call)) throw new MapJenaException.IllegalArgument("Self call");
                 param = createExpression((MapFunction.Call) value);
             }
             if (value instanceof String) {
                 param = toNode((String) value);
             }
             if (param == null)
-                throw new IllegalArgumentException("Wrong value for " + arg.name() + ": " + value);
+                throw new MapJenaException.IllegalArgument("Wrong value for " + arg.name() + ": " + value);
             Property predicate = createArgProperty(arg.name());
             res.addProperty(predicate, param);
 
@@ -601,10 +601,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @param mapping  {@link Resource} mapping
      * @param expr     {@link RDFNode} expression
      * @param isFilter boolean
-     * @return {@link MapFunction.Call}
+     * @return {@link ModelCallImpl}
      * @see #createExpression(MapFunction.Call)
      */
-    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr, boolean isFilter) {
+    protected ModelCallImpl parseExpression(Resource mapping, RDFNode expr, boolean isFilter) {
         MapManagerImpl man = getManager();
         MapFunctionImpl f;
         Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
@@ -614,9 +614,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             String v = (expr.isLiteral() ? expr :
                     ContextMappingHelper.findProperty(mapping, expr.asResource(), isFilter)).asNode().toString();
             args.put(f.getArg(SP.arg1.getURI()), v);
-            return createFunctionCall(f, args);
+            return new ModelCallImpl(this, f, args);
         }
-        if (!expr.isAnon()) throw new IllegalArgumentException("Should never happen: " + expr.toString());
+        if (!expr.isAnon()) throw new MapJenaException.IllegalState("Should never happen: " + expr.toString());
         Resource expression = expr.asResource();
         String name = expression.getRequiredProperty(RDF.type).getObject().asResource().getURI();
         f = man.getFunction(name);
@@ -630,7 +630,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                                 .filter(MapFunctionImpl.ArgImpl::isVararg)
                                 .collect(Collectors.toList());
                         if (varargs.size() != 1)
-                            throw new IllegalStateException("Can't find vararg argument for " + f.name());
+                            throw new MapJenaException.IllegalState("Can't find vararg argument for " + f.name());
                         a = f.new ArgImpl(varargs.get(0), uri);
                     } else {
                         a = f.getArg(uri);
@@ -650,65 +650,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     }
                     args.put(a, v);
                 });
-        return createFunctionCall(f, args);
+        return new ModelCallImpl(this, f, args);
     }
 
-    /**
-     * Makes a {@link MapFunction.Call} implementation with overridden {@code #toString()},
-     * to produce a good-looking output, which can be used as label.
-     * Actually, it is not a very good idea to override {@code #toString()},
-     * there should be a special mechanism to print anything in ONT-MAP api.
-     * But as temporary solution it is okay: it is not dangerous in our case.
-     *
-     * @param f    {@link MapFunctionImpl}
-     * @param args Map with {@link MapFunctionImpl.ArgImpl args} as keys
-     * @return {@link MapFunction.Call} attached to this model.
-     */
-    protected MapFunctionImpl.CallImpl createFunctionCall(MapFunctionImpl f, Map<MapFunctionImpl.ArgImpl, Object> args) {
-        MapModelImpl m = this;
-        return f.new CallImpl(args) {
-            @Override
-            public String toString(PrefixMapping pm) {
-                String name = m.shortForm(getFunction().name());
-                List<MapFunctionImpl.ArgImpl> args = listArgs().collect(Collectors.toList());
-                if (args.size() == 1) { // print without predicate
-                    return name + "(" + getStringValue(m, args.get(0)) + ")";
-                }
-                return args.stream()
-                        .map(a -> toString(pm, a))
-                        .collect(Collectors.joining(", ", name + "(", ")"));
-            }
-
-            @Override
-            protected String getStringValue(PrefixMapping pm, MapFunctionImpl.ArgImpl a) {
-                Object v = get(a);
-                if (v instanceof String) {
-                    RDFNode n = m.toNode((String) v);
-                    if (n.isLiteral()) {
-                        Literal l = n.asLiteral();
-                        String u = l.getDatatypeURI();
-                        if (XSD.xstring.getURI().equals(u)) {
-                            return l.getLexicalForm();
-                        }
-                        return String.format("%s^^%s", l.getLexicalForm(), m.shortForm(u));
-                    } else {
-                        return m.shortForm(n.asNode().toString());
-                    }
-                }
-                return super.getStringValue(pm, a);
-            }
-
-            @Override
-            protected String getStringKey(PrefixMapping pm, MapFunctionImpl.ArgImpl a) {
-                return "?" + toNode(a.name()).asResource().getLocalName();
-            }
-
-            @Override
-            public String toString() {
-                return toString(m);
-            }
-        };
-    }
 
     /**
      * Validates a function-call against this model.
@@ -745,7 +689,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     testFunction(nested, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION.create().addFunction(nested).build());
                     return;
                 }
-                throw new IllegalStateException("Should never happen, unexpected value: " + value);
+                throw new MapJenaException.IllegalState("Should never happen, unexpected value: " + value);
             } catch (MapJenaException e) {
                 error.addSuppressed(e);
             }

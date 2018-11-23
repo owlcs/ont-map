@@ -41,6 +41,7 @@ import java.util.stream.Stream;
  * <p>
  * Created by @szuev on 16.04.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
 
     public MapPropertiesImpl(Node n, EnhGraph m) {

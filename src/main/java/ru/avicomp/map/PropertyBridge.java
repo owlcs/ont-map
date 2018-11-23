@@ -23,19 +23,38 @@ import org.apache.jena.rdf.model.Property;
 import java.util.stream.Stream;
 
 /**
- * This class represents a properties binding, which is a component of context.
- * To tie together OWL2 annotation ({@code owl:AnnotationProperty}) and data properties ({@code owl:DatatypeProperty})
- * from source and target.
- * Only such OWL2 entities can have assertions with literals as object, which can be attached to an individual.
+ * A representation of a property mapping.
+ * It is a component of {@link MapContext context} and
+ * a connection (property bridge) between source and target properties, which, in OWL2,
+ * can be either {@link ru.avicomp.ontapi.jena.model.OntNAP annotation property}
+ * ({@code rdf:type} equals to{@code owl:AnnotationProperty})
+ * or {@link ru.avicomp.ontapi.jena.model.OntNDP data property}
+ * ({@code rdf:type} equals to {@code owl:DatatypeProperty}),
+ * since only those properties can have a literal property assertion for an individual.
  * <p>
  * Created by @szuev on 16.04.2018.
  */
 public interface PropertyBridge extends MapResource {
 
+    /**
+     * Lists all source properties.
+     *
+     * @return Stream of {@link Property}s
+     */
     Stream<Property> sources();
 
+    /**
+     * Gets a target property.
+     *
+     * @return {@link Property}
+     */
     Property getTarget();
 
+    /**
+     * Gets context, in which this property bridge is built.
+     *
+     * @return {@link MapContext}
+     */
     MapContext getContext();
 
 }

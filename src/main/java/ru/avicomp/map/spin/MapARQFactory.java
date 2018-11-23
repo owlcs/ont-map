@@ -29,6 +29,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.core.*;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.expr.Expr;
@@ -48,6 +49,7 @@ import org.apache.jena.sparql.util.FmtUtils;
 import org.apache.jena.update.UpdateRequest;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
+import ru.avicomp.map.MapJenaException;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
@@ -257,9 +259,21 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      * @return {@link PropertyFunctionFactory}
      */
     public PropertyFunctionFactory asARQPropertyFunction(org.topbraid.spin.model.Function func) {
-        if (!Objects.requireNonNull(func, "Null function").isMagicProperty())
-            throw new IllegalArgumentException("Function <" + func.getURI() + "> is not a magic property");
+        if (!MapJenaException.notNull(func, "Null function").isMagicProperty())
+            throw new MapJenaException.IllegalArgument("Function <" + func.getURI() + "> is not a magic property");
         return org.topbraid.spin.arq.SPINARQPFunctionFactory.get().create(func);
+    }
+
+    /**
+     * Creates the "physical" Jena Query instance using the given string query representation and prefixes.
+     * The returning {@code Query} is in {@link Syntax#syntaxARQ ARQ Syntax}, which is an extended SPARQL 1.1 syntax.
+     *
+     * @param query the parsable query string, not {@code null}
+     * @param pm    {@link PrefixMapping prefixes}, possible {@code null}
+     * @return {@link Query Jena Query}, not {@code null}
+     */
+    public Query createQuery(String query, PrefixMapping pm) {
+        return doCreateQuery(query, pm);
     }
 
     /**
@@ -303,14 +317,16 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
             this.spin = spin;
             this.args = spin.getArguments(true);
             if (args.stream().map(org.topbraid.spin.model.Argument::getVarName).anyMatch(Objects::isNull)) {
-                throw new IllegalArgumentException("Some of the function <" + spin.getURI() + "> arguments have not a valid predicate");
+                throw new MapJenaException.IllegalArgument("Some of the function <" + spin.getURI() + "> " +
+                        "arguments have not a valid predicate");
             }
             try {
                 org.topbraid.spin.model.Query spinQuery = (org.topbraid.spin.model.Query) spin.getBody();
                 queryString = MapARQFactory.this.createCommandString(spinQuery);
                 query = MapARQFactory.this.createQuery(queryString);
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Function <" + spin.getURI() + "> does not define a valid body", ex);
+                throw new MapJenaException.IllegalArgument("Function <" + spin.getURI() + "> " +
+                        "does not define a valid body", ex);
             }
         }
 

@@ -28,10 +28,12 @@ import java.util.stream.Stream;
 
 /**
  * A graph model with mapping instructions to perform data transfer from one OWL2 ontology to another.
- * Note: it does not have to be OWL2 ontology.
- * Moreover, a spin implementation is not OWL2-, but rather a RDFS-ontology.
- * Nevertheless it have to be compatible with OWL2 as possible,
- * e.g. ontology id must be the only one as it is required by OWL2.
+ * It consists of {@link MapContext Class Mapping}s,
+ * which, in turn, may include {@link PropertyBridge property bridge}s.
+ * Note: it does not have to be OWL2 ontology
+ * (and, moreover, a spin implementation is not OWL2-, but rather a RDFS-ontology),
+ * but it have to be compatible with OWL2 as possible,
+ * at least, an {@link OntID Ontology ID} must be the only one in the {@code Graph} as it is required by OWL2.
  * <p>
  * Created by @szuev on 10.04.2018.
  */
@@ -40,7 +42,7 @@ public interface MapModel {
     /**
      * Returns an ontology id.
      *
-     * @return {@link OntID}, not null
+     * @return {@link OntID}, not {@code null}
      * @see OntGraphModel#getID()
      */
     OntID getID();
@@ -49,7 +51,7 @@ public interface MapModel {
      * Sets a new ontology iri.
      *
      * @param uri String iri or null for anonymous ontology
-     * @return {@link OntID}, not null
+     * @return {@link OntID}, not {@code null}
      * @see OntGraphModel#setID(String)
      */
     OntID setID(String uri);

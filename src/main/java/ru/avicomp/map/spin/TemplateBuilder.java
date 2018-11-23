@@ -26,7 +26,6 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.arq.ARQ2SPIN;
-import org.topbraid.spin.arq.ARQFactory;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
@@ -93,13 +92,12 @@ public class TemplateBuilder {
      * @param sourcePredicates  List of predicates (i.e. {@code spinmap:sourcePredicate$i}),
      *                          which are used while mapping
      * @return {@link Resource} a fresh or found mapping template resource in model
-     * @throws MapJenaException if something goes wrong
+     * @throws MapJenaException.IllegalState if something goes wrong
      */
     public static Resource createMappingTemplate(MapModelImpl model,
                                                  boolean isPropertyMapping,
                                                  List<Property> filterPredicates,
-                                                 List<Property> sourcePredicates) throws MapJenaException {
-        ARQFactory factory = model.getManager().getFactory();
+                                                 List<Property> sourcePredicates) throws MapJenaException.IllegalState {
         String filters = toShortString(filterPredicates);
         String sources = toShortString(sourcePredicates);
         Resource res = (isPropertyMapping ? AVC.PropertyMapping(filters, sources) : AVC.Mapping(filters, sources))
@@ -155,10 +153,9 @@ public class TemplateBuilder {
                     }
                     query.addSourcePredicate(predicate.getLocalName());
                 });
-        Model m = SpinModelConfig.createSpinModel(model.getGraph());
         res.addProperty(RDF.type, SPIN.ConstructTemplate)
                 .addProperty(RDFS.subClassOf, SPINMAP.Mapping_1)
-                .addProperty(SPIN.body, query.build(factory, m));
+                .addProperty(SPIN.body, query.build(model));
         // spin:labelTemplate
         res.addProperty(SPIN.labelTemplate, query.label());
         return res;
@@ -231,13 +228,22 @@ public class TemplateBuilder {
         return this;
     }
 
-    public RDFNode build(ARQFactory factory, Model m) throws MapJenaException {
+    /**
+     * Builds a mapping template expression (that is a construct SPARQL query) as a {@link RDFNode RDF Node}.
+     *
+     * @param model {@link MapModelImpl}
+     * @return {@link RDFNode}
+     * @throws MapJenaException.IllegalState wrong query
+     */
+    public RDFNode build(MapModelImpl model) throws MapJenaException.IllegalState {
         String query = build();
+        Model m = SpinModelConfig.createSpinModel(model.getGraph());
+        MapManagerImpl manager = model.getManager();
         try {
-            Query arq = factory.createQuery(m, query);
+            Query arq = manager.getFactory().createQuery(query, manager.prefixes());
             return new ARQ2SPIN(m).createQuery(arq, null);
         } catch (QueryException q) {
-            throw new MapJenaException("Unable to parse '" + query + "'", q);
+            throw new MapJenaException.IllegalState("Unable to parse '" + query + "'", q);
         }
     }
 
