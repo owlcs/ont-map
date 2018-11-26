@@ -166,6 +166,16 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     }
 
     @Override
+    public Graph getGraph() {
+        lock.readLock().lock();
+        try {
+            return manager.getGraph();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public MapModel createMapModel() {
         lock.writeLock().lock();
         try {

@@ -48,7 +48,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Created by @szuev on 09.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapFunctionImpl implements MapFunction {
+public abstract class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
     protected final org.topbraid.spin.model.Module func;
     protected List<ArgImpl> arguments;
@@ -67,12 +67,14 @@ public class MapFunctionImpl implements MapFunction {
         if (func.hasProperty(AVC.returnType)) {
             return func.getPropertyResourceValue(AVC.returnType).getURI();
         }
-        Resource r = func instanceof org.topbraid.spin.model.Function ? ((org.topbraid.spin.model.Function) func).getReturnType() : null;
+        Resource r = func instanceof org.topbraid.spin.model.Function ?
+                ((org.topbraid.spin.model.Function) func).getReturnType() : null;
         return (r == null ? AVC.undefined : r).getURI();
     }
 
     public List<ArgImpl> getArguments() {
-        return arguments == null ? arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
+        return arguments == null ?
+                arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
     }
 
     public Stream<ArgImpl> listArgs() {
@@ -129,15 +131,25 @@ public class MapFunctionImpl implements MapFunction {
     }
 
     /**
+     * Returns the definition main triple.
+     *
+     * @return {@link Triple}
+     */
+    public Triple getRootTriple() {
+        return Triple.create(func.asNode(), RDF.Nodes.type,
+                (isTarget() ? SPINMAP.TargetFunction : SPIN.Function).asNode());
+    }
+
+    /**
      * Answers {@code true} if this function is custom, i.e. does not belong to the original spin family.
      * Custom functions must be directly added to the final mapping graph for compatibility with Topbraid Composer.
      *
      * @return boolean
      */
-    public boolean isCustom() {
-        Triple root = func.getRequiredProperty(RDF.type).asTriple();
-        return MapManagerImpl.additionLibraryGraphs().anyMatch(g -> g.contains(root));
-    }
+    public abstract boolean isCustom();
+
+    @Override
+    public abstract boolean isUserDefined();
 
     public boolean isPrivate() {
         return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isPrivate();

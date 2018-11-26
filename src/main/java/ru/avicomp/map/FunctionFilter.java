@@ -92,7 +92,14 @@ public enum FunctionFilter implements Predicate<MapFunction> {
         public boolean test(MapFunction f) {
             return f.isTarget();
         }
-    };
+    },
+    USER_DEFINED {
+        @Override
+        public boolean test(MapFunction f) {
+            return f.isUserDefined();
+        }
+    },
+    ;
 
     @Override
     public abstract boolean test(MapFunction function);

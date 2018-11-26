@@ -21,6 +21,7 @@ package ru.avicomp.map.spin;
 import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.map.utils.LocalClassPropertyMapImpl;
+import ru.avicomp.map.utils.ReadOnlyGraph;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
@@ -61,12 +63,21 @@ import java.util.stream.Stream;
 public class MapManagerImpl implements MapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapModelImpl.class);
 
+    // prefix library:
     protected final PrefixMapping prefixes;
+    // whole graph library (primary graph + avc complement graphs + original spin graphs):
     protected final UnionModel library;
+    // cache; a part of #library: no avc and primary graphs (i.e. raw spin family lib):
+    private Graph rawSpinLibrary;
+    // cache; a part of #library: everything except the spin family:
+    private List<Graph> additional;
+    // map-functions:
     protected final Map<String, FunctionImpl> functions;
+    // config:
     protected final MapConfigImpl config;
-
+    // ARQ factory:
     protected final MapARQFactory arqFactory;
+    // Graph factory:
     protected final Supplier<Graph> graphFactory;
 
     public MapManagerImpl() {
@@ -99,32 +110,6 @@ public class MapManagerImpl implements MapManager {
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 
-    public MapARQFactory getFactory() {
-        return arqFactory;
-    }
-
-    public MapConfigImpl getConfig() {
-        return config;
-    }
-
-    /**
-     * Registers a spin-function in the manager.
-     *
-     * @param inModel {@link Resource} with {@code rdf:type = spin:Function}
-     * @throws UnsupportedPolymorphismException - wrong resource or personality
-     * @see SpinModelConfig#LIB_PERSONALITY
-     */
-    protected void register(Resource inModel) throws UnsupportedPolymorphismException {
-        org.topbraid.spin.model.Function f = inModel.as(org.topbraid.spin.model.Function.class);
-        ExtraPrefixes.add(f);
-        functions.put(f.getURI(), new FunctionImpl(f));
-        if (f.isMagicProperty()) {
-            arqFactory.registerProperty(f);
-        } else {
-            arqFactory.registerFunction(f);
-        }
-    }
-
     /**
      * Creates a complete ONT-MAP library ("a query model" in terms of SPIN-API).
      * The result graph includes all turtle resources from {@code /etc} dir.
@@ -138,34 +123,126 @@ public class MapManagerImpl implements MapManager {
     public static UnionModel createLibraryModel(Graph graph) {
         // root graph for user defined stuff
         UnionGraph res = new UnionGraph(graph);
-        // avc.spin, avc.lib, avc.fn amd avc.math additions:
-        additionLibraryGraphs().forEach(res::addGraph);
+        // avc.spin, avc.lib, avc.fn, avc.xsd, avc.math, etc:
+        SystemModels.graphs(false).forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
         return new OntGraphModelImpl(res, SpinModelConfig.ONT_LIB_PERSONALITY);
     }
 
     /**
-     * Gets spin library union graph without ONT-MAP additions.
+     * Gets the pin library union graph without ONT-MAP (avc.*.ttl) additions.
      *
      * @return {@link UnionGraph} with spin-family hierarchy of unmodifiable graphs
      */
     public static UnionGraph getSpinLibraryGraph() {
-        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAPL), SystemModels.graphs().values());
+        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAPL),
+                SystemModels.graphs(true).collect(Collectors.toSet()));
     }
 
     /**
-     * Returns a set of addition library graphs.
+     * Gets Map ARQ factory.
      *
-     * @return Stream of unmodifiable {@link Graph}s
-     * @see ru.avicomp.map.spin.vocabulary.AVC
-     * @see ru.avicomp.map.spin.vocabulary.FN
-     * @see ru.avicomp.map.spin.vocabulary.MATH
+     * @return {@link MapARQFactory}
      */
-    public static Stream<Graph> additionLibraryGraphs() {
-        return Arrays.stream(SystemModels.Resources.values())
-                .filter(s -> s.name().startsWith("AVC"))
-                .map(SystemModels::get);
+    public MapARQFactory getFactory() {
+        return arqFactory;
+    }
+
+    /**
+     * Gets Map Config.
+     *
+     * @return {@link MapConfigImpl}
+     */
+    public MapConfigImpl getConfig() {
+        return config;
+    }
+
+    @Override
+    public PrefixMapping prefixes() {
+        return prefixes;
+    }
+
+    /**
+     * Returns the library graph, that consists from:
+     * <ul>
+     * <li>a primary graph to store user-defined or manager-specific content</li>
+     * <li>{@code avc.spin.ttl} - base definitions and customization</li>
+     * <li>{@code avc.lib.ttl} - additional AVC functions</li>
+     * <li>{@code avc.math.ttl} - functions from xquery/math</li>
+     * <li>{@code avc.fn.ttl} - functions from xquery which were forgotten in {@code functions-fn.ttl}</li>
+     * <li>{@code avc.xsd.ttl} - functions for xsd types which were forgotten in {@code spinmapl.spin.ttl}</li>
+     * <li>{@code spinmapl.spin.ttl} - a top of the standard (composer's) spin-family graphs</li>
+     * </ul>
+     *
+     * @return {@link UnionModel}
+     */
+    public UnionModel getLibrary() {
+        return library;
+    }
+
+    /**
+     * Gets a library graph without any inclusion (i.e. without avc additions and primary graph).
+     * It is equivalent to the {@link #getSpinLibraryGraph()} method,
+     * but it returns always the same reference from the {@link #getLibrary() library} {@link UnionGraph} graph.
+     *
+     * @return {@link UnionGraph}, each call the same instance
+     * @throws ru.avicomp.map.MapJenaException.IllegalState wrong state of manager
+     * @see #getLibrary()
+     */
+    public Graph getTopSpinGraph() throws MapJenaException.IllegalState {
+        if (rawSpinLibrary != null) return rawSpinLibrary;
+        return rawSpinLibrary = getLibrary().getGraph().getUnderlying().graphs()
+                .filter(UnionGraph.class::isInstance)
+                .map(UnionGraph.class::cast)
+                .filter(g -> g.getUnderlying().graphs().count() != 0)
+                .findFirst()
+                .orElseThrow(() -> new MapJenaException.IllegalState("Unable to find SPINMAPL graph"));
+    }
+
+    /**
+     * Lists all graphs that are additional to the spin-family graphs.
+     * A primary graph is included to the returning stream in the first position.
+     *
+     * @return Stream of {@link Graph}s
+     * @see #getLibrary()
+     */
+    public Stream<Graph> listAdditionalGraphs() {
+        if (additional != null) return additional.stream();
+        List<Graph> res = new ArrayList<>();
+        res.add(getLibrary().getBaseGraph());
+        getLibrary().getGraph().getUnderlying().graphs()
+                .filter(x -> !(x instanceof UnionGraph))
+                .forEach(res::add);
+        return (additional = res).stream();
+    }
+
+    @Override
+    public Graph getGraph() {
+        return ReadOnlyGraph.wrap(getLibrary().getBaseGraph());
+    }
+
+    /**
+     * Registers a spin-function in the manager in the from of {@link MapFunction}.
+     *
+     * @param inModel {@link Resource} with {@code rdf:type = spin:Function}
+     * @throws MapJenaException wrong function resource
+     * @see SpinModelConfig#LIB_PERSONALITY
+     */
+    protected void register(Resource inModel) throws MapJenaException {
+        org.topbraid.spin.model.Function f;
+        try {
+            f = inModel.as(org.topbraid.spin.model.Function.class);
+        } catch (UnsupportedPolymorphismException upe) {
+            throw new MapJenaException("Wrong function specified: " + inModel, upe);
+        }
+        ExtraPrefixes.add(f); // <- wtf?
+        functions.put(f.getURI(), new FunctionImpl(f));
+        if (f.isMagicProperty()) {
+            arqFactory.registerProperty(f);
+        } else {
+            arqFactory.registerFunction(f);
+        }
     }
 
     /**
@@ -178,6 +255,15 @@ public class MapManagerImpl implements MapManager {
     @Override
     public Stream<MapFunction> functions() {
         return functions.values().stream().filter(this::filter).map(Function.identity());
+    }
+
+    /**
+     * Gets all available functions as unmodifiable Map.
+     *
+     * @return {@link Map} with IRIs as keys and {@link FunctionImpl} as values
+     */
+    public Map<String, FunctionImpl> getFunctionsMap() {
+        return Collections.unmodifiableMap(functions);
     }
 
     /**
@@ -197,8 +283,8 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Answers iff the specified function is registered (as ARQ or SPARQL) and therefore is executable.
-     * Note that it is a recursive method.
+     * Answers {@code true} if the specified function is registered (as ARQ or SPARQL) and therefore is executable.
+     * Note that it is a recursive method since a function is executable only if all nested functions are executable.
      *
      * @param function {@link MapFunctionImpl}
      * @return boolean
@@ -223,57 +309,12 @@ public class MapManagerImpl implements MapManager {
                 .distinct()
                 .map(functions::get)
                 .filter(Objects::nonNull)
-                .allMatch(f -> !uri.equals(f.name()) && isExecutable(f));
-    }
-
-    /**
-     * Gets all available functions as unmodifiable Map.
-     *
-     * @return {@link Map} with IRIs as keys and {@link FunctionImpl} as values
-     */
-    public Map<String, FunctionImpl> getFunctionsMap() {
-        return Collections.unmodifiableMap(functions);
+                .allMatch(f -> !uri.equals(f.name()) && f.isExecutable());
     }
 
     @Override
     public FunctionImpl getFunction(String name) throws MapJenaException {
         return MapJenaException.notNull(functions.get(name), "Can't find function " + name);
-    }
-
-    @Override
-    public PrefixMapping prefixes() {
-        return prefixes;
-    }
-
-    /**
-     * Returns the library graph.
-     * Consists from:
-     * <ul>
-     * <li>avc.spin.ttl - base definitions and customization</li>
-     * <li>avc.lib.ttl - additional AVC functions</li>
-     * <li>avc.math.ttl - functions from xquery/math</li>
-     * <li>avc.fn.ttl - functions from xquery which were forgotten in http://topbraid.org/functions-afn</li>
-     * <li>spinmapl.spin.ttl - a top of standard (composer's) spin-family</li>
-     * </ul>
-     *
-     * @return {@link UnionModel}
-     */
-    public UnionModel getLibrary() {
-        return library;
-    }
-
-    /**
-     * Gets a library graph without any inclusion (i.e. without avc additions).
-     *
-     * @return {@link UnionGraph}, each call the same instance
-     * @throws ru.avicomp.map.MapJenaException.IllegalState wrong state of manager
-     */
-    public Graph getMapLibraryGraph() throws MapJenaException.IllegalState {
-        return getLibrary().getGraph().getUnderlying().graphs()
-                .filter(UnionGraph.class::isInstance)
-                .map(UnionGraph.class::cast)
-                .filter(g -> g.getUnderlying().graphs().count() != 0)
-                .findFirst().orElseThrow(() -> new MapJenaException.IllegalState("Unable to find SPINMAPL graph"));
     }
 
     /**
@@ -314,14 +355,15 @@ public class MapManagerImpl implements MapManager {
     }
 
     /**
-     * Creates Mapping Model from the given Graph and personalities.
+     * Creates a new Mapping Model from the given Graph and personalities.
      *
-     * @param graph       {@link Graph}
+     * @param graph       {@link Graph}, not {@code null}
      * @param personality {@link OntPersonality} or {@code null} for default
      * @return {@link MapModelImpl}
      */
     public MapModelImpl newMapModelImpl(Graph graph, OntPersonality personality) {
-        return new MapModelImpl(graph instanceof UnionGraph ? (UnionGraph) graph : new UnionGraph(Objects.requireNonNull(graph)),
+        return new MapModelImpl(graph instanceof UnionGraph ? (UnionGraph) graph :
+                new UnionGraph(Objects.requireNonNull(graph), null, null, false),
                 personality == null ? SpinModelConfig.ONT_PERSONALITY : personality, this);
     }
 
@@ -347,12 +389,13 @@ public class MapManagerImpl implements MapManager {
         // it provides own rules order, and each rule is processed only once.
         res.add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, res.createTypedLiteral(2));
         // add spinmapl (a top of library,  do not add avc.*.ttl addition) to owl:imports:
-        res.addImport(new OntGraphModelImpl(getMapLibraryGraph(), res.getPersonality()));
+        res.addImport(new OntGraphModelImpl(getTopSpinGraph(), res.getPersonality()));
     }
 
     /**
      * Tests weather the given OWL2 model is also a mapping model.
-     * For the sake of simplicity assumes that map-model must have &lt;http://topbraid.org/spin/spinmapl&gt; in the imports.
+     * For the sake of simplicity assumes
+     * that map-model must have &lt;http://topbraid.org/spin/spinmapl&gt; in the imports.
      * In general case it is not right, but both Topbraid Composer and ONT-MAP provides such mappings by default.
      *
      * @param m {@link OntGraphModel}
@@ -361,7 +404,11 @@ public class MapManagerImpl implements MapManager {
     @Override
     public boolean isMapModel(OntGraphModel m) {
         if (m instanceof MapModelImpl) return true;
-        return m.getID().imports().anyMatch(SPINMAPL.BASE_URI::equals);
+        return m.getID().imports().anyMatch(this::isTopSpinURI);
+    }
+
+    protected boolean isTopSpinURI(String uri) {
+        return SPINMAPL.BASE_URI.equals(uri);
     }
 
     @Override
@@ -385,22 +432,63 @@ public class MapManagerImpl implements MapManager {
         if (m instanceof MapModelImpl && this.equals(((MapModelImpl) m).getManager())) {
             return (MapModelImpl) m;
         }
-        UnionGraph union = new UnionGraph(m.getBaseGraph());
+        // register functions and add to the primary manager graph:
+        registerFunctions(m);
+        // reassembly given model:
+        return reassemble(m, personality);
+    }
+
+    /**
+     * Reassembles the given model so that it has correct structure and references to the manager.
+     *
+     * @param m {@link OntGraphModel}, not {@code null}
+     * @param p {@link OntPersonality}, not {@code null}
+     * @return {@link MapModelImpl}
+     */
+    protected MapModelImpl reassemble(OntGraphModel m, OntPersonality p) {
+        MapModelImpl res = newMapModelImpl(m.getBaseGraph(), p);
         m.imports()
-                .filter(i -> !SPINMAPL.BASE_URI.equals(i.getID().getURI()))
+                .filter(i -> !isTopSpinURI(i.getID().getURI())) // skip spin-top graph to be added then separately
                 .map(ModelGraphInterface::getGraph)
-                .forEach(union::addGraph);
-        union.addGraph(getMapLibraryGraph());
-        MapModelImpl res = new MapModelImpl(union, personality, this);
-        Model full = SpinModelConfig.createSpinModel(res.getGraph());
-        SpinModels.listSpinFunctions(m.getBaseModel())
-                .map(r -> r.inModel(full))
-                .forEach(r -> {
-                    if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("Add function <{}>.", r);
-                    register(r);
-                });
+                .forEach(res.getGraph()::addGraph);
+        // add spin-top lib:
+        res.getGraph().addGraph(getTopSpinGraph());
         return res;
+    }
+
+    /**
+     * Registers all functions listed from the given model.
+     *
+     * @param m {@link OntGraphModel}, not {@code null}
+     * @throws MapJenaException unable to handle some of the listed functions
+     */
+    protected void registerFunctions(OntGraphModel m) throws MapJenaException {
+        SpinModels.listSpinFunctions(m.getBaseModel())
+                .forEach(f -> {
+                    // if it is contained in the map and has the same content -> OK, continue
+                    // if it is contained in the map and has different content, but it is not avc:runtime -> FAIL
+                    // if it is contained in the map and has different content, but it is avc:runtime -> OK, re-register
+                    // if it is no contained anywhere -> OK, register and add definition to the primary graph
+                    if (functions.containsKey(f.getURI())) {
+                        if (SpinModels.containsResource(library, f)) {
+                            if (LOGGER.isDebugEnabled())
+                                LOGGER.debug("Function <{}> is already within the manager {}.", f, MapManagerImpl.this);
+                            return;
+                        } else if (!f.hasProperty(AVC.runtime)) {
+                            throw new MapJenaException("Attempt to re-register function <" + f + ">: " +
+                                    "Within the manager " + MapManagerImpl.this + " there is already a function " +
+                                    "with the same name, but with different content. " +
+                                    "Please choose another uri-name or remove existing function duplicate.");
+                        }
+                        if (LOGGER.isDebugEnabled())
+                            LOGGER.debug("Found avc:runtime function: <{}> .", f);
+                    } else { // add content to the primary graph:
+                        f = SpinModels.printFunctionBody(library, f);
+                    }
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("Add function <{}> into the manager {}.", f, MapManagerImpl.this);
+                    register(f);
+                });
     }
 
     /**
@@ -468,9 +556,26 @@ public class MapManagerImpl implements MapManager {
      */
     public class FunctionImpl extends MapFunctionImpl {
         private Boolean canExec;
+        private Triple root;
 
         public FunctionImpl(org.topbraid.spin.model.Function func) {
             super(func);
+        }
+
+        @Override
+        public Triple getRootTriple() {
+            return root == null ? root = super.getRootTriple() : root;
+        }
+
+        @Override
+        public boolean isCustom() {
+            Triple root = getRootTriple();
+            return listAdditionalGraphs().anyMatch(g -> g.contains(root));
+        }
+
+        @Override
+        public boolean isUserDefined() {
+            return getLibrary().getBaseGraph().contains(getRootTriple());
         }
 
         @Override

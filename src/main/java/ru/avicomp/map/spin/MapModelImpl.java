@@ -543,18 +543,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Adds function "as is" to the graph.
-     *
-     * @param function {@link MapFunctionImpl}
-     * @return Resource function in model
-     */
-    protected Resource addFunctionBody(MapFunctionImpl function) {
-        Models.getAssociatedStatements(function.asResource()).forEach(this::add);
-        // also any return types?
-        return function.asResource().inModel(this);
-    }
-
-    /**
      * Creates an expression resource.
      * Example of expression:
      * <pre>{@code
@@ -705,6 +693,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Writes a custom function "as is" to the mapping graph.
+     * todo: move ?
      *
      * @param call {@link MapFunction.Call}
      */
@@ -712,7 +701,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         if (call == null) return;
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
-            Resource res = addFunctionBody(function);
+            Resource res = SpinModels.printFunctionBody(MapModelImpl.this, function.asResource());
             res.listProperties(AVC.runtime)
                     .mapWith(Statement::getObject)
                     .filterKeep(RDFNode::isLiteral)
@@ -724,7 +713,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     .mapWith(Statement::getResource)
                     .mapWith(Resource::getURI)
                     .mapWith(manager::getFunction)
-                    .forEachRemaining(this::addFunctionBody);
+                    .forEachRemaining(x -> SpinModels.printFunctionBody(MapModelImpl.this, x.asResource()));
         }
         call.asMap().values().stream()
                 .filter(MapFunction.Call.class::isInstance)

@@ -19,6 +19,7 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.atlas.iterator.Iter;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.vocabulary.RDFS;
@@ -31,6 +32,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.Managers;
+import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.QueryHelper;
@@ -59,6 +61,7 @@ public class LoadFunctionsTest {
         LOGGER.debug("Count before adding model: {}", c1);
         long g1 = Iter.count(FunctionRegistry.get().keys());
         long g2 = Iter.count(PropertyFunctionRegistry.get().keys());
+        Assert.assertEquals(0, manager.getGraph().size());
 
         OntGraphModel m1 = makeSingleFunctionModel();
         TestUtils.debug(m1);
@@ -68,6 +71,10 @@ public class LoadFunctionsTest {
         long c2 = manager.functions().count();
         LOGGER.info("Count after adding model: {}", c2);
         Assert.assertEquals(c1 + 1, c2);
+        Assert.assertEquals(1, manager.functions().filter(MapFunction::isUserDefined).count());
+        TestUtils.debug(ModelFactory.createModelForGraph(manager.getGraph()));
+        Assert.assertEquals(50, manager.getGraph().size());
+
         long c3 = Managers.createMapManager().functions().count();
         LOGGER.debug("Count in new manager: {}", c3);
         Assert.assertEquals(c1, c3);
@@ -92,6 +99,7 @@ public class LoadFunctionsTest {
         Assert.assertEquals(1, manager.getFunction(uri).args().count());
         long c2 = manager.functions().count();
         Assert.assertEquals(c1 + 1, c2);
+        Assert.assertEquals(1, manager.functions().filter(MapFunction::isUserDefined).count());
 
         data.validateMapping(m);
 

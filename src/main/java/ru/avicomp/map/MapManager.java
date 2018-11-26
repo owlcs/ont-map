@@ -55,6 +55,16 @@ public interface MapManager {
     Stream<MapFunction> functions();
 
     /**
+     * Returns the primary manager graph, that is a holder for all user-defined functions.
+     * It is assumed that the returning graph is unmodifiable:
+     * all changes in it must occur through other methods of this interface.
+     *
+     * @return {@link Graph}
+     * @see MapFunction#isUserDefined()
+     */
+    Graph getGraph();
+
+    /**
      * Creates a fresh mapping model.
      *
      * @return {@link MapModel}
@@ -136,8 +146,9 @@ public interface MapManager {
      * An inference engine,
      * that is a service-model to conduct transferring and transforming data
      * from source to target according to the encapsulated mapping-instructions.
-     *
+     * <p>
      * In our (currently single) implementation it is a SPIN-based inference engine.
+     *
      * @see #getInferenceEngine(MapModel)
      */
     interface InferenceEngine {

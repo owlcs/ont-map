@@ -60,7 +60,7 @@ public interface MapFunction extends Description {
     Stream<Arg> args();
 
     /**
-     * Answers if it is a target function.
+     * Answers {@code true} if it is a target function.
      * A target function allows to bind two class-expressions in one context.
      * Non-target function is used to bind property expressions.
      *
@@ -69,11 +69,18 @@ public interface MapFunction extends Description {
     boolean isTarget();
 
     /**
-     * Answers if it is a boolean function and therefore can be used as filter.
+     * Answers {@code true} if it is a boolean function and therefore can be used as filter in mappings.
      *
      * @return boolean
      */
     boolean isBoolean();
+
+    /**
+     * Answers {@code true} if it is a user-defined function.
+     *
+     * @return boolean
+     */
+    boolean isUserDefined();
 
     /**
      * Creates a new function call builder.

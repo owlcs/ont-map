@@ -24,7 +24,6 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.stream.LocationMapper;
 import org.apache.jena.riot.system.stream.StreamManager;
-import org.apache.jena.sparql.graph.UnmodifiableGraph;
 import org.apache.jena.sys.JenaSubsystemLifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +32,9 @@ import ru.avicomp.map.utils.ReadOnlyGraph;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A Jena module and spin library loader.
@@ -46,13 +45,25 @@ public class SystemModels implements JenaSubsystemLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemModels.class);
 
     /**
-     * Returns all spin models from system resources.
+     * Returns all library models from the system resources.
      * Singleton.
      *
-     * @return Unmodifiable Map with {@link UnmodifiableGraph unmodifiable graphs} as values and ontology iris as keys.
+     * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology iris as keys.
      */
     public static Map<String, Graph> graphs() {
         return Loader.GRAPHS;
+    }
+
+    /**
+     * Selects all graphs which belong or not to the spin-family, depending on input parameter {@code spin}.
+     *
+     * @param spin boolean, a filter parameter
+     * @return Stream of {@link Graph}s
+     */
+    public static Stream<Graph> graphs(boolean spin) {
+        return SystemModels.graphs().entrySet().stream()
+                .filter(e -> spin == Resources.SPIN_FAMILY.contains(e.getKey()))
+                .map(Map.Entry::getValue);
     }
 
     public static Graph get(Resources resource) {
@@ -90,18 +101,18 @@ public class SystemModels implements JenaSubsystemLifecycle {
                     throw new UncheckedIOException("Can't load " + f.path, e);
                 }
                 LOGGER.debug("Graph {} is loaded, size: {}", f.uri, g.size());
-                res.put(f.uri, new ReadOnlyGraph(g));
+                res.put(f.uri, ReadOnlyGraph.wrap(g));
             }
             return Collections.unmodifiableMap(res);
         }
     }
 
     public enum Resources {
-        AVC("/etc/avc.spin.ttl", "http://avc.ru/spin"),
-        AVC_LIB("/etc/avc.lib.ttl", "http://avc.ru/lib"),
-        AVC_MATH("/etc/avc.math.ttl", "http://avc.ru/math"),
-        AVC_FN("/etc/avc.fn.ttl", "http://avc.ru/fn"),
-        AVC_XSD("/etc/avc.xsd.ttl", "http://avc.ru/xsd"),
+        AVC("/etc/avc.spin.ttl", "http://avc.ru/spin", false),
+        AVC_LIB("/etc/avc.lib.ttl", "http://avc.ru/lib", false),
+        AVC_MATH("/etc/avc.math.ttl", "http://avc.ru/math", false),
+        AVC_FN("/etc/avc.fn.ttl", "http://avc.ru/fn", false),
+        AVC_XSD("/etc/avc.xsd.ttl", "http://avc.ru/xsd", false),
         SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
         SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
         SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),
@@ -113,12 +124,21 @@ public class SystemModels implements JenaSubsystemLifecycle {
         SMF_BASE("/etc/sparqlmotionfunctions.ttl", "http://topbraid.org/sparqlmotionfunctions"),
         SPINMAPL("/etc/spinmapl.spin.ttl", "http://topbraid.org/spin/spinmapl");
 
+        private static final Set<String> SPIN_FAMILY = Arrays.stream(values())
+                .filter(x -> x.spin).map(Resources::getURI).collect(Collectors.toSet());
+
         private final String path;
         private final String uri;
+        private final boolean spin;
 
         Resources(String path, String uri) {
+            this(path, uri, true);
+        }
+
+        Resources(String path, String uri, boolean spin) {
             this.path = path;
             this.uri = uri;
+            this.spin = spin;
         }
 
         public String getURI() {

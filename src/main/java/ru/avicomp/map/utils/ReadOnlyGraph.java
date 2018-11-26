@@ -25,12 +25,15 @@ import org.apache.jena.shared.DeleteDeniedException;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
 
+import java.util.Objects;
+
 /**
  * Read-only graph implementation.
  * No modification (including changing prefixes) is not allowed for this graph.
  * <p>
  * Created by @szuev on 21.06.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class ReadOnlyGraph extends UnmodifiableGraph {
 
     @SuppressWarnings("deprecation")
@@ -84,8 +87,18 @@ public class ReadOnlyGraph extends UnmodifiableGraph {
     protected PrefixMapping pm;
 
     public ReadOnlyGraph(Graph base) {
-        super(base);
+        super(Objects.requireNonNull(base, "Null graph"));
         this.pm = base.getPrefixMapping();
+    }
+
+    /**
+     * Wraps the given graph as unmodifiable graph, if it is not already wrapped.
+     *
+     * @param g {@link Graph}, not {@code null}
+     * @return {@link ReadOnlyGraph} around the given graph
+     */
+    public static ReadOnlyGraph wrap(Graph g) {
+        return g instanceof ReadOnlyGraph ? (ReadOnlyGraph) g : new ReadOnlyGraph(g);
     }
 
     @Override
