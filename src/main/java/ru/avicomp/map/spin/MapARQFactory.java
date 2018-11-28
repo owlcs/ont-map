@@ -270,9 +270,9 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      *
      * @param query the parsable query string, not {@code null}
      * @param pm    {@link PrefixMapping prefixes}, possible {@code null}
-     * @return {@link Query Jena Query}, not {@code null}
+     * @return {@link org.apache.jena.query.Query Jena Query}, not {@code null}
      */
-    public Query createQuery(String query, PrefixMapping pm) {
+    public org.apache.jena.query.Query createQuery(String query, PrefixMapping pm) {
         return doCreateQuery(query, pm);
     }
 

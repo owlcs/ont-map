@@ -36,9 +36,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * TODO: develop and implement 1) functionality and test for function saving 2) spif:cast (instead of xsd:double)
+ * TODO: develop and implement spif:cast checking (instead of xsd:double)
  * Created by @szz on 22.11.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class MathGeoMapTest extends AbstractMapTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MathGeoMapTest.class);
 
@@ -55,8 +56,11 @@ public class MathGeoMapTest extends AbstractMapTest {
 
         map.runInference(src.getGraph(), dst.getGraph());
 
-        TestUtils.debug(dst);
+        validate(dst, data);
+    }
 
+    public static void validate(OntGraphModel dst, double[][] data) {
+        TestUtils.debug(dst);
         // validate:
         OntNDP r = TestUtils.findOntEntity(dst, OntNDP.class, "r");
 

@@ -34,6 +34,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.MapFunctionImpl;
 import ru.avicomp.map.spin.SpinModelConfig;
@@ -90,6 +91,11 @@ public class TestUtils {
             String val = o instanceof String ? (String) o : ((MapFunction.Call) o).getFunction().name();
             LOGGER.debug("[{}] argument: {} => '{}'", name, pm.shortForm(arg.name()), pm.shortForm(val));
         });
+    }
+
+    public static Model getPrimaryGraph(MapManager manager) {
+        return ModelFactory.createDefaultModel().setNsPrefixes(manager.prefixes())
+                .add(ModelFactory.createModelForGraph(manager.getGraph()));
     }
 
     /**

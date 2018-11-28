@@ -41,21 +41,22 @@ public interface MapFunction extends Description {
     /**
      * Gets a name of function.
      *
-     * @return String, absolute iri
+     * @return String, iri
      */
     String name();
 
     /**
      * Gets a return type of function.
      *
-     * @return String, absolute iri.
+     * @return String, iri
      */
     String type();
 
     /**
-     * Returns a list of function arguments.
+     * Lists all function arguments.
+     * Note: some of the {@link Arg} may be not assignable, see {@link Arg#isAssignable()}.
      *
-     * @return Stream of {@link Arg}s.
+     * @return Stream of {@link Arg}s
      */
     Stream<Arg> args();
 
@@ -119,7 +120,7 @@ public interface MapFunction extends Description {
      * Answers iff this function contains an argument given by its name (predicate).
      *
      * @param predicate String, not null
-     * @return true if argument is present
+     * @return {@code true} if argument is present
      */
     default boolean hasArg(String predicate) {
         return args().map(Arg::name).anyMatch(predicate::equals);
@@ -133,35 +134,35 @@ public interface MapFunction extends Description {
         /**
          * Returns an argument name (an iri of predicate currently).
          *
-         * @return String
+         * @return String, iri
          */
         String name();
 
         /**
          * Returns an argument type.
          *
-         * @return String
+         * @return String, iri
          */
         String type();
 
         /**
          * Gets a default value as string.
          *
-         * @return String (iri) or null
+         * @return String (iri) or {@code null}
          */
         String defaultValue();
 
         /**
          * Answers whether the argument must have an assigned value on the function call.
          *
-         * @return boolean, true if it is optional argument
+         * @return {@code true} if it is optional argument
          */
         boolean isOptional();
 
         /**
-         * Answers iff this argument is a fictitious indicator for a function that supports varargs.
+         * Answers {@code true} if this argument is a fictitious indicator for a function that supports varargs.
          *
-         * @return true in case of vararg.
+         * @return {@code true} in case of vararg
          */
         boolean isVararg();
 
@@ -173,16 +174,15 @@ public interface MapFunction extends Description {
         MapFunction getFunction();
 
         /**
-         * Answers iff this argument is available to assign value.
+         * Answers {@code true} if this argument is available to assign value.
          * An argument could be inherited from parent function, or be hidden, or be disabled for some other reason.
-         * In this case it is not allowed to be used in building function call.
+         * In these cases the arg is not allowed to be used while building a function-call.
          *
          * @return boolean
          */
         default boolean isAssignable() {
             return true;
         }
-
     }
 
     /**
@@ -244,6 +244,23 @@ public interface MapFunction extends Description {
          */
         default Map<Arg, Object> asMap() {
             return args().collect(Collectors.toMap(Function.identity(), this::get));
+        }
+
+        /**
+         * Creates a fresh map-function from this function-call.
+         * <p>
+         * Note: currently this functionality is available only to those {@link Call}s,
+         * that belong to a {@link MapModel mapping}s.
+         * In abstract (manager) level usage of this method will cause a {@link MapJenaException}.
+         * To get models calls use {@link MapResource#getMapping()} and {@link MapResource#getFilter()}.
+         *
+         * @param name String, a new function name, not {@code null}
+         * @return {@link MapFunction}
+         * @throws MapJenaException unable to compose new function
+         */
+        default MapFunction save(String name) throws MapJenaException {
+            throw new MapJenaException.Unsupported("This functionality is available only for a function-call " +
+                    "that is attached to a mapping model");
         }
     }
 

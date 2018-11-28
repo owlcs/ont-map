@@ -43,7 +43,8 @@ import ru.avicomp.ontapi.jena.model.OntGraphModel;
 public class SelfMapTest extends AbstractMapTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfMapTest.class);
 
-    @Test // todo: infer anonymous individuals without query optimization (https://github.com/avicomp/ont-map/issues/4)
+    @Test
+    // todo: not ready - infer anonymous individuals without query optimization (https://github.com/avicomp/ont-map/issues/4)
     @Ignore
     public void runInfr() {
         long n = 12;

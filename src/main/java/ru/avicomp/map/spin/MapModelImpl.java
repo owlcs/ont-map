@@ -472,8 +472,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * String form can be obtained using {@link RDFNode#toString()} method.
      * TODO: move to ONT-API?
      *
-     * @param value String, not null
-     * @return {@link RDFNode} literal or resource, not null
+     * @param value String, not {@code null}
+     * @return {@link RDFNode} literal or resource (can be anonymous), not {@code null}
      */
     public RDFNode toNode(String value) {
         if (Objects.requireNonNull(value, "Null value").contains("^^")) { // must be typed literal
@@ -501,6 +501,21 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         }
         // plain literal
         return createLiteral(value);
+    }
+
+    /**
+     * Answers {@code true} if the given resource is belonging to the mapping.
+     * The given resource may be property, class-expression, datatype (and datarange?), another context -
+     * (todo) currently, not sure what else.
+     * In general it must has content in bounds of the mapping.
+     *
+     * @param res {@link Resource} to test, not {@code null}
+     * @return boolean
+     */
+    public boolean isEntity(Resource res) {
+        if (res.hasProperty(RDF.type, SP.Variable)) return false;
+        // todo: this checking is a temporary solution and not correct
+        return Iter.findFirst(res.listProperties()).isPresent();
     }
 
     /**
@@ -579,7 +594,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res.addProperty(RDF.type, createResource(func.name()));
     }
 
-    protected MapFunctionImpl.CallImpl parseExpression(Resource mapping, RDFNode expr) {
+    protected ModelCallImpl parseExpression(Resource mapping, RDFNode expr) {
         return parseExpression(mapping, expr, false);
     }
 
@@ -654,7 +669,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Tests the given function.
+     * Tests the given function, throwing {@link MapJenaException} on fail.
      *
      * @param function {@link MapFunction.Call} to test
      * @param error    {@link MapJenaException} an error holder,
@@ -693,12 +708,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Writes a custom function "as is" to the mapping graph.
-     * todo: move ?
      *
-     * @param call {@link MapFunction.Call}
+     * @param call {@link MapFunction.Call}, not {@code null}
      */
     protected void writeFunctionBody(MapFunction.Call call) {
-        if (call == null) return;
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
             Resource res = SpinModels.printFunctionBody(MapModelImpl.this, function.asResource());

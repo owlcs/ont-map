@@ -320,7 +320,7 @@ public class TemplateBuilder {
 
     public String label() {
         return String.format("%s%sMap into %s: derive %s from %s.",
-                filterExpression != null ? "Filtering " : "",
+                filterExpression != null && !filterExpressionArguments.isEmpty() ? "Filtering " : "",
                 requireClassAssertion ? "Property " : "",
                 asLabeledVariable("context"),
                 asLabeledVariable(targetPredicate),

@@ -50,6 +50,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
 @SuppressWarnings("WeakerAccess")
 public abstract class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
+
     protected final org.topbraid.spin.model.Module func;
     protected List<ArgImpl> arguments;
 
@@ -359,7 +360,7 @@ public abstract class MapFunctionImpl implements MapFunction {
             return put(arg, other);
         }
 
-        private Builder put(String predicate, Object val) {
+        protected Builder put(String predicate, Object val) {
             MapJenaException.notNull(val, "Null argument value");
             ArgImpl arg = getFunction().getArg(predicate);
             if (!arg.isAssignable())
@@ -464,7 +465,7 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         @Override
         public Stream<Arg> args() {
-            return listArgs().map(Function.identity());
+            return listSortedVisibleArgs().map(Function.identity());
         }
 
         public Stream<MapFunctionImpl.CallImpl> directFunctionCalls() {
@@ -498,14 +499,34 @@ public abstract class MapFunctionImpl implements MapFunction {
             return function;
         }
 
-        public Stream<ArgImpl> listArgs() {
+        /**
+         * Lists all visible {@link ArgImpl} sorted by name.
+         *
+         * @return <b>sorted</b> stream of {@link ArgImpl}
+         */
+        public Stream<ArgImpl> listSortedVisibleArgs() {
+            return listSortedArgs()
+                    .filter(a -> !a.isInherit());
+        }
+
+        /**
+         * Lists all {@link ArgImpl}, including hidden, sorted by name.
+         *
+         * @return <b>sorted</b> stream of {@link ArgImpl}
+         */
+        public Stream<ArgImpl> listSortedArgs() {
             return parameters.keySet().stream()
-                    .filter(a -> !a.isInherit())
                     .sorted(Comparator.comparing(Arg::name));
         }
 
+        /**
+         * Gets a string representation of this {@link CallImpl} according to the {@link PrefixMapping}.
+         *
+         * @param pm {@link PrefixMapping}
+         * @return String
+         */
         public String toString(PrefixMapping pm) {
-            return listArgs()
+            return listSortedVisibleArgs()
                     .map(a -> toString(pm, a))
                     .collect(Collectors.joining(", ", pm.shortForm(getFunction().name()) + "(", ")"));
         }
@@ -514,12 +535,28 @@ public abstract class MapFunctionImpl implements MapFunction {
             return getStringKey(pm, a) + "=" + getStringValue(pm, a);
         }
 
+        /**
+         * Gets a string representation of argument value
+         * for the given {@link ArgImpl} and according to the given {@link PrefixMapping}.
+         *
+         * @param pm {@link PrefixMapping}
+         * @param a  {@link ArgImpl}, not {@code null}
+         * @return String
+         */
         protected String getStringValue(PrefixMapping pm, ArgImpl a) {
             Object v = parameters.get(a);
             if (v instanceof CallImpl) return ((CallImpl) v).toString(pm);
             return pm.shortForm(String.valueOf(v));
         }
 
+        /**
+         * Gets a string representation of {@link ArgImpl#name()} (i.e. argument prefix)
+         * according to the given {@link PrefixMapping}.
+         *
+         * @param pm {@link PrefixMapping}
+         * @param a  {@link ArgImpl}, not {@code null}
+         * @return String
+         */
         protected String getStringKey(PrefixMapping pm, ArgImpl a) {
             return pm.shortForm(a.name());
         }
@@ -548,6 +585,5 @@ public abstract class MapFunctionImpl implements MapFunction {
                 }
             };
         }
-
     }
 }

@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 public interface MapManager {
 
     /**
-     * Returns a collection of all know prefixes from an underling library.
+     * Returns a collection of all know prefixes from the underling library.
      * This method is just for convenience.
      *
      * @return Unmodifiable {@link PrefixMapping PrefixMapping}
@@ -48,7 +48,7 @@ public interface MapManager {
     PrefixMapping prefixes();
 
     /**
-     * Returns all available functions, which can be safely used by the API.
+     * Lists all available functions, that can be safely used in the API.
      *
      * @return Stream of {@link MapFunction}s
      */
@@ -140,6 +140,19 @@ public interface MapManager {
                 .filter(f -> Objects.equals(name, f.name()))
                 .findFirst()
                 .orElseThrow(() -> new MapJenaException("Function " + name + " not found."));
+    }
+
+    /**
+     * Creates a fresh mapping model with a given uri.
+     * Just for convenience, bearing in mind that Composer does not understand anonymous ontologies (checked ver 5.5.2).
+     *
+     * @param uri String
+     * @return {@link MapModel}
+     */
+    default MapModel createMapModel(String uri) {
+        MapModel res = createMapModel();
+        res.setID(uri);
+        return res;
     }
 
     /**

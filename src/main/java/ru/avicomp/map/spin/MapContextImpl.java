@@ -40,6 +40,7 @@ import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntOPE;
 import ru.avicomp.ontapi.jena.model.OntObject;
 import ru.avicomp.ontapi.jena.model.OntStatement;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -144,8 +145,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
             }
             m.remove(s);
         });
-        m.writeFunctionBody(mappingFunction);
-        m.writeFunctionBody(filterFunction);
+        writeFunctions(mappingFunction, filterFunction);
         return this;
     }
 
@@ -164,25 +164,38 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         RDFNode filterExpression = filterFunction != null ? m.createExpression(filterFunction) : null;
         RDFNode mappingExpression = m.createExpression(mappingFunction);
         Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
-        m.writeFunctionBody(mappingFunction);
-        m.writeFunctionBody(filterFunction);
+        writeFunctions(mappingFunction, filterFunction);
         return asPropertyBridge(mapping);
     }
 
     @Override
-    public MapFunction.Call getMapping() {
+    public ModelCallImpl getMapping() {
         MapModelImpl m = getModel();
-        Optional<RDFNode> target = m.statements(this, SPINMAP.target, null)
-                .map(Statement::getObject).findFirst();
+        Optional<RDFNode> target = Iter.findFirst(m.listObjectsOfProperty(this, SPINMAP.target));
         return target.map(n -> m.parseExpression(m.createResource(), n.asResource())).orElse(null);
     }
 
     @Override
-    public MapFunction.Call getFilter() {
+    public ModelCallImpl getFilter() {
         Optional<Resource> mapping = primaryRule().filter(r -> r.hasProperty(AVC.filter));
         return mapping
                 .map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true))
                 .orElse(null);
+    }
+
+    /**
+     * Writes function bodies to the model.
+     *
+     * @param mappingFunction {@link MapFunctionImpl.CallImpl}
+     * @param filterFunction  {@link MapFunctionImpl.CallImpl}
+     * @throws ClassCastException with current implementation it should never happen
+     */
+    protected void writeFunctions(MapFunction.Call mappingFunction,
+                                  MapFunction.Call filterFunction) throws ClassCastException {
+        MapModelImpl m = getModel();
+        m.writeFunctionBody(mappingFunction);
+        if (filterFunction != null)
+            m.writeFunctionBody(filterFunction);
     }
 
     @Override

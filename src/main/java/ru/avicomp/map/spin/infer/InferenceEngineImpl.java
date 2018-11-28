@@ -158,9 +158,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         UnionGraph queryGraph = (UnionGraph) (queries.iterator().next().getModel()).getGraph();
         OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
-        // insets source data into the query model, if it is absent:
+        // insets the source data into the query model, if it is absent:
         if (!MapGraphUtils.containsAll(queryGraph, source)) {
             queryGraph.addGraph(source);
+        }
+        // don't quite understand why without target it doesn't always work
+        if (!MapGraphUtils.containsAll(queryGraph, target)) {
+            queryGraph.addGraph(target);
         }
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:

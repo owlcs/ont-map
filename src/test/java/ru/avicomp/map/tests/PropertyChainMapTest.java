@@ -109,14 +109,17 @@ public class PropertyChainMapTest extends MapTestData6 {
         MapFunction.Call OASUU_IRI = asIRI.create().addProperty(SP.arg1, OASUU).build();
 
         MapModel res = createMappingModel(manager, "Used functions: " +
-                toMessage(manager.prefixes(), composeURI, concatWithSeparator, currentIndividual, asIRI, object, objectWithFilter));
+                toMessage(manager.prefixes(), composeURI,
+                        concatWithSeparator, currentIndividual, asIRI, object, objectWithFilter));
 
-        MapContext context = res.createContext(CDSPR_D00001, resClass, composeURI.create().addLiteral(SPINMAPL.template, "result:res-{?1}").build());
+        MapContext context = res.createContext(CDSPR_D00001, resClass, composeURI.create()
+                .addLiteral(SPINMAPL.template, "result:res-{?1}").build());
         // name
         context.addPropertyBridge(object.create()
                 .addFunction(SP.arg1, objectWithFilter.create()
                         .addFunction(SP.arg1, currentIndividual.create().build())
                         .addFunction(SP.arg2, OASUU_IRI)
+// todo: handle <rdf:type> in ClassPropertyMap ?
                         .add(SP.arg3.getURI(), RDF.type.getURI())
                         .addClass(SP.arg4, CCPAS_000011)
                         .build())
@@ -128,6 +131,7 @@ public class PropertyChainMapTest extends MapTestData6 {
                         .addFunction(SP.arg1, objectWithFilter.create()
                                 .addFunction(SP.arg1, currentIndividual.create().build())
                                 .addFunction(SP.arg2, OASUU_IRI)
+// todo: there is no <rdf:type> in ClassProperties map, where to get this IRI-value? maybe it is need a special datatype ?
                                 .add(SP.arg3.getURI(), RDF.type.getURI())
                                 .addClass(SP.arg4, CCPAS_000005)
                                 .build())

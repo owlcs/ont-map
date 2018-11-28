@@ -130,7 +130,7 @@ class ContextMappingHelper {
     }
 
     /**
-     * Tries to find property in mapping by variable (e.g. {@code spin:_arg1}).
+     * Tries to find property in the mapping by variable (e.g. {@code spin:_arg1}).
      * Sorry for that ugly solution.
      *
      * @param mapping  {@link Resource}

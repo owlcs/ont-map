@@ -121,7 +121,7 @@ public class MapManagerImpl implements MapManager {
      * @see SpinModelConfig#ONT_LIB_PERSONALITY
      */
     public static UnionModel createLibraryModel(Graph graph) {
-        // root graph for user defined stuff
+        // root graph for user defined stuff (note: it is distinct)
         UnionGraph res = new UnionGraph(graph);
         // avc.spin, avc.lib, avc.fn, avc.xsd, avc.math, etc:
         SystemModels.graphs(false).forEach(res::addGraph);
@@ -234,7 +234,7 @@ public class MapManagerImpl implements MapManager {
         try {
             f = inModel.as(org.topbraid.spin.model.Function.class);
         } catch (UnsupportedPolymorphismException upe) {
-            throw new MapJenaException("Wrong function specified: " + inModel, upe);
+            throw new MapJenaException("Wrong model attached - lack of personalities: " + inModel, upe);
         }
         ExtraPrefixes.add(f); // <- wtf?
         functions.put(f.getURI(), new FunctionImpl(f));
@@ -351,7 +351,8 @@ public class MapManagerImpl implements MapManager {
      * @return {@link MapModelImpl}
      */
     public MapModelImpl newMapModelImpl(OntGraphModel m) {
-        return newMapModelImpl(m.getGraph(), m instanceof OntGraphModelImpl ? ((OntGraphModelImpl) m).getPersonality() : null);
+        return newMapModelImpl(m.getGraph(), m instanceof OntGraphModelImpl ?
+                ((OntGraphModelImpl) m).getPersonality() : null);
     }
 
     /**
@@ -362,8 +363,9 @@ public class MapManagerImpl implements MapManager {
      * @return {@link MapModelImpl}
      */
     public MapModelImpl newMapModelImpl(Graph graph, OntPersonality personality) {
-        return new MapModelImpl(graph instanceof UnionGraph ? (UnionGraph) graph :
-                new UnionGraph(Objects.requireNonNull(graph), null, null, false),
+        // note: the mapping graph is distinct!
+        Objects.requireNonNull(graph);
+        return new MapModelImpl(graph instanceof UnionGraph ? (UnionGraph) graph : new UnionGraph(graph),
                 personality == null ? SpinModelConfig.ONT_PERSONALITY : personality, this);
     }
 

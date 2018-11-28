@@ -18,12 +18,25 @@
 
 package ru.avicomp.map.spin;
 
+import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
+import org.topbraid.spin.arq.ARQ2SPIN;
+import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPIN;
+import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
+import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,10 +58,10 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
 
     @Override
     public String toString(PrefixMapping pm) {
-        String name = model.shortForm(getFunction().name());
-        List<MapFunctionImpl.ArgImpl> args = listArgs().collect(Collectors.toList());
+        String name = pm.shortForm(getFunction().name());
+        List<MapFunctionImpl.ArgImpl> args = listSortedVisibleArgs().collect(Collectors.toList());
         if (args.size() == 1) { // print without predicate
-            return name + "(" + getStringValue(model, args.get(0)) + ")";
+            return name + "(" + getStringValue(pm, args.get(0)) + ")";
         }
         return args.stream().map(a -> toString(pm, a)).collect(Collectors.joining(", ", name + "(", ")"));
     }
@@ -66,10 +79,9 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             if (XSD.xstring.getURI().equals(u)) {
                 return l.getLexicalForm();
             }
-            return String.format("%s^^%s", l.getLexicalForm(), model.shortForm(u));
-        } else {
-            return model.shortForm(n.asNode().toString());
+            return String.format("%s^^%s", l.getLexicalForm(), pm.shortForm(u));
         }
+        return pm.shortForm(n.asNode().toString());
     }
 
     @Override
@@ -90,4 +102,135 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
     public String toString() {
         return toString(model);
     }
+
+    @Override
+    public MapFunctionImpl save(String name) throws MapJenaException {
+        MapJenaException.notNull(name, "Null function name");
+        MapManagerImpl manager = model.getManager();
+        if (manager.getFunctionsMap().containsKey(name)) {
+            // todo: meaningful exception
+            throw new MapJenaException("TODO");
+        }
+        Model lib = manager.getLibrary();
+        MapFunctionImpl from = getFunction();
+        MapFunctionImpl res = newFunction(lib, name);
+        Map<Resource, MapFunctionImpl.ArgImpl> args = new LinkedHashMap<>();
+        String expr = String.format("SELECT ?res\nWHERE {\n\tBIND(%s AS ?res)\n}", writeExpression(res, args));
+        org.apache.jena.query.Query query;
+        try {
+            query = manager.getFactory().createQuery(expr, model);
+        } catch (QueryException qe) {
+            // todo: meaningful exception
+            throw new MapJenaException("TODO", qe);
+        }
+        Resource f = res.asResource()
+                .addProperty(SPIN.returnType, lib.createResource(from.type()));
+        if (from.isTarget()) {
+            f.addProperty(RDF.type, SPINMAP.TargetFunction).addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions);
+        } else {
+            f.addProperty(RDF.type, SPIN.Function).addProperty(RDFS.subClassOf, SPIN.Functions);
+        }
+        args.values().forEach(arg -> {
+            Resource c = lib.createResource()
+                    .addProperty(RDF.type, SPL.Argument)
+                    .addProperty(SPL.predicate, lib.createResource(arg.name))
+                    .addProperty(SPL.valueType, arg.getValueType());
+            f.addProperty(SPIN.constraint, c);
+            Resource a = arg.asResource();
+            // copy comments and labels:
+            a.listProperties(RDFS.comment).andThen(a.listProperties(RDFS.label))
+                    .forEachRemaining(s -> c.addProperty(s.getPredicate(), s.getObject()));
+            String dv = arg.defaultValue();
+            if (dv != null) {
+                c.addProperty(SPL.defaultValue, dv);
+            }
+            if (arg.isOptional()) {
+                c.addProperty(SPL.optional, Models.TRUE);
+            }
+        });
+        f.addProperty(SPIN.body, new ARQ2SPIN(lib).createQuery(query, null));
+        manager.register(f);
+        return res;
+    }
+
+    /**
+     * Creates a new {@link MapFunction#isUserDefined() user-defined} function.
+     *
+     * @param m    {@link Model} to which the returning function will be belonged
+     * @param name String, uri of new function
+     * @return {@link MapFunctionImpl}
+     */
+    protected static MapFunctionImpl newFunction(Model m, String name) {
+        return new MapFunctionImpl(m.createResource(name).as(org.topbraid.spin.model.Function.class)) {
+            @Override
+            public boolean isCustom() {
+                return true;
+            }
+
+            @Override
+            public boolean isUserDefined() {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Makes a string representation of an expression for specified function (first input),
+     * storing information about arguments in the map (second input).
+     *
+     * @param func a function to create, here it is used as a factory to create new {@link MapFunction.Arg}
+     * @param args mutable map to store new arguments
+     * @return full expression
+     */
+    protected String writeExpression(MapFunctionImpl func,
+                                     Map<Resource, MapFunctionImpl.ArgImpl> args) {
+        return String.format("<%s>(%s)", getFunction().name(),
+                listSortedArgs().map(a -> writeExpression(a, func, args)).collect(Collectors.joining(", ")));
+    }
+
+    /**
+     * Makes a string representation of an expression argument-part.
+     *
+     * @param arg  {@link MapFunctionImpl.ArgImpl} to parse
+     * @param func a function to create, here it is used as a factory to create new {@link MapFunction.Arg}
+     * @param args mutable map to store new arguments
+     * @return a part of expression that corresponds the given argument
+     */
+    protected String writeExpression(MapFunctionImpl.ArgImpl arg,
+                                     MapFunctionImpl func,
+                                     Map<Resource, MapFunctionImpl.ArgImpl> args) {
+        Object value = get(arg);
+        if (!(value instanceof String)) {
+            return ((ModelCallImpl) value).writeExpression(func, args);
+        }
+        RDFNode n = model.toNode((String) value);
+        // literal:
+        if (n.isLiteral()) {
+            Literal literal = n.asLiteral();
+            String txt = literal.getLexicalForm();
+            String dtURI = literal.getDatatypeURI();
+            // todo: what if the dt belongs to the mapping (i.e. source?)
+            if (XSD.xstring.getURI().equals(dtURI)) {
+                return txt;
+            }
+            return String.format("%s^^<%s>", txt, dtURI);
+        }
+        // resource belonging to the model:
+        Resource res = n.asResource();
+        // a property, class-expression, datatype or spinmap-context (what else ?)
+        // they must be discarded from expression as ontology specific.
+        if (model.isEntity(res)) {
+            return "?" + model.getResource(args.computeIfAbsent(res,
+                    r -> func.new ArgImpl(arg, SP.getArgProperty(args.size() + 1).getURI())).name())
+                    .getLocalName();
+        }
+        // just standalone IRI (variable or constant)
+        if (res.isURIResource()) {
+            return "<" + res.asNode().toString() + ">";
+        }
+        // todo: meaningful exception
+        throw new MapJenaException("TODO");
+    }
+
+
 }
