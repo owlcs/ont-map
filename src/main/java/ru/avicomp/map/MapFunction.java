@@ -186,10 +186,12 @@ public interface MapFunction extends Description {
     }
 
     /**
-     * A Function Call,
-     * i.e. a container which contains function with assigned arguments ready for writing to a graph as map-expression.
+     * A Function Call, that is a ready-to-write container which contains a function with all its assigned arguments.
+     * Inside a graph it represents a mapping expression.
+     * Can hold only string representations of literals and resources or another {@link Call}s,
+     * in last case it can be named a function-chain.
      * Cannot be modified.
-     * Note: it is not a {@link org.apache.jena.rdf.model.Resource jena resorce}.
+     * Note: it is not a {@link org.apache.jena.rdf.model.Resource Jena Resorce}.
      */
     interface Call {
 
@@ -247,7 +249,7 @@ public interface MapFunction extends Description {
         }
 
         /**
-         * Creates a fresh map-function from this function-call.
+         * Creates a fresh map-function from this function-chain.
          * <p>
          * Note: currently this functionality is available only to those {@link Call}s,
          * that belong to a {@link MapModel mapping}s.
@@ -255,12 +257,12 @@ public interface MapFunction extends Description {
          * To get models calls use {@link MapResource#getMapping()} and {@link MapResource#getFilter()}.
          *
          * @param name String, a new function name, not {@code null}
-         * @return {@link MapFunction}
+         * @return {@link MapFunction} a synonym for this function-chain
          * @throws MapJenaException unable to compose new function
          */
         default MapFunction save(String name) throws MapJenaException {
-            throw new MapJenaException.Unsupported("This functionality is available only for a function-call " +
-                    "that is attached to a mapping model");
+            throw new MapJenaException.Unsupported("This functionality is available only for function-calls " +
+                    "that are attached to a mapping model");
         }
     }
 

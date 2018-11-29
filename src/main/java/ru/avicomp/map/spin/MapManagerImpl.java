@@ -22,7 +22,9 @@ import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.ModelGraphInterface;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,6 @@ import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Models;
-import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.function.Function;
@@ -290,23 +291,15 @@ public class MapManagerImpl implements MapManager {
      * @return boolean
      */
     protected boolean isExecutable(MapFunctionImpl function) {
-        Resource func = function.asResource();
-        // SPIN-indicator for SPARQL operator:
-        if (func.hasProperty(SPIN.symbol)) return true;
+        // SPARQL operators are always executable:
+        if (function.isSparqlOperator()) return true;
         String uri = function.name();
-        // not registered:
+        // unregistered functions are not executable:
         if (!arqFactory.getFunctionRegistry().isRegistered(uri)) return false;
         // registered, but no SPARQL body -> has a java ARQ body -> allow:
-        if (!func.hasProperty(SPIN.body)) return true;
-        // registered (has SPARQL body) but may depend on some other unregistered functions:
-        Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
-        return Models.listProperties(body)
-                .filter(s -> RDF.type.equals(s.getPredicate()))
-                .map(Statement::getObject)
-                .filter(RDFNode::isURIResource)
-                .map(RDFNode::asResource)
-                .map(Resource::getURI)
-                .distinct()
+        if (!function.isSparqlExpression()) return true;
+        // registered (has a SPARQL body) but may depend on some other unregistered functions:
+        return function.listDependencyIRIs()
                 .map(functions::get)
                 .filter(Objects::nonNull)
                 .allMatch(f -> !uri.equals(f.name()) && f.isExecutable());

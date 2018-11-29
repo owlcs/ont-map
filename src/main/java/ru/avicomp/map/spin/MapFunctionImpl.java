@@ -47,7 +47,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Assumed to be immutable in program life-cycle.
  * Created by @szuev on 09.04.2018.
  */
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
 public abstract class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
 
@@ -215,6 +215,45 @@ public abstract class MapFunctionImpl implements MapFunction {
     public static String argumentToName(org.topbraid.spin.model.Argument arg) {
         Property p = arg.getPredicate();
         return p == null ? arg.toString() : p.getURI();
+    }
+
+    /**
+     * Answers {@code true} if this function has a SPARQL query (select) expression.
+     *
+     * @return boolean
+     * @see #listDependencyIRIs()
+     */
+    public boolean isSparqlExpression() {
+        return func.hasProperty(SPIN.body);
+    }
+
+    /**
+     * Answers {@code true} if this function corresponds to some SPARQL operator.
+     *
+     * @return boolean
+     */
+    public boolean isSparqlOperator() {
+        // SPIN-indicator for SPARQL operator:
+        return func.hasProperty(SPIN.symbol);
+    }
+
+    /**
+     * Lists all dependencies (functions, that participate within the SPARQL body).
+     * Note: it is a recursive function.
+     *
+     * @return <b>distinct</b> Stream of IRIs, possible empty (if no SPARQL body or function has a java body)
+     * @see #isSparqlExpression()
+     */
+    public Stream<String> listDependencyIRIs() {
+        if (!isSparqlExpression()) return Stream.empty();
+        Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
+        return Models.listProperties(body)
+                .filter(s -> RDF.type.equals(s.getPredicate()))
+                .map(Statement::getObject)
+                .filter(RDFNode::isURIResource)
+                .map(RDFNode::asResource)
+                .map(Resource::getURI)
+                .distinct();
     }
 
     public class ArgImpl implements Arg {
@@ -482,6 +521,15 @@ public abstract class MapFunctionImpl implements MapFunction {
         @Override
         public Stream<MapFunction.Call> functions(boolean direct) {
             return listFunctions(direct).map(Function.identity());
+        }
+
+        /**
+         * Lists all functions related to this function call.
+         *
+         * @return Stream of {@link MapFunctionImpl}s
+         */
+        public Stream<MapFunctionImpl> listAllFunctions() {
+            return Stream.concat(Stream.of(getFunction()), listFunctions(false).map(CallImpl::getFunction));
         }
 
         @Override

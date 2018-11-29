@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.MapContextImpl;
-import ru.avicomp.map.spin.MapPropertiesImpl;
 import ru.avicomp.map.spin.ModelCallImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.OntNOP;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,6 +64,7 @@ public class SaveFunctionTest {
         String uri = "http://ex.com#hypotenuse";
         LOGGER.info("Create new function <{}>.", uri);
         MapFunction func = call.save(uri);
+        LOGGER.debug("New function: {}", func);
         TestUtils.debug(TestUtils.getPrimaryGraph(m));
         Assert.assertNotNull(func);
         Assert.assertEquals(uri, func.name());
@@ -115,6 +116,8 @@ public class SaveFunctionTest {
         Assert.assertEquals(count + 2, m.functions().count());
         Assert.assertEquals(2, target.args().count());
         Assert.assertEquals(3, property.args().count());
+        Assert.assertTrue(target.isTarget());
+        Assert.assertFalse(property.isTarget());
 
         OntClass s = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass t = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
@@ -132,23 +135,63 @@ public class SaveFunctionTest {
         Assert.assertEquals(8, res.size());
     }
 
-    // todo: not ready
     @Test
     public void testPropertyChainMapping() {
         MapManager m = Managers.createMapManager();
-        PropertyChainMapTest t = new PropertyChainMapTest();
-        OntGraphModel src = t.assembleSource();
-        OntGraphModel dst = t.assembleTarget();
-        MapModel map = t.assembleMapping(m, src, dst);
-        TestUtils.debug(map);
+        PropertyChainMapTest data = new PropertyChainMapTest();
+        OntGraphModel src = data.assembleSource();
+        OntGraphModel dst = data.assembleTarget();
+        MapModel map1 = data.assembleMapping(m, src, dst);
+        TestUtils.debug(map1);
 
-        MapContextImpl c = (MapContextImpl) map.contexts().findFirst().orElseThrow(AssertionError::new);
-        MapPropertiesImpl p = c.listPropertyBridges().findFirst().orElseThrow(AssertionError::new);
-        ModelCallImpl call = p.getMapping();
+        String ns = "http://xxx#";
+        OntNDP name = TestUtils.findOntEntity(dst, OntNDP.class, "name");
+        OntNDP message = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+        MapContext c = map1.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapFunction target = c.getMapping().getFunction();
+        MapFunction deriveName = c.properties().filter(s -> name.equals(s.getTarget()))
+                .findFirst().orElseThrow(AssertionError::new)
+                .getMapping().save(ns + "deriveName");
+        MapFunction deriveMessage = c.properties().filter(s -> message.equals(s.getTarget()))
+                .findFirst().orElseThrow(AssertionError::new)
+                .getMapping().save(ns + "deriveMessage");
 
-        call.save("xxxx");
+        LOGGER.debug("New first func: {}", deriveName);
+        LOGGER.debug("New second func: {}", deriveMessage);
         TestUtils.debug(TestUtils.getPrimaryGraph(m));
-        // TODO: check
+        Assert.assertEquals(2, m.functions().filter(MapFunction::isUserDefined).count());
+
+        LOGGER.info("Create new mapping using functions <{}>, <{}> and <{}>. Then run inference.",
+                target, deriveName, deriveMessage);
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_D00001");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000006");
+        OntNOP OASUU = TestUtils.findOntEntity(src, OntNOP.class, "OASUU");
+        OntNDP DEUUU = TestUtils.findOntEntity(src, OntNDP.class, "DEUUU");
+        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.class, "Res");
+        OntNDP nameProp = TestUtils.findOntEntity(dst, OntNDP.class, "name");
+        OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+
+        MapModel map2 = m.createMapModel()
+                .createContext(CDSPR_D00001, resClass, target.create()
+                        .addLiteral(SPINMAPL.template, "result:res-{?1}"))
+                .addPropertyBridge(deriveName.create()
+                        .addProperty(SP.arg1, OASUU)
+                        .addProperty(SP.arg2, DEUUU)
+                        .addClass(SP.arg3, CCPAS_000011), nameProp)
+                .getContext()
+                .addPropertyBridge(deriveMessage.create()
+                        .addProperty(SP.arg1, OASUU)
+                        .addProperty(SP.arg2, DEUUU)
+                        .addClass(SP.arg3, CCPAS_000005)
+                        .addClass(SP.arg4, CCPAS_000006), messageProp)
+                .getModel();
+        TestUtils.debug(map2);
+        map2.runInference(src.getBaseGraph(), dst.getBaseGraph());
+        TestUtils.debug(dst);
+        // TODO: FAIL!
+        data.validate(dst);
     }
 
     // todo: not ready

@@ -48,7 +48,7 @@ public interface MapResource {
     /**
      * Returns a filter function call.
      * Usually a mapping (class or property bridge) does not contain any filter and method returns {@code null}.
-     * A filter function must be boolean (i.e. {@code this.getFilter().isBoolean() = true})/
+     * A filter function must be boolean (i.e. {@code this.getFilter().isBoolean() = true}).
      *
      * @return {@link MapFunction.Call} or {@code null}
      * @see MapFunction#isBoolean()

@@ -144,18 +144,34 @@ public interface MapModel {
     }
 
     /**
-     * Creates a ready to use context, i.e. a class expression binding with an target rule expression.
+     * Creates a ready to use context.
      *
-     * @param source             {@link OntCE} a source class expression
-     * @param target             {@link OntCE} a target class expression
-     * @param targetFunctionCall {@link MapFunction.Call}
-     * @return {@link MapContext} a new context instance.
+     * @param source         {@link OntCE} a source class expression, not {@code null}
+     * @param target         {@link OntCE} a target class expression, not {@code null}
+     * @param targetFunction {@link MapFunction.Builder}, not {@code null}
+     * @return {@link MapContext} a new context instance
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
     default MapContext createContext(OntCE source,
                                      OntCE target,
-                                     MapFunction.Call targetFunctionCall) throws MapJenaException {
-        return createContext(source, target).addClassBridge(targetFunctionCall);
+                                     MapFunction.Builder targetFunction) throws MapJenaException {
+        return createContext(source, target, targetFunction.build());
+    }
+
+
+    /**
+     * Creates a ready to use context, i.e. a class expression binding with an target rule expression.
+     *
+     * @param source         {@link OntCE} a source class expression, not {@code null}
+     * @param target         {@link OntCE} a target class expression, not {@code null}
+     * @param targetFunction {@link MapFunction.Call}, not {@code null}
+     * @return {@link MapContext} a new context instance
+     * @throws MapJenaException if something goes wrong (e.g. not target function specified)
+     */
+    default MapContext createContext(OntCE source,
+                                     OntCE target,
+                                     MapFunction.Call targetFunction) throws MapJenaException {
+        return createContext(source, target).addClassBridge(targetFunction);
     }
 
     /**
