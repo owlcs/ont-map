@@ -40,6 +40,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A {@link MapFunction.Call} implementation that is attached to a {@link MapModelImpl model}.
@@ -192,6 +193,12 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             @Override
             public boolean isUserDefined() {
                 return true;
+            }
+
+            @Override
+            public Stream<MapFunction> dependencies() {
+                return Stream.concat(Stream.of(ModelCallImpl.this.getFunction()),
+                        functions().map(Call::getFunction));
             }
 
             @Override

@@ -261,7 +261,7 @@ public class MapManagerImpl implements MapManager {
     /**
      * Gets all available functions as unmodifiable Map.
      *
-     * @return {@link Map} with IRIs as keys and {@link FunctionImpl} as values
+     * @return {@link Map} with IRIs as keys and {@link FunctionImpl}s as values
      */
     public Map<String, FunctionImpl> getFunctionsMap() {
         return Collections.unmodifiableMap(functions);
@@ -281,28 +281,6 @@ public class MapManagerImpl implements MapManager {
                 && !f.isHidden()  // skip hidden
                 && !f.isMagicProperty()  // skip properties
                 && f.isExecutable(); // only registered
-    }
-
-    /**
-     * Answers {@code true} if the specified function is registered (as ARQ or SPARQL) and therefore is executable.
-     * Note that it is a recursive method since a function is executable only if all nested functions are executable.
-     *
-     * @param function {@link MapFunctionImpl}
-     * @return boolean
-     */
-    protected boolean isExecutable(MapFunctionImpl function) {
-        // SPARQL operators are always executable:
-        if (function.isSparqlOperator()) return true;
-        String uri = function.name();
-        // unregistered functions are not executable:
-        if (!arqFactory.getFunctionRegistry().isRegistered(uri)) return false;
-        // registered, but no SPARQL body -> has a java ARQ body -> allow:
-        if (!function.isSparqlExpression()) return true;
-        // registered (has a SPARQL body) but may depend on some other unregistered functions:
-        return function.listDependencyIRIs()
-                .map(functions::get)
-                .filter(Objects::nonNull)
-                .allMatch(f -> !uri.equals(f.name()) && f.isExecutable());
     }
 
     @Override
@@ -550,8 +528,8 @@ public class MapManagerImpl implements MapManager {
      * A {@link MapFunction MapFunction} attached to the manager.
      */
     public class FunctionImpl extends MapFunctionImpl {
-        private Boolean canExec;
         private Triple root;
+        private Set<FunctionImpl> dependencies;
 
         public FunctionImpl(org.topbraid.spin.model.Function func) {
             super(func);
@@ -578,9 +556,37 @@ public class MapManagerImpl implements MapManager {
             return toString(prefixes);
         }
 
+        /**
+         * Answers {@code true} if the specified function is registered (as ARQ or SPARQL) and therefore is executable.
+         * Note that it is a recursive method since a function is executable only if all nested functions are executable.
+         *
+         * @return boolean
+         */
         public boolean isExecutable() {
-            if (canExec != null) return canExec;
-            return canExec = MapManagerImpl.this.isExecutable(this);
+            // SPARQL operators are always executable:
+            if (isSparqlOperator()) return true;
+            // unregistered functions are not executable:
+            if (!arqFactory.getFunctionRegistry().isRegistered(name())) return false;
+            // registered, but either no SPARQL body, which means that it has a java ARQ body and therefore executable,
+            // or it has a SPARQL body, then it is executable iff all dependency functions are executable:
+            return getDependencies().stream().allMatch(FunctionImpl::isExecutable);
+        }
+
+        @Override
+        public Stream<MapFunction> dependencies() {
+            return getDependencies().stream().map(Function.identity());
+        }
+
+        /**
+         * Gets a Set of all dependencies.
+         * It is assumed that list of dependencies cannot be changed.
+         *
+         * @return Set of {@link FunctionImpl}s, possible empty
+         */
+        public Set<FunctionImpl> getDependencies() {
+            return dependencies != null ? dependencies : (dependencies = listDependencies()
+                    .map(r -> MapJenaException.notNull(functions.get(r.getURI()), "Can't find function " + r))
+                    .collect(Collectors.toSet()));
         }
     }
 }

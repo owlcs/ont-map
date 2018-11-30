@@ -74,6 +74,7 @@ public class SaveFunctionTest {
         Assert.assertEquals(2, func.args().count());
         Assert.assertEquals(XSD.xdouble.getURI(), func.args().map(MapFunction.Arg::type)
                 .distinct().collect(Collectors.joining()));
+        assertFunctionDependencies(func, m);
 
         LOGGER.info("Create new mapping using function <{}> and run inference.", uri);
         OntGraphModel dst2 = MathGeoMapTest.createTargetModel();
@@ -118,6 +119,8 @@ public class SaveFunctionTest {
         Assert.assertEquals(3, property.args().count());
         Assert.assertTrue(target.isTarget());
         Assert.assertFalse(property.isTarget());
+        assertFunctionDependencies(target, m);
+        assertFunctionDependencies(property, m);
 
         OntClass s = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass t = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
@@ -160,6 +163,8 @@ public class SaveFunctionTest {
         LOGGER.debug("New second func: {}", deriveMessage);
         TestUtils.debug(TestUtils.getPrimaryGraph(m));
         Assert.assertEquals(2, m.functions().filter(MapFunction::isUserDefined).count());
+        assertFunctionDependencies(deriveMessage, m);
+        assertFunctionDependencies(deriveName, m);
 
         LOGGER.info("Create new mapping using functions <{}>, <{}> and <{}>. Then run inference.",
                 target, deriveName, deriveMessage);
@@ -213,5 +218,9 @@ public class SaveFunctionTest {
         // TODO: check
     }
 
+    private static void assertFunctionDependencies(MapFunction function, MapManager manager) {
+        Assert.assertEquals(function.dependencies().map(MapFunction::name).collect(Collectors.toSet()),
+                manager.getFunction(function.name()).dependencies().map(MapFunction::name).collect(Collectors.toSet()));
+    }
 
 }

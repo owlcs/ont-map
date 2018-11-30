@@ -48,13 +48,6 @@ public interface MapManager {
     PrefixMapping prefixes();
 
     /**
-     * Lists all available functions, that can be safely used in the API.
-     *
-     * @return Stream of {@link MapFunction}s
-     */
-    Stream<MapFunction> functions();
-
-    /**
      * Returns the primary manager graph, that is a holder for all user-defined functions.
      * It is assumed that the returning graph is unmodifiable:
      * all changes in it must occur through other methods of this interface.
@@ -114,6 +107,13 @@ public interface MapManager {
     InferenceEngine getInferenceEngine(MapModel mapping) throws MapJenaException;
 
     /**
+     * Lists all available functions, that can be safely used in the API.
+     *
+     * @return Stream of {@link MapFunction}s
+     */
+    Stream<MapFunction> functions();
+
+    /**
      * Gets a MapFunction by IRI Resource.
      *
      * @param resource {@link Resource}
@@ -151,7 +151,7 @@ public interface MapManager {
      */
     default MapModel createMapModel(String uri) {
         MapModel res = createMapModel();
-        res.setID(uri);
+        res.asGraphModel().setID(uri);
         return res;
     }
 

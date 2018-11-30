@@ -727,10 +727,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     .mapWith(Resource::getURI)
                     .mapWith(manager::getFunction)
                     .forEachRemaining(x -> SpinModels.printFunctionBody(MapModelImpl.this, x.asResource()));
+            // print all dependency custom functions:
+            function.dependencies().map(x -> (MapFunctionImpl) x)
+                    .filter(MapFunctionImpl::isCustom)
+                    .forEach(x -> SpinModels.printFunctionBody(MapModelImpl.this, x.asResource()));
         }
         // recursively print all nested functions:
-        call.functions(false).forEach(this::writeFunctionBody);
-        // todo: process all dependencies
+        call.functions().forEach(this::writeFunctionBody);
     }
 
     /**

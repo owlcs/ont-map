@@ -149,9 +149,6 @@ public abstract class MapFunctionImpl implements MapFunction {
      */
     public abstract boolean isCustom();
 
-    @Override
-    public abstract boolean isUserDefined();
-
     public boolean isPrivate() {
         return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isPrivate();
     }
@@ -221,7 +218,7 @@ public abstract class MapFunctionImpl implements MapFunction {
      * Answers {@code true} if this function has a SPARQL query (select) expression.
      *
      * @return boolean
-     * @see #listDependencyIRIs()
+     * @see #listDependencies()
      */
     public boolean isSparqlExpression() {
         return func.hasProperty(SPIN.body);
@@ -241,19 +238,18 @@ public abstract class MapFunctionImpl implements MapFunction {
      * Lists all dependencies (functions, that participate within the SPARQL body).
      * Note: it is a recursive function.
      *
-     * @return <b>distinct</b> Stream of IRIs, possible empty (if no SPARQL body or function has a java body)
+     * @return <b>not</b> distinct Stream of {@link Resource IRI Resource}s,
+     * possible empty (if no SPARQL body or function has a java body)
      * @see #isSparqlExpression()
      */
-    public Stream<String> listDependencyIRIs() {
+    protected Stream<Resource> listDependencies() {
         if (!isSparqlExpression()) return Stream.empty();
-        Resource body = func.getRequiredProperty(SPIN.body).getObject().asResource();
-        return Models.listProperties(body)
+        return Models.listProperties(func.getRequiredProperty(SPIN.body).getObject().asResource())
                 .filter(s -> RDF.type.equals(s.getPredicate()))
                 .map(Statement::getObject)
                 .filter(RDFNode::isURIResource)
                 .map(RDFNode::asResource)
-                .map(Resource::getURI)
-                .distinct();
+                .filter(s -> s.hasProperty(RDF.type, SPIN.Function) || s.hasProperty(RDF.type, SPINMAP.TargetFunction));
     }
 
     public class ArgImpl implements Arg {
@@ -515,7 +511,7 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         public Stream<MapFunctionImpl.CallImpl> listFunctions(boolean direct) {
             if (direct) return directFunctionCalls();
-            return directFunctionCalls().flatMap(f -> Stream.concat(Stream.of(f), f.directFunctionCalls()));
+            return directFunctionCalls().flatMap(f -> Stream.concat(Stream.of(f), f.listFunctions(false)));
         }
 
         @Override

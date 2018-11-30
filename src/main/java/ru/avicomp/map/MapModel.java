@@ -44,7 +44,9 @@ public interface MapModel {
      *
      * @return {@link OntID}, not {@code null}
      * @see OntGraphModel#getID()
+     * @deprecated (todo :) going to remove, use {@code this.asGraphModel().getID()}
      */
+    @Deprecated
     OntID getID();
 
     /**
@@ -53,7 +55,9 @@ public interface MapModel {
      * @param uri String iri or null for anonymous ontology
      * @return {@link OntID}, not {@code null}
      * @see OntGraphModel#setID(String)
+     * @deprecated (todo :) going to remove from this interface: should be access only through ont-graph-model
      */
+    @Deprecated
     OntID setID(String uri);
 
     /**

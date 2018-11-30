@@ -91,7 +91,18 @@ public interface MapFunction extends Description {
     Builder create();
 
     /**
-     * Answers iff this function supports varargs.
+     * Lists all functions that this one depends on.
+     * If a function is SPARQL-based it may depend on other functions,
+     * which in turn may also rely on some other SPARQL or ARQ(java) based functions.
+     *
+     * @return <b>distinct</b> Stream of {@link MapFunction}s
+     * @see Call#functions()
+     * @see MapResource#functions()
+     */
+    Stream<MapFunction> dependencies();
+
+    /**
+     * Answers {@code true} iff this function supports varargs.
      * Most functions does not support varargs and this method will return {@code false}.
      * Examples of vararg functions: {@code sp:concat}, {@code sp:in}.
      * To avoid ambiguous situations it is expected that vararg function has one and only one vararg argument.
@@ -213,10 +224,11 @@ public interface MapFunction extends Description {
         Object get(Arg arg) throws MapJenaException;
 
         /**
-         * Lists all nested function calls.
+         * Lists nested function calls.
          *
-         * @param direct if true only top-level functions will be listed
-         * @return Stream of {@link MapFunction.Call}
+         * @param direct if {@code true} only top-level functions will be listed
+         * @return <b>not</b> distinct Stream of {@link MapFunction.Call}
+         * @see MapFunction#dependencies()
          */
         Stream<MapFunction.Call> functions(boolean direct);
 
@@ -231,10 +243,19 @@ public interface MapFunction extends Description {
         /**
          * Answers a function from which this call was created.
          *
-         * @return {@link MapFunction}, never null.
+         * @return {@link MapFunction}, never {@code null}
          */
         default MapFunction getFunction() {
             return asUnmodifiableBuilder().getFunction();
+        }
+
+        /**
+         * Lists all nested function calls.
+         *
+         * @return <b>not</b> distinct Stream of {@link MapFunction.Call}s
+         */
+        default Stream<MapFunction.Call> functions() {
+            return functions(false);
         }
 
         /**

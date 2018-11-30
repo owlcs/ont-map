@@ -67,11 +67,12 @@ public interface MapResource {
      * Lists all functions which are used by this {@code MapResource}.
      *
      * @return <b>distinct</b> Stream of {@link MapFunction}s
+     * @see MapFunction#dependencies()
      */
     default Stream<MapFunction> functions() {
         return Stream.of(getMapping(), getFilter())
                 .filter(Objects::nonNull)
-                .flatMap(f -> Stream.concat(Stream.of(f), f.functions(false)))
+                .flatMap(f -> Stream.concat(Stream.of(f), f.functions()))
                 .map(MapFunction.Call::getFunction)
                 .distinct();
     }
