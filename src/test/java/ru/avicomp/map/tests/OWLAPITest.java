@@ -18,6 +18,7 @@
 
 package ru.avicomp.map.tests;
 
+import org.apache.jena.graph.Factory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -235,7 +236,7 @@ public class OWLAPITest {
         CONCURRENT {
             @Override
             public OWLMapManager create() {
-                return Managers.createOWLMapManager(new ReentrantReadWriteLock());
+                return Managers.createOWLMapManager(Factory.createGraphMem(), new ReentrantReadWriteLock());
             }
         },
         ;

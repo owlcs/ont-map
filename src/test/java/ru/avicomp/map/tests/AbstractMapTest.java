@@ -62,8 +62,13 @@ public abstract class AbstractMapTest {
     }
 
     MapModel assembleMapping() {
-        return assembleMapping(manager(), assembleSource(), assembleTarget());
+        return assembleMapping(manager());
     }
+
+    MapModel assembleMapping(MapManager manager) {
+        return assembleMapping(manager, assembleSource(), assembleTarget());
+    }
+
 
     static String getNameSpace(Class clazz) {
         return String.format("http://example.com/%s", clazz.getSimpleName());

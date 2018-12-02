@@ -35,10 +35,12 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,6 +115,18 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             throw new MapJenaException.IllegalArgument("A function with the same name (<" + name + ">)" +
                     " already exists. Please choose another name.");
         }
+
+        // todo: creation function from a call containing avc:withDefault and avc:asIRI os prohibited,
+        // as a temporary solution (see https://github.com/avicomp/ont-map/issues/13):
+        Set<String> forbidden = listAllFunctions().map(MapFunctionImpl::name)
+                .filter(x -> AVC.asIRI.getURI().equals(x) || AVC.withDefault.getURI().equals(x))
+                .map(x -> manager.prefixes().shortForm(x))
+                .collect(Collectors.toSet());
+        if (!forbidden.isEmpty()) {
+            throw new MapJenaException.Unsupported("Cannot create function <" + name +
+                    ">, since the function-chain contains " + forbidden + " functions");
+        }
+
         Model lib = manager.getLibrary();
         MapFunctionImpl from = getFunction();
         MapFunctionImpl res = newFunction(lib, name);
@@ -179,7 +193,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
     /**
      * Creates a new {@link MapFunction#isUserDefined() user-defined} function.
      *
-     * @param m    {@link Model} to which the returning function will be belonged
+     * @param m    {@link Model} to which the returned function will be belonged
      * @param name String, uri of new function
      * @return {@link MapFunctionImpl}
      */
@@ -197,8 +211,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
 
             @Override
             public Stream<MapFunction> dependencies() {
-                return Stream.concat(Stream.of(ModelCallImpl.this.getFunction()),
-                        functions().map(Call::getFunction));
+                return listAllFunctions().map(Function.identity());
             }
 
             @Override

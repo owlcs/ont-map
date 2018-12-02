@@ -49,7 +49,7 @@ public interface MapManager {
 
     /**
      * Returns the primary manager graph, that is a holder for all user-defined functions.
-     * It is assumed that the returning graph is unmodifiable:
+     * It is assumed that the returned graph is unmodifiable:
      * all changes in it must occur through other methods of this interface.
      *
      * @return {@link Graph}
@@ -58,24 +58,39 @@ public interface MapManager {
     Graph getGraph();
 
     /**
-     * Creates a fresh mapping model.
+     * Copies all meaningful data from the given {@code Graph} into the manager's primary {@code Graph}.
+     * The most obvious (and currently single) use of this method is registering all functions that graph may contain.
+     * In this sense, the method behaves in the same way as method {@link #asMapModel(OntGraphModel)},
+     * but does not return anything.
+     * No changes to the input graph are made.
      *
-     * @return {@link MapModel}
+     * @param g {@link Graph}, not {@code null}
+     * @throws MapJenaException in case the given graph contains desired data, but it is corrupted
+     * @see #asMapModel(OntGraphModel)
+     */
+    void addGraph(Graph g) throws MapJenaException;
+
+    /**
+     * Creates a fresh empty mapping model.
+     *
+     * @return {@link MapModel}, not {@code null}
      */
     MapModel createMapModel();
 
     /**
-     * Wraps an ontology model to the map model interface.
+     * Wraps the given ontology model into the map model interface.
      * If the specified model contains custom functions inside, they will be registered in the manager.
      *
-     * @param model {@link OntGraphModel}
+     * @param model {@link OntGraphModel}, not {@code null}
      * @return {@link MapModel}
-     * @throws MapJenaException if such wrapping is not possible
+     * @throws MapJenaException if such wrapping is not possible or the model contains broken functions
+     * @see #addGraph(Graph)
      */
     MapModel asMapModel(OntGraphModel model) throws MapJenaException;
 
     /**
-     * Answers {@code true} if the given ontology model is also a mapping model.
+     * Answers {@code true} if the given ontology model is also a mapping model,
+     * and therefore it can be safely wrapped as {@link MapModel} using the method {@link #asMapModel(OntGraphModel)}.
      *
      * @param model {@link OntGraphModel}
      * @return boolean indicating whether the ontology contains mapping specific elements
@@ -84,13 +99,17 @@ public interface MapManager {
     boolean isMapModel(OntGraphModel model);
 
     /**
-     * Provides a class-properties mapping.
+     * Provides a class-properties mapping,
+     * that can be used to draw class-boxes in a Composer style with properties inside.
      * <p>
-     * Used directly by API to build mappings rules:
+     * Used directly by the API to build mappings rules:
      * properties that "belong" to the context class are treated as assertions,
      * the rest of the properties are used simply as IRIs.
-     * Notice that pure spin-map (an API default implementation) does not require a property to be "belonged" to a class,
-     * i.e. it allows to perform mapping even a property has no domain with a class from a context.
+     * Notice that the pure spin-map (which is an API default implementation)
+     * does not require a property to be "belonged" to a class,
+     * i.e. it allows to perform mapping even a property has no domain with a class from a context,
+     * but such kind of mappings would be almost useless, since no individual property assertions would be inferred
+     * in a valid OWL2 model.
      *
      * @param model {@link OntGraphModel OWL model}
      * @return {@link ClassPropertyMap class properties mapping object}
@@ -144,7 +163,8 @@ public interface MapManager {
 
     /**
      * Creates a fresh mapping model with a given uri.
-     * Just for convenience, bearing in mind that Composer does not understand anonymous ontologies (checked ver 5.5.2).
+     * Just for convenience,
+     * bearing in mind that Composer does not understand what is an anonymous ontology (checked ver 5.5.2).
      *
      * @param uri String
      * @return {@link MapModel}

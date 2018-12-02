@@ -521,6 +521,7 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         /**
          * Lists all functions related to this function call.
+         * The returning string contains the function from this call in the first position.
          *
          * @return Stream of {@link MapFunctionImpl}s
          */

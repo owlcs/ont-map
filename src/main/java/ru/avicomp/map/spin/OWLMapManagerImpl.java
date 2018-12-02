@@ -18,7 +18,6 @@
 
 package ru.avicomp.map.spin;
 
-import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.shared.PrefixMapping;
 import org.semanticweb.owlapi.model.IRI;
@@ -26,9 +25,9 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyID;
 import ru.avicomp.map.*;
 import ru.avicomp.ontapi.*;
-import ru.avicomp.ontapi.jena.RWLockedGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.utils.Graphs;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -42,18 +41,25 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
- * A SPIN-based implementation of {@link OWLMapManager} which is a {@link OntologyManager} and {@link MapManager} simultaneously.
+ * A SPIN-based implementation of {@link OWLMapManager}
+ * which is a {@link OntologyManager} and {@link MapManager} simultaneously.
+ * <p>
  * Created by @ssz on 21.06.2018.
  */
 @SuppressWarnings({"NullableProblems", "WeakerAccess"})
 public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager {
-    private final MapManagerImpl manager;
+    // todo: handle in serialization (see issue #10):
+    private final transient MapManagerImpl manager;
 
-    public OWLMapManagerImpl(DataFactory dataFactory, OntologyFactory ontologyFactory, ReadWriteLock lock) {
+    public OWLMapManagerImpl(Graph primary,
+                             DataFactory dataFactory,
+                             OntologyFactory ontologyFactory,
+                             ReadWriteLock lock) {
         super(dataFactory, ontologyFactory, lock);
         this.manager = createMapManager(
-                () -> {
-                    throw new MapJenaException.IllegalState("Direct model creation is not allowed");
+                primary
+                , () -> {
+                    throw new MapJenaException.IllegalState("Direct model creation is not allowed here.");
                 }
                 , lock
                 , m -> ontology(m.getBaseGraph()).map(OntologyModel::asGraphModel).orElse(m));
@@ -66,23 +72,26 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
      * and only {@link MapManager#functions()} returns that state (a list of functions),
      * this two methods must be synchronized.
      *
-     * @param factory to produce fresh {@link Graph}s
+     * @param primary {@link Graph} to store user-defined functions and other manager-specific stuff
+     * @param factory to produce fresh {@link Graph}s instances
      * @param lock    {@link ReadWriteLock}, not null
      * @return {@link MapManager} instance with lock inside
      */
-    public static MapManagerImpl createMapManager(Supplier<Graph> factory, ReadWriteLock lock) {
-        return createMapManager(factory, lock, UnaryOperator.identity());
+    public static MapManagerImpl createMapManager(Graph primary, Supplier<Graph> factory, ReadWriteLock lock) {
+        return createMapManager(primary, factory, lock, UnaryOperator.identity());
     }
 
-    private static MapManagerImpl createMapManager(Supplier<Graph> factory,
+    private static MapManagerImpl createMapManager(Graph library,
+                                                   Supplier<Graph> factory,
                                                    ReadWriteLock lock,
                                                    UnaryOperator<OntGraphModel> map) {
-        boolean noOp = Objects.requireNonNull(lock, "Null lock").getClass()
-                .equals(NoOpReadWriteLock.NO_OP_RW_LOCK.getClass());
-        Graph library = Factory.createGraphMem();
-        if (!noOp)
-            library = new RWLockedGraph(library, lock);
-        return new MapManagerImpl(library, factory, noOp ? new HashMap<>() : new ConcurrentHashMap<>(), MapConfigImpl.INSTANCE) {
+        boolean noOp = Objects.requireNonNull(lock, "Null lock") == NoOpReadWriteLock.NO_OP_RW_LOCK;
+        library = Graphs.asNonConcurrent(Objects.requireNonNull(library, "Null primary graph"));
+        if (!noOp) {
+            library = Graphs.asConcurrent(library, lock);
+        }
+        return new MapManagerImpl(library, factory, noOp ?
+                new HashMap<>() : new ConcurrentHashMap<>(), MapConfigImpl.INSTANCE) {
             @Override
             protected boolean filter(FunctionImpl f) {
                 lock.readLock().lock();
@@ -172,6 +181,16 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             return manager.getGraph();
         } finally {
             lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void addGraph(Graph g) {
+        lock.writeLock().lock();
+        try {
+            manager.addGraph(g);
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -281,8 +300,8 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
          * or manager's read lock, if the the source graph belongs to the manager,
          * otherwise uses no-op lock instance.
          *
-         * @param source  a graph with data to map.
-         * @param target  a graph to write mapping results.
+         * @param source a graph with data to map.
+         * @param target a graph to write mapping results.
          */
         @Override
         public void run(Graph source, Graph target) {

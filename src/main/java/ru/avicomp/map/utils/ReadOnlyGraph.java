@@ -101,6 +101,17 @@ public class ReadOnlyGraph extends UnmodifiableGraph {
         return g instanceof ReadOnlyGraph ? (ReadOnlyGraph) g : new ReadOnlyGraph(g);
     }
 
+    /**
+     * Unwraps the given graph if it is {@link ReadOnlyGraph}.
+     * TODO: move to ONT-API Graphs Utils ?
+     *
+     * @param g {@link Graph}
+     * @return {@link Graph}, the same as input or modifiable content from {@link ReadOnlyGraph} container.
+     */
+    public static Graph unwrap(Graph g) {
+        return g instanceof ReadOnlyGraph ? ((ReadOnlyGraph) g).getWrapped() : g;
+    }
+
     @Override
     public void add(Triple t) {
         throw new AddDeniedException("Read only graph: can't add triple " + t);

@@ -22,9 +22,7 @@ import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.rdf.model.ModelGraphInterface;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,12 +79,8 @@ public class MapManagerImpl implements MapManager {
     // Graph factory:
     protected final Supplier<Graph> graphFactory;
 
-    public MapManagerImpl() {
-        this(Factory::createGraphMem);
-    }
-
-    protected MapManagerImpl(Supplier<Graph> graphs) {
-        this(graphs.get(), graphs, new HashMap<>(), MapConfigImpl.INSTANCE);
+    public MapManagerImpl(Graph primary) {
+        this(primary, Factory::createGraphMem, new HashMap<>(), MapConfigImpl.INSTANCE);
     }
 
     /**
@@ -203,7 +197,7 @@ public class MapManagerImpl implements MapManager {
 
     /**
      * Lists all graphs that are additional to the spin-family graphs.
-     * A primary graph is included to the returning stream in the first position.
+     * A primary graph is included to the returned stream in the first position.
      *
      * @return Stream of {@link Graph}s
      * @see #getLibrary()
@@ -221,6 +215,11 @@ public class MapManagerImpl implements MapManager {
     @Override
     public Graph getGraph() {
         return ReadOnlyGraph.wrap(getLibrary().getBaseGraph());
+    }
+
+    @Override
+    public void addGraph(Graph g) {
+        registerFunctions(ModelFactory.createModelForGraph(Objects.requireNonNull(g, "Null graph.")));
     }
 
     /**
@@ -413,7 +412,7 @@ public class MapManagerImpl implements MapManager {
             return (MapModelImpl) m;
         }
         // register functions and add to the primary manager graph:
-        registerFunctions(m);
+        registerFunctions(m.getBaseModel());
         // reassembly given model:
         return reassemble(m, personality);
     }
@@ -439,11 +438,11 @@ public class MapManagerImpl implements MapManager {
     /**
      * Registers all functions listed from the given model.
      *
-     * @param m {@link OntGraphModel}, not {@code null}
+     * @param m {@link Model}, not {@code null}
      * @throws MapJenaException unable to handle some of the listed functions
      */
-    protected void registerFunctions(OntGraphModel m) throws MapJenaException {
-        SpinModels.listSpinFunctions(m.getBaseModel())
+    protected void registerFunctions(Model m) throws MapJenaException {
+        SpinModels.listSpinFunctions(m)
                 .forEach(f -> {
                     // if it is contained in the map and has the same content -> OK, continue
                     // if it is contained in the map and has different content, but it is not avc:runtime -> FAIL
@@ -489,7 +488,9 @@ public class MapManagerImpl implements MapManager {
 
     /**
      * Gets a a class-properties map object.
-     * The result is cached and is placed in the specified model, in a listener attached to the top-level {@link UnionGraph graph}.
+     * The resulting {@link ClassPropertyMap Class-Properties Mapping} is cached object and
+     * it is placed directly within the specified model:
+     * in a listener attached to the top-level {@link UnionGraph graph}.
      * <p>
      * Note: this method is used during validation of input arguments,
      * although SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
@@ -502,7 +503,8 @@ public class MapManagerImpl implements MapManager {
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
         Stream<OntGraphModel> models = listRelatedModels(model);
         List<ClassPropertyMap> maps = models
-                .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(), () -> new LocalClassPropertyMapImpl(m, model)))
+                .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(),
+                        () -> new LocalClassPropertyMapImpl(m, model)))
                 .collect(Collectors.toList());
         return new ClassPropertyMap() {
             @Override

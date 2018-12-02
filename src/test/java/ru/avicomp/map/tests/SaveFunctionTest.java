@@ -26,10 +26,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
-import ru.avicomp.map.spin.MapContextImpl;
-import ru.avicomp.map.spin.ModelCallImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.ReadOnlyGraph;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -37,6 +37,7 @@ import ru.avicomp.ontapi.jena.model.OntNDP;
 import ru.avicomp.ontapi.jena.model.OntNOP;
 
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
@@ -110,7 +111,7 @@ public class SaveFunctionTest {
         String ns = "http://xxx#";
         MapFunction.Call targetCall = c.getMapping();
         LOGGER.debug("Target call: {}", targetCall);
-        MapFunction target = targetCall.save(ns + "getNamespace");
+        MapFunction target = targetCall.save(ns + "changeNamespace");
         MapFunction.Call propertyCall = p.getMapping();
         LOGGER.debug("Property call: {}", propertyCall);
         MapFunction property = propertyCall.save(ns + "formatInSomeWeirdStyle");
@@ -139,7 +140,7 @@ public class SaveFunctionTest {
         Assert.assertEquals(8, res.size());
     }
 
-    @Test
+    @Test(expected = MapJenaException.Unsupported.class) // todo: it is a temporary solution, see #13
     public void testPropertyChainMapping() {
         MapManager m = Managers.createMapManager();
         PropertyChainMapTest data = new PropertyChainMapTest();
@@ -167,8 +168,7 @@ public class SaveFunctionTest {
         assertFunctionDependencies(deriveMessage, m);
         assertFunctionDependencies(deriveName, m);
 
-        LOGGER.info("Create new mapping using functions <{}>, <{}> and <{}>. Then run inference.",
-                target, deriveName, deriveMessage);
+        LOGGER.info("Create new mapping using functions <{}> and <{}>. Then run inference.", deriveName, deriveMessage);
         OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_D00001");
         OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
         OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
@@ -200,23 +200,70 @@ public class SaveFunctionTest {
         data.validate(dst);
     }
 
-    // todo: not ready
     @Test
     public void testFilterIndividualsMapping() {
         MapManager m = Managers.createMapManager();
-        FilterIndividualsMapTest t = new FilterIndividualsMapTest();
-        OntGraphModel src = t.assembleSource();
-        OntGraphModel dst = t.assembleTarget();
-        MapModel map = t.assembleMapping(m, src, dst);
+        FilterIndividualsMapTest data = new FilterIndividualsMapTest();
+        OntGraphModel src = data.assembleSource();
+        OntGraphModel dst = data.assembleTarget();
+        MapModel map1 = data.assembleMapping(m, src, dst);
+        TestUtils.debug(map1);
 
-        TestUtils.debug(map);
+        MapContext c = map1.contexts().findFirst().orElseThrow(AssertionError::new);
+        MapFunction.Call call = c.getFilter();
 
-        MapContextImpl c = (MapContextImpl) map.contexts().findFirst().orElseThrow(AssertionError::new);
-        ModelCallImpl call = c.getFilter();
-
-        call.save("xxxx");
+        String ns = "http://xxx#";
+        MapFunction isAdult = call.save(ns + "isAdult");
         TestUtils.debug(TestUtils.getPrimaryGraph(m));
-        // TODO: check
+        Assert.assertEquals(1, m.functions().filter(MapFunction::isUserDefined).count());
+        Assert.assertTrue(isAdult.isBoolean());
+        Assert.assertTrue(isAdult.isUserDefined());
+        assertFunctionDependencies(isAdult, m);
+
+        LOGGER.info("Create new mapping using filter function <{}> and run inference.", isAdult);
+        OntClass person = TestUtils.findOntEntity(src, OntClass.class, "Person");
+        OntClass user = TestUtils.findOntEntity(dst, OntClass.class, "User");
+        OntNDP srcAge = TestUtils.findOntEntity(src, OntNDP.class, "age");
+        OntNDP dstAge = TestUtils.findOntEntity(dst, OntNDP.class, "user-age");
+        MapModel map2 = m.createMapModel()
+                .createContext(person, user)
+                .addClassBridge(isAdult.create().addProperty(SP.arg1, srcAge).build(), c.getMapping())
+                .addPropertyBridge(m.getFunction(SPINMAP.equals).create().addProperty(SP.arg1, srcAge).build(), dstAge)
+                .getModel();
+        TestUtils.debug(map2);
+        map2.runInference(src.getBaseGraph(), dst.getBaseGraph());
+        data.validate(dst);
+    }
+
+    @Test
+    public void testShareUserDefinedFunctions() {
+        String ns = "http://my-functions.ex#";
+        MapManager m = Managers.createMapManager();
+        // prepare data:
+        MapModel map1 = new FilterIndividualsMapTest().assembleMapping(m);
+        MapModel map2 = new MathGeoMapTest().assembleMapping(m);
+        MapModel map3 = new NestedFuncMapTest().assembleMapping(m);
+        // save functions:
+        map1.contexts().findFirst().orElseThrow(AssertionError::new).getFilter().save(ns + "isAdult");
+        map2.contexts().findFirst().orElseThrow(AssertionError::new)
+                .properties().findFirst().orElseThrow(AssertionError::new).getMapping().save(ns + "hypotenuse");
+        map3.contexts().findFirst().orElseThrow(AssertionError::new).getMapping().save(ns + "changeNamespace");
+        TestUtils.debug(TestUtils.getPrimaryGraph(m));
+        Assert.assertEquals(3, m.functions().filter(MapFunction::isUserDefined).count());
+
+        // tests:
+        MapManager m2 = Managers.createMapManager(m.getGraph()); // <-- passing an unmodifiable graph!
+        Assert.assertEquals(3, m2.functions().filter(MapFunction::isUserDefined).count());
+
+        MapManager m3 = Managers.createOWLMapManager(ReadOnlyGraph.unwrap(m.getGraph()), new ReentrantReadWriteLock());
+        TestUtils.debug(TestUtils.getPrimaryGraph(m3));
+        Assert.assertEquals(3, m3.functions().filter(MapFunction::isUserDefined).count());
+
+        MapManager m4 = Managers.createOWLMapManager();
+        Assert.assertEquals(0, m4.functions().filter(MapFunction::isUserDefined).count());
+        m4.addGraph(m.getGraph());
+        Assert.assertEquals(3, m4.functions().filter(MapFunction::isUserDefined).count());
+        TestUtils.debug(TestUtils.getPrimaryGraph(m4));
     }
 
     private static void assertFunctionDependencies(MapFunction function, MapManager manager) {

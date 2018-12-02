@@ -18,6 +18,7 @@
 
 package ru.avicomp.map;
 
+import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.semanticweb.owlapi.model.IRI;
 import ru.avicomp.map.spin.MapManagerImpl;
@@ -44,7 +45,7 @@ public class Managers {
     }
 
     /**
-     * The {@link OntologyManager.DocumentSourceMapping} to handle resources from file://resources/etc.
+     * The {@link OntologyManager.DocumentSourceMapping} to handle resources from {@code file://resources/etc}.
      * Must be attached to any {@link OntologyManager} if you plan to work with library graphs.
      */
     public static final OntologyManager.DocumentSourceMapping MAP_RESOURCES_MAPPING = id -> id.getOntologyIRI()
@@ -62,44 +63,70 @@ public class Managers {
                 }
             }).orElse(null);
     /**
-     * The filter to skip transformations on system library graphs (from file://resources/etc)
+     * The filter to skip transformations on system library graphs (from {@code file://resources/etc})
      */
     public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> !SystemModels.graphs().containsKey(Graphs.getURI(g));
 
     /**
-     * Creates a spin-based {@link MapManager}.
-     * The result instance is not tread-safe.
+     * Creates a non-concurrent spin-based {@link MapManager}.
      *
-     * @return {@link MapManager}
+     * @return {@link MapManager}, not {@code null}
      */
     public static MapManager createMapManager() {
-        return new MapManagerImpl();
+        return createMapManager(Factory.createGraphMem());
     }
 
     /**
-     * Creates a SPIN-based {@link OWLMapManager} instance,
-     * which implements {@link OntologyManager} and {@link MapManager} at the same time.
-     * The result manager is not thread-safe.
+     * Creates a non-concurrent spin-based {@link MapManager} with given graph as primary.
+     * Please note that the current {@link MapManager} implementation has a restriction:
+     * any changes in the specified graph that occur after calling this method,
+     * will not affect the returned manager content -
+     * the state of functions register is initialized while manager's construction.
      *
-     * @return {@link OWLMapManager}
+     * @param graph {@link Graph}, not {@code null}
+     * @return {@link MapManager}, not {@code null}
+     */
+    public static MapManager createMapManager(Graph graph) {
+        return new MapManagerImpl(graph);
+    }
+
+    /**
+     * Creates a default SPIN-based {@link OWLMapManager OWL Mapping Manager},
+     * that is simultaneously an instance of interfaces {@link OntologyManager} and {@link MapManager}.
+     * The returning manager is not thread-safe.
+     *
+     * @return {@link OWLMapManager}, not {@code null}
      */
     public static OWLMapManager createOWLMapManager() {
-        return createOWLMapManager(NoOpReadWriteLock.NO_OP_RW_LOCK);
+        return createOWLMapManager(Factory.createGraphMem());
+    }
+
+    /**
+     * Creates an {@link OWLMapManager} instance for the given graph.
+     *
+     * @param graph {@link Graph}, to store user-defined stuff, not {@code null}
+     * @return {@link OWLMapManager}, not {@code null}
+     * @see #createMapManager(Graph) see the note about the graph-parameter
+     */
+    public static OWLMapManager createOWLMapManager(Graph graph) {
+        return createOWLMapManager(graph, NoOpReadWriteLock.NO_OP_RW_LOCK);
     }
 
     /**
      * Creates a concurrent version of {@link OWLMapManager}.
      *
-     * @param lock {@link ReadWriteLock}
+     * @param primary {@link Graph} to store user-defined stuff, not {@code null}
+     * @param lock    {@link ReadWriteLock}, not {@code null}
      * @return {@link OWLMapManager}
      * @see OntManagers.ONTAPIProfile#create(boolean)
+     * @see #createMapManager(Graph) see the note about the graph-parameter
      */
-    public static OWLMapManager createOWLMapManager(ReadWriteLock lock) {
+    public static OWLMapManager createOWLMapManager(Graph primary, ReadWriteLock lock) {
         OntologyFactory.Builder builder = new OntologyBuilderImpl();
         OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLLoaderImpl(builder));
         OntologyFactory ontologyFactory = new OntologyFactoryImpl(builder, loader);
         DataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
-        OWLMapManagerImpl res = new OWLMapManagerImpl(dataFactory, ontologyFactory, lock);
+        OWLMapManagerImpl res = new OWLMapManagerImpl(primary, dataFactory, ontologyFactory, lock);
         res.getOntologyStorers().set(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
         res.getOntologyParsers().set(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
         res.getDocumentSourceMappers().set(MAP_RESOURCES_MAPPING);

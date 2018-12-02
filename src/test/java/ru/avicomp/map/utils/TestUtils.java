@@ -76,6 +76,7 @@ public class TestUtils {
     }
 
     public static void debug(Model m) {
+        if (!LOGGER.isDebugEnabled()) return;
         LOGGER.debug("\n{}\n==========", TestUtils.asString(m));
     }
 
