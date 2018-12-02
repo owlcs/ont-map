@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -45,51 +46,13 @@ public class NestedFuncMapTest extends MapTestData1 {
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        Assert.assertEquals(3, props.size());
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
-
-        MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.changeNamespace.getURI())
+        return createMapping(manager, src, dst, () -> manager.getFunction(SPINMAPL.changeNamespace.getURI())
                 .create()
                 .add(SPINMAPL.targetNamespace.getURI(),
                         manager.getFunction(manager.prefixes().expandPrefix("afn:namespace"))
                                 .create().add(SP.arg1.getURI(), dstClass.getURI()))
-                .build();
-        MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator.getURI());
-        // concat template: %2, %1--SOME VALUE???%3
-        MapFunction.Call propertyFunction1 = concatWithSeparator
-                .create()
-                .add(SP.arg1.getURI(), props.get(1).getURI())
-                .add(SP.arg2.getURI(), concatWithSeparator.create()
-                        .add(SP.arg1.getURI(), props.get(0).getURI())
-                        .add(SP.arg2.getURI(), concatWithSeparator.create()
-                                .add(SP.arg1.getURI(), "SOME VALUE")
-                                .add(SP.arg2.getURI(), props.get(2).getURI())
-                                .add(SPINMAPL.separator.getURI(), "???"))
-                        .add(SPINMAPL.separator.getURI(), "--"))
-                .add(SPINMAPL.separator.getURI(), ", ")
-                .build();
-        PrefixMapping pm = PrefixMapping.Factory.create()
-                .setNsPrefixes(manager.prefixes())
-                .setNsPrefixes(srcClass.getModel())
-                .setNsPrefixes(dstClass.getModel()).lock();
-
-        TestUtils.debug(targetFunction, pm);
-        TestUtils.debug(propertyFunction1, pm);
-
-        MapModel res = createMappingModel(manager,
-                "Please note: TopBraid Composer (5.5.1) has a problem with displaying diagram.\n" +
-                        "Don't worry: that's just its problem:\n" +
-                        "to make sure run inferences and check result individuals.");
-        res.createContext(srcClass, dstClass, targetFunction)
-                .addPropertyBridge(propertyFunction1, dstProp);
-        Assert.assertEquals(1, res.contexts().count());
-        Assert.assertEquals(2, res.ontologies().count());
-        Assert.assertEquals(srcClass, res.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
-        Assert.assertEquals(dstClass, res.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
-        return res;
+                .build());
     }
 
     @Test
@@ -181,7 +144,55 @@ public class NestedFuncMapTest extends MapTestData1 {
         validateAfterInference(src, dst);
     }
 
-    private static void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
+    MapModel createMapping(MapManager manager,
+                           OntGraphModel src,
+                           OntGraphModel dst,
+                           Supplier<MapFunction.Call> targetFunctionMaker) {
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
+        List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI))
+                .collect(Collectors.toList());
+        Assert.assertEquals(3, props.size());
+        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
+
+        MapFunction.Call targetFunction = targetFunctionMaker.get();
+
+        MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator.getURI());
+        // concat template: %2, %1--SOME VALUE???%3
+        MapFunction.Call propertyFunction = concatWithSeparator
+                .create()
+                .add(SP.arg1.getURI(), props.get(1).getURI())
+                .add(SP.arg2.getURI(), concatWithSeparator.create()
+                        .add(SP.arg1.getURI(), props.get(0).getURI())
+                        .add(SP.arg2.getURI(), concatWithSeparator.create()
+                                .add(SP.arg1.getURI(), "SOME VALUE")
+                                .add(SP.arg2.getURI(), props.get(2).getURI())
+                                .add(SPINMAPL.separator.getURI(), "???"))
+                        .add(SPINMAPL.separator.getURI(), "--"))
+                .add(SPINMAPL.separator.getURI(), ", ")
+                .build();
+        PrefixMapping pm = PrefixMapping.Factory.create()
+                .setNsPrefixes(manager.prefixes())
+                .setNsPrefixes(srcClass.getModel())
+                .setNsPrefixes(dstClass.getModel()).lock();
+
+        TestUtils.debug(targetFunction, pm);
+        TestUtils.debug(propertyFunction, pm);
+
+        MapModel res = createMappingModel(manager,
+                "Please note: TopBraid Composer (5.5.1) has a problem with displaying diagram.\n" +
+                        "Don't worry: that's just its problem:\n" +
+                        "to make sure run inferences and check result individuals.");
+        res.createContext(srcClass, dstClass, targetFunction)
+                .addPropertyBridge(propertyFunction, dstProp);
+        Assert.assertEquals(1, res.contexts().count());
+        Assert.assertEquals(2, res.ontologies().count());
+        Assert.assertEquals(srcClass, res.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, res.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
+        return res;
+    }
+
+    void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
         List<OntNDP> props = src.listDataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());

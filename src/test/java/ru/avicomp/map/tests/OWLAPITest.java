@@ -108,7 +108,7 @@ public class OWLAPITest {
         Assert.assertEquals(1, manager.mappings().count());
         Assert.assertEquals(0, m1.rules().count());
         String iri = "http://x.com";
-        m1.setID(iri);
+        m1.asGraphModel().setID(iri);
         Assert.assertEquals(1, manager.ontologies().count());
         Assert.assertEquals(1, manager.mappings().count());
         OntologyModel o1 = manager.getOntology(IRI.create(iri));

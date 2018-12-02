@@ -69,7 +69,7 @@ public class LoadMapTestData extends AbstractMapTest {
         Assert.assertEquals(c.getSource(), c.getTarget());
         Assert.assertEquals(classIRI, c.getSource().getURI());
         Assert.assertEquals(contextIRI, c.getURI());
-        Assert.assertEquals(ontologyIRI, m.getID().getURI());
+        Assert.assertEquals(ontologyIRI, m.getIRI());
         MapFunction target = c.functions().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(SPINMAPL.self.getURI(), target.name());
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);

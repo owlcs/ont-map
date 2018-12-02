@@ -61,14 +61,14 @@ public class SaveFunctionTest {
         MapFunction.Call call = p.getMapping();
         LOGGER.debug("Call: {}", call);
 
-        String uri = "http://ex.com#hypotenuse";
-        LOGGER.info("Create new function <{}>.", uri);
-        MapFunction func = call.save(uri);
+        String name = "http://ex.com#hypotenuse";
+        LOGGER.info("Create new function <{}>.", name);
+        MapFunction func = call.save(name);
         LOGGER.debug("New function: {}", func);
         TestUtils.debug(TestUtils.getPrimaryGraph(m));
         Assert.assertNotNull(func);
-        Assert.assertEquals(uri, func.name());
-        Assert.assertTrue(m.getFunction(uri).isUserDefined());
+        Assert.assertEquals(name, func.name());
+        Assert.assertTrue(m.getFunction(name).isUserDefined());
         Assert.assertEquals(count + 1, m.functions().count());
         Assert.assertEquals(XSD.xdouble.getURI(), func.type());
         Assert.assertEquals(2, func.args().count());
@@ -76,7 +76,7 @@ public class SaveFunctionTest {
                 .distinct().collect(Collectors.joining()));
         assertFunctionDependencies(func, m);
 
-        LOGGER.info("Create new mapping using function <{}> and run inference.", uri);
+        LOGGER.info("Create new mapping using function <{}> and run inference.", name);
         OntGraphModel dst2 = MathGeoMapTest.createTargetModel();
         OntClass s = TestUtils.findOntEntity(src, OntClass.class, "Coordinates");
         OntClass t = TestUtils.findOntEntity(dst2, OntClass.class, "Coordinates");
@@ -85,7 +85,8 @@ public class SaveFunctionTest {
         OntNDP r = TestUtils.findOntEntity(dst2, OntNDP.class, "r");
 
         MapModel map2 = m.createMapModel();
-        map2.setID(map1.getID().getURI()).setVersionIRI(map1.getID().getURI() + "/version#2");
+        map2.asGraphModel().setID(map1.getIRI())
+                .setVersionIRI(map1.getIRI() + "/version#2");
         map2.createContext(s, t, m.getFunction(SPINMAPL.self).create().build())
                 .addPropertyBridge(func.create().addProperty(SP.arg1, x).addProperty(SP.arg2, y).build(), r);
 

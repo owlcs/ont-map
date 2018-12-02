@@ -380,7 +380,14 @@ public class MapManagerImpl implements MapManager {
         return m.getID().imports().anyMatch(this::isTopSpinURI);
     }
 
-    protected boolean isTopSpinURI(String uri) {
+    /**
+     * Answers {@code true} if the given uri is a name of the top-level spin graph,
+     * that belongs to every mapping produced by the ONT-MAP.
+     *
+     * @param uri String
+     * @return boolean
+     */
+    public boolean isTopSpinURI(String uri) {
         return SPINMAPL.BASE_URI.equals(uri);
     }
 

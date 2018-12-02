@@ -309,12 +309,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          * in additional to passing {@code ?this} to top-level query binding (mapping construct)
          * there is also a ONT-MAP workaround solution to place it deep in all sub-queries,
          * which are called by specified construct.
-         * Handling {@code ?this} only by top-level mapping is definitely leak of SPIN-API functionality,
+         * Handling {@code ?this} only by the top-level mappings is definitely leak of SPIN-API functionality,
          * which severely limits the space of usage opportunities.
          * But, it seems, that Topbraid Composer also (checked version 5.5.1)
          * has some magic solution for that leak in its deeps, maybe similar to ours:
          * testing shows that sub-queries which handled by {@code spin:eval}
-         * may accept {@code ?this} but only  in some limited conditions,
+         * may accept {@code ?this} but only in some limited conditions,
          * for example (and at least) for the original {@code spinmap:Mapping-1-1},
          * that has no been cloned with changing namespace to local mapping model.
          *
@@ -327,12 +327,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
          */
         public Model run(Resource instance) {
             Model mapping = getModel();
-            Resource get = AVC.currentIndividual.inModel(mapping);
-            Map<Statement, Statement> vars = getThisVarReplacement(get, instance);
+            Resource _this = AVC.currentIndividual.inModel(mapping);
+            Map<Statement, Statement> vars = getThisVarReplacement(_this, instance);
             try {
                 vars.forEach((a, b) -> mapping.add(b).remove(a));
                 if (!vars.isEmpty()) {
-                    factory.replace(get);
+                    factory.replace(_this);
                 }
                 try {
                     return SPINInferenceHelper.runQueryOnInstance(factory, this, instance, null);

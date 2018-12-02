@@ -133,7 +133,7 @@ public class MathGeoMapTest extends AbstractMapTest {
         MapFunction xd = m.getFunction(XSD.xdouble);
 
         MapModel res = m.createMapModel();
-        res.setID("http://geo-map.avc.ru");
+        res.asGraphModel().setID("http://geo-map.avc.ru");
         MapContext c = res.createContext(s, t, self.create().build());
         MapFunction.Call f = sqrt.create().addFunction(SP.arg1,
                 xd.create().addFunction(SP.arg1,

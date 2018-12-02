@@ -102,7 +102,7 @@ public class CommonMappingTest {
     @Test
     public void testListMapping() {
         MapModel m = createMapping();
-        OntID id = m.getID();
+        OntID id = m.asGraphModel().getID();
         // list contexts
         info("Contexts:");
         LOGGER.debug("Model <{}> ::: {}", id, m.contexts().map(Object::toString).collect(Collectors.joining(", ", "[", "]")));

@@ -105,7 +105,7 @@ public class SelfMapTest extends AbstractMapTest {
         OntClass targetClass = target.listClasses().findFirst().orElseThrow(AssertionError::new);
 
         MapModel res = manager.createMapModel();
-        res.getID().addComment("WARNING: " +
+        res.asGraphModel().getID().addComment("WARNING: " +
                 "this mapping may not work in Composer (at least it does not work for ver. 5.5.2)\n" +
                 "The reason is in variable ?this which is used by MagicFunction avc:currentIndividual");
 

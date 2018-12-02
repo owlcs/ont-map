@@ -27,38 +27,20 @@ import ru.avicomp.ontapi.jena.model.OntOPE;
 import java.util.stream.Stream;
 
 /**
- * A graph model with mapping instructions to perform data transfer from one OWL2 ontology to another.
- * It consists of {@link MapContext Class Mapping}s,
- * which, in turn, may include {@link PropertyBridge property bridge}s.
- * Note: it does not have to be OWL2 ontology
- * (and, moreover, a spin implementation is not OWL2-, but rather a RDFS-ontology),
- * but it have to be compatible with OWL2 as possible,
- * at least, an {@link OntID Ontology ID} must be the only one in the {@code Graph} as it is required by OWL2.
+ * A graph model containing mapping instructions for performing
+ * transformation and transferring data from one OWL2 ontology to another.
+ * It consists of {@link MapContext Class Mapping}s, that are instructions to handle individuals,
+ * which, in turn, can include {@link PropertyBridge property bridge}s,
+ * that are instructions to handle property assertions for context's individuals.
+ * Please note: this graph model does not have to be an OWL2 ontology
+ * (and, moreover, a spin implementation is not an OWL2-, but rather a RDFS-ontology),
+ * but it have to be compatible with OWL2 as far as it's possible,
+ * at least, an {@link OntID Ontology ID} must be the only one in the {@code Graph}
+ * as it is required by the OWL2 specification.
  * <p>
  * Created by @szuev on 10.04.2018.
  */
 public interface MapModel {
-
-    /**
-     * Returns an ontology id.
-     *
-     * @return {@link OntID}, not {@code null}
-     * @see OntGraphModel#getID()
-     * @deprecated (todo :) going to remove, use {@code this.asGraphModel().getID()}
-     */
-    @Deprecated
-    OntID getID();
-
-    /**
-     * Sets a new ontology iri.
-     *
-     * @param uri String iri or null for anonymous ontology
-     * @return {@link OntID}, not {@code null}
-     * @see OntGraphModel#setID(String)
-     * @deprecated (todo :) going to remove from this interface: should be access only through ont-graph-model
-     */
-    @Deprecated
-    OntID setID(String uri);
 
     /**
      * Answers the OWL2 model which wraps the same mapping graph.
@@ -68,37 +50,38 @@ public interface MapModel {
     OntGraphModel asGraphModel();
 
     /**
-     * Lists all linked (OWL-) ontologies,
-     * i.e. all actual imports with exclusion of library plus this mapping model itself if it has its own OWL-declarations.
+     * Lists all linked OWL2 ontologies,
+     * i.e. all actual imports with exclusion of library
+     * plus this mapping model itself if it has its own OWL-declarations.
      *
-     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}s.
+     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}s
      * @see OntGraphModel#imports()
      * @see #asGraphModel()
      */
     Stream<OntGraphModel> ontologies();
 
     /**
-     * Returns manager to which this mapping model is associated.
+     * Returns the manager with which this mapping model is associated.
      *
-     * @return {@link MapManager}
+     * @return {@link MapManager}, not {@code null}
      */
     MapManager getManager();
 
     /**
-     * Lists all contexts.
+     * Lists all mapping contexts.
      *
      * @return Stream of {@link MapContext}
      */
     Stream<MapContext> contexts();
 
     /**
-     * Creates or finds context.
-     * Specified class expressions can be anonymous,
+     * Creates or finds a context.
+     * The specified class expressions can be anonymous,
      * since OWL2 allows individuals to be attached to any class expression.
      *
      * @param source {@link OntCE} a source class expression
      * @param target {@link OntCE} a target class expression
-     * @return {@link MapContext} existing or fresh context.
+     * @return {@link MapContext} existing or fresh context
      */
     MapContext createContext(OntCE source, OntCE target);
 
@@ -114,9 +97,11 @@ public interface MapModel {
     /**
      * Binds contexts together.
      * Both contexts must have the same source class expression,
-     * context target class expressions should be linked together using an object property (i.e. through domain/range relation).
+     * context target class expressions should be linked together
+     * using an object property (e.g. through domain/range relation).
      * Bound contexts will produce object property assertions between individuals on inference.
-     * If contexts target classes are not linked to each other or contexts sources classes are different, an exception are expected.
+     * If contexts target classes are not linked to each other
+     * or contexts sources classes are different, an exception is expected.
      *
      * @param left  {@link MapContext}
      * @param right {@link MapContext}
@@ -127,7 +112,7 @@ public interface MapModel {
     MapModel bindContexts(MapContext left, MapContext right) throws MapJenaException;
 
     /**
-     * Validates the given {@link MapFunction.Call function-call} against mapping model.
+     * Validates the given {@link MapFunction.Call function-call} against this mapping model.
      * Throws {@link MapJenaException} in case the function-call has wrong arguments.
      *
      * @param func {@link MapFunction.Call} the expression to test
@@ -136,11 +121,20 @@ public interface MapModel {
     void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
+     * Returns the name of this mapping, which is an ontological IRI.
+     *
+     * @return String or {@code null} if it is an anonymous
+     */
+    default String getIRI() {
+        return asGraphModel().getID().getURI();
+    }
+
+    /**
      * Lists all rules ({@link MapResource Mapping Resources}).
      * A MapResource can be either {@link MapContext} or {@link PropertyBridge}.
      * Incomplete contexts are not included to the result.
      *
-     * @return Stream of {@link MapResource}s.
+     * @return Stream of {@link MapResource}s
      * @see MapContext#isValid()
      */
     default Stream<MapResource> rules() {

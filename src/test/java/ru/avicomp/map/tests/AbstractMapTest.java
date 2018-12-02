@@ -89,8 +89,7 @@ public abstract class AbstractMapTest {
     MapModel createMappingModel(MapManager manager, String description) {
         MapModel res = manager.createMapModel();
         // TopBraid Composer (gui, not spin) has difficulties with anonymous ontologies:
-        res.setID(getMapNameSpace() + "/map")
-                .addComment(description, null);
+        res.asGraphModel().setID(getMapNameSpace() + "/map").addComment(description, null);
         return res;
     }
 
