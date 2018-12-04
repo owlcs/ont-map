@@ -196,6 +196,11 @@ sp:notIn  spin:constraint  [ a              spl:Argument ;
                              spl:valueType  rdfs:Literal
                            ] .
 
+spif:buildString  spin:constraint  [ a              spl:Argument ;
+                                     spl:predicate  avc:vararg ;
+                                     spl:valueType  xsd:string
+                                   ] .
+
 spinmap:targetResource
         avc:hidden    "This function is not allowed to be used explicitly by the API.\nAll cases when <targetResource> might be used should be described through other functions." ;
         spin:private  true .

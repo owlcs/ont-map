@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -115,5 +116,46 @@ public class MiscMapTest {
 
         LOGGER.info("Validate.");
         t.validateAfterInference(src, dst);
+    }
+
+    @Test
+    public void testInferenceOnMappinWithVarangBuildStringFunction() {
+        OntGraphModel src = new SplitMapTest().assembleSource();
+        OntGraphModel dst = new ConditionalMapTest().assembleTarget();
+        TestUtils.debug(src);
+        TestUtils.debug(dst);
+        Assert.assertEquals(0, dst.classAssertions().count());
+
+        OntClass srcPerson = TestUtils.findOntEntity(src, OntClass.class, "Person");
+        OntNDP firstName = TestUtils.findOntEntity(src, OntNDP.class, "first-name");
+        OntNDP secondName = TestUtils.findOntEntity(src, OntNDP.class, "second-name");
+        OntNDP middleName = TestUtils.findOntEntity(src, OntNDP.class, "middle-name");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "User");
+        OntNDP dstName = TestUtils.findOntEntity(dst, OntNDP.class, "user-name");
+
+        String ns = "http://ex.com#";
+        MapManager m = Managers.createMapManager();
+        MapModel map = m.createMapModel();
+        map.createContext(srcPerson, dstClass).addClassBridge(m.getFunction(SPINMAPL.buildURI3).create()
+                .addProperty(SP.arg1, firstName)
+                .addProperty(SP.arg2, middleName)
+                .addProperty(SP.arg3, secondName)
+                .addLiteral(SPINMAPL.template, ns + "{?1}-{?2}-{?3}").build())
+                .addPropertyBridge(m.getFunction(SPIF.buildString).create()
+                        .addProperty(AVC.vararg, firstName)
+                        .addProperty(AVC.vararg, middleName)
+                        .addProperty(AVC.vararg, secondName)
+                        .addLiteral(SP.arg1, "{?3}, {?1} {?2}").build(), dstName);
+        TestUtils.debug(map);
+        map.runInference(src.getBaseGraph(), dst.getBaseGraph());
+        TestUtils.debug(dst);
+        Assert.assertEquals(2, dst.classAssertions().count());
+        Assert.assertEquals(2, dst.listNamedIndividuals().peek(i -> {
+            Assert.assertEquals(ns, i.getNameSpace());
+            String[] names = i.getLocalName().split("-");
+            Assert.assertEquals(3, names.length);
+            String n = i.getRequiredProperty(dstName).getLiteral().getString();
+            Assert.assertEquals(names[2] + ", " + names[0] + " " + names[1], n);
+        }).count());
     }
 }

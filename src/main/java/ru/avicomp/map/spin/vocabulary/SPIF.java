@@ -46,6 +46,7 @@ public class SPIF {
     public static final Resource regex = resource("regex");
     public static final Resource buildUniqueURI = resource("buildUniqueURI");
     public static final Resource buildURI = resource("buildURI");
+    public static final Resource buildString = resource("buildString");
     public static final Resource parseDate = resource("parseDate");
     public static final Resource dateFormat = resource("dateFormat");
     public static final Resource cast = resource("cast");

@@ -52,7 +52,7 @@ import java.util.stream.Stream;
  * @see ARQ
  * @see FN
  */
-public class AVCLibraryMaker {
+public class SPINLibraryMaker {
 
     public static void main(String... args) {
         OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
@@ -254,6 +254,10 @@ public class AVCLibraryMaker {
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, AVC.vararg)
                         .addProperty(SPL.valueType, RDFS.Literal)));
+        SPIF.buildString.inModel(m).addProperty(SPIN.constraint, m.createResource()
+                .addProperty(RDF.type, SPL.Argument)
+                .addProperty(SPL.predicate, AVC.vararg)
+                .addProperty(SPL.valueType, XSD.xstring));
 
         // FN:round
         FN.round.inModel(m)

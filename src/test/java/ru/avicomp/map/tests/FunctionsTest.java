@@ -86,7 +86,7 @@ public class FunctionsTest {
         ONTOLOGY(16, FunctionFilter.ONTOLOGY),
         STRING(55, FunctionFilter.STRING),
         AGGREGATE(1, FunctionFilter.AGGREGATE),
-        VARARG(3, FunctionFilter.VARARG),
+        VARARG(4, FunctionFilter.VARARG),
         TARGET_TYPE(10, FunctionFilter.TARGET),
         TARGET_CLASS(TARGET_TYPE.count, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPINMAP.TargetFunctions));
 
