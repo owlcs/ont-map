@@ -6,7 +6,7 @@
 
     <groupId>ru.avicomp</groupId>
     <artifactId>ontmap</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -55,12 +55,6 @@
             <groupId>ru.avicomp</groupId>
             <artifactId>ontapi</artifactId>
             <version>${version.ontapi}</version>
-        </dependency>
-        <!-- todo: xerces is temporary added due to upgrade jena-arq from 3.7.0 -> 3.8.0. remove it! -->
-        <dependency>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-            <version>2.11.0</version>
         </dependency>
         <!-- the last available spin-api (now it is removed from shacl)-->
         <dependency>

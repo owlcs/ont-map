@@ -25,6 +25,10 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.PropertyChainHelperPFunction;
 import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.vocabulary.SPIN;
+import ru.avicomp.map.spin.functions.spif.buildString;
+import ru.avicomp.map.spin.functions.spif.buildStringFromRDFList;
+import ru.avicomp.map.spin.functions.spif.buildURI;
+import ru.avicomp.map.spin.functions.spif.buildUniqueURI;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 
@@ -33,8 +37,10 @@ import java.util.Optional;
 
 /**
  * A helper to register builtin (SPIF) and some common (SPIN) functions.
- * SPIF functions is getting from Topbraid Composer Free Edition (see org.topbraid.spin.functions_*.jar), ver 5.2.2.
- * New topbraid do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
+ * SPIF functions is getting from Topbraid Composer Free Edition
+ * (see org.topbraid.spin.functions_*.jar, {@code org:topbraid:spin.functions} in pom dependencies), ver 5.2.2.
+ * Note that new Topbraid do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
+ * <p>
  * Created by @szuev on 15.04.2018.
  *
  * @see SPIF
@@ -79,8 +85,8 @@ class SPINRegistry {
         registerSPIFFunction("shortestObjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestObjectsPathFunction");
         registerSPIFFunction("shortestSubjectsPath", "org.topbraid.spin.functions.internal.misc.ShortestSubjectsPathFunction");
         // string:
-        registerSPIFFunction("buildStringFromRDFList", "org.topbraid.spin.functions.internal.string.BuildStringFromRDFListFunction");
-        registerSPIFFunction("buildString", "org.topbraid.spin.functions.internal.string.BuildStringFunction");
+        registerSPIFFunction("buildStringFromRDFList", buildStringFromRDFList.class);
+        registerSPIFFunction("buildString", buildString.class);
         registerSPIFFunction("camelCase", "org.topbraid.spin.functions.internal.string.CamelCaseFunction");
         registerSPIFFunction("convertSPINRDFToString", "org.topbraid.spin.functions.internal.string.ConvertSPINRDFToStringFunction");
         registerSPIFFunction("decimalFormat", "org.topbraid.spin.functions.internal.string.DecimalFormatFunction");
@@ -100,11 +106,12 @@ class SPINRegistry {
         registerSPIFFunction("trim", "org.topbraid.spin.functions.internal.string.TrimFunction");
         registerSPIFFunction("upperCase", "org.topbraid.spin.functions.internal.string.UpperCaseFunction");
         registerSPIFFunction("unCamelCase", "org.topbraid.spin.functions.internal.string.UnCamelCaseFunction");
-        registerSPIFFunction("buildURI", "org.topbraid.spin.functions.internal.string.BuildURIFunction");
-        registerSPIFFunction("buildUniqueURI", "org.topbraid.spin.functions.internal.string.BuildUniqueURIFunction");
+        registerSPIFFunction("buildURI", buildURI.class);
+        registerSPIFFunction("buildUniqueURI", buildUniqueURI.class);
         // uri
         registerSPIFFunction("isValidURI", "org.topbraid.spin.functions.internal.uri.IsValidURIFunction");
-        // magical
+
+        /* // disabled: ONT-MAP does not support property (magic) functions
         registerSPIFPropertyFunction("evalPath", "org.topbraid.spin.functions.internal.magic.EvalPathPFunction");
         registerSPIFPropertyFunction("for", "org.topbraid.spin.functions.internal.magic.ForPFunction");
         registerSPIFPropertyFunction("foreach", "org.topbraid.spin.functions.internal.magic.ForeachPFunction");
@@ -112,6 +119,7 @@ class SPINRegistry {
         registerSPIFPropertyFunction("prefix", "org.topbraid.spin.functions.internal.magic.PrefixPFunction");
         registerSPIFPropertyFunction("range", "org.topbraid.spin.functions.internal.magic.RangePFunction");
         registerSPIFPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
+        */
         return this;
     }
 
@@ -129,21 +137,25 @@ class SPINRegistry {
 
     private void registerSPIFFunction(String localName, Class functionClass) {
         functionRegistry.put(SPIF.NS + localName, functionClass);
-        functionRegistry.put(SPINMAPL.SMF_NS + localName, functionClass); //?
+        functionRegistry.put(SPINMAPL.SMF_NS + localName, functionClass);
     }
 
+    /* // disabled: ONT-MAP does not support property (magic) functions.
     private void registerSPIFPropertyFunction(String localName, Class functionClass) {
         propertyFunctionRegistry.put(SPIF.NS + localName, functionClass);
-        propertyFunctionRegistry.put("http://www.topbraid.org/tops#" + localName, functionClass); //?
+        propertyFunctionRegistry.put("http://www.topbraid.org/tops#" + localName, functionClass); // Just in case
     }
+    */
 
     private void registerSPIFFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerSPIFFunction(localName, c));
     }
 
+    /* // disabled: ONT-MAP does not support property (magic) functions.
     private void registerSPIFPropertyFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerSPIFPropertyFunction(localName, c));
     }
+    */
 
     private static Optional<Class> find(String name) {
         try {
