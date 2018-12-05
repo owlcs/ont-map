@@ -249,7 +249,7 @@ public class ExceptionsTest {
         try {
             m.createMapModel().validate(func1);
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
             assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
         }
@@ -262,7 +262,7 @@ public class ExceptionsTest {
         try {
             m.createMapModel().validate(func3);
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
             assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
         }
@@ -273,7 +273,7 @@ public class ExceptionsTest {
         try {
             m.createMapModel().validate(func4);
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_MAP_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
             MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
             assertCode(j2, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION);

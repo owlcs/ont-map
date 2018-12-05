@@ -665,7 +665,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        testFunction(func, exception(MAPPING_MAP_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
+        testFunction(func, exception(MAPPING_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
     /**

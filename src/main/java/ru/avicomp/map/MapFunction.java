@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A common interface for functions used while OWL2 -&gt; OWL2 mappings.
+ * A common interface for functions used while building OWL2 -&gt; OWL2 mappings.
  * It is not a part of jena model graph system (i.e. not a {@link org.apache.jena.rdf.model.RDFNode rdf-node}).
- * At the moment it is assumed that any string methods return absolute IRIs.
+ * At the moment it is assumed that any string methods must return absolute IRIs.
  * <p>
  * Created by @szuev on 06.04.2018.
  */
@@ -251,6 +251,7 @@ public interface MapFunction extends Description {
 
         /**
          * Lists all nested function calls.
+         * The returned Stream may contain duplicates.
          *
          * @return <b>not</b> distinct Stream of {@link MapFunction.Call}s
          */
@@ -302,8 +303,8 @@ public interface MapFunction extends Description {
          * then it is assumed that it is a plain (string) literal,
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          *
-         * @param predicate String, iri, not null
-         * @param value     String, value, not null.
+         * @param predicate String, {@link Arg#name()}, not {@code null}
+         * @param value     String, value, not {@code null}
          * @return this builder
          * @throws MapJenaException if wrong input
          */

@@ -57,7 +57,6 @@ public class SPIF {
     public static final Property argNumber = argProperty("number");
     public static final Property argPattern = argProperty("pattern");
 
-
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

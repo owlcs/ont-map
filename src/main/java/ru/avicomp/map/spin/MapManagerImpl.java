@@ -101,7 +101,7 @@ public class MapManagerImpl implements MapManager {
         this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
         this.arqFactory = new MapARQFactory();
         this.config = Objects.requireNonNull(conf, "Null config");
-        SPINRegistry.putAll(arqFactory.getFunctionRegistry(), arqFactory.getPropertyFunctionRegistry());
+        SPINRegistry.putAll(arqFactory);
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 

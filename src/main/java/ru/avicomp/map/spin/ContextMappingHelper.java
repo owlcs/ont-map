@@ -289,7 +289,8 @@ class ContextMappingHelper {
             // process default value
             if (expr.hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
                 Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
-                mapping.addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()), defaultValue);
+                mapping.addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()),
+                        defaultValue);
             }
         }
         return res;

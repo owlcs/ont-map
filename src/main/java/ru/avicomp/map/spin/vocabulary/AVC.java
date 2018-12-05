@@ -85,6 +85,7 @@ public class AVC {
     /**
      * An additional map-property function that is used to configure mapping-template-call
      * in order to pass a default value in case there is no data assertion on individual.
+     * This function may accept only properties belonging to context ({@code MapContext}).
      *
      * @see #asIRI
      */
@@ -94,6 +95,7 @@ public class AVC {
      * An additional map-property function that is used to configure mapping-template-call
      * in order to get a property (predicate) IRI as is,
      * where usually a value (object) from a data assertion is getting.
+     * This function may accept only properties belonging to context ({@code MapContext}).
      *
      * @see #withDefault
      */

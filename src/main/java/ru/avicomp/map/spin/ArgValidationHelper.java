@@ -38,11 +38,11 @@ import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_F
 import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE;
 
 /**
- * Auxiliary class, a helper to validate a {@link MapFunction.Arg function-call argument} values,
- * which could be either nested function or string representation of literal or resource
+ * Auxiliary class-helper intended to validate a {@link MapFunction.Arg function-call argument} values,
+ * which could be either nested function or string representation of literal or resource.
  * Just to relieve the main (context) class.
  */
-public class ArgValidationHelper {
+class ArgValidationHelper {
     private static final Set<Resource> PROPERTIES = Stream.of(RDF.Property,
             OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).collect(Iter.toUnmodifiableSet());
 

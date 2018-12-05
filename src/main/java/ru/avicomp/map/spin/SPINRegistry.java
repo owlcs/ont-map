@@ -39,7 +39,8 @@ import java.util.Optional;
  * A helper to register builtin (SPIF) and some common (SPIN) functions.
  * SPIF functions is getting from Topbraid Composer Free Edition
  * (see org.topbraid.spin.functions_*.jar, {@code org:topbraid:spin.functions} in pom dependencies), ver 5.2.2.
- * Note that new Topbraid do not use SPIN-API, but rather SHACL-API, which has changes in namespaces.
+ * Note that up-to-date Composer no longer uses the java SPIN-API implementation,
+ * but rather java SHACL-API as a successor, that has changes in namespaces.
  * <p>
  * Created by @szuev on 15.04.2018.
  *
@@ -47,19 +48,28 @@ import java.util.Optional;
  * @see SPIN
  * @see SPINMAPL
  */
-@SuppressWarnings("UnusedReturnValue")
+@SuppressWarnings({"SameParameterValue", "UnusedReturnValue", "WeakerAccess"})
 class SPINRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(SPINRegistry.class);
     private final FunctionRegistry functionRegistry;
     private final PropertyFunctionRegistry propertyFunctionRegistry;
 
     private SPINRegistry(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
-        this.functionRegistry = Objects.requireNonNull(functionRegistry, "Null " + FunctionRegistry.class.getName());
-        this.propertyFunctionRegistry = Objects.requireNonNull(propertyFunctionRegistry, "Null " + PropertyFunctionRegistry.class.getName());
+        this.functionRegistry = Objects.requireNonNull(functionRegistry, "Null function registry");
+        this.propertyFunctionRegistry = propertyFunctionRegistry;
+    }
+
+    static void putAll(MapARQFactory factory) {
+        // right now there are no (magic) property functions in ONT-MAP:
+        putAll(factory.getFunctionRegistry(), null);
     }
 
     static void putAll(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {
         new SPINRegistry(functionRegistry, propertyFunctionRegistry).initSPIN().initSPIF();
+    }
+
+    private boolean skipPropertyFunctions() {
+        return propertyFunctionRegistry == null;
     }
 
     private SPINRegistry initSPIF() {
@@ -110,8 +120,8 @@ class SPINRegistry {
         registerSPIFFunction("buildUniqueURI", buildUniqueURI.class);
         // uri
         registerSPIFFunction("isValidURI", "org.topbraid.spin.functions.internal.uri.IsValidURIFunction");
+        if (skipPropertyFunctions()) return this;
 
-        /* // disabled: ONT-MAP does not support property (magic) functions
         registerSPIFPropertyFunction("evalPath", "org.topbraid.spin.functions.internal.magic.EvalPathPFunction");
         registerSPIFPropertyFunction("for", "org.topbraid.spin.functions.internal.magic.ForPFunction");
         registerSPIFPropertyFunction("foreach", "org.topbraid.spin.functions.internal.magic.ForeachPFunction");
@@ -119,7 +129,6 @@ class SPINRegistry {
         registerSPIFPropertyFunction("prefix", "org.topbraid.spin.functions.internal.magic.PrefixPFunction");
         registerSPIFPropertyFunction("range", "org.topbraid.spin.functions.internal.magic.RangePFunction");
         registerSPIFPropertyFunction("split", "org.topbraid.spin.functions.internal.magic.SplitPFunction");
-        */
         return this;
     }
 
@@ -128,6 +137,8 @@ class SPINRegistry {
         functionRegistry.put(SPIN.eval.getURI(), new EvalFunction());
         functionRegistry.put(SPIN.evalInGraph.getURI(), new EvalInGraphFunction());
         functionRegistry.put(SPIN.violatesConstraints.getURI(), new ViolatesConstraintsFunction());
+        if (skipPropertyFunctions()) return this;
+
         propertyFunctionRegistry.put(SPIN.construct.getURI(), ConstructPFunction.class);
         propertyFunctionRegistry.put(SPIN.constructViolations.getURI(), ConstructViolationsPFunction.class);
         propertyFunctionRegistry.put(SPIN.select.getURI(), SelectPFunction.class);
@@ -140,22 +151,18 @@ class SPINRegistry {
         functionRegistry.put(SPINMAPL.SMF_NS + localName, functionClass);
     }
 
-    /* // disabled: ONT-MAP does not support property (magic) functions.
     private void registerSPIFPropertyFunction(String localName, Class functionClass) {
         propertyFunctionRegistry.put(SPIF.NS + localName, functionClass);
         propertyFunctionRegistry.put("http://www.topbraid.org/tops#" + localName, functionClass); // Just in case
     }
-    */
 
     private void registerSPIFFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerSPIFFunction(localName, c));
     }
 
-    /* // disabled: ONT-MAP does not support property (magic) functions.
     private void registerSPIFPropertyFunction(String localName, String functionClass) {
         find(functionClass).ifPresent(c -> registerSPIFPropertyFunction(localName, c));
     }
-    */
 
     private static Optional<Class> find(String name) {
         try {

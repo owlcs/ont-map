@@ -119,7 +119,7 @@ public class MiscMapTest {
     }
 
     @Test
-    public void testInferenceOnMappinWithVarangBuildStringFunction() {
+    public void testInferenceOnMappingWithVarargBuildStringFunction() {
         OntGraphModel src = new SplitMapTest().assembleSource();
         OntGraphModel dst = new ConditionalMapTest().assembleTarget();
         TestUtils.debug(src);
@@ -154,7 +154,7 @@ public class MiscMapTest {
             Assert.assertEquals(ns, i.getNameSpace());
             String[] names = i.getLocalName().split("-");
             Assert.assertEquals(3, names.length);
-            String n = i.getRequiredProperty(dstName).getLiteral().getString();
+            String n = i.getRequiredProperty(dstName).getString();
             Assert.assertEquals(names[2] + ", " + names[0] + " " + names[1], n);
         }).count());
     }
