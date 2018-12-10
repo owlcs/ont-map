@@ -134,7 +134,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
                 // register custom functions
                 manager.asMapModel(g);
             }
-            content.add((OntologyModel) ont);
+            content.add(new OntInfo((OntologyModel) ont));
         } finally {
             lock.writeLock().unlock();
         }
@@ -144,7 +144,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     public Stream<OWLOntology> ontologies() {
         lock.readLock().lock();
         try {
-            return content.values().filter(x -> !isLibraryModel(x.id())).map(OntInfo::get);
+            return content.values().filter(x -> !isLibraryModel(x.getOntologyID())).map(OntInfo::get);
         } finally {
             lock.readLock().unlock();
         }
