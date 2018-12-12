@@ -2,22 +2,20 @@
 
 ## Summary
 **ONT-MAP** provides a convenient way to build a mapping between two [OWL2](https://www.w3.org/TR/owl2-overview/) ontologies 
-and also an inferencing-engine to transfer and transform the ontological data in accordance with that mapping. 
-The mapping can be serialized as a [SPIN](http://spinrdf.org/)-rules RDF file, and, therefore, is Topbraid-compatible.
+and also an inference-engine to transfer and transform the ontological data in accordance with that mapping and OWL2 schemas. 
+The mapping can be serialized as a [SPIN](http://spinrdf.org/)-rules RDF file, and, therefore, is [Topbraid](https://www.topquadrant.com/tools/ide-topbraid-composer-maestro-edition/) compatible.
 
 ## Motivation
 Pure SPIN, which is an RDF-superstructure over SPARQL, is a fairly complex language when it comes to mapping between ontologies, 
 and it is incompatible with OWL2.
 **ONT-MAP** offers a way for building mappings without any knowledge about SPIN or SPARQL, 
-just only through top-level operations and objects, which can be represented as some pseudo-language.
-The interfaces and implementations are separated, 
-and it is planned in the future to switch from SPIN to some another inferencing language, such as SHACL.
+just only through top-level operations and objects, which can be represented as some high-level pseudo-language.
 
 ## Dependencies 
  - **[ONT-API, ver 1.4.0-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
- - [Jena-ARQ, ver 3.8.0](https://github.com/apache/jena) transitively from ONT-API
- - [OWL-API, ver 5.1.7](https://github.com/owlcs/owlapi) transitively from ONT-API
+ - [Jena-ARQ, ver 3.9.0](https://github.com/apache/jena) transitively from ONT-API
+ - [OWL-API, ver 5.1.8](https://github.com/owlcs/owlapi) transitively from ONT-API
  
 ## License
 * Apache License Version 2.0
@@ -25,44 +23,43 @@ and it is planned in the future to switch from SPIN to some another inferencing 
 ### Notes, propositions and examples
 * _ru.avicomp.map.Managers_ is the main class to access to the system.
 * API provides access only to those spin functions which acceptable with OWL2 model in mapping terms, all other are hidden or rejected. 
-Examples of reasons of exclusion/hide:
-    - `smf:lastModified` - function to get the file timestamp. It is excluded since API should not work with the file system or other resources. 
-    - `sp:notExists` - function to use as part of SPARQL query (filter). API should not allow explicit queries as functional parameters.  
-    - `spinmap:targetResource` - is used implicitly to bind two contexts, in order to control behaviour it is better to prohibit any other usage. 
-    - `spl:primaryKeyURIStart` - a part of a complex and turbid SPIN-API mechanism, right now I do not see any possibility to use this functionality.
+Some examples of reasons of exclusion/hide:
+    - `smf:lastModified` - function to get the file timestamp. It is excluded since API does not work with the file system or other system resources. 
+    - `sp:notExists` - function to use as part of SPARQL query (in filter). API does not allow explicit queries as functional parameters.  
+    - `spinmap:targetResource` - is used implicitly to bind several contexts and create target individuals, in order to control behaviour it is prohibited to use exlicitly. 
+    - `spl:primaryKeyURIStart` - a part of a complex and turbid SPIN-API mechanisms, right now I do not see any possibility and necessity to use this functionality. A provided set of functions must be enough to express any mapping between two (or less, or more) OWL2 ontologies with a reasonable schema and data.
     - etc.
-* In addition to the standard spin functions (from spif, spinmap, fn and other spin vocabularies) 
-there are also ONT-MAP functions (such as `avc:UUID`, `avc:currentIndividual`, etc), math functions (`math:log10`, `math:atan2`) and some other. 
-So, a set of functions that can be used in mappings, has been expanded from one side, and narrowed with another.  
+* In addition to the standard spin functions (from `spif`, `spinmap`, `fn` and other builtin spin vocabularies) 
+there are also ONT-MAP functions (such as `avc:UUID`, `avc:currentIndividual`, etc), math functions (`math:log10`, `math:atan2`) and other. 
+So, a set of functions that can be used while mapping, has been expanded from one side and narrowed with another.  
 * All functions are supplemented with complete information about arguments and types to be used as elements of constructor in GUI, any inappropriate usage (e.g. incompatible types) causes an error.
-* API can work only with OWL2 entities: the context arrow connects two OWL class expressions [OntCE](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntCE.java), 
-to make contexts references OWL object property ([OntOPE](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntOPE.java)) is used, 
-and to map data (make a property bridge in Diagram) OWL annotation ([OntNAP](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNAP.java)) and OWL datatype ([OntNDP](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNDP.java)) properties are used.
-* The mapping inferencing creates OWL Named Individuals [OntIndividual.Named](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
-Anonymous individuals are theoretically possible, 
-but currently are not supported due to SPIN-API limitations related to target functions.
+* API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntCE.java), 
+to make contexts references [OWL Object Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntOPE.java) is used, 
+and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNAP.java) and [OWL Datatype Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNDP.java) are used.
+* The mapping inference engine creates [OWL Named Individuals](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
+Although, anonymous individuals are theoretically possible, currently they are not supported due to SPIN-API limitations related to target functions.
 * There is also a `ru.avicomp.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, which can be used to draw class-boxes with all related properties.
-* A simple mapping example with inferencing:
+* A simple mapping example with inference:
 
         // get the manager:
         MapManager manager = Managers.getMapManager();
         // get built-in prefixes:
         PrefixMapping pm = manager.prefixes();
-        // get some function: 
+        // get some target-function: 
         MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
-        // get the source class from some ontology:
-        OntCE source = ...
-        // get the target class from some ontology:
-        OntCE target = ...
+        // get the source class from the source schema ontology:
+        OntCE sourceClass = source.getOntEntity(OntCE.class, ...);
+        // get the target class from the target schema ontology:
+        OntCE targetClass = target.getOntEntity(OntCE.class, ...);
         // build target function-call:
         String arg = pm.expandPrefix("spinmapl:targetNamespace");
         MapFunction call = changeNamespace.create().add(arg, "http://example.com#").build();
-        // create mappin-model:
+        // create a mappin-model:
         MapModel mapping = manager.createMapModel();
         // build simple map-context:
-        mapping.createContext(source, target, call);
+        mapping.createContext(sourceClass, targetClass, call);
         // run spin-inference:
-        manager.getInferenceEngine().run(mapping, ..., ...);
+        manager.getInferenceEngine(mapping).run(source, target);
         
 * Printing all supported functions:
 
@@ -73,9 +70,4 @@ but currently are not supported due to SPIN-API limitations related to target fu
                 .thenComparing(MapFunction::name))
                 .forEach(System.out::println);
                 
-### TODO:
-* more aggregate functions (currently there is only single)
-* spin support for all fn-functions
-* mechanism to save in a manager a function-call chain as a custom function       
-* bugfix and more tests 
-* etc         
+    
