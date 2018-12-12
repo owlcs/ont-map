@@ -399,7 +399,7 @@ public abstract class MapFunctionImpl implements MapFunction {
             MapJenaException.notNull(val, "Null argument value");
             ArgImpl arg = getFunction().getArg(predicate);
             if (!arg.isAssignable())
-                throw exception(FUNCTION_WRONG_ARGUMENT).add(Key.ARG, predicate).build();
+                throw exception(FUNCTION_ARGUMENT_CANNOT_BE_ASSIGNED).add(Key.ARG, predicate).build();
 
             if (arg.isVararg()) {
                 int index = nextIndex();
@@ -407,19 +407,23 @@ public abstract class MapFunctionImpl implements MapFunction {
             }
 
             if (!(val instanceof String)) {
-                if (val instanceof Builder) {
-                    if (this.equals(val)) {
-                        throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
-                    }
-                    // todo: if arg is rdf:Property no nested function must be allowed ?
-                    /*if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
-                        // todo: undefined should be allowed
-                        throw new MapJenaException("Void: " + ((Builder) val).getFunction());
-                    }*/
-                } else {
+                if (!(val instanceof Builder)) {
                     throw new MapJenaException.IllegalState("Wrong argument type: "
                             + val.getClass().getName() + ", " + val);
                 }
+                if (this.equals(val)) {
+                    throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
+                }
+                Builder nested = (Builder) val;
+                if (nested.getFunction().isTarget()) {
+                    throw exception(FUNCTION_NESTED_TARGET_FUNCTION)
+                            .add(Key.ARG, predicate).add(Key.ARG_VALUE, nested.getFunction().name()).build();
+                }
+                // todo: if arg is rdf:Property no nested function must be allowed ?
+                /*if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
+                    // todo: undefined should be allowed
+                    throw new MapJenaException("Void: " + ((Builder) val).getFunction());
+                }*/
             }
             input.put(arg, val);
             return this;

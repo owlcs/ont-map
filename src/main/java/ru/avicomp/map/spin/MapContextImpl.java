@@ -375,8 +375,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     protected void validatePropertyMapping(MapFunction.Call func) throws MapJenaException {
-        // todo: must be non-target ?
-        testFunction(func, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION);
+        if (testFunction(func, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
+            throw exception(PROPERTY_BRIDGE_REQUIRE_NON_TARGET_FUNCTION).addFunction(func).build();
+        }
     }
 
     protected void validatePropertyFilter(MapFunction.Call func) throws MapJenaException {
