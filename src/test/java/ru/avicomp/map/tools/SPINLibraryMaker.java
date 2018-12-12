@@ -85,7 +85,8 @@ public class SPINLibraryMaker {
                 XSD.nonPositiveInteger, XSD.negativeInteger,
                 XSD.nonNegativeInteger, XSD.positiveInteger,
                 XSD.xlong, XSD.xint, XSD.xshort, XSD.xbyte,
-                XSD.unsignedLong, XSD.unsignedInt, XSD.unsignedShort, XSD.unsignedByte).map(r -> m.getOntEntity(OntDT.class, r)).collect(Collectors.toList());
+                XSD.unsignedLong, XSD.unsignedInt, XSD.unsignedShort, XSD.unsignedByte)
+                .map(r -> m.getOntEntity(OntDT.class, r)).collect(Collectors.toList());
         numeric.addEquivalentClass(m.createUnionOfDataRange(numberDRs));
 
         // AVC:MagicFunctions
@@ -96,7 +97,6 @@ public class SPINLibraryMaker {
                 .addProperty(RDFS.label, "Magic functions")
                 .addProperty(RDFS.comment, "A special collection of functions provided by AVC that require special treatment while inference\n" +
                         "and therefore may not work as expected in Topbraid Composer.");
-
         // AVC:AggregateFunctions
         AVC.AggregateFunctions.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)
@@ -105,6 +105,13 @@ public class SPINLibraryMaker {
                 .addProperty(RDFS.label, "Aggregate functions")
                 .addProperty(RDFS.comment,
                         "A collection of functions that uses SPARQL aggregate functionality (i.e. COUNT, SUM, MIN, MAX, GROUP_CONCAT).");
+        // AVC:PropertyFunctions
+        AVC.PropertyFunctions.inModel(m)
+                .addProperty(RDF.type, SPIN.Function)
+                .addProperty(RDFS.subClassOf, SPIN.Functions)
+                .addProperty(SPIN.abstract_, Models.TRUE)
+                .addProperty(RDFS.label, "Mapping functions")
+                .addProperty(RDFS.comment, "Describes the functions that are intended to manage mapping template call.");
 
         // Customize mathematical functions:
 

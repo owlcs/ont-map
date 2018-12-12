@@ -60,7 +60,8 @@ public class LIBLibraryMaker {
         OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.LIB_URI);
         id.setVersionIRI(id.getURI() + "#1.0");
-        id.addComment("An additional library of functions that can be expressed through SPARQL or the other functions from a standard spin-library.\n" +
+        id.addComment("An additional library of functions that can be expressed through SPARQL " +
+                "or the other functions from a standard spin-library.\n" +
                 "It is assumed that this ontology will not be included to the \"owl:import\" statement of mappings, produces by the API.\n" +
                 "Instead, any of the functions below will be printed directly to the graph of mapping, which use that function, " +
                 "and therefore the library can be considered just as templates collection.", null);
@@ -72,7 +73,7 @@ public class LIBLibraryMaker {
         // AVC:withDefault
         AVC.withDefault.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
+                .addProperty(RDFS.subClassOf, AVC.PropertyFunctions)
                 .addProperty(SPIN.returnType, RDF.Property)
                 .addProperty(RDFS.seeAlso, SPINMAP.equals)
                 .addProperty(RDFS.seeAlso, AVC.asIRI)
@@ -96,7 +97,7 @@ public class LIBLibraryMaker {
         // AVC:asIRI
         AVC.asIRI.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)
-                .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
+                .addProperty(RDFS.subClassOf, AVC.PropertyFunctions)
                 .addProperty(SPIN.returnType, RDF.Property)
                 .addProperty(RDFS.seeAlso, SPINMAP.equals)
                 .addProperty(RDFS.seeAlso, AVC.withDefault)

@@ -47,7 +47,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Assumed to be immutable in program life-cycle.
  * Created by @szuev on 09.04.2018.
  */
-@SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
+@SuppressWarnings({"WeakerAccess"})
 public abstract class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
 
@@ -108,9 +108,9 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * Answers if a function is inherited from a given super class.
-     * Currently for debug.
-     * Composers super classes:
+     * Answers {@code true} if this function is inherited from the given super class.
+     * Currently it is mostly for debug, not for public usage.
+     * All possible in ONT-MAP function classes:
      * <ul>
      * <li>{@code spin:Functions} - a super class for all spin-functions</li>
      * <li>{@code spin:MagicProperties}</li>
@@ -122,6 +122,9 @@ public abstract class MapFunctionImpl implements MapFunction {
      * <li>{@code spl:OntologyFunctions}</li>
      * <li>{@code spl:StringFunctions}</li>
      * <li>{@code spl:URIFunctions}</li>
+     * <li>{@link AVC#MagicFunctions avc:MagicFunctions}</li>
+     * <li>{@link AVC#PropertyFunctions avc:PropertyFunctions}</li>
+     * <li>{@link AVC#AggregateFunctions avc:AggregateFunctions}</li>
      * </ul>
      *
      * @param superClass {@link Resource}

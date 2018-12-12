@@ -128,7 +128,7 @@ avc:withDefault  a          spin:Function ;
         rdfs:comment        "An ontology function for passing default values into a property mapping.\nIt is used for mapping data/annotation property assertion that absences in a particular source individual.\nLike spinmap:equals it returns the primary input property (?arg1) unchanged." ;
         rdfs:label          "With Default" ;
         rdfs:seeAlso        spinmap:equals , avc:asIRI ;
-        rdfs:subClassOf     spl:OntologyFunctions ;
+        rdfs:subClassOf     avc:PropertyFunctions ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( spin:_arg1 ) ;
                               sp:where            ()
@@ -150,7 +150,7 @@ avc:asIRI  a                spin:Function ;
         rdfs:comment        "An ontology function for passing property IRI as it is.\nAny other map-functions will actually accept a property assertion value found by mapping template call,\nwhile this function forces not to get a value but use a predicate IRI instead." ;
         rdfs:label          "As IRI" ;
         rdfs:seeAlso        avc:withDefault , spinmap:equals ;
-        rdfs:subClassOf     spl:OntologyFunctions ;
+        rdfs:subClassOf     avc:PropertyFunctions ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( spin:_arg1 ) ;
                               sp:where            ()

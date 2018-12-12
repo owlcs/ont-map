@@ -83,7 +83,7 @@ public class FunctionsTest {
         MATH(33, FunctionFilter.MATH),
         MISC(26, FunctionFilter.MISC),
         URI(5, FunctionFilter.URI),
-        ONTOLOGY(16, FunctionFilter.ONTOLOGY),
+        ONTOLOGY(14, FunctionFilter.ONTOLOGY),
         STRING(55, FunctionFilter.STRING),
         AGGREGATE(1, FunctionFilter.AGGREGATE),
         VARARG(4, FunctionFilter.VARARG),

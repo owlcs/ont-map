@@ -42,13 +42,28 @@ public class AVC {
     public static final String DEFAULT_PREDICATE_SUFFIX = "DefaultValue";
 
     /**
-     * A function class-type to indicate that function is a "magic" and may not work as expected in Composer.
+     * A function-class to indicate that function is a "magic" and may not work in Composer for any reason.
+     * Do not confuse with {@link org.topbraid.spin.vocabulary.SPIN#MagicProperties}.
+     *
+     * @see #currentIndividual
      */
     public static final Resource MagicFunctions = resource("MagicFunctions");
     /**
-     * A function class-type to indicate that spin-function use SPARQL aggregate operators.
+     * A function-class to indicate that spin-function use SPARQL aggregate operators.
+     *
+     * @see #groupConcat
      */
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
+    /**
+     * A class-indicator for functions that are intended to manage property mapping template calls.
+     * Such a function accepts a {@link Property} that belongs to a context with a property mapping,
+     * which is managed by this function.
+     * Do not confuse with {@link org.topbraid.spin.vocabulary.SPIN#MagicProperties}.
+     *
+     * @see #asIRI
+     * @see #withDefault
+     */
+    public static final Resource PropertyFunctions = resource("PropertyFunctions");
 
     /**
      * A datatype, that is used as return type of function and argument value type in unclear case:
@@ -68,17 +83,23 @@ public class AVC {
      * An additional no-arg map-target function, for debugging and for convenience' sake.
      * It generates individuals with uri like {@code <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>}.
      * Can be used instead of {@code spinmapl:self}.
+     *
+     * @see org.topbraid.spin.vocabulary.SPINMAP#TargetFunctions
      */
     public static final Resource UUID = resource("UUID");
 
     /**
      * An additional single-arg map-target function, for debugging and for convenience' sake.
      * It generates one individual with specified iri.
+     *
+     * @see org.topbraid.spin.vocabulary.SPINMAP#TargetFunctions
      */
     public static final Resource IRI = resource("IRI");
 
     /**
      * An additional map-property function, that is an analogue of {@code spl:object}, but with filter.
+     *
+     * @see org.topbraid.spin.vocabulary.SPL#OntologyFunctions
      */
     public static final Resource objectWithFilter = resource("objectWithFilter");
 
@@ -87,7 +108,7 @@ public class AVC {
      * in order to pass a default value in case there is no data assertion on individual.
      * This function may accept only properties belonging to context ({@code MapContext}).
      *
-     * @see #asIRI
+     * @see #PropertyFunctions
      */
     public static final Resource withDefault = resource("withDefault");
 
@@ -97,7 +118,7 @@ public class AVC {
      * where usually a value (object) from a data assertion is getting.
      * This function may accept only properties belonging to context ({@code MapContext}).
      *
-     * @see #withDefault
+     * @see #PropertyFunctions
      */
     public static final Resource asIRI = resource("asIRI");
 
@@ -107,11 +128,14 @@ public class AVC {
      * but which is intended to work for any link from a function-chain and in all circumstances.
      *
      * @see ru.avicomp.map.spin.infer.InferenceEngineImpl.ProcessedQuery#run(Resource) explanation.
+     * @see #MagicFunctions
      */
     public static final Resource currentIndividual = resource("currentIndividual");
 
     /**
      * An aggregate map-property function to concat values from an assertions with the same individual and property.
+     *
+     * @see #AggregateFunctions
      */
     public static final Resource groupConcat = resource("groupConcat");
 

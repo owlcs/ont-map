@@ -49,6 +49,12 @@ avc:MagicFunctions  a    spin:Function ;
         rdfs:subClassOf  spin:Functions ;
         spin:abstract    true .
 
+avc:PropertyFunctions  a  spin:Function ;
+        rdfs:comment     "Describes the functions that are intended to manage mapping template call." ;
+        rdfs:label       "Mapping functions" ;
+        rdfs:subClassOf  spin:Functions ;
+        spin:abstract    true .
+
 fn:abs  avc:hidden  "Duplicates the function sp:abs." .
 
 sp:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
