@@ -49,15 +49,16 @@ public class AVC {
      */
     public static final Resource MagicFunctions = resource("MagicFunctions");
     /**
-     * A function-class to indicate that spin-function use SPARQL aggregate operators.
+     * A function-class to indicate that spin-function uses SPARQL aggregate operators.
      *
      * @see #groupConcat
      */
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
     /**
-     * A class-indicator for functions that are intended to manage property mapping template calls.
-     * Such a function accepts a {@link Property} that belongs to a context with a property mapping,
+     * A class-indicator for functions that are intended to manage property mapping (template) calls.
+     * Such a function accepts a {@link Property} that belongs to a context containing a property mapping,
      * which is managed by this function.
+     * Also, a function, that is {@code rdfs:subClassOf} {@code PropertyFunctions}, cannot contain nested functions.
      * Do not confuse with {@link org.topbraid.spin.vocabulary.SPIN#MagicProperties}.
      *
      * @see #asIRI

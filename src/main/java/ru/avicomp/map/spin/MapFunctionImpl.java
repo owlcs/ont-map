@@ -108,6 +108,17 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
+     * Answers {@code true}
+     * if this function has the object {@link AVC#PropertyFunctions} for a predicate {@code rdfs:subClassOf}.
+     * That means it is used to manage mapping template call.
+     *
+     * @return boolean
+     */
+    protected boolean isMappingPropertyFunction() {
+        return isInheritedOfClass(AVC.PropertyFunctions);
+    }
+
+    /**
      * Answers {@code true} if this function is inherited from the given super class.
      * Currently it is mostly for debug, not for public usage.
      * All possible in ONT-MAP function classes:
@@ -384,53 +395,12 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
     }
 
+    /**
+     * The implementation of {@link Builder} to produce {@link CallImpl}.
+     */
     public class BuilderImpl implements Builder {
         // either string or builder
         private final Map<ArgImpl, Object> input = new HashMap<>();
-
-        @Override
-        public Builder add(String arg, String value) {
-            return put(arg, value);
-        }
-
-        @Override
-        public Builder add(String arg, Builder other) {
-            return put(arg, other);
-        }
-
-        protected Builder put(String predicate, Object val) {
-            MapJenaException.notNull(val, "Null argument value");
-            ArgImpl arg = getFunction().getArg(predicate);
-            if (!arg.isAssignable())
-                throw exception(FUNCTION_ARGUMENT_CANNOT_BE_ASSIGNED).add(Key.ARG, predicate).build();
-
-            if (arg.isVararg()) {
-                int index = nextIndex();
-                arg = new ArgImpl(arg, SP.getArgProperty(index).getURI());
-            }
-
-            if (!(val instanceof String)) {
-                if (!(val instanceof Builder)) {
-                    throw new MapJenaException.IllegalState("Wrong argument type: "
-                            + val.getClass().getName() + ", " + val);
-                }
-                if (this.equals(val)) {
-                    throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
-                }
-                Builder nested = (Builder) val;
-                if (nested.getFunction().isTarget()) {
-                    throw exception(FUNCTION_NESTED_TARGET_FUNCTION)
-                            .add(Key.ARG, predicate).add(Key.ARG_VALUE, nested.getFunction().name()).build();
-                }
-                // todo: if arg is rdf:Property no nested function must be allowed ?
-                /*if (AVC.undefined.getURI().equals(((Builder) val).getFunction().returnType())) {
-                    // todo: undefined should be allowed
-                    throw new MapJenaException("Void: " + ((Builder) val).getFunction());
-                }*/
-            }
-            input.put(arg, val);
-            return this;
-        }
 
         @Override
         public MapFunctionImpl getFunction() {
@@ -438,7 +408,63 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public Call build() throws MapJenaException {
+        public BuilderImpl add(String arg, String value) {
+            return put(arg, value);
+        }
+
+        @Override
+        public BuilderImpl add(String arg, Builder other) {
+            return put(arg, other);
+        }
+
+        protected BuilderImpl put(String predicate, Object val) {
+            MapJenaException.notNull(val, "Null argument value");
+            MapFunctionImpl func = getFunction();
+            ArgImpl arg = func.getArg(predicate);
+            if (!arg.isAssignable())
+                throw exception(FUNCTION_ARGUMENT_CANNOT_BE_ASSIGNED).addArg(arg).build();
+
+            if (arg.isVararg()) {
+                int index = nextIndex();
+                arg = new ArgImpl(arg, SP.getArgProperty(index).getURI());
+            }
+
+            if (!(val instanceof String)) {
+                if (!(val instanceof BuilderImpl)) {
+                    throw new MapJenaException.IllegalArgument("Wrong argument type: "
+                            + val.getClass().getName() + ", " + val);
+                }
+                if (this.equals(val)) { // todo: more accurate checking for recursion
+                    throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
+                }
+                // todo: following checking move to build (validate) (see #17)
+                MapFunctionImpl nested = ((BuilderImpl) val).getFunction();
+                if (func.isMappingPropertyFunction()) {
+                    // cannot contain duplicated property functions in the chain
+                    if (listInputFunctions().map(MapFunctionImpl::name).anyMatch(x -> x.equals(nested.name()))) {
+                        throw exception(FUNCTION_NESTED_DUPLICATE_FUNCTION)
+                                .addArg(arg)
+                                .add(Key.ARG_VALUE, nested.name()).build();
+                    }
+                    // may contain only another property function or literal
+                    if (!nested.isMappingPropertyFunction()) {
+                        throw exception(FUNCTION_REQUIRE_LITERAL_VALUE)
+                                .addArg(arg)
+                                .add(Key.ARG_VALUE, nested.name()).build();
+                    }
+                }
+                if (nested.isTarget()) {
+                    throw exception(FUNCTION_NESTED_TARGET_FUNCTION)
+                            .addArg(arg)
+                            .add(Key.ARG_VALUE, nested.name()).build();
+                }
+            }
+            input.put(arg, val);
+            return this;
+        }
+
+        @Override
+        public CallImpl build() throws MapJenaException {
             Map<ArgImpl, Object> map = new HashMap<>();
             input.forEach((key, value) -> {
                 Object v;
@@ -457,6 +483,7 @@ public abstract class MapFunctionImpl implements MapFunction {
                 MapFunctionImpl.this.arg(SPINMAP.source.getURI())
                         .ifPresent(a -> map.put(a, SPINMAP.sourceVariable.getURI()));
             }
+            // todo: move the following code to validate ?
             // check all required arguments are assigned
             Exceptions.Builder error = exception(FUNCTION_NO_REQUIRED_ARG);
             getFunction().listArgs().forEach(a -> {
@@ -465,7 +492,7 @@ public abstract class MapFunctionImpl implements MapFunction {
                     return;
                 String def = a.defaultValue();
                 if (def == null) {
-                    error.add(Key.ARG, a.name());
+                    error.addArg(a);
                 } else {
                     map.put(a, def);
                 }
@@ -475,7 +502,7 @@ public abstract class MapFunctionImpl implements MapFunction {
             return new CallImpl(MapFunctionImpl.this, map);
         }
 
-        public int nextIndex() {
+        protected int nextIndex() {
             return Stream.concat(getFunction().args(), input.keySet().stream())
                     .map(Arg::name)
                     .filter(s -> s.matches("^.+#" + SP.ARG + "\\d+$"))
@@ -484,6 +511,21 @@ public abstract class MapFunctionImpl implements MapFunction {
                     .max()
                     .orElse(0) + 1;
         }
+
+        /**
+         * Recursively lists all input functions.
+         *
+         * @return Stream of {@link MapFunctionImpl}
+         */
+        protected Stream<MapFunctionImpl> listInputFunctions() {
+            return listNestedCalls().map(x -> (BuilderImpl) x.getValue()).map(BuilderImpl::getFunction);
+        }
+
+        protected Stream<Map.Entry<ArgImpl, Object>> listNestedCalls() {
+            return input.entrySet().stream().filter(v -> v.getValue() instanceof BuilderImpl)
+                    .flatMap(e -> Stream.concat(Stream.of(e), ((BuilderImpl) e.getValue()).listNestedCalls()));
+        }
+
     }
 
     /**
@@ -614,25 +656,15 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public Builder asUnmodifiableBuilder() {
-            return new Builder() {
+        public BuilderImpl asUnmodifiableBuilder() {
+            return function.new BuilderImpl() {
                 @Override
-                public Builder add(String arg, String value) {
+                public BuilderImpl put(String arg, Object value) {
                     throw new MapJenaException.Unsupported();
                 }
 
                 @Override
-                public Builder add(String arg, Builder other) {
-                    throw new MapJenaException.Unsupported();
-                }
-
-                @Override
-                public MapFunction getFunction() {
-                    return function;
-                }
-
-                @Override
-                public Call build() throws MapJenaException {
+                public CallImpl build() throws MapJenaException {
                     return CallImpl.this;
                 }
             };

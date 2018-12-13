@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.FN;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -53,7 +54,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testCallNoRequiredArg() {
+    public void testCallBuildNoRequiredArg() {
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
         try {
             f.create().build();
@@ -80,7 +81,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testCallUnknownArg() {
+    public void testCallAddUnknownArg() {
         MapFunction f = manager.getFunction(SPINMAPL.buildURI1);
         String p = "http://unknown-prefix.org";
         try {
@@ -96,25 +97,36 @@ public class BuildingErrorsTest {
                     .create()
                     .addLiteral(SP.arg1, "a")
                     .addLiteral(SP.arg2, "b")
-                    .addLiteral(SPINMAPL.template, "target:xxx")
-                    .build();
+                    .addLiteral(SPINMAPL.template, "target:xxx");
             Assert.fail("Expected error");
-        } catch (Exceptions.SpinMapException e) {
+        } catch (MapJenaException e) {
             assertCode(e, Exceptions.FUNCTION_NONEXISTENT_ARGUMENT);
         }
     }
 
     @Test
-    public void testCallWrongNestedFunction() {
+    public void testCallAddWrongNestedFunction() {
         try {
             manager.getFunction(SP.resource("contains"))
                     .create()
                     .addLiteral(SP.arg1, "a")
-                    .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create())
-                    .build();
+                    .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create());
             Assert.fail("Expected error");
-        } catch (Exceptions.SpinMapException e) {
+        } catch (MapJenaException e) {
             assertCode(e, Exceptions.FUNCTION_NESTED_TARGET_FUNCTION);
+        }
+    }
+
+    @Test
+    public void testCallPropertyFunctionAddNestedCall() {
+        try {
+            manager.getFunction(AVC.withDefault)
+                    .create()
+                    .add(SP.arg1.getURI(), manager.getFunction(manager.prefixes().expandPrefix("afn:now")).create())
+                    .add(SP.arg2.getURI(), "val");
+            Assert.fail("Expected error");
+        } catch (MapJenaException e) {
+            assertCode(e, Exceptions.FUNCTION_REQUIRE_LITERAL_VALUE);
         }
     }
 
@@ -199,7 +211,7 @@ public class BuildingErrorsTest {
             c.addPropertyBridge(mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.PROPERTY_BRIDGE_REQUIRE_NON_TARGET_FUNCTION);
+            assertCode(j, Exceptions.PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }

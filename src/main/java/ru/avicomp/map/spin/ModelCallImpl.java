@@ -35,7 +35,6 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -116,10 +115,11 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                     " already exists. Please choose another name.");
         }
 
-        // todo: creation function from a call containing avc:withDefault and avc:asIRI os prohibited,
-        // as a temporary solution (see https://github.com/avicomp/ont-map/issues/13):
-        Set<String> forbidden = listAllFunctions().map(MapFunctionImpl::name)
-                .filter(x -> AVC.asIRI.getURI().equals(x) || AVC.withDefault.getURI().equals(x))
+        // TODO: creation function from a call containing avc:withDefault and avc:asIRI os prohibited,
+        //  as a temporary solution (see https://github.com/avicomp/ont-map/issues/13):
+        Set<String> forbidden = listAllFunctions()
+                .filter(MapFunctionImpl::isMappingPropertyFunction)
+                .map(MapFunctionImpl::name)
                 .map(x -> manager.prefixes().shortForm(x))
                 .collect(Collectors.toSet());
         if (!forbidden.isEmpty()) {
@@ -257,7 +257,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             Literal literal = n.asLiteral();
             String txt = literal.getLexicalForm();
             String dtURI = literal.getDatatypeURI();
-            // todo: what if the dt belongs to the mapping (i.e. source?)
+            // TODO: what if the dt belongs to the mapping (i.e. source?)
             if (XSD.xstring.getURI().equals(dtURI)) {
                 return txt;
             }

@@ -50,7 +50,7 @@ public class AdjustGroupConcatImpl implements AdjustFunctionBody {
     public Boolean apply(Model model, MapFunction.Call call) throws MapJenaException {
         MapFunction function = MapJenaException.notNull(call, "Null function call specified").getFunction();
         Resource resource = MapJenaException.notNull(model, "Null model specified").getResource(function.name());
-        MapFunction.Arg arg = function.getArg(SPINMAPL.separator.getURI());
+        MapFunction.Arg arg = function.getArg(SPINMAPL.separator);
         Object value = call.get(arg);
         if (!(value instanceof String)) {
             throw new MapJenaException("Null or wrong value for separator");

@@ -114,6 +114,18 @@ public interface MapFunction extends Description {
     }
 
     /**
+     * Gets an argument by {@link Property Jena Property} object,
+     * e.g. {@link org.topbraid.spin.vocabulary.SP#arg1 sp:arg1}.
+     *
+     * @param predicate {@link Property}, not {@code null}
+     * @return {@link Arg}
+     * @throws MapJenaException in case no arg found
+     */
+    default Arg getArg(Property predicate) {
+        return getArg(predicate.getURI());
+    }
+
+    /**
      * Gets an argument by predicate iri.
      *
      * @param predicate String, predicate iri
@@ -124,7 +136,8 @@ public interface MapFunction extends Description {
         return args()
                 .filter(f -> Objects.equals(predicate, f.name()))
                 .findFirst()
-                .orElseThrow(() -> new MapJenaException("Function (" + name() + ") argument " + predicate + " not found."));
+                .orElseThrow(() -> new MapJenaException.IllegalArgument("Function (" + name() +
+                        ") argument " + predicate + " not found."));
     }
 
     /**
@@ -290,6 +303,8 @@ public interface MapFunction extends Description {
 
     /**
      * A builder to create {@link Call function-call}.
+     * It contains a {@code Map} with {@link Arg} as keys and values,
+     * that can be either String (for uris and literals) or another {@link Builder}s.
      * <p>
      * Created by @szuev on 10.04.2018.
      */
@@ -330,7 +345,7 @@ public interface MapFunction extends Description {
         /**
          * Builds a function call.
          *
-         * @return {@link Call}, ready to use result.
+         * @return {@link Call}, ready to use
          * @throws MapJenaException if building is not possible
          */
         Call build() throws MapJenaException;
