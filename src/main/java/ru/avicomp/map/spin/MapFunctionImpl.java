@@ -18,10 +18,10 @@
 
 package ru.avicomp.map.spin;
 
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -30,6 +30,7 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -205,10 +206,6 @@ public abstract class MapFunctionImpl implements MapFunction {
         return Models.langValues(func, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
     }
 
-    public Model getModel() {
-        return func.getModel();
-    }
-
     public String toString(PrefixMapping pm) {
         return String.format("%s [%s](%s)",
                 pm.shortForm(type()),
@@ -253,6 +250,50 @@ public abstract class MapFunctionImpl implements MapFunction {
                 .filter(RDFNode::isURIResource)
                 .map(RDFNode::asResource)
                 .filter(s -> s.hasProperty(RDF.type, SPIN.Function) || s.hasProperty(RDF.type, SPINMAP.TargetFunction));
+    }
+
+    /**
+     * List all super classes of this function.
+     *
+     * @return Stream of {@link Resource IRI Resource}s
+     */
+    protected Stream<Resource> listSuperClasses() {
+        return Iter.asStream(func.listProperties(RDFS.subClassOf).mapWith(Statement::getResource));
+    }
+
+    /**
+     * Returns {@link AdjustFunctionBody} helper in the form of {@link Optional}.
+     *
+     * @return Optional of {@link AdjustFunctionBody}
+     */
+    protected Optional<AdjustFunctionBody> runtimeBody() {
+        String classPath = Iter.findFirst(func.listProperties(AVC.runtime)
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isLiteral)
+                .mapWith(RDFNode::asLiteral)
+                .mapWith(Literal::getString)).orElse(null);
+        if (classPath == null) {
+            return Optional.empty();
+        }
+        try {
+            Class<?> impl = Class.forName(classPath);
+            if (!AdjustFunctionBody.class.isAssignableFrom(impl)) {
+                throw new MapJenaException.IllegalState(name() +
+                        ": incompatible class type: " + classPath + " <> " + impl.getName());
+            }
+            return Optional.of((AdjustFunctionBody) impl.newInstance());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new MapJenaException.IllegalState(name() + ": can't init " + classPath, e);
+        }
+    }
+
+    /**
+     * Writes the function (its body) to the given graph.
+     *
+     * @param graph {@link MapModelImpl}
+     */
+    protected void write(MapModelImpl graph) {
+        SpinModels.printFunctionBody(graph, func);
     }
 
     protected ArgImpl newArg(org.topbraid.spin.model.Argument arg) {
@@ -301,25 +342,22 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         public Resource getValueType() {
-            Optional<Resource> r = refinedConstraints()
-                    .filter(s -> Objects.equals(s.getPredicate(), SPL.valueType))
-                    .map(Statement::getObject)
-                    .filter(RDFNode::isURIResource)
-                    .map(RDFNode::asResource)
-                    .findFirst();
+            Optional<Resource> r = Iter.findFirst(refinedConstraints()
+                    .filterKeep(s -> Objects.equals(s.getPredicate(), SPL.valueType))
+                    .mapWith(Statement::getObject)
+                    .filterKeep(RDFNode::isURIResource)
+                    .mapWith(RDFNode::asResource));
             if (r.isPresent()) return r.get();
             Resource res = arg.getValueType();
             return res == null ? AVC.undefined : res;
         }
 
-        public Stream<Statement> refinedConstraints() {
-            return Iter.asStream(func.listProperties(AVC.constraint))
-                    .map(Statement::getObject)
-                    .filter(RDFNode::isAnon)
-                    .map(RDFNode::asResource)
-                    .filter(r -> r.hasProperty(SPL.predicate, arg.getPredicate()))
-                    .map(Resource::listProperties)
-                    .flatMap(Iter::asStream);
+        public ExtendedIterator<Statement> refinedConstraints() {
+            return Iter.flatMap(func.listProperties(AVC.constraint)
+                    .mapWith(Statement::getObject)
+                    .filterKeep(RDFNode::isAnon)
+                    .mapWith(RDFNode::asResource)
+                    .filterKeep(r -> r.hasProperty(SPL.predicate, arg.getPredicate())), Resource::listProperties);
         }
 
         @Override

@@ -184,8 +184,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     /**
      * Writes function bodies to the model.
      *
-     * @param mappingFunction {@link MapFunctionImpl.CallImpl}
-     * @param filterFunction  {@link MapFunctionImpl.CallImpl}
+     * @param mappingFunction {@link MapFunctionImpl.CallImpl}, not {@code null}
+     * @param filterFunction  {@link MapFunctionImpl.CallImpl}, can be {@code null}
      * @throws ClassCastException with current implementation it should never happen
      */
     protected void writeFunctions(MapFunction.Call mappingFunction,

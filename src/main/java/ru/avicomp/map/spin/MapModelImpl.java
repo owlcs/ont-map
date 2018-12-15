@@ -30,7 +30,6 @@ import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.ontapi.jena.OntJenaException;
@@ -527,6 +526,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return true if it is link property.
      * @see ru.avicomp.map.utils.ClassPropertyMapImpl#directProperties(OntCE)
      */
+    @SuppressWarnings("JavadocReference")
     public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
         Property p = property.asProperty();
         if (properties(domain).noneMatch(p::equals)) return false;
@@ -707,53 +707,25 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Writes a custom function "as is" to the mapping graph.
+     * Writes a custom function "as it is" into the mapping graph.
      *
      * @param call {@link MapFunction.Call}, not {@code null}
      */
     protected void writeFunctionBody(MapFunction.Call call) {
         MapFunctionImpl function = (MapFunctionImpl) call.getFunction();
         if (function.isCustom()) {
-            Resource res = SpinModels.printFunctionBody(MapModelImpl.this, function.asResource());
-            res.listProperties(AVC.runtime)
-                    .mapWith(Statement::getObject)
-                    .filterKeep(RDFNode::isLiteral)
-                    .mapWith(RDFNode::asLiteral)
-                    .mapWith(Literal::getString)
-                    .forEachRemaining(s -> findRuntimeBody(function, s).apply(this, call));
-            // subClassOf
-            res.listProperties(RDFS.subClassOf)
-                    .mapWith(Statement::getResource)
-                    .mapWith(Resource::getURI)
-                    .mapWith(manager::getFunction)
-                    .forEachRemaining(x -> SpinModels.printFunctionBody(MapModelImpl.this, x.asResource()));
-            // print all dependency custom functions:
-            function.dependencies().map(x -> (MapFunctionImpl) x)
+            function.write(MapModelImpl.this);
+            function.runtimeBody().ifPresent(x -> x.apply(MapModelImpl.this, call));
+            // print sub-class-of and dependencies:
+            Stream.concat(function.listSuperClasses(), function.listDependencies())
+                    .map(Resource::getURI)
+                    .distinct()
+                    .map(manager::getFunction)
                     .filter(MapFunctionImpl::isCustom)
-                    .forEach(x -> SpinModels.printFunctionBody(MapModelImpl.this, x.asResource()));
+                    .forEach(x -> x.write(MapModelImpl.this));
         }
         // recursively print all nested functions:
         call.functions().forEach(this::writeFunctionBody);
-    }
-
-    /**
-     * @param func      {@link MapFunctionImpl}
-     * @param classPath String
-     * @return {@link AdjustFunctionBody}
-     * @throws MapJenaException can't fetch runtime body
-     */
-    protected static AdjustFunctionBody findRuntimeBody(MapFunctionImpl func,
-                                                        String classPath) throws MapJenaException {
-        try {
-            Class<?> res = Class.forName(classPath);
-            if (!AdjustFunctionBody.class.isAssignableFrom(res)) {
-                throw new MapJenaException(func.name() +
-                        ": incompatible class type: " + classPath + " <> " + res.getName());
-            }
-            return (AdjustFunctionBody) res.newInstance();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new MapJenaException(func.name() + ": can't init " + classPath, e);
-        }
     }
 
     @Override

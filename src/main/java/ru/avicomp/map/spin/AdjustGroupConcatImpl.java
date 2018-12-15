@@ -53,7 +53,7 @@ public class AdjustGroupConcatImpl implements AdjustFunctionBody {
         MapFunction.Arg arg = function.getArg(SPINMAPL.separator);
         Object value = call.get(arg);
         if (!(value instanceof String)) {
-            throw new MapJenaException("Null or wrong value for separator");
+            throw new MapJenaException.IllegalState("Null or wrong value for separator");
         }
         String separator = (String) value;
         List<Statement> prev = SpinModels.getLocalFunctionBody(model, resource)
@@ -61,9 +61,12 @@ public class AdjustGroupConcatImpl implements AdjustFunctionBody {
                 .filter(s -> Objects.equals(s.getPredicate(), SP.separator))
                 .filter(s -> s.getObject().isLiteral())
                 .collect(Collectors.toList());
-        if (prev.size() != 1) throw new MapJenaException("Expected single sp:separator literal inside expression");
+        if (prev.size() != 1)
+            throw new MapJenaException.IllegalState("Expected single sp:separator literal inside expression");
         Statement s = prev.get(0);
-        if (separator.equals(s.getObject().asLiteral().getString())) return false;
+        if (separator.equals(s.getString())) {
+            return false;
+        }
         model.add(s.getSubject(), s.getPredicate(), separator).remove(s);
         return true;
     }
