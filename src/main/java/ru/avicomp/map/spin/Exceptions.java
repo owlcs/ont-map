@@ -67,13 +67,9 @@ public enum Exceptions {
     FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION,
 
     // while building call:
-    FUNCTION_NONEXISTENT_ARGUMENT,
-    FUNCTION_ARGUMENT_CANNOT_BE_ASSIGNED,
-    FUNCTION_NO_REQUIRED_ARG,
-    FUNCTION_SELF_CALL,
-    FUNCTION_REQUIRE_LITERAL_VALUE,
-    FUNCTION_NESTED_DUPLICATE_FUNCTION,
-    FUNCTION_NESTED_TARGET_FUNCTION,
+    FUNCTION_BUILD_FAIL,
+    FUNCTION_BUILD_NO_REQUIRED_ARG,
+
 
     // while inference:
     INFERENCE_NO_CONTEXTS,
@@ -177,7 +173,8 @@ public enum Exceptions {
         }
 
         public String getString(Key k) {
-            return map.isEmpty() ? null : map.get(k).get(0);
+            List<String> vals;
+            return map.isEmpty() || (vals = getList(k)).isEmpty() ? null : vals.get(0);
         }
 
         public List<String> getList(Key k) {

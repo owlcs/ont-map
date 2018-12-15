@@ -634,7 +634,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                                 .collect(Collectors.toList());
                         if (varargs.size() != 1)
                             throw new MapJenaException.IllegalState("Can't find vararg argument for " + f.name());
-                        a = f.new ArgImpl(varargs.get(0), uri);
+                        a = f.newArg(varargs.get(0).arg, uri);
                     } else {
                         a = f.getArg(uri);
                     }

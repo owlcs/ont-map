@@ -26,6 +26,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.topbraid.spin.model.Argument;
 import org.topbraid.spin.system.ExtraPrefixes;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -553,6 +554,34 @@ public class MapManagerImpl implements MapManager {
         public boolean isCustom() {
             Triple root = getRootTriple();
             return listAdditionalGraphs().anyMatch(g -> g.contains(root));
+        }
+
+        /**
+         * Creates a builder.
+         *
+         * @return {@link FunctionBuilderImpl}
+         */
+        @Override
+        public FunctionBuilderImpl create() {
+            return new FunctionBuilderImpl(this) {
+
+                @Override
+                public Builder addLiteral(Property predicate, Object value) {
+                    // primary graph may contain custom datatypes:
+                    return addLiteral(predicate, library.createTypedLiteral(value));
+                }
+            };
+        }
+
+        @Override
+        protected ArgImpl newArg(Argument arg, String name) {
+            return new ArgImpl(arg, name) {
+
+                @Override
+                public String toString() {
+                    return toString(prefixes);
+                }
+            };
         }
 
         @Override

@@ -18,10 +18,12 @@
 
 package ru.avicomp.map;
 
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntPE;
+import ru.avicomp.ontapi.jena.utils.BuiltIn;
 
 import java.util.Map;
 import java.util.Objects;
@@ -156,7 +158,7 @@ public interface MapFunction extends Description {
     interface Arg extends Description {
 
         /**
-         * Returns an argument name (an iri of predicate currently).
+         * Returns an argument name, that is an iri of predicate.
          *
          * @return String, iri
          */
@@ -199,7 +201,7 @@ public interface MapFunction extends Description {
 
         /**
          * Answers {@code true} if this argument is available to assign value.
-         * An argument could be inherited from parent function, or be hidden, or be disabled for some other reason.
+         * An argument could be inherited from a parent function, or be hidden, or be disabled for some other reason.
          * In these cases the arg is not allowed to be used while building a function-call.
          *
          * @return boolean
@@ -210,10 +212,10 @@ public interface MapFunction extends Description {
     }
 
     /**
-     * A Function Call, that is a ready-to-write container which contains a function with all its assigned arguments.
+     * A Function Call, that is a ready-to-write container that contains a function and all its assigned arguments.
      * Inside a graph it represents a mapping expression.
      * Can hold only string representations of literals and resources or another {@link Call}s,
-     * in last case it can be named a function-chain.
+     * in last case it can be named as a function-chain.
      * Cannot be modified.
      * Note: it is not a {@link org.apache.jena.rdf.model.Resource Jena Resorce}.
      */
@@ -311,32 +313,53 @@ public interface MapFunction extends Description {
     interface Builder {
 
         /**
-         * Adds an argument value to a future function call.
+         * Adds an argument value to a future function call,
+         * that will be available after {@link #build() building}.
          * The value must be an absolute iri or full literal form with an absolute datatype iri in the right part,
          * e.g. {@code "1"^^<http://www.w3.org/2001/XMLSchema#int>}.
          * Note: if an input cannot be treated as resource or literal inside model,
          * then it is assumed that it is a plain (string) literal,
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
+         * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
+         * To list all built-in datatypes the method {@link BuiltIn.Vocabulary#datatypes()} can be used.
          *
-         * @param predicate String, {@link Arg#name()}, not {@code null}
+         * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param value     String, value, not {@code null}
          * @return this builder
-         * @throws MapJenaException if wrong input
+         * @throws MapJenaException.IllegalArgument if input is wrong
+         * @see BuiltIn#get()
          */
-        Builder add(String predicate, String value) throws MapJenaException;
+        Builder add(String predicate, String value) throws MapJenaException.IllegalArgument;
 
         /**
-         * Adds another function-call as argument to this function call, which will be available after building
+         * Adds another nested function-call as argument to a future function call,
+         * that will be available after {@link #build() building}.
+         * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
          *
-         * @param predicate String, iri, not null
+         * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param other     {@link Builder}, not null
          * @return this builder
-         * @throws MapJenaException if wrong input
+         * @throws MapJenaException.IllegalArgument if input is wrong
          */
-        Builder add(String predicate, Builder other) throws MapJenaException;
+        Builder add(String predicate, Builder other) throws MapJenaException.IllegalArgument;
 
         /**
-         * Answers a reference to function.
+         * Removes the value for the given {@code predicate}.
+         *
+         * @param predicate iri ({@link Arg#name()})
+         * @return this instance
+         */
+        Builder remove(String predicate);
+
+        /**
+         * Renews the builder.
+         *
+         * @return this instance
+         */
+        Builder clear();
+
+        /**
+         * Answers a reference to the function, from which this builder was created.
          *
          * @return {@link MapFunction}
          */
@@ -350,22 +373,79 @@ public interface MapFunction extends Description {
          */
         Call build() throws MapJenaException;
 
+        /**
+         * Adds the given class expression into this builder.
+         * This method is just for simplification code.
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param ce        {@link OntCE}, not {@code null}
+         * @return this builder
+         */
         default Builder addClass(Property predicate, OntCE ce) {
             return add(predicate.getURI(), ce.asNode().toString());
         }
 
+        /**
+         * Adds the given OWL2 property into this builder.
+         * This method is just for simplification code.
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param property  {@link ru.avicomp.ontapi.jena.model.OntNDP},
+         *                  {@link ru.avicomp.ontapi.jena.model.OntNAP} or
+         *                  {@link ru.avicomp.ontapi.jena.model.OntNOP}, not {@code null}
+         * @param <P>       a property subclass
+         * @return this builder
+         */
         default <P extends OntPE & Property> Builder addProperty(Property predicate, P property) {
             return add(predicate.getURI(), property.getURI());
         }
 
+        /**
+         * Creates a literal from the given object and adds it into the builder for the specified predicate.
+         * This method is just for simplification code.
+         * Please be careful: it always creates a new literal,
+         * if a full string form (e.g. {@code "str"^^xsd:string}) is given
+         * it will be treated as just lexical form for a new plain (string) literal
+         * (i.e. result would be {@code "\"str\"^^xsd:string"^^xsd:string}).
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param value     the literal value to encapsulate, not {@code null}
+         * @return this builder
+         * @see org.apache.jena.rdf.model.Model#createTypedLiteral(Object)
+         */
         default Builder addLiteral(Property predicate, Object value) {
-            return add(predicate.getURI(), ResourceFactory.createTypedLiteral(value).toString());
+            return addLiteral(predicate, ResourceFactory.createTypedLiteral(value));
         }
 
+        /**
+         * Adds the given literal into this builder.
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param literal   the literal, not {@code null}
+         * @return this builder
+         */
+        default Builder addLiteral(Property predicate, Literal literal) {
+            return add(predicate.getURI(), literal.asNode().toString(false));
+        }
+
+        /**
+         * Adds the given function-call as a nested function.
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param function  {@link Call}, not {@code null}
+         * @return this builder
+         */
         default Builder addFunction(Property predicate, Call function) {
             return addFunction(predicate, function.asUnmodifiableBuilder());
         }
 
+        /**
+         * Adds the given function-call builder as a nested function.
+         *
+         * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
+         * @param function  {@link Builder}, not {@code null}
+         * @return this builder
+         */
         default Builder addFunction(Property predicate, Builder function) {
             return add(predicate.getURI(), function);
         }

@@ -24,7 +24,6 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
-import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
@@ -39,8 +38,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
  * A spin based implementation of {@link MapFunction}.
@@ -75,7 +72,7 @@ public abstract class MapFunctionImpl implements MapFunction {
 
     public List<ArgImpl> getArguments() {
         return arguments == null ?
-                arguments = func.getArguments(true).stream().map(ArgImpl::new).collect(Collectors.toList()) : arguments;
+                arguments = func.getArguments(true).stream().map(this::newArg).collect(Collectors.toList()) : arguments;
     }
 
     public Stream<ArgImpl> listArgs() {
@@ -87,14 +84,15 @@ public abstract class MapFunctionImpl implements MapFunction {
         return listArgs().map(Function.identity());
     }
 
-    public Optional<ArgImpl> arg(String predicate) {
-        return listArgs().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
-    }
-
     @Override
     public ArgImpl getArg(String predicate) throws MapJenaException {
         return arg(predicate)
-                .orElseThrow(() -> exception(FUNCTION_NONEXISTENT_ARGUMENT).add(Key.ARG, predicate).build());
+                .orElseThrow(() -> new MapJenaException.IllegalArgument("Unable to find argument " +
+                        "with predicate <" + predicate + ">."));
+    }
+
+    public Optional<ArgImpl> arg(String predicate) {
+        return listArgs().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
     }
 
     @Override
@@ -193,8 +191,8 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     @Override
-    public Builder create() {
-        return new BuilderImpl();
+    public FunctionBuilderImpl create() {
+        return new FunctionBuilderImpl(this);
     }
 
     @Override
@@ -217,15 +215,6 @@ public abstract class MapFunctionImpl implements MapFunction {
                 pm.shortForm(name()), listArgs()
                         .map(a -> a.toString(pm))
                         .collect(Collectors.joining(", ")));
-    }
-
-    private Exceptions.Builder exception(Exceptions code) {
-        return code.create().add(Key.FUNCTION, name());
-    }
-
-    public static String argumentToName(org.topbraid.spin.model.Argument arg) {
-        Property p = arg.getPredicate();
-        return p == null ? arg.toString() : p.getURI();
     }
 
     /**
@@ -266,19 +255,28 @@ public abstract class MapFunctionImpl implements MapFunction {
                 .filter(s -> s.hasProperty(RDF.type, SPIN.Function) || s.hasProperty(RDF.type, SPINMAP.TargetFunction));
     }
 
+    protected ArgImpl newArg(org.topbraid.spin.model.Argument arg) {
+        Property p = MapJenaException.notNull(arg, "Null argument.").getPredicate();
+        if (p == null) {
+            throw new MapJenaException.IllegalState("Null predicate for arg " + arg + ".");
+        }
+        return newArg(arg, p.getURI());
+    }
+
+    protected ArgImpl newArg(org.topbraid.spin.model.Argument arg, String name) {
+        return new ArgImpl(arg, name);
+    }
+
+    /**
+     * {@link Arg} impl.
+     *
+     * @see org.topbraid.spin.model.Argument
+     */
     public class ArgImpl implements Arg {
         protected final org.topbraid.spin.model.Argument arg;
         protected final String name;
 
-        public ArgImpl(org.topbraid.spin.model.Argument arg) {
-            this(arg, argumentToName(arg));
-        }
-
-        public ArgImpl(ArgImpl arg, String name) {
-            this(arg.arg, name);
-        }
-
-        public ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
+        protected ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
             this.arg = Objects.requireNonNull(arg, "Null " + arg.getClass().getName());
             this.name = Objects.requireNonNull(name, "Null name");
         }
@@ -396,139 +394,6 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * The implementation of {@link Builder} to produce {@link CallImpl}.
-     */
-    public class BuilderImpl implements Builder {
-        // either string or builder
-        private final Map<ArgImpl, Object> input = new HashMap<>();
-
-        @Override
-        public MapFunctionImpl getFunction() {
-            return MapFunctionImpl.this;
-        }
-
-        @Override
-        public BuilderImpl add(String arg, String value) {
-            return put(arg, value);
-        }
-
-        @Override
-        public BuilderImpl add(String arg, Builder other) {
-            return put(arg, other);
-        }
-
-        protected BuilderImpl put(String predicate, Object val) {
-            MapJenaException.notNull(val, "Null argument value");
-            MapFunctionImpl func = getFunction();
-            ArgImpl arg = func.getArg(predicate);
-            if (!arg.isAssignable())
-                throw exception(FUNCTION_ARGUMENT_CANNOT_BE_ASSIGNED).addArg(arg).build();
-
-            if (arg.isVararg()) {
-                int index = nextIndex();
-                arg = new ArgImpl(arg, SP.getArgProperty(index).getURI());
-            }
-
-            if (!(val instanceof String)) {
-                if (!(val instanceof BuilderImpl)) {
-                    throw new MapJenaException.IllegalArgument("Wrong argument type: "
-                            + val.getClass().getName() + ", " + val);
-                }
-                if (this.equals(val)) { // todo: more accurate checking for recursion
-                    throw exception(FUNCTION_SELF_CALL).add(Key.ARG, predicate).build();
-                }
-                // todo: following checking move to build (validate) (see #17)
-                MapFunctionImpl nested = ((BuilderImpl) val).getFunction();
-                if (func.isMappingPropertyFunction()) {
-                    // cannot contain duplicated property functions in the chain
-                    if (listInputFunctions().map(MapFunctionImpl::name).anyMatch(x -> x.equals(nested.name()))) {
-                        throw exception(FUNCTION_NESTED_DUPLICATE_FUNCTION)
-                                .addArg(arg)
-                                .add(Key.ARG_VALUE, nested.name()).build();
-                    }
-                    // may contain only another property function or literal
-                    if (!nested.isMappingPropertyFunction()) {
-                        throw exception(FUNCTION_REQUIRE_LITERAL_VALUE)
-                                .addArg(arg)
-                                .add(Key.ARG_VALUE, nested.name()).build();
-                    }
-                }
-                if (nested.isTarget()) {
-                    throw exception(FUNCTION_NESTED_TARGET_FUNCTION)
-                            .addArg(arg)
-                            .add(Key.ARG_VALUE, nested.name()).build();
-                }
-            }
-            input.put(arg, val);
-            return this;
-        }
-
-        @Override
-        public CallImpl build() throws MapJenaException {
-            Map<ArgImpl, Object> map = new HashMap<>();
-            input.forEach((key, value) -> {
-                Object v;
-                if (value instanceof Builder) {
-                    v = ((Builder) value).build();
-                } else if ((value instanceof Call) || (value instanceof String)) {
-                    v = value;
-                } else {
-                    throw new MapJenaException.IllegalState("Wrong value: " + value);
-                }
-                map.put(key, v);
-            });
-            if (MapFunctionImpl.this.isTarget()) {
-                // All of the spin-map target function calls should have spin:_source variable assigned on this argument,
-                // although it does not seem it is really needed.
-                MapFunctionImpl.this.arg(SPINMAP.source.getURI())
-                        .ifPresent(a -> map.put(a, SPINMAP.sourceVariable.getURI()));
-            }
-            // todo: move the following code to validate ?
-            // check all required arguments are assigned
-            Exceptions.Builder error = exception(FUNCTION_NO_REQUIRED_ARG);
-            getFunction().listArgs().forEach(a -> {
-                if (a.isVararg()) return;
-                if (map.containsKey(a) || a.isOptional())
-                    return;
-                String def = a.defaultValue();
-                if (def == null) {
-                    error.addArg(a);
-                } else {
-                    map.put(a, def);
-                }
-            });
-            if (error.has(Key.ARG))
-                throw error.build();
-            return new CallImpl(MapFunctionImpl.this, map);
-        }
-
-        protected int nextIndex() {
-            return Stream.concat(getFunction().args(), input.keySet().stream())
-                    .map(Arg::name)
-                    .filter(s -> s.matches("^.+#" + SP.ARG + "\\d+$"))
-                    .map(s -> s.replaceFirst("^.+(\\d+)$", "$1"))
-                    .mapToInt(Integer::parseInt)
-                    .max()
-                    .orElse(0) + 1;
-        }
-
-        /**
-         * Recursively lists all input functions.
-         *
-         * @return Stream of {@link MapFunctionImpl}
-         */
-        protected Stream<MapFunctionImpl> listInputFunctions() {
-            return listNestedCalls().map(x -> (BuilderImpl) x.getValue()).map(BuilderImpl::getFunction);
-        }
-
-        protected Stream<Map.Entry<ArgImpl, Object>> listNestedCalls() {
-            return input.entrySet().stream().filter(v -> v.getValue() instanceof BuilderImpl)
-                    .flatMap(e -> Stream.concat(Stream.of(e), ((BuilderImpl) e.getValue()).listNestedCalls()));
-        }
-
-    }
-
-    /**
      * An implementation of {@link MapFunction.Call},
      * that is used as argument while building {@link MapModelImpl mapping model}.
      */
@@ -580,12 +445,13 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         @Override
         public Object get(Arg arg) throws MapJenaException {
+            ArgImpl k;
             try {
-                //noinspection SuspiciousMethodCalls
-                return MapJenaException.notNull(parameters.get(arg), "No value for " + arg);
+                k = (ArgImpl) arg;
             } catch (ClassCastException c) {
                 throw new MapJenaException("No value for " + arg, c);
             }
+            return MapJenaException.notNull(parameters.get(k), "No value for " + k);
         }
 
         @Override
@@ -599,8 +465,7 @@ public abstract class MapFunctionImpl implements MapFunction {
          * @return <b>sorted</b> stream of {@link ArgImpl}
          */
         public Stream<ArgImpl> listSortedVisibleArgs() {
-            return listSortedArgs()
-                    .filter(a -> !a.isInherit());
+            return listSortedArgs().filter(a -> !a.isInherit());
         }
 
         /**
@@ -609,8 +474,7 @@ public abstract class MapFunctionImpl implements MapFunction {
          * @return <b>sorted</b> stream of {@link ArgImpl}
          */
         public Stream<ArgImpl> listSortedArgs() {
-            return parameters.keySet().stream()
-                    .sorted(Comparator.comparing(Arg::name));
+            return parameters.keySet().stream().sorted(Comparator.comparing(Arg::name));
         }
 
         /**
@@ -656,10 +520,10 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         @Override
-        public BuilderImpl asUnmodifiableBuilder() {
-            return function.new BuilderImpl() {
+        public FunctionBuilderImpl asUnmodifiableBuilder() {
+            return new FunctionBuilderImpl(function) {
                 @Override
-                public BuilderImpl put(String arg, Object value) {
+                public FunctionBuilderImpl put(String arg, Object value) {
                     throw new MapJenaException.Unsupported();
                 }
 

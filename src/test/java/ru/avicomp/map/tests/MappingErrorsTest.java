@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
-import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.FN;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -36,15 +35,14 @@ import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
-import java.util.Arrays;
-
 import static ru.avicomp.map.spin.Exceptions.Key;
 
 /**
  * Created by @szuev on 18.04.2018.
  */
-public class BuildingErrorsTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BuildingErrorsTest.class);
+@SuppressWarnings("WeakerAccess")
+public class MappingErrorsTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MappingErrorsTest.class);
 
     private static MapManager manager;
 
@@ -54,84 +52,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testCallBuildNoRequiredArg() {
-        MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
-        try {
-            f.create().build();
-            Assert.fail("Expected error");
-        } catch (MapJenaException j) {
-            assertCode(j, Exceptions.FUNCTION_NO_REQUIRED_ARG);
-            Assert.assertEquals(3, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
-            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
-        }
-        try {
-            f.create().add(manager.prefixes().expandPrefix("sp:arg1"), "x").build();
-            Assert.fail("Expected error");
-        } catch (MapJenaException j) { // no required arg
-            assertCode(j, Exceptions.FUNCTION_NO_REQUIRED_ARG);
-            Assert.assertEquals(2, ((Exceptions.SpinMapException) j).getList(Key.ARG).size());
-            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Key.FUNCTION));
-        }
-        try {
-            manager.getFunction(SPINMAPL.buildURI1).create().build();
-            Assert.fail("Expected error");
-        } catch (MapJenaException j) {
-            assertCode(j, Exceptions.FUNCTION_NO_REQUIRED_ARG);
-        }
-    }
-
-    @Test
-    public void testCallAddUnknownArg() {
-        MapFunction f = manager.getFunction(SPINMAPL.buildURI1);
-        String p = "http://unknown-prefix.org";
-        try {
-            f.create().add(p, "xxx");
-            Assert.fail("Expected error");
-        } catch (Exceptions.SpinMapException e) { // non existent arg
-            assertCode(e, Exceptions.FUNCTION_NONEXISTENT_ARGUMENT);
-            Assert.assertEquals(p, e.getString(Key.ARG));
-            Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
-        }
-        try {
-            manager.getFunction(SP.resource("contains"))
-                    .create()
-                    .addLiteral(SP.arg1, "a")
-                    .addLiteral(SP.arg2, "b")
-                    .addLiteral(SPINMAPL.template, "target:xxx");
-            Assert.fail("Expected error");
-        } catch (MapJenaException e) {
-            assertCode(e, Exceptions.FUNCTION_NONEXISTENT_ARGUMENT);
-        }
-    }
-
-    @Test
-    public void testCallAddWrongNestedFunction() {
-        try {
-            manager.getFunction(SP.resource("contains"))
-                    .create()
-                    .addLiteral(SP.arg1, "a")
-                    .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create());
-            Assert.fail("Expected error");
-        } catch (MapJenaException e) {
-            assertCode(e, Exceptions.FUNCTION_NESTED_TARGET_FUNCTION);
-        }
-    }
-
-    @Test
-    public void testCallPropertyFunctionAddNestedCall() {
-        try {
-            manager.getFunction(AVC.withDefault)
-                    .create()
-                    .add(SP.arg1.getURI(), manager.getFunction(manager.prefixes().expandPrefix("afn:now")).create())
-                    .add(SP.arg2.getURI(), "val");
-            Assert.fail("Expected error");
-        } catch (MapJenaException e) {
-            assertCode(e, Exceptions.FUNCTION_REQUIRE_LITERAL_VALUE);
-        }
-    }
-
-    @Test
-    public void testMappingWrongContextFilterFunction() {
+    public void testWrongContextFilterFunction() {
         AbstractMapTest test = new BuildURIMapTest();
         OntGraphModel s = test.assembleSource();
         OntGraphModel t = test.assembleTarget();
@@ -163,7 +84,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingWrongContextMappingFunction() {
+    public void testWrongContextMappingFunction() {
         String uri = "ex://test";
         String ns = uri + "#";
         OntGraphModel m = OntModelFactory.createModel();
@@ -187,7 +108,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingWrongPropertyBridgeMappingFunction() {
+    public void testWrongPropertyBridgeMappingFunction() {
         AbstractMapTest test = new BuildURIMapTest();
         OntGraphModel s = test.assembleSource();
         OntGraphModel t = test.assembleTarget();
@@ -217,7 +138,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingWrongPropertyBridgeFilterFunction() {
+    public void testWrongPropertyBridgeFilterFunction() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
         OntGraphModel s = test.assembleSource();
@@ -249,7 +170,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingWrongPropertyBridgeTargetProperty() {
+    public void testWrongPropertyBridgeTargetProperty() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
         OntGraphModel s = test.assembleSource();
@@ -279,7 +200,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingWrongFunctionArgumentValue() {
+    public void testWrongFunctionArgumentValue() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
         OntGraphModel s = test.assembleSource();
@@ -335,7 +256,7 @@ public class BuildingErrorsTest {
     }
 
     @Test
-    public void testMappingValidateFunction() {
+    public void testValidateFunction() {
         MapManager m = Managers.createMapManager();
 
         MapFunction.Call func1 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, "x").build();
@@ -380,15 +301,11 @@ public class BuildingErrorsTest {
         m.createMapModel().validate(func5);
     }
 
-    private static void assertCode(MapJenaException j, Exceptions code) {
-        print(j);
+    static void assertCode(MapJenaException j, Exceptions code) {
+        TestUtils.debug(j);
         Exceptions.SpinMapException s = (Exceptions.SpinMapException) j;
         Assert.assertEquals(code, s.getCode());
     }
 
-    private static void print(MapJenaException j) {
-        LOGGER.debug("Exception: {}", j.getMessage());
-        Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
-    }
 }
 

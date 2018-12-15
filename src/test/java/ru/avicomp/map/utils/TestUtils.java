@@ -34,6 +34,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
+import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.MapFunctionImpl;
@@ -48,6 +49,7 @@ import ru.avicomp.ontapi.jena.model.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Function;
@@ -185,5 +187,10 @@ public class TestUtils {
                 return Optional.of(OntFormat.TURTLE.createOwlFormat());
             }
         };
+    }
+
+    public static void debug(MapJenaException j) {
+        LOGGER.debug("Exception: {}", j.getMessage());
+        Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
     }
 }
