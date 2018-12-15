@@ -126,24 +126,9 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             throw new MapJenaException.IllegalArgument(this + ": attempt to assign a target function " +
                     "(" + nested + ") as nested.");
         }
-        MapFunctionImpl function = getFunction();
-        if (!function.isMappingPropertyFunction()) {
-            return;
-        }
-        // a property function may accept only string values or another property functions
-        // but cannot contain the duplicated function somewhere in the chain
-        // (currently it does not make sense):
-        if (nested.listNestedCalls()
-                .map(FunctionBuilderImpl::getFunction)
-                .map(MapFunctionImpl::name)
-                .anyMatch(function.name()::equals)) {
-            throw new MapJenaException.IllegalArgument(this +
-                    ": cannot contain more then one entrance of " + function.name());
-        }
-        // may contain only another property function or string value
-        if (!nested.getFunction().isMappingPropertyFunction()) {
-            throw new MapJenaException.IllegalArgument(this +
-                    ": can accept only another property function or string valuea");
+        if (getFunction().isMappingPropertyFunction()) {
+            // a property function cannot accept nested functions
+            throw new MapJenaException.IllegalArgument(this + ": can accept only constant (string) values");
         }
     }
 
