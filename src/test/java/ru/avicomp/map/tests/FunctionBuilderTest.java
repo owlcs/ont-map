@@ -120,6 +120,27 @@ public class FunctionBuilderTest {
     }
 
     @Test
+    public void testRemoveAndClear() {
+        MapFunction.Builder f = manager.getFunction(manager.prefixes().expandPrefix("spl:hasValueOfType")).create();
+        f.add(SP.arg1.getURI(), "x").add(SP.arg2.getURI(), "t").remove(SP.arg1.getURI()).remove(SP.arg3.getURI());
+        try {
+            f.build();
+            Assert.fail("Can build");
+        } catch (MapJenaException j) {
+            TestUtils.debug(j);
+            Assert.assertEquals(2, j.getSuppressed().length);
+        }
+        f.clear();
+        try {
+            f.build();
+            Assert.fail("Can build");
+        } catch (MapJenaException j) {
+            TestUtils.debug(j);
+            Assert.assertEquals(3, j.getSuppressed().length);
+        }
+    }
+
+    @Test
     public void testBuildNoRequiredArg() {
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("spinmapl:concatWithSeparator"));
         try {

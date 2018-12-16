@@ -118,17 +118,21 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     }
 
     public void validateValue(MapFunction.Builder value) throws MapJenaException {
-        FunctionBuilderImpl nested = (FunctionBuilderImpl) value;
-        if (nested.listCalls().anyMatch(this::equals)) {
-            throw new MapJenaException.IllegalArgument("Self call(" + this + "): " + nested + ".");
+        FunctionBuilderImpl builder = (FunctionBuilderImpl) value;
+        if (builder.listCalls().anyMatch(this::equals)) {
+            throw new MapJenaException.IllegalArgument(String.format("[%s]: " +
+                    "Attempt to build recursion. " +
+                    "The function-call %s refers to this builder in a chain.", this, builder));
         }
-        if (nested.getFunction().isTarget()) {
-            throw new MapJenaException.IllegalArgument(this + ": attempt to assign a target function " +
-                    "(" + nested + ") as nested.");
+        MapFunctionImpl function = getFunction();
+        MapFunctionImpl nested = builder.getFunction();
+        if (!function.canHaveNested()) {
+            throw new MapJenaException.IllegalArgument(String.format("[%s]:" +
+                    "The function %s is not allowed to accept nested functions.", this, function.name()));
         }
-        if (getFunction().isMappingPropertyFunction()) {
-            // a property function cannot accept nested functions
-            throw new MapJenaException.IllegalArgument(this + ": can accept only constant (string) values");
+        if (!nested.canBeNested()) {
+            throw new MapJenaException.IllegalArgument(String.format("[%s]: " +
+                    "The function %s is not allowed to be a nested.", this, nested.name()));
         }
     }
 

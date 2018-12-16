@@ -154,7 +154,7 @@ public class AVC {
 
     /**
      * A property-indicator, which means the function require special treatment in runtime before inference.
-     * The right part of statement with this predicate must be a valid class-path to
+     * The right part of a statement with this predicate must be a valid class-path to
      * {@link ru.avicomp.map.spin.AdjustFunctionBody} impl as a string (plain) literal.
      *
      * @see ru.avicomp.map.spin.AdjustFunctionBody

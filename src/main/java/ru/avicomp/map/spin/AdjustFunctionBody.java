@@ -28,7 +28,7 @@ import java.util.function.BiFunction;
  * A common interface that allows accepting {@link MapFunction} arguments directly into a function body.
  * Usually arguments go into a function-call expression,
  * but sometimes it is not enough due to SPIN limitation and
- * to achieve desired function behaviour it is need to modify a function body itself.
+ * to achieve desired function behaviour it is need to modify a function body itself in runtime.
  * This mechanism serves for such a purpose:
  * before the execution of a function, the arguments from the expression (function-call) fall directly
  * into the function body with the help of this class implementation,

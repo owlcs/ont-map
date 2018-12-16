@@ -22,6 +22,7 @@ import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.utils.BuiltIn;
 
@@ -104,10 +105,29 @@ public interface MapFunction extends Description {
     Stream<MapFunction> dependencies();
 
     /**
+     * Answers {@code true} if this function can be nested in a function-call.
+     *
+     * @return boolean
+     */
+    boolean canBeNested();
+
+    /**
+     * Answers {@code true} if a call of this function can contain other function-calls in its arguments.
+     * In this case a function chain can be built.
+     * Note that calls that are created from such functions are not allowed to be saved,
+     * and if a function-chain contains such a function,
+     * it will not be included as an operand into a new function while saving.
+     *
+     * @return boolean
+     * @see Call#save(String)
+     */
+    boolean canHaveNested();
+
+    /**
      * Answers {@code true} iff this function supports varargs.
      * Most functions does not support varargs and this method will return {@code false}.
      * Examples of vararg functions: {@code sp:concat}, {@code sp:in}.
-     * To avoid ambiguous situations it is expected that vararg function has one and only one vararg argument.
+     * To avoid ambiguous situations it is expected that vararg function has one and only one v ararg argument.
      *
      * @return true if function has varargs
      */
@@ -248,7 +268,7 @@ public interface MapFunction extends Description {
         Stream<MapFunction.Call> functions(boolean direct);
 
         /**
-         * Represents a call as unmodifiable builder instance.
+         * Represents this call as unmodifiable builder instance.
          * To use in default methods.
          *
          * @return {@link Builder}
@@ -290,12 +310,17 @@ public interface MapFunction extends Description {
          * <p>
          * Note: currently this functionality is available only to those {@link Call}s,
          * that belong to a {@link MapModel mapping}s.
-         * In abstract (manager) level usage of this method will cause a {@link MapJenaException}.
+         * In an abstract (manager) level this method invocation will cause a {@link MapJenaException}.
          * To get models calls use {@link MapResource#getMapping()} and {@link MapResource#getFilter()}.
+         * <p>
+         * Also note that functions, whose calls cannot contain other calls, also are not allowed be saved,
+         * even from a model level.
+         * If such a function appears in a chain it will be excluded from consideration.
          *
-         * @param name String, a new function name, not {@code null}
-         * @return {@link MapFunction} a synonym for this function-chain
+         * @param name String, a new function name (iri), not {@code null}
+         * @return {@link MapFunction}, that is a synonym for this function-chain
          * @throws MapJenaException unable to compose new function
+         * @see MapFunction#canHaveNested()
          */
         default MapFunction save(String name) throws MapJenaException {
             throw new MapJenaException.Unsupported("This functionality is available only for function-calls " +
@@ -322,6 +347,7 @@ public interface MapFunction extends Description {
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
          * To list all built-in datatypes the method {@link BuiltIn.Vocabulary#datatypes()} can be used.
+         * To list all model datatypes the expression {@link OntGraphModel#listDatatypes()}
          *
          * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param value     String, value, not {@code null}
@@ -340,6 +366,8 @@ public interface MapFunction extends Description {
          * @param other     {@link Builder}, not null
          * @return this builder
          * @throws MapJenaException.IllegalArgument if input is wrong
+         * @see MapFunction#canBeNested()
+         * @see MapFunction#canHaveNested()
          */
         Builder add(String predicate, Builder other) throws MapJenaException.IllegalArgument;
 

@@ -296,6 +296,22 @@ public abstract class MapFunctionImpl implements MapFunction {
         SpinModels.printFunctionBody(graph, func);
     }
 
+    @Override
+    public boolean canBeNested() {
+        return !isTarget();
+    }
+
+    @Override
+    public boolean canHaveNested() {
+        return !isMappingPropertyFunction();
+    }
+
+    /**
+     * Creates a new {@link ArgImpl} wrapping the given {@link org.topbraid.spin.model.Argument}.
+     *
+     * @param arg {@link org.topbraid.spin.model.Argument}, not {@code null}
+     * @return {@link ArgImpl}
+     */
     protected ArgImpl newArg(org.topbraid.spin.model.Argument arg) {
         Property p = MapJenaException.notNull(arg, "Null argument.").getPredicate();
         if (p == null) {
@@ -304,6 +320,13 @@ public abstract class MapFunctionImpl implements MapFunction {
         return newArg(arg, p.getURI());
     }
 
+    /**
+     * Creates a new {@link ArgImpl} with the given name and {@link org.topbraid.spin.model.Argument}.
+     *
+     * @param arg  {@link org.topbraid.spin.model.Argument}, not {@code null}
+     * @param name String, iri
+     * @return {@link ArgImpl}
+     */
     protected ArgImpl newArg(org.topbraid.spin.model.Argument arg, String name) {
         return new ArgImpl(arg, name);
     }
