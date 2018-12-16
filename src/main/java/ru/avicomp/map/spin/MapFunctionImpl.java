@@ -496,7 +496,7 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         /**
          * Lists all functions related to this function call.
-         * The returning string contains the function from this call in the first position.
+         * The returned string contains the function from this call in the first position.
          *
          * @return Stream of {@link MapFunctionImpl}s
          */
@@ -526,7 +526,7 @@ public abstract class MapFunctionImpl implements MapFunction {
          * @return <b>sorted</b> stream of {@link ArgImpl}
          */
         public Stream<ArgImpl> listSortedVisibleArgs() {
-            return listSortedArgs().filter(a -> !a.isInherit());
+            return listSortedArgs().filter(ArgImpl::isAssignable);
         }
 
         /**

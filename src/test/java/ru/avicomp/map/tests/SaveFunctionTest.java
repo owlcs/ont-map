@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ReadOnlyGraph;
 import ru.avicomp.map.utils.TestUtils;
@@ -140,7 +141,7 @@ public class SaveFunctionTest {
         Assert.assertEquals(8, res.size());
     }
 
-    @Test(expected = MapJenaException.Unsupported.class) // todo: it is a temporary solution, see #13
+    @Test
     public void testPropertyChainMapping() {
         MapManager m = Managers.createMapManager();
         PropertyChainMapTest data = new PropertyChainMapTest();
@@ -173,8 +174,10 @@ public class SaveFunctionTest {
         OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
         OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
         OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000006");
-        OntNOP OASUU = TestUtils.findOntEntity(src, OntNOP.class, "OASUU");
+        MapFunction.Call OASUU = m.getFunction(AVC.asIRI).create().addProperty(SP.arg1,
+                TestUtils.findOntEntity(src, OntNOP.class, "OASUU")).build();
         OntNDP DEUUU = TestUtils.findOntEntity(src, OntNDP.class, "DEUUU");
+
         OntClass resClass = TestUtils.findOntEntity(dst, OntClass.class, "Res");
         OntNDP nameProp = TestUtils.findOntEntity(dst, OntNDP.class, "name");
         OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
@@ -183,12 +186,12 @@ public class SaveFunctionTest {
                 .createContext(CDSPR_D00001, resClass, target.create()
                         .addLiteral(SPINMAPL.template, "result:res-{?1}"))
                 .addPropertyBridge(deriveName.create()
-                        .addProperty(SP.arg1, OASUU)
+                        .addFunction(SP.arg1, OASUU)
                         .addProperty(SP.arg2, DEUUU)
                         .addClass(SP.arg3, CCPAS_000011), nameProp)
                 .getContext()
                 .addPropertyBridge(deriveMessage.create()
-                        .addProperty(SP.arg1, OASUU)
+                        .addFunction(SP.arg1, OASUU)
                         .addProperty(SP.arg2, DEUUU)
                         .addClass(SP.arg3, CCPAS_000005)
                         .addClass(SP.arg4, CCPAS_000006), messageProp)
@@ -196,7 +199,6 @@ public class SaveFunctionTest {
         TestUtils.debug(map2);
         map2.runInference(src.getBaseGraph(), dst.getBaseGraph());
         TestUtils.debug(dst);
-        // TODO: FAIL!
         data.validate(dst);
     }
 

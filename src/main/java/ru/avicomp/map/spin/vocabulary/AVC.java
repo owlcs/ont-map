@@ -55,7 +55,7 @@ public class AVC {
      */
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
     /**
-     * A class-indicator for functions that are intended to manage property mapping (template) calls.
+     * A class-indicator for functions that are intended to manage property mapping (construct template) calls.
      * Such a function accepts a {@link Property} that belongs to a context containing a property mapping,
      * which is managed by this function.
      * Also, a function, that is {@code rdfs:subClassOf} {@code PropertyFunctions}, cannot contain nested functions.

@@ -165,7 +165,6 @@ public interface MapContext extends MapResource {
 
     /**
      * Validates the specified function-call against this context.
-     * It is here just for convenience.
      *
      * @param func {@link MapFunction.Call} an expression.
      * @throws MapJenaException if something is wrong with the function, e.g. wrong argument types.

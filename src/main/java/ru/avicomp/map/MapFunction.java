@@ -117,6 +117,8 @@ public interface MapFunction extends Description {
      * Note that calls that are created from such functions are not allowed to be saved,
      * and if a function-chain contains such a function,
      * it will not be included as an operand into a new function while saving.
+     * Functions, that cannot have nested functions, are a special class of a technical nature,
+     * and are an exception to the rule.
      *
      * @return boolean
      * @see Call#save(String)
