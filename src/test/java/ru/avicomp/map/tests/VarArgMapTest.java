@@ -43,6 +43,7 @@ public class VarArgMapTest extends AbstractMapTest {
     public void testInference() {
         OntGraphModel s = assembleSource();
         OntGraphModel t = assembleTarget();
+
         MapManager man = manager();
         MapModel m = assembleMapping(man, s, t);
         TestUtils.debug(m);
@@ -50,15 +51,19 @@ public class VarArgMapTest extends AbstractMapTest {
         LOGGER.info("Run inference");
         man.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
-        LOGGER.info("Validate");
 
+        LOGGER.info("Validate");
+        validate(t);
+    }
+
+    public void validate(OntGraphModel t) {
         Assert.assertEquals(2, t.listNamedIndividuals().count());
         OntIndividual i1 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I1");
         OntIndividual i2 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I2");
         OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "tp1");
         OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "tp2");
-        Assert.assertEquals("a+b,c", TestUtils.getStringValue(i1, p1));
-        Assert.assertEquals("d+e,f", TestUtils.getStringValue(i2, p1));
+        Assert.assertEquals("a+b,c[g,h,i,m]", TestUtils.getStringValue(i1, p1));
+        Assert.assertEquals("d+e,f[j,k,l,n]", TestUtils.getStringValue(i2, p1));
         Assert.assertFalse(TestUtils.getBooleanValue(i1, p2));
         Assert.assertTrue(TestUtils.getBooleanValue(i2, p2));
         AbstractMapTest.commonValidate(t);
@@ -77,6 +82,10 @@ public class VarArgMapTest extends AbstractMapTest {
         OntNDP srcProp1 = TestUtils.findOntEntity(src, OntNDP.class, "p1");
         OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "p2");
         OntNDP srcProp3 = TestUtils.findOntEntity(src, OntNDP.class, "p3");
+        OntNDP srcProp4 = TestUtils.findOntEntity(src, OntNDP.class, "p4");
+        OntNDP srcProp5 = TestUtils.findOntEntity(src, OntNDP.class, "p5");
+        OntNDP srcProp6 = TestUtils.findOntEntity(src, OntNDP.class, "p6");
+        OntNDP srcProp7 = TestUtils.findOntEntity(src, OntNDP.class, "p7");
         OntNDP dstProp1 = TestUtils.findOntEntity(dst, OntNDP.class, "tp1");
         OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "tp2");
 
@@ -89,6 +98,15 @@ public class VarArgMapTest extends AbstractMapTest {
                 .addProperty(AVC.vararg, srcProp2)
                 .addLiteral(AVC.vararg, ",")
                 .addProperty(AVC.vararg, srcProp3)
+                .addLiteral(AVC.vararg, "[")
+                .addProperty(AVC.vararg, srcProp4)
+                .addLiteral(AVC.vararg, ",")
+                .addProperty(AVC.vararg, srcProp5)
+                .addLiteral(AVC.vararg, ",")
+                .addProperty(AVC.vararg, srcProp6)
+                .addLiteral(AVC.vararg, ",")
+                .addProperty(AVC.vararg, srcProp7)
+                .addLiteral(AVC.vararg, "]")
                 .build(), dstProp1);
 
         c.addPropertyBridge(notIn.create()
@@ -108,18 +126,29 @@ public class VarArgMapTest extends AbstractMapTest {
         OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "p1");
         OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "p2");
         OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "p3");
-        prop1.addDomain(class1);
-        prop2.addDomain(class1);
-        prop3.addDomain(class1);
+        OntNDP prop4 = m.createOntEntity(OntNDP.class, ns + "p4");
+        OntNDP prop5 = m.createOntEntity(OntNDP.class, ns + "p5");
+        OntNDP prop6 = m.createOntEntity(OntNDP.class, ns + "p6");
+        OntNDP prop7 = m.createOntEntity(OntNDP.class, ns + "p7");
+        m.listDataProperties().forEach(p -> p.addDomain(class1));
 
         OntIndividual.Named individual1 = class1.createIndividual(ns + "I1");
         OntIndividual.Named individual2 = class1.createIndividual(ns + "I2");
         individual1.addProperty(prop1, "a");
         individual1.addProperty(prop2, "b");
         individual1.addProperty(prop3, "c");
+        individual1.addProperty(prop4, "g");
+        individual1.addProperty(prop5, "h");
+        individual1.addProperty(prop6, "i");
+        individual1.addProperty(prop7, "m");
+
         individual2.addProperty(prop1, "d");
         individual2.addProperty(prop2, "e");
         individual2.addProperty(prop3, "f");
+        individual2.addProperty(prop4, "j");
+        individual2.addProperty(prop5, "k");
+        individual2.addProperty(prop6, "l");
+        individual2.addProperty(prop7, "n");
         return m;
     }
 

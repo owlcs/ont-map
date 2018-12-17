@@ -431,13 +431,19 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Creates or finds sp:variable.
+     * Finds or creates (if needed) {@code sp:Variable}.
      *
-     * @param url String
+     * @param uri String
      * @return {@link Resource}
      */
-    public Resource createVariable(String url) {
-        return createResource(url, SP.Variable);
+    public Resource createVariable(String uri) {
+        Resource res = getResource(uri);
+        if (!contains(res, RDF.type, SP.Variable)) {
+            String name = res.getLocalName().replaceFirst("^_(.+)$", "$1");
+            res.inModel(this).addProperty(RDF.type, SP.Variable)
+                    .addProperty(SP.varName, name);
+        }
+        return res;
     }
 
     /**
@@ -589,7 +595,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 throw new MapJenaException.IllegalArgument("Wrong value for " + arg.name() + ": " + value);
             Property predicate = createArgProperty(arg.name());
             res.addProperty(predicate, param);
-
         });
         return res.addProperty(RDF.type, createResource(func.name()));
     }

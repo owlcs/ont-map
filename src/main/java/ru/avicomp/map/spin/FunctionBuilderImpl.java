@@ -145,7 +145,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
         return Stream.concat(getFunction().args(), input.keySet().stream())
                 .map(MapFunction.Arg::name)
                 .filter(s -> s.matches("^.+#" + SP.ARG + "\\d+$"))
-                .map(s -> s.replaceFirst("^.+(\\d+)$", "$1"))
+                .map(s -> s.replaceFirst("^.+[^\\d](\\d+)$", "$1"))
                 .mapToInt(Integer::parseInt)
                 .max()
                 .orElse(0) + 1;
