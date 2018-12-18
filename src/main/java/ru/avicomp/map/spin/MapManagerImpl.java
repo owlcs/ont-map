@@ -463,7 +463,7 @@ public class MapManagerImpl implements MapManager {
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("Found avc:runtime function: <{}> .", f);
                     } else { // add content to the primary graph:
-                        f = SpinModels.printFunctionBody(library, f);
+                        f = SpinModels.printSpinFunctionBody(library, f);
                     }
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("Add function <{}> into the manager {}.", f, MapManagerImpl.this);

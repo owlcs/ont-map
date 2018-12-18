@@ -85,13 +85,15 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
                                                    Supplier<Graph> factory,
                                                    ReadWriteLock lock,
                                                    UnaryOperator<OntGraphModel> map) {
-        boolean noOp = Objects.requireNonNull(lock, "Null lock") == NoOpReadWriteLock.NO_OP_RW_LOCK;
+        boolean noOp = !NoOpReadWriteLock.isConcurrent(lock);
         library = Graphs.asNonConcurrent(Objects.requireNonNull(library, "Null primary graph"));
         if (!noOp) {
             library = Graphs.asConcurrent(library, lock);
         }
-        return new MapManagerImpl(library, factory, noOp ?
-                new HashMap<>() : new ConcurrentHashMap<>(), MapConfigImpl.INSTANCE) {
+        return new MapManagerImpl(library
+                , factory
+                , noOp ? new HashMap<>() : new ConcurrentHashMap<>()
+                , MapConfigImpl.INSTANCE) {
             @Override
             protected boolean filter(FunctionImpl f) {
                 lock.readLock().lock();
@@ -286,8 +288,8 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             try {
                 // Use a write lock in case the given mapping belongs to the manager,
                 // since inference engine may add temporary triples into the mapping main graph
-                this.mappingLock = ontology(Objects.requireNonNull(mapping, "Null mapping").asGraphModel().getGraph()).isPresent() ?
-                        lock.writeLock() : NoOpReadWriteLock.NO_OP_LOCK;
+                this.mappingLock = ontology(Objects.requireNonNull(mapping, "Null mapping").asGraphModel().getGraph())
+                        .isPresent() ? lock.writeLock() : NoOpReadWriteLock.NO_OP_LOCK;
                 this.delegate = manager.getInferenceEngine(mapping);
             } finally {
                 lock.readLock().unlock();

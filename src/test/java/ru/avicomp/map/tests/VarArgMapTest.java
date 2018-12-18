@@ -57,15 +57,24 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     public void validate(OntGraphModel t) {
+        validate(t, true);
+    }
+
+    public static void validate(OntGraphModel t, boolean includeSpInResult) {
         Assert.assertEquals(2, t.listNamedIndividuals().count());
         OntIndividual i1 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I1");
         OntIndividual i2 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I2");
         OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "tp1");
-        OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "tp2");
         Assert.assertEquals("a+b,c[g,h,i,m]", TestUtils.getStringValue(i1, p1));
         Assert.assertEquals("d+e,f[j,k,l,n]", TestUtils.getStringValue(i2, p1));
-        Assert.assertFalse(TestUtils.getBooleanValue(i1, p2));
-        Assert.assertTrue(TestUtils.getBooleanValue(i2, p2));
+        if (includeSpInResult) {
+            OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "tp2");
+            Assert.assertFalse(TestUtils.getBooleanValue(i1, p2));
+            Assert.assertTrue(TestUtils.getBooleanValue(i2, p2));
+        } else {
+            Assert.assertEquals(1, i1.positiveAssertions().count());
+            Assert.assertEquals(1, i2.positiveAssertions().count());
+        }
         AbstractMapTest.commonValidate(t);
     }
 

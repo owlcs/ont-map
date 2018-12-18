@@ -18,8 +18,10 @@
 
 package ru.avicomp.map.tests;
 
+import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.Test;
@@ -235,6 +237,67 @@ public class SaveFunctionTest {
         TestUtils.debug(map2);
         map2.runInference(src.getBaseGraph(), dst.getBaseGraph());
         data.validate(dst);
+    }
+
+    @Test
+    public void testVarArgMappingAndShare() {
+        MapManager m1 = Managers.createMapManager();
+        long count = m1.functions().count();
+        VarArgMapTest data = new VarArgMapTest();
+        OntGraphModel src = data.assembleSource();
+        OntGraphModel dst = data.assembleTarget();
+        MapModel map1 = data.assembleMapping(m1, src, dst);
+        TestUtils.debug(map1);
+
+        MapContext c = map1.contexts().findFirst().orElseThrow(AssertionError::new);
+        OntNDP tp1 = TestUtils.findOntEntity(dst, OntNDP.class, "tp1");
+        MapFunction.Call call = c.properties()
+                .filter(x -> tp1.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new).getMapping();
+        String funcName = "http://zzz#formatString";
+        LOGGER.info("Create function <{}>", funcName);
+        MapFunction formatString = call.save(funcName);
+        TestUtils.debug(TestUtils.getPrimaryGraph(m1));
+        Assert.assertTrue(formatString.isUserDefined());
+        assertFunctionDependencies(formatString, m1);
+        Assert.assertEquals(7, formatString.args().count());
+        Assert.assertEquals(count + 1, m1.functions().count());
+        Assert.assertEquals(2, m1.getGraph().find(Node.ANY, RDFS.subPropertyOf.asNode(), Node.ANY).toSet().size());
+
+        LOGGER.info("Copy to another manager");
+        MapManager m2 = Managers.createMapManager();
+        Assert.assertEquals(count, m2.functions().count());
+        m2.addGraph(m1.getGraph());
+        Assert.assertEquals(count + 1, m2.functions().count());
+
+        LOGGER.info("Assemble new mapping using property mapping function <{}> and run inference.", formatString);
+        OntClass sc = TestUtils.findOntEntity(src, OntClass.class, "C1");
+        OntClass tc = TestUtils.findOntEntity(dst, OntClass.class, "TC1");
+        OntNDP p1 = TestUtils.findOntEntity(src, OntNDP.class, "p1");
+        OntNDP p2 = TestUtils.findOntEntity(src, OntNDP.class, "p2");
+        OntNDP p3 = TestUtils.findOntEntity(src, OntNDP.class, "p3");
+        OntNDP p4 = TestUtils.findOntEntity(src, OntNDP.class, "p4");
+        OntNDP p5 = TestUtils.findOntEntity(src, OntNDP.class, "p5");
+        OntNDP p6 = TestUtils.findOntEntity(src, OntNDP.class, "p6");
+        OntNDP p7 = TestUtils.findOntEntity(src, OntNDP.class, "p7");
+
+        MapModel map2 = m2.createMapModel()
+                .createContext(sc, tc, m2.getFunction(SPINMAPL.changeNamespace).create()
+                        .addLiteral(SPINMAPL.targetNamespace, "urn://x#"))
+                .addPropertyBridge(m2.getFunction(formatString.name()).create()
+                        .addProperty(SP.arg1, p1)
+                        .addProperty(SP.arg2, p2)
+                        .addProperty(SP.arg3, p3)
+                        .addProperty(SP.arg4, p4)
+                        .addProperty(SP.arg5, p5)
+                        .addProperty(SP.getArgProperty(6), p6)
+                        .addProperty(SP.getArgProperty(7), p7)
+                        .build(), tp1)
+                .getModel();
+        TestUtils.debug(map2);
+        map2.runInference(src.getBaseGraph(), dst.getBaseGraph());
+
+        TestUtils.debug(dst);
+        VarArgMapTest.validate(dst, false);
     }
 
     @Test

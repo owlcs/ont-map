@@ -272,7 +272,7 @@ class ContextMappingHelper {
                 if (res.replacement.containsKey(property)) {
                     variable = res.replacement.get(property);
                 } else {
-                    res.replacement.put(property, variable = m.getArgVariable(variableIndex++));
+                    res.replacement.put(property, variable = SpinModels.getSPINArgVariable(m, variableIndex++));
                 }
                 m.add(expr, s.getPredicate(), variable);
                 m.remove(s);

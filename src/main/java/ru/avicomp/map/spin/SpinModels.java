@@ -19,9 +19,11 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
@@ -108,6 +110,74 @@ public class SpinModels {
     }
 
     /**
+     * Retrieves and lists all spin-api arguments as a stream.
+     *
+     * @param function {@link Resource}, must be in model, not {@code null}
+     * @return Stream of URIs
+     */
+    public static Stream<String> listSpinArguments(Resource function) {
+        return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
+                        .filterKeep(s -> s.getObject().isAnon())
+                        .mapWith(Statement::getResource),
+                x -> x.listProperties(SPL.predicate).filterKeep(s -> s.getObject().isURIResource())
+                        .mapWith(Statement::getResource).mapWith(Resource::getURI)));
+    }
+
+    /**
+     * Returns index argument variable as resource with {@link SPIN#NS} namespace, e.g. {@code spin:_arg5}.
+     *
+     * @param m     {@link Model}, not {@code null}
+     * @param index positive integer
+     * @return {@link Resource}
+     */
+    public static Resource getSPINArgVariable(Model m, int index) {
+        return getSpinVariable(m, SPIN.getArgVariable(index).getURI());
+    }
+
+    /**
+     * Returns index argument property with {@link SP#NS} namespace, e.g. {@code sp:arg5}.
+     *
+     * @param m     {@link Model}, not {@code null}
+     * @param index positive integer
+     * @return {@link Property}
+     */
+    public static Property getSPArgProperty(Model m, int index) {
+        return getSpinProperty(m, SP.getArgProperty(index).getURI());
+    }
+
+    /**
+     * Finds or creates (if needed) a property with the given uri that has {@code rdfs:subPropertyOf == sp:arg}.
+     *
+     * @param m   {@link Model}, not {@code null}
+     * @param uri String, not {@code null}
+     * @return fresh or existing {@link Property}
+     */
+    public static Property getSpinProperty(Model m, String uri) {
+        Property res = m.getProperty(uri);
+        if (!m.contains(res, RDF.type, RDF.Property)) {
+            m.createResource(uri, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
+        }
+        return res;
+    }
+
+    /**
+     * Finds or creates (if needed) {@code sp:Variable} with the given uri.
+     *
+     * @param m   {@link Model}, not {@code null}
+     * @param uri String, not {@code null}
+     * @return fresh or existing {@link Resource}-variable description
+     */
+    public static Resource getSpinVariable(Model m, String uri) {
+        Resource res = m.getResource(uri);
+        if (!m.contains(res, RDF.type, SP.Variable)) {
+            String name = res.getLocalName().replaceFirst("^_(.+)$", "$1");
+            res.inModel(m).addProperty(RDF.type, SP.Variable)
+                    .addProperty(SP.varName, name);
+        }
+        return res;
+    }
+
+    /**
      * Answers {@code true} if the given resource belongs to the specified {@code model} including all its content.
      * Always returns {@code true} if {@code test.getModel()} equals to the {@code model}.
      *
@@ -164,19 +234,20 @@ public class SpinModels {
     }
 
     /**
-     * Prints the given resource-function "as is" into the specified graph.
+     * Prints the given spin resource-function "as it is" into the specified graph.
      *
      * @param model    {@link Model} the graph to print, not {@code null}
      * @param function {@link Resource}, that is define spin-function, not {@code null}
      * @return the same resource, but belonged to the specified model
      */
-    public static Resource printFunctionBody(Model model, Resource function) {
-        // todo: also need to handle variables and other function-specific resources, which go independently
+    public static Resource printSpinFunctionBody(Model model, Resource function) {
+        listSpinArguments(function).forEach(s -> getSpinProperty(model, s));
         return addResourceContent(model, function);
     }
 
     /**
-     * Adds all the content associated with the given resource to the specified model.
+     * Adds all the content associated with the given resource (including sub-resource tree)
+     * into the specified model.
      * Returns a resource that is in the model.
      *
      * @param m {@link Model} the graph to add content, not {@code null}

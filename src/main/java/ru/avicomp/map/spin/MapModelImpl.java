@@ -421,43 +421,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Returns {@code spin:_arg$i} argument variable.
-     *
-     * @param i int
-     * @return {@link Resource}
-     */
-    public Resource getArgVariable(int i) {
-        return createVariable(SPIN._arg(i).getURI());
-    }
-
-    /**
-     * Finds or creates (if needed) {@code sp:Variable}.
-     *
-     * @param uri String
-     * @return {@link Resource}
-     */
-    public Resource createVariable(String uri) {
-        Resource res = getResource(uri);
-        if (!contains(res, RDF.type, SP.Variable)) {
-            String name = res.getLocalName().replaceFirst("^_(.+)$", "$1");
-            res.inModel(this).addProperty(RDF.type, SP.Variable)
-                    .addProperty(SP.varName, name);
-        }
-        return res;
-    }
-
-    /**
      * Creates or finds a property which has {@code rdfs:subPropertyOf == sp:arg}.
      *
      * @param uri String
      * @return {@link Property}
      */
     public Property createArgProperty(String uri) {
-        Property res = getProperty(uri);
-        if (!contains(res, RDF.type, RDF.Property)) {
-            createResource(uri, RDF.Property).addProperty(RDFS.subPropertyOf, SP.arg);
-        }
-        return res;
+        return SpinModels.getSpinProperty(this, uri);
     }
 
     /**
