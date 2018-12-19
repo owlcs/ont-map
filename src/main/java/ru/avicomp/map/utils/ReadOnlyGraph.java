@@ -36,7 +36,6 @@ import java.util.Objects;
 @SuppressWarnings("WeakerAccess")
 public class ReadOnlyGraph extends UnmodifiableGraph {
 
-    @SuppressWarnings("deprecation")
     private static final Capabilities READ_ONLY_CAPABILITIES = new Capabilities() {
         @Override
         public boolean sizeAccurate() {

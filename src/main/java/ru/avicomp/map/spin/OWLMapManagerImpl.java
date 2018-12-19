@@ -24,6 +24,7 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyID;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.system.SystemModels;
 import ru.avicomp.ontapi.*;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;

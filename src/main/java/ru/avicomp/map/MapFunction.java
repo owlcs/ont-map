@@ -312,11 +312,11 @@ public interface MapFunction extends Description {
          * <p>
          * Note: currently this functionality is available only to those {@link Call}s,
          * that belong to a {@link MapModel mapping}s.
-         * In an abstract (manager) level this method invocation will cause a {@link MapJenaException}.
+         * At the abstract (manager) level this method invocation will cause a {@link MapJenaException}.
          * To get models calls use {@link MapResource#getMapping()} and {@link MapResource#getFilter()}.
          * <p>
-         * Also note that functions, whose calls cannot contain other calls, also are not allowed be saved,
-         * even from a model level.
+         * Also note that functions, whose calls cannot contain other calls, also are not allowed to be saved,
+         * even at the model level.
          * If such a function appears in a chain it will be excluded from consideration.
          *
          * @param name String, a new function name (iri), not {@code null}

@@ -119,8 +119,10 @@ public class SpinModels {
         return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
                         .filterKeep(s -> s.getObject().isAnon())
                         .mapWith(Statement::getResource),
-                x -> x.listProperties(SPL.predicate).filterKeep(s -> s.getObject().isURIResource())
-                        .mapWith(Statement::getResource).mapWith(Resource::getURI)));
+                c -> c.listProperties(SPL.predicate)
+                        .filterKeep(s -> s.getObject().isURIResource())
+                        .mapWith(Statement::getResource)
+                        .mapWith(Resource::getURI)));
     }
 
     /**

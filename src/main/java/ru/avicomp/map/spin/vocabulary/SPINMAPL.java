@@ -21,7 +21,7 @@ package ru.avicomp.map.spin.vocabulary;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * Vocabulary of the Topbraid SPINMAPL library.
@@ -30,7 +30,7 @@ import ru.avicomp.map.spin.SystemModels;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SPINMAPL {
-    public static final String BASE_URI = SystemModels.Resources.SPINMAPL.getURI();
+    public static final String BASE_URI = Resources.SPINMAPL.getURI();
     public static final String NS = BASE_URI + "#";
     public final static String PREFIX = "sinmapl";
 

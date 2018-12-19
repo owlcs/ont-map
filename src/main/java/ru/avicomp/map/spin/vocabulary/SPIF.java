@@ -21,7 +21,7 @@ package ru.avicomp.map.spin.vocabulary;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * Vocabulary of SPIF Library.
@@ -35,7 +35,7 @@ import ru.avicomp.map.spin.SystemModels;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SPIF {
-    public static final String BASE_URI = SystemModels.Resources.SPIF.getURI();
+    public static final String BASE_URI = Resources.SPIF.getURI();
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spif";
     public static final String ARG_NS = "http://spinrdf.org/arg#";

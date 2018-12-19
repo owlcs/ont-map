@@ -23,7 +23,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * A copy-paste from spin.
@@ -31,9 +31,9 @@ import ru.avicomp.map.spin.SystemModels;
  *
  * @see SP description about reasons of copy-pasting
  */
-@SuppressWarnings({"WeakerAccess", "unused"})
+@SuppressWarnings({"unused"})
 public class SPL {
-    public static final String BASE_URI = SystemModels.Resources.SPL.getURI();
+    public static final String BASE_URI = Resources.SPL.getURI();
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spl";
 
@@ -81,6 +81,6 @@ public class SPL {
     }
 
     public static Model getModel() {
-        return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
+        return SpinModelConfig.createSpinModel(Resources.SPL.getGraph());
     }
 }

@@ -19,7 +19,6 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.atlas.io.IndentedWriter;
-import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
@@ -59,9 +58,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * An extended spin implementation, which is attached to the specified {@link Context}.
- * Such an approach is in order to split ARQ registers by managers,
- * and therefore each manager will have a separated and unique list of functions inside.
+ * An extended spin implementation, which is tightly bound with the {@link Context Jena Context}.
+ * This approach is designed to split ARQ registers by managers
+ * so that each manager has its own list of functions inside and cannot affects others.
  * <p>
  * Created by @szuev on 20.06.2018.
  *
@@ -73,24 +72,33 @@ import java.util.Objects;
 public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     private final Context context;
 
-    protected MapARQFactory() {
-        this(createARQContext(ARQ.getContext()));
-    }
-
     public MapARQFactory(Context context) {
         this.context = Objects.requireNonNull(context, "Null context");
     }
 
     /**
-     * Creates a copy of {@link Context} with a copied {@link FunctionRegistry} and {@link PropertyFunctionRegistry} inside.
+     * Creates a fresh {@link MapARQFactory} with a new {@link Context} inside,
+     * which contains all functions and property functions from the system-wide ARQ context
+     * and also all available spin and spif functions.
      *
-     * @param base {@link Context} to copy from
+     * @return {@link MapARQFactory}
+     */
+    public static MapARQFactory createSPINARQFactory() {
+        Context context = copyContext(ARQ.getContext());
+        SPINRegistry.putAll(context);
+        return new MapARQFactory(context);
+    }
+
+    /**
+     * Creates a deep copy of the specified {@link Context}.
+     *
+     * @param from {@link Context} to copy from
      * @return {@link Context} new instance with the same content as in the given context
      */
-    public static Context createARQContext(Context base) {
-        FunctionRegistry fr = copy(FunctionRegistry.get(base));
-        PropertyFunctionRegistry pfr = copy(PropertyFunctionRegistry.get(base));
-        Context res = new Context(base) {
+    public static Context copyContext(Context from) {
+        FunctionRegistry fr = copy(FunctionRegistry.get(from));
+        PropertyFunctionRegistry pfr = copy(PropertyFunctionRegistry.get(from));
+        Context res = new Context(from) {
 
             @Override
             public String toString() {
@@ -103,37 +111,51 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     }
 
     /**
-     * Copies a {@link FunctionRegistry} to new one.
+     * Copies a {@link FunctionRegistry} to a new one.
      *
-     * @param base registry to copy from
+     * @param from registry to copy from, not {@code null}
      * @return new instance with the same content
      */
-    public static FunctionRegistry copy(FunctionRegistry base) {
+    public static FunctionRegistry copy(FunctionRegistry from) {
         FunctionRegistry res = new FunctionRegistry();
-        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
+        from.keys().forEachRemaining(k -> res.put(k, from.get(k)));
         return res;
     }
 
     /**
-     * Copies a {@link PropertyFunctionRegistry} to new one.
+     * Copies a {@link PropertyFunctionRegistry} to a new one.
      *
-     * @param base registry to copy from
+     * @param from registry to copy from, not {@code null}
      * @return new instance with the same content
      */
-    public static PropertyFunctionRegistry copy(PropertyFunctionRegistry base) {
+    public static PropertyFunctionRegistry copy(PropertyFunctionRegistry from) {
         PropertyFunctionRegistry res = new PropertyFunctionRegistry();
-        Iter.asStream(base.keys()).forEach(k -> res.put(k, base.get(k)));
+        from.keys().forEachRemaining(k -> res.put(k, from.get(k)));
         return res;
     }
 
+    /**
+     * Returns the {@link Context Jena Context}, that is associated with this factory.
+     *
+     * @return {@link Context}, not {@code null}
+     */
     public Context getContext() {
         return context;
     }
 
+    /**
+     * Returns the {@link FunctionRegistry Jena Function Registry}, that is associated with this factory.
+     * @return {@link FunctionRegistry}
+     */
     public FunctionRegistry getFunctionRegistry() {
         return FunctionRegistry.get(context);
     }
 
+    /**
+     * Returns the {@link PropertyFunctionRegistry Jena Property Function Registry},
+     * that is associated with this factory.
+     * @return {@link PropertyFunctionRegistry}
+     */
     public PropertyFunctionRegistry getPropertyFunctionRegistry() {
         return PropertyFunctionRegistry.get(context);
     }
@@ -175,7 +197,8 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     /**
      * Auxiliary method to replace ARQ implementation in runtime.
      *
-     * @param inModel {@link Resource} with {@code rdf:type = spin:Function} in model with {@link SpinModelConfig#LIB_PERSONALITY spin-personality}.
+     * @param inModel {@link Resource} that has {@code rdf:type = spin:Function} in a model
+     *                with {@link SpinModelConfig#LIB_PERSONALITY Spin Personality} attached.
      * @throws UnsupportedPolymorphismException in case of incompatible resource in model
      */
     public void replace(Resource inModel) throws UnsupportedPolymorphismException {
@@ -185,19 +208,22 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     }
 
     /**
-     * Registers an ARQ function.
-     * If the provided Function has an executable body ({@code spin:body}) and is not a magic property,
-     * then registers an ARQ function for it with the current FunctionRegistry.
-     * If there is an existing function with the same URI already registered,
-     * then it will only be replaced (if it is also a {@link org.topbraid.spin.arq.SPINFunctionFactory spin function factory implementation}).
+     * Registers the given {@link org.topbraid.spin.model.Function Spin Function} as an ARQ-function.
+     * If the provided {@code Function} has an executable body (i.e. {@code spin:body}) and
+     * it is not a magic property (i.e. has no type {@code spin:MagicProperty}), then
+     * adds a new ARQ-function for it within the current {@link #getFunctionRegistry() FunctionRegistry}.
+     * If there is already a registered function with the same URI,
+     * and it is also a {@link org.topbraid.spin.arq.SPINFunctionFactory SPIN Function Factory} instance,
+     * then replaces an existing ARQ-function with a new one.
      *
      * @param func {@link org.apache.jena.sparql.function.Function} the function to register
-     * @return {@link FunctionFactory} or null if function was not registered
+     * @return {@link FunctionFactory} or {@code null} if the function has not been registered
      * @see org.topbraid.spin.system.SPINModuleRegistry#registerARQFunction(org.topbraid.spin.model.Function)
      */
+    @SuppressWarnings("JavadocReference")
     public FunctionFactory registerFunction(org.topbraid.spin.model.Function func) {
         FunctionRegistry reg = getFunctionRegistry();
-        // notice that FunctionRegistry#get works in lazy manner: it can also init auto-loaded functions
+        // notice that FunctionRegistry works in lazy manner: it can also init auto-loaded functions while get
         FunctionFactory old = reg.get(func.getURI());
         if (!func.hasProperty(SPIN.body) || func.isMagicProperty()) {
             return null;
@@ -212,11 +238,14 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     }
 
     /**
-     * Registers an ARQ property function.
-     * If the provided Function has an executable body (@code spin:body}) and is a magic property (has type {@code spin:MagicProperty}),
-     * then registers an ARQ function for it with the current PropertyFunctionRegistry.
-     * If there is an existing function with the same URI already registered,
-     * then it will only be replaced (if it is also a {@link org.topbraid.spin.arq.SPINARQPFunction spin property function}).
+     * Registers the given {@link org.topbraid.spin.model.Function Spin Function} as an ARQ-property-function.
+     * If the provided {@code Function} has an executable body (i.e. {@code spin:body}) and
+     * it is a magic property (has type {@code spin:MagicProperty}),
+     * then adds a new ARQ-property-function for it within
+     * the current {@link #getPropertyFunctionRegistry() PropertyFunctionRegistry}.
+     * If there is already a registered function with the same URI,
+     * and it is also a {@link org.topbraid.spin.arq.SPINARQPFunction SPIN Property Function} instance,
+     * then replaces an existing ARQ-property-function with a new one.
      *
      * @param func {@link org.topbraid.spin.model.Function} the property function to register
      * @return {@link PropertyFunctionFactory} or null if function was not registered
@@ -224,7 +253,8 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      */
     public PropertyFunctionFactory registerProperty(org.topbraid.spin.model.Function func) {
         PropertyFunctionRegistry reg = getPropertyFunctionRegistry();
-        // notice that PropertyFunctionRegistry#get works in lazy manner: it can also init auto-loaded property functions
+        // notice that PropertyFunctionRegistry works in lazy manner:
+        // it can also init auto-loaded property functions while get
         PropertyFunctionFactory old = reg.get(func.getURI());
         if (!func.hasProperty(SPIN.body) || !func.isMagicProperty()) {
             return null;
@@ -248,12 +278,14 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     }
 
     /**
-     * Wraps a spin function as ARQ property function-factory.
-     * Since we in ONT-MAP API do not care much about (magic) property functions
-     * (we just don't need them in bounds of ontology mapping terms), there is no our own ARQPropertyFunction implementation.
-     * Notice that {@link org.topbraid.spin.arq.SPINARQPFunction an original spin implementation} uses
-     * a global {@link org.topbraid.spin.arq.ARQFactory arq-factory} and other global things,
-     * so it is better to implement property function here, in this class (TODO).
+     * Wraps the given spin function as ARQ property function-factory.
+     * Since we, in ONT-MAP API, do not care much about (magic) property functions
+     * (we just don't need them in bounds of ontology mapping terms),
+     * there is no our own {@code ARQPropertyFunction} implementation.
+     * But the original {@link org.topbraid.spin.arq.SPINARQPFunction SPIN ARQ Property Function}
+     * implementation uses a global {@link org.topbraid.spin.arq.ARQFactory arq-factory} and other global things,
+     * so when property functions will be really used,
+     * this temporary solution must be replaced by the our implementation (TODO).
      *
      * @param func {@link org.topbraid.spin.model.Function}
      * @return {@link PropertyFunctionFactory}
@@ -277,10 +309,12 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     }
 
     /**
-     * A modified copy-paste of {@link org.topbraid.spin.arq.SPINARQFunction} in order to get rid of the use the global settings:
-     * the original impl (and everywhere throughout the spin api library) there are calls of static factories,
-     * which is a bad architectural solution, usual for spin-api.
-     * In contrast to the spin implementation it does not support {@code spin:cachable} and {@code spin:cachableForOntologies},
+     * A modified copy-paste of {@link org.topbraid.spin.arq.SPINARQFunction}
+     * in order to get rid of the use the global settings:
+     * in the original impl (and everywhere throughout the spin api library) there are calls of static factories,
+     * which is a bad architectural solution, though usual for spin-api.
+     * In contrast to the spin implementation
+     * it does not support {@code spin:cachable} and {@code spin:cachableForOntologies},
      * since that constructions are unused in spin-map library and it does not make sense in our case -
      * we'd better use our own caches if needed.
      *

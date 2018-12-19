@@ -25,7 +25,7 @@ import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -46,7 +46,7 @@ public class MathLibraryMaker {
 
     public static void main(String... args) {
         OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
-        OntID id = m.setID(SystemModels.Resources.AVC_MATH.getURI());
+        OntID id = m.setID(Resources.AVC_MATH.getURI());
         id.setVersionIRI(id.getURI() + "#1.0");
         id.addComment("A library that contains mathematical functions for some reason missing in the standard spin delivery.", null);
         id.addProperty(RDFS.seeAlso, m.getResource(MATH.URI));

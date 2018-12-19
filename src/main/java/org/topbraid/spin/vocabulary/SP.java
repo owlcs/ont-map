@@ -23,7 +23,7 @@ import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.model.Element;
 import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * A modified copy-paste from a org.topbraid.spin.vocabulary.SP.
@@ -38,9 +38,9 @@ import ru.avicomp.map.spin.SystemModels;
  * <p>
  * Created by @szuev on 05.04.2018.
  */
-@SuppressWarnings({"WeakerAccess", "unused", "deprecation"})
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class SP {
-    public static final String BASE_URI = SystemModels.Resources.SP.getURI();
+    public static final String BASE_URI = Resources.SP.getURI();
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "sp";
 
@@ -201,7 +201,7 @@ public class SP {
     }
 
     public static Model getModel() {
-        return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
+        return SpinModelConfig.createSpinModel(Resources.SP.getGraph());
     }
 
     public static String getURI() {

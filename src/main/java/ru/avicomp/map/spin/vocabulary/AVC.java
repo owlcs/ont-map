@@ -21,7 +21,7 @@ package ru.avicomp.map.spin.vocabulary;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * The vocabulary that describes
@@ -35,8 +35,8 @@ import ru.avicomp.map.spin.SystemModels;
  * Created by @szuev on 07.04.2018.
  */
 public class AVC {
-    public static final String BASE_URI = SystemModels.Resources.AVC.getURI();
-    public static final String LIB_URI = SystemModels.Resources.AVC_LIB.getURI();
+    public static final String BASE_URI = Resources.AVC_SPIN.getURI();
+    public static final String LIB_URI = Resources.AVC_LIB.getURI();
     public static final String NS = BASE_URI + "#";
 
     public static final String DEFAULT_PREDICATE_SUFFIX = "DefaultValue";

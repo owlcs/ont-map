@@ -32,7 +32,7 @@ import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.MapManagerImpl;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.SystemModels;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.transforms.vocabulary.AVC;

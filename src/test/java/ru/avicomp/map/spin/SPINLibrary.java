@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * Created by @szuev on 14.06.2018.
  *
- * @see ru.avicomp.map.spin.SystemModels
+ * @see ru.avicomp.map.spin.system.SystemModels
  */
 public enum SPINLibrary {
     SP("/etc/sp.ttl", "http://spinrdf.org/sp"),

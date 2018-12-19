@@ -24,7 +24,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDF;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * Vocabulary for http://spinrdf.org/spinmap
@@ -34,7 +34,7 @@ import ru.avicomp.map.spin.SystemModels;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SPINMAP {
 
-    public static final String BASE_URI = SystemModels.Resources.SPINMAP.getURI();
+    public static final String BASE_URI = Resources.SPINMAP.getURI();
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spinmap";
 

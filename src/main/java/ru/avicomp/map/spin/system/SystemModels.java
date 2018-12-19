@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.spin;
+package ru.avicomp.map.spin.system;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.mem.GraphMem;
@@ -32,8 +32,9 @@ import ru.avicomp.map.utils.ReadOnlyGraph;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -66,15 +67,17 @@ public class SystemModels implements JenaSubsystemLifecycle {
                 .map(Map.Entry::getValue);
     }
 
-    public static Graph get(Resources resource) {
-        return graphs().get(resource.getURI());
+    @Override
+    public int level() {
+        return 799;
     }
 
     @Override
     public void start() {
         LOGGER.debug("START");
         // The following code is just in case.
-        // E.g. to prevent possible internet trips from calls of "model.read(http:..)" or something like that in the depths of topbraid API.
+        // E.g. to prevent possible internet trips from calls of "model.read(http:..)"
+        // or something like that in the depths of topbraid API.
         // A standard jena Locator (org.apache.jena.riot.system.stream.LocatorClassLoader) is used implicitly here.
         LocationMapper mapper = StreamManager.get().getLocationMapper();
         for (Resources r : Resources.values()) {
@@ -88,6 +91,9 @@ public class SystemModels implements JenaSubsystemLifecycle {
         LOGGER.debug("STOP");
     }
 
+    /**
+     * A helper to load system resources.
+     */
     private static class Loader {
         private final static Map<String, Graph> GRAPHS = load();
 
@@ -107,42 +113,4 @@ public class SystemModels implements JenaSubsystemLifecycle {
         }
     }
 
-    public enum Resources {
-        AVC("/etc/avc.spin.ttl", "http://avc.ru/spin", false),
-        AVC_LIB("/etc/avc.lib.ttl", "http://avc.ru/lib", false),
-        AVC_MATH("/etc/avc.math.ttl", "http://avc.ru/math", false),
-        AVC_FN("/etc/avc.fn.ttl", "http://avc.ru/fn", false),
-        AVC_XSD("/etc/avc.xsd.ttl", "http://avc.ru/xsd", false),
-        SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
-        SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
-        SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),
-        SPIF("/etc/spif.ttl", "http://spinrdf.org/spif"),
-        SPINMAP("/etc/spinmap.spin.ttl", "http://spinrdf.org/spinmap"),
-        SMF("/etc/functions-smf.ttl", "http://topbraid.org/functions-smf"),
-        FN("/etc/functions-fn.ttl", "http://topbraid.org/functions-fn"),
-        AFN("/etc/functions-afn.ttl", "http://topbraid.org/functions-afn"),
-        SMF_BASE("/etc/sparqlmotionfunctions.ttl", "http://topbraid.org/sparqlmotionfunctions"),
-        SPINMAPL("/etc/spinmapl.spin.ttl", "http://topbraid.org/spin/spinmapl");
-
-        private static final Set<String> SPIN_FAMILY = Arrays.stream(values())
-                .filter(x -> x.spin).map(Resources::getURI).collect(Collectors.toSet());
-
-        private final String path;
-        private final String uri;
-        private final boolean spin;
-
-        Resources(String path, String uri) {
-            this(path, uri, true);
-        }
-
-        Resources(String path, String uri, boolean spin) {
-            this.path = path;
-            this.uri = uri;
-            this.spin = spin;
-        }
-
-        public String getURI() {
-            return uri;
-        }
-    }
 }

@@ -23,7 +23,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.Resources;
 
 /**
  * Vocabulary of the SPIN Modeling Vocabulary.
@@ -31,10 +31,10 @@ import ru.avicomp.map.spin.SystemModels;
  * Created by @szuev on 11.04.2018.
  * @see SP description about reasons of copy-pasting
  */
-@SuppressWarnings({"WeakerAccess", "unused"})
+@SuppressWarnings({"unused"})
 public class SPIN {
 
-    public final static String BASE_URI = SystemModels.Resources.SPIN.getURI();
+    public final static String BASE_URI = Resources.SPIN.getURI();
     public final static String NS = BASE_URI + "#";
 
     public final static String PREFIX = "spin";
@@ -124,7 +124,7 @@ public class SPIN {
     }
 
     public static Model getModel() {
-        return SpinModelConfig.createSpinModel(SystemModels.graphs().get(BASE_URI));
+        return SpinModelConfig.createSpinModel(Resources.SPIN.getGraph());
     }
 
 }

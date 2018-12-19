@@ -32,6 +32,8 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.infer.InferenceEngineImpl;
+import ru.avicomp.map.spin.system.Resources;
+import ru.avicomp.map.spin.system.SystemModels;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -100,9 +102,8 @@ public class MapManagerImpl implements MapManager {
         this.functions = Objects.requireNonNull(map, "Null map");
         this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
         this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
-        this.arqFactory = new MapARQFactory();
         this.config = Objects.requireNonNull(conf, "Null config");
-        SPINRegistry.putAll(arqFactory);
+        this.arqFactory = MapARQFactory.createSPINARQFactory();
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 
@@ -132,7 +133,7 @@ public class MapManagerImpl implements MapManager {
      * @return {@link UnionGraph} with spin-family hierarchy of unmodifiable graphs
      */
     public static UnionGraph getSpinLibraryGraph() {
-        return Graphs.toUnion(SystemModels.get(SystemModels.Resources.SPINMAPL),
+        return Graphs.toUnion(Resources.SPINMAPL.getGraph(),
                 SystemModels.graphs(true).collect(Collectors.toSet()));
     }
 

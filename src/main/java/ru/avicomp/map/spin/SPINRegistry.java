@@ -20,6 +20,7 @@ package ru.avicomp.map.spin;
 
 import org.apache.jena.sparql.function.FunctionRegistry;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
+import org.apache.jena.sparql.util.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.PropertyChainHelperPFunction;
@@ -59,9 +60,9 @@ class SPINRegistry {
         this.propertyFunctionRegistry = propertyFunctionRegistry;
     }
 
-    static void putAll(MapARQFactory factory) {
-        // right now there are no (magic) property functions in ONT-MAP:
-        putAll(factory.getFunctionRegistry(), null);
+    static void putAll(Context context) {
+        // right now there are no (magic) property functions in the ONT-MAP system:
+        putAll(FunctionRegistry.get(context), null);
     }
 
     static void putAll(FunctionRegistry functionRegistry, PropertyFunctionRegistry propertyFunctionRegistry) {

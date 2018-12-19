@@ -23,7 +23,7 @@ import org.apache.jena.graph.Graph;
 import org.semanticweb.owlapi.model.IRI;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.OWLMapManagerImpl;
-import ru.avicomp.map.spin.SystemModels;
+import ru.avicomp.map.spin.system.SystemModels;
 import ru.avicomp.ontapi.*;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.utils.Graphs;
