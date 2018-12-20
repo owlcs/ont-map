@@ -27,23 +27,11 @@ import ru.avicomp.map.spin.system.Resources;
  * Vocabulary of the Topbraid SPINMAPL library.
  * <p>
  * Created by @szuev on 10.04.2018.
+ * @see <a href='http://topbraid.org/spin/spinmapl#'>spinmapl</a>
  */
-@SuppressWarnings({"WeakerAccess", "unused"})
 public class SPINMAPL {
     public static final String BASE_URI = Resources.SPINMAPL.getURI();
     public static final String NS = BASE_URI + "#";
-    public final static String PREFIX = "sinmapl";
-
-    public static final String SMF_URI = "http://topbraid.org/functions-smf";
-    public static final String AFN_NS = "http://jena.hpl.hp.com/ARQ/function#";
-    public static final String AFN_PREFIX = "afn";
-    public static final String FN_URI = "http://topbraid.org/functions-fn";
-    public static final String FN_NS = "http://www.w3.org/2005/xpath-functions#";
-    public static final String FN_PREFIX = "fn";
-    public static final String SMF_NS = "http://topbraid.org/sparqlmotionfunctions#";
-    public static final String SMF_PREFIX = "smf";
-
-    public static final String OWL_RL_PROPERTY_CHAIN_HELPER = "http://topbraid.org/spin/owlrl#propertyChainHelper";
 
     // functions:
     public static final Resource self = resource("self");
@@ -57,7 +45,6 @@ public class SPINMAPL {
     public static final Resource relatedObjectContext = resource("relatedObjectContext");
     public static final Resource changeNamespace = resource("changeNamespace");
     public static final Resource composeURI = resource("composeURI");
-    public static final Resource concat = ResourceFactory.createResource(FN_NS + "concat");
 
     // properties:
     public static final Property separator = property("separator");

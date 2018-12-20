@@ -34,6 +34,7 @@ import java.util.Iterator;
  * A copy-paste in order to provide correct org.apache.jena.sparql.util.Context object and an upgrade to work with jena 3.7.0.
  * WARNING: need to make sure that this class goes before in classpath or replaces the original (topbraid) class.
  * To achieve this we use maven-dependency-plugin.
+ * TODO: replace with <a href='https://github.com/spinrdf/spinrdf'>org.spinrdf:spinrdf</a> when it is available.
  * <p>
  * A Dataset that simply delegates all its calls, allowing to wrap an existing Dataset (e.g. the TopBraid Dataset).
  *

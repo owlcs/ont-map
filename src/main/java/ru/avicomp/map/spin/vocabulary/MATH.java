@@ -30,6 +30,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  *
  * @see org.apache.jena.sparql.function.StandardFunctions
  * @see org.apache.jena.sparql.ARQConstants#mathPrefix
+ * @see <a href='https://www.w3.org/2005/xpath-functions/math/'>XQuery and XPath Functions and Operators Math Namespace Document</a>
  */
 public class MATH {
     public static final String BASE_URI = "http://www.w3.org/2005/xpath-functions/math";

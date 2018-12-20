@@ -23,7 +23,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
 
 /**
  * The vocabulary for ARQ functions.
- * The namespace is deprecated, but it is used by spin-family (see file://resources/etc/functions-afn.ttl),
+ * The namespace is deprecated, but it is used by spin-family (see {@code file://resources/etc/functions-afn.ttl}),
  * so we can either put up with it, or create our own library with the same functions but with minor customization changes.
  * The second way is easier.
  * Customization is delegated to AVC library (see file://resources/etc/avc.spin.ttl, ontology http://avc.ru/spin).
@@ -31,6 +31,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  *
  * @see org.apache.jena.sparql.ARQConstants#ARQFunctionLibraryURI
  * @see org.apache.jena.sparql.ARQConstants#ARQFunctionLibraryURI_Jena2
+ * @see <a href='https://jena.apache.org/documentation/query/library-function.html#function-library'>Function Library</a>
  */
 public class ARQ {
     // old ns:

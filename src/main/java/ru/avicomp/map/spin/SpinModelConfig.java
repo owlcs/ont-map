@@ -35,16 +35,13 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 
-import java.lang.reflect.Field;
-import java.util.Map;
-
 /**
  * Settings and personalities for a {@link Model jena model} which contain spin rules and other stuff.
  * Created by @szuev on 07.04.2018.
  *
  * @see OntModelConfig
  */
-@SuppressWarnings({"WeakerAccess", "deprecation"})
+@SuppressWarnings({"WeakerAccess"})
 public class SpinModelConfig {
     // OWL2 personality (lax version)
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
@@ -59,6 +56,7 @@ public class SpinModelConfig {
      * @param p {@link Personality} to modify
      * @return {@link Personality} the same instance
      */
+    @SuppressWarnings("deprecation")
     public static Personality<RDFNode> init(Personality<RDFNode> p) {
         p.add(org.topbraid.spin.model.Aggregation.class, new SimpleImplementation(SPL.Argument.asNode(), AggregationImpl.class));
         p.add(org.topbraid.spin.model.Argument.class, new SimpleImplementation(SPL.Argument.asNode(), ArgumentImpl.class));
@@ -108,27 +106,5 @@ public class SpinModelConfig {
 
     public static Model createStandardModel(Graph graph, Personality<RDFNode> personality) {
         return new ModelCom(graph, personality);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    static Map<?, ?> getPersonalityMap(Personality<?> p) {
-        try {
-            Field f = Personality.class.getDeclaredField("types");
-            f.setAccessible(true);
-            return (Map) f.get(p);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new IllegalStateException("Unable to retrieve internal Personality map", e);
-        }
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    static void setPersonalityMap(Personality<?> p, Map<?, ?> m) {
-        try {
-            Field f = Personality.class.getDeclaredField("types");
-            f.setAccessible(true);
-            f.set(p, m);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new IllegalStateException("Unable to assign a new internal Personality map", e);
-        }
     }
 }

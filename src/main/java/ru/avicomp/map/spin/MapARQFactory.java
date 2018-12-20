@@ -35,6 +35,7 @@ import org.apache.jena.sparql.expr.Expr;
 import org.apache.jena.sparql.expr.ExprEvalException;
 import org.apache.jena.sparql.expr.ExprList;
 import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.function.Function;
 import org.apache.jena.sparql.function.FunctionEnv;
 import org.apache.jena.sparql.function.FunctionFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
@@ -49,6 +50,7 @@ import org.apache.jena.update.UpdateRequest;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.vocabulary.OWLRL;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
@@ -81,11 +83,26 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      * which contains all functions and property functions from the system-wide ARQ context
      * and also all available spin and spif functions.
      *
-     * @return {@link MapARQFactory}
+     * @param functions a {@code Map} of {@link Function}s to register, not {@code null}
+     * @return {@link MapARQFactory}, not {@code null}
      */
-    public static MapARQFactory createSPINARQFactory() {
+    public static MapARQFactory createSPINARQFactory(Map<String, Class<? extends Function>> functions) {
         Context context = copyContext(ARQ.getContext());
-        SPINRegistry.putAll(context);
+
+        FunctionRegistry fr = FunctionRegistry.get(context);
+        PropertyFunctionRegistry pfr = PropertyFunctionRegistry.get(context);
+
+        // init standard spin-arq functions and property functions. Most of them are unused, and here just in case:
+        fr.put(SPIN.ask.getURI(), new org.topbraid.spin.arq.functions.AskFunction());
+        fr.put(SPIN.eval.getURI(), new org.topbraid.spin.arq.functions.EvalFunction());
+        fr.put(SPIN.evalInGraph.getURI(), new org.topbraid.spin.arq.functions.EvalInGraphFunction());
+        fr.put(SPIN.violatesConstraints.getURI(), new org.topbraid.spin.arq.functions.ViolatesConstraintsFunction());
+        pfr.put(SPIN.construct.getURI(), org.topbraid.spin.arq.functions.ConstructPFunction.class);
+        pfr.put(SPIN.constructViolations.getURI(), org.topbraid.spin.arq.functions.ConstructViolationsPFunction.class);
+        pfr.put(SPIN.select.getURI(), org.topbraid.spin.arq.functions.SelectPFunction.class);
+        pfr.put(OWLRL.propertyChainHelper.getURI(), org.topbraid.spin.arq.PropertyChainHelperPFunction.class);
+
+        functions.forEach(fr::put);
         return new MapARQFactory(context);
     }
 
@@ -145,6 +162,7 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
 
     /**
      * Returns the {@link FunctionRegistry Jena Function Registry}, that is associated with this factory.
+     *
      * @return {@link FunctionRegistry}
      */
     public FunctionRegistry getFunctionRegistry() {
@@ -154,6 +172,7 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     /**
      * Returns the {@link PropertyFunctionRegistry Jena Property Function Registry},
      * that is associated with this factory.
+     *
      * @return {@link PropertyFunctionRegistry}
      */
     public PropertyFunctionRegistry getPropertyFunctionRegistry() {

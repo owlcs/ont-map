@@ -24,6 +24,7 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.stream.LocationMapper;
 import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.sparql.function.Function;
 import org.apache.jena.sys.JenaSubsystemLifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,15 @@ public class SystemModels implements JenaSubsystemLifecycle {
         return SystemModels.graphs().entrySet().stream()
                 .filter(e -> spin == Resources.SPIN_FAMILY.contains(e.getKey()))
                 .map(Map.Entry::getValue);
+    }
+
+    /**
+     * Returns all ARQ functions to be registered in a manager.
+     *
+     * @return Unmodifiable Map with function uri as a key and function java body as a value
+     */
+    public static Map<String, Class<? extends Function>> functions() {
+        return SPIFFunctions.FUNCTIONS;
     }
 
     @Override

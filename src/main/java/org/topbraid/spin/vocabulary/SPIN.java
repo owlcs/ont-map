@@ -30,6 +30,7 @@ import ru.avicomp.map.spin.system.Resources;
  * Copy-pasted to avoid patching builtin personalities.
  * Created by @szuev on 11.04.2018.
  * @see SP description about reasons of copy-pasting
+ * @see <a href='http://spinrdf.org/spin#'>spin</a>
  */
 @SuppressWarnings({"unused"})
 public class SPIN {

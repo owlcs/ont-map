@@ -30,6 +30,7 @@ import ru.avicomp.map.spin.system.Resources;
  * Created by @szuev on 13.04.2018.
  *
  * @see SP description about reasons of copy-pasting
+ * @see <a href='http://spinrdf.org/spl#'>spl</a>
  */
 @SuppressWarnings({"unused"})
 public class SPL {

@@ -28,14 +28,16 @@ import ru.avicomp.map.spin.system.Resources;
  * SPIF is a library of "generally useful" SPARQL functions defined using SPIN.
  * This library consists of functions that are impossible or difficult to express in terms of other functions,
  * but rather will require a native implementation in languages like Java.
- * In contrast, the SPL (http://spinrdf.org/spl#) namespace is reserved for functions that can be expressed entirely
+ * In contrast, the SPL ({@code http://spinrdf.org/spl#}) namespace is reserved for functions that can be expressed entirely
  * in terms of other SPARQL expressions and standard built-ins.
  * <p>
  * Created by @szuev on 13.04.2018.
+ * @see <a href='http://spinrdf.org/spif#'>spif</a>
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SPIF {
     public static final String BASE_URI = Resources.SPIF.getURI();
+    public static final String SMF_NS = "http://topbraid.org/sparqlmotionfunctions#";
     public static final String NS = BASE_URI + "#";
     public static final String PREFIX = "spif";
     public static final String ARG_NS = "http://spinrdf.org/arg#";

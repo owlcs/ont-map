@@ -27,11 +27,12 @@ import org.apache.jena.vocabulary.RDF;
 import ru.avicomp.map.spin.system.Resources;
 
 /**
- * Vocabulary for http://spinrdf.org/spinmap
+ * Vocabulary for {@code http://spinrdf.org/spinmap}
  * Created by @szuev on 07.04.2018.
  * @see SP description about reasons of copy-pasting
+ * @see <a href='http://spinrdf.org/spinmap#'>spinmap</a>
  */
-@SuppressWarnings({"WeakerAccess", "unused"})
+@SuppressWarnings({"unused"})
 public class SPINMAP {
 
     public static final String BASE_URI = Resources.SPINMAP.getURI();

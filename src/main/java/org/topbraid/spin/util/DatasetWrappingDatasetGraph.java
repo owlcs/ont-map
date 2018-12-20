@@ -38,6 +38,7 @@ import java.util.List;
  * A copy-paste in order to provide correct org.apache.jena.sparql.util.Context object and an upgrade to work with jena 3.7.0.
  * WARNING: need to make sure that this class goes before in classpath or replaces the original (topbraid) class.
  * To achieve this we use maven-dependency-plugin.
+ * TODO: replace with <a href='https://github.com/spinrdf/spinrdf'>org.spinrdf:spinrdf</a> when it is available.
  * <p>
  * An implementation of DatasetGraph that delegates all work to a given Dataset implementation.
  *
@@ -168,8 +169,7 @@ public class DatasetWrappingDatasetGraph extends DatasetGraphBase {
 
     @Override
     public void begin(TxnType type) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        dataset.begin(type);
     }
 
     @Override
@@ -179,8 +179,17 @@ public class DatasetWrappingDatasetGraph extends DatasetGraphBase {
 
     @Override
     public boolean promote(Promote mode) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        return false;
+    }
+
+    @Override
+    public ReadWrite transactionMode() {
+        return dataset.transactionMode();
+    }
+
+    @Override
+    public TxnType transactionType() {
+        return dataset.transactionType();
     }
 
     @Override
@@ -201,18 +210,6 @@ public class DatasetWrappingDatasetGraph extends DatasetGraphBase {
     @Override
     public void end() {
         dataset.end();
-    }
-
-    @Override
-    public ReadWrite transactionMode() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TxnType transactionType() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
     }
 
     @Override

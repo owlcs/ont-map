@@ -103,7 +103,7 @@ public class MapManagerImpl implements MapManager {
         this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
         this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
         this.config = Objects.requireNonNull(conf, "Null config");
-        this.arqFactory = MapARQFactory.createSPINARQFactory();
+        this.arqFactory = MapARQFactory.createSPINARQFactory(SystemModels.functions());
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 

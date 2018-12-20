@@ -29,6 +29,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  *
  * @see org.apache.jena.sparql.function.StandardFunctions
  * @see org.apache.jena.sparql.ARQConstants#fnPrefix
+ * @see <a href='http://www.w3.org/2005/xpath-functions/'>XQuery, XPath, and XSLT Functions and Operators Namespace Document</a>
  */
 public class FN {
     public static final String BASE_URI = "http://www.w3.org/2005/xpath-functions";

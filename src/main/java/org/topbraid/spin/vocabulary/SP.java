@@ -37,6 +37,7 @@ import ru.avicomp.map.spin.system.Resources;
  * To achieve this we use maven-dependency-plugin.
  * <p>
  * Created by @szuev on 05.04.2018.
+ * @see <a href='http://spinrdf.org/sp#'>sp</a>
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SP {
