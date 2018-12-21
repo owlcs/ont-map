@@ -26,6 +26,7 @@ import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.sparql.graph.UnmodifiableGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 
 import java.io.IOException;
@@ -40,7 +41,7 @@ import java.util.Map;
  *
  * Created by @szuev on 14.06.2018.
  *
- * @see ru.avicomp.map.spin.system.SystemModels
+ * @see SystemLibraries
  */
 public enum SPINLibrary {
     SP("/etc/sp.ttl", "http://spinrdf.org/sp"),

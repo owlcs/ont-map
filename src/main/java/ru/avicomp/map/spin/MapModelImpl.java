@@ -387,7 +387,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public OntGraphModel asGraphModel() {
+    public MapModelImpl asGraphModel() {
         return this;
     }
 

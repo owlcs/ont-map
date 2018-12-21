@@ -32,7 +32,7 @@ import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.MapManagerImpl;
-import ru.avicomp.map.spin.system.SystemModels;
+import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.transforms.vocabulary.AVC;
@@ -49,11 +49,11 @@ public class SystemModelsTest {
 
     @Test
     public void testInit() {
-        Map<String, Graph> graphs = SystemModels.graphs();
+        Map<String, Graph> graphs = SystemLibraries.graphs();
         Assert.assertEquals(15, graphs.size());
         graphs.forEach((expected, g) -> Assert.assertEquals(expected, Graphs.getURI(g)));
         OntModelFactory.init();
-        Assert.assertSame(graphs, SystemModels.graphs());
+        Assert.assertSame(graphs, SystemLibraries.graphs());
         Model lib = ((MapManagerImpl) Managers.createMapManager()).getLibrary();
         String tree = Graphs.importsTreeAsString(lib.getGraph());
         LOGGER.debug("Graphs tree:\n{}", tree);

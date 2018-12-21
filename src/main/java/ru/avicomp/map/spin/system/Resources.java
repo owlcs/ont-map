@@ -19,9 +19,17 @@
 package ru.avicomp.map.spin.system;
 
 import org.apache.jena.graph.Graph;
+import org.apache.jena.mem.GraphMem;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.avicomp.map.utils.ReadOnlyGraph;
 
-import java.util.Arrays;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -68,6 +76,28 @@ public enum Resources {
     }
 
     public Graph getGraph() {
-        return SystemModels.graphs().get(getURI());
+        return SystemLibraries.graphs().get(getURI());
     }
-}
+
+    /**
+     * A helper to load system resources.
+     */
+    static class Loader {
+        private static final Logger LOGGER = LoggerFactory.getLogger(Loader.class);
+        final static Map<String, Graph> GRAPHS = load();
+
+        private static Map<String, Graph> load() throws UncheckedIOException {
+            Map<String, Graph> res = new HashMap<>();
+            for (Resources f : values()) {
+                Graph g = new GraphMem();
+                try (InputStream in = SystemLibraries.class.getResourceAsStream(f.path)) {
+                    RDFDataMgr.read(g, in, null, Lang.TURTLE);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Can't load " + f.path, e);
+                }
+                LOGGER.debug("Graph {} is loaded, size: {}", f.uri, g.size());
+                res.put(f.uri, ReadOnlyGraph.wrap(g));
+            }
+            return Collections.unmodifiableMap(res);
+        }
+    }}

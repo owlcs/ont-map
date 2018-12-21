@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import ru.avicomp.map.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntID;
+import ru.avicomp.ontapi.jena.model.OntObject;
 
 import java.util.Arrays;
 import java.util.List;
@@ -126,6 +127,7 @@ public class CommonMappingTest {
         // list resources
         info("Root statements:");
         m.rules().map(MapResource::asResource)
+                .map(s -> s.as(OntObject.class))
                 .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asGraphModel(), r.getRoot())));
 
         Assert.assertEquals(data.contexts, m.contexts().count());

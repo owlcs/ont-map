@@ -40,7 +40,7 @@ import java.util.Map;
  * Created by @ssz on 20.12.2018.
  *
  * @see org.apache.jena.sys.JenaSystem
- * @see SystemModels
+ * @see SystemLibraries
  */
 public interface Extension extends JenaSubsystemLifecycle {
 
@@ -93,7 +93,7 @@ public interface Extension extends JenaSubsystemLifecycle {
 
     /**
      * Provides a marker as to the level to order initialization: 40, 50, ...
-     * Level must be between {@link InitARQ#level() 30} and {@link SystemModels#level() 799} exclusive.
+     * Level must be between {@link InitARQ#level() 30} and {@link SystemLibraries#level() 799} exclusive.
      *
      * @return positive int
      */

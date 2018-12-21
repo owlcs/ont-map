@@ -19,9 +19,6 @@
 package ru.avicomp.map.spin.system;
 
 import org.apache.jena.graph.Graph;
-import org.apache.jena.mem.GraphMem;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.stream.LocationMapper;
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.apache.jena.sparql.function.Function;
@@ -32,26 +29,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.utils.ReadOnlyGraph;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * A Jena module and spin library loader.
+ * A Jena module and spin libraries loader,
+ * that also provides access to all system {@link Graph}s with spin-descriptions,
+ * {@link Function ARQ-Functions} and {@link PropertyFunction ARQ-Properties}.
  * <p>
  * Created by @szuev on 05.04.2018.
+ *
+ * @see Extension
+ * @see JenaSystem
  */
-public class SystemModels implements JenaSubsystemLifecycle {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemModels.class);
+public class SystemLibraries implements JenaSubsystemLifecycle {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemLibraries.class);
 
     private static volatile Map<String, Graph> graphs;
     private static volatile Map<String, Class<? extends Function>> functions;
     private static volatile Map<String, Class<? extends PropertyFunction>> properties;
-
 
     /**
      * Returns all library models from the system resources.
@@ -60,7 +59,28 @@ public class SystemModels implements JenaSubsystemLifecycle {
      * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology iris as keys.
      */
     public static Map<String, Graph> graphs() {
-        return get(graphs);
+        return get(() -> graphs);
+    }
+
+    /**
+     * Returns all ARQ functions to be registered in a manager.
+     * Singleton.
+     *
+     * @return Unmodifiable Map with uri as a key and {@link Function}-impl class java body as a value
+     */
+    public static Map<String, Class<? extends Function>> functions() {
+        return get(() -> functions);
+    }
+
+    /**
+     * Returns all ARQ property functions to be registered in a manager.
+     * A {@link PropertyFunction} has no direct usage in the API, but it can be used to construct real functions.
+     * Singleton.
+     *
+     * @return Unmodifiable Map with uri as a key and {@link PropertyFunction}-impl class java body as a value
+     */
+    public static Map<String, Class<? extends PropertyFunction>> properties() {
+        return get(() -> properties);
     }
 
     /**
@@ -70,38 +90,20 @@ public class SystemModels implements JenaSubsystemLifecycle {
      * @return Stream of {@link Graph}s
      */
     public static Stream<Graph> graphs(boolean spin) {
-        return SystemModels.graphs().entrySet().stream()
+        return graphs().entrySet().stream()
                 .filter(e -> spin == Resources.SPIN_FAMILY.contains(e.getKey()))
                 .map(Map.Entry::getValue);
     }
 
-    /**
-     * Returns all ARQ functions to be registered in a manager.
-     *
-     * @return Unmodifiable Map with uri as a key and {@link Function}-impl class java body as a value
-     */
-    public static Map<String, Class<? extends Function>> functions() {
-        return get(functions);
-    }
-
-    /**
-     * Returns all ARQ property functions to be registered in a manager.
-     * A {@link PropertyFunction} has no direct usage in the API, but it can be used to construct real functions.
-     *
-     * @return Unmodifiable Map with uri as a key and {@link PropertyFunction}-impl class java body as a value
-     */
-    public static Map<String, Class<? extends PropertyFunction>> properties() {
-        return get(properties);
-    }
-
-    private static <R> R get(R val) {
-        if (val == null) {
+    private static <R> R get(Supplier<R> val) {
+        R res = val.get();
+        if (res == null) {
             init();
         }
-        if (val == null) {
+        if ((res = val.get()) == null) {
             throw new IllegalStateException("Can't init.");
         }
-        return val;
+        return res;
     }
 
     public static void init() {
@@ -125,7 +127,9 @@ public class SystemModels implements JenaSubsystemLifecycle {
             // the resource name should not begin with '/' if java.lang.ClassLoader#getResourceAsStream is called
             mapper.addAltEntry(r.uri, r.path.replaceFirst("^/", ""));
         }
-        Map<String, Graph> graphMap = new HashMap<>(Loader.GRAPHS);
+
+        // The main initialization:
+        Map<String, Graph> graphMap = new HashMap<>(Resources.Loader.GRAPHS);
         Map<String, Class<? extends Function>> functionMap = new HashMap<>(SPIFFunctions.FUNCTIONS);
         Map<String, Class<? extends PropertyFunction>> propertyMap = new HashMap<>(SPIFFunctions.PROPERTY_FUNCTIONS);
         // process all extensions:
@@ -153,28 +157,6 @@ public class SystemModels implements JenaSubsystemLifecycle {
         graphs = null;
         functions = null;
         properties = null;
-    }
-
-    /**
-     * A helper to load system resources.
-     */
-    private static class Loader {
-        private final static Map<String, Graph> GRAPHS = load();
-
-        private static Map<String, Graph> load() throws UncheckedIOException {
-            Map<String, Graph> res = new HashMap<>();
-            for (Resources f : Resources.values()) {
-                Graph g = new GraphMem();
-                try (InputStream in = SystemModels.class.getResourceAsStream(f.path)) {
-                    RDFDataMgr.read(g, in, null, Lang.TURTLE);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Can't load " + f.path, e);
-                }
-                LOGGER.debug("Graph {} is loaded, size: {}", f.uri, g.size());
-                res.put(f.uri, ReadOnlyGraph.wrap(g));
-            }
-            return Collections.unmodifiableMap(res);
-        }
     }
 
 }

@@ -23,9 +23,8 @@ import org.apache.jena.graph.Graph;
 import org.semanticweb.owlapi.model.IRI;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.OWLMapManagerImpl;
-import ru.avicomp.map.spin.system.SystemModels;
+import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.ontapi.*;
-import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.transforms.GraphTransformers;
 
@@ -41,7 +40,7 @@ import java.util.stream.Collectors;
 public class Managers {
 
     static { // force initialization
-        OntModelFactory.init();
+        SystemLibraries.init();
     }
 
     /**
@@ -50,7 +49,7 @@ public class Managers {
      */
     public static final OntologyManager.DocumentSourceMapping MAP_RESOURCES_MAPPING = id -> id.getOntologyIRI()
             .map(IRI::getIRIString)
-            .map(uri -> SystemModels.graphs().get(uri))
+            .map(uri -> SystemLibraries.graphs().get(uri))
             .map(g -> new OntGraphDocumentSource() {
                 @Override
                 public Graph getGraph() {
@@ -65,7 +64,7 @@ public class Managers {
     /**
      * The filter to skip transformations on system library graphs (from {@code file://resources/etc})
      */
-    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> !SystemModels.graphs().containsKey(Graphs.getURI(g));
+    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> !SystemLibraries.graphs().containsKey(Graphs.getURI(g));
 
     /**
      * Creates a non-concurrent spin-based {@link MapManager}.

@@ -18,7 +18,7 @@
 
 package ru.avicomp.map;
 
-import ru.avicomp.ontapi.jena.model.OntObject;
+import org.apache.jena.rdf.model.Resource;
 
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -31,12 +31,13 @@ import java.util.stream.Stream;
 public interface MapResource {
 
     /**
-     * Wraps this map-resource as ont-resource.
-     * This may be useful if you want to add annotations to the mapping rule.
+     * Represents this map-resource as {@link Resource Jena Resource}
+     * This may be useful if you want to perform some actions directly on RDF,
+     * e.g. add annotations to the mapping rule.
      *
-     * @return {@link OntObject}
+     * @return {@link Resource}, not {@code null}
      */
-    OntObject asResource();
+    Resource asResource();
 
     /**
      * Returns a function call that describes this bridge.

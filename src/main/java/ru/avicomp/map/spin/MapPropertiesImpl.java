@@ -28,7 +28,6 @@ import ru.avicomp.map.MapContext;
 import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
-import ru.avicomp.ontapi.jena.model.OntObject;
 import ru.avicomp.ontapi.jena.utils.Iter;
 
 import java.util.function.Function;
@@ -48,7 +47,7 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
     }
 
     @Override
-    public OntObject asResource() {
+    public MapPropertiesImpl asResource() {
         return this;
     }
 

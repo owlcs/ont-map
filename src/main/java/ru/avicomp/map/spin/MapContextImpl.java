@@ -38,7 +38,6 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntOPE;
-import ru.avicomp.ontapi.jena.model.OntObject;
 import ru.avicomp.ontapi.jena.model.OntStatement;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -72,7 +71,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     @Override
-    public OntObject asResource() {
+    public MapContextImpl asResource() {
         return this;
     }
 

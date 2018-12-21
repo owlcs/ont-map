@@ -33,7 +33,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.infer.InferenceEngineImpl;
 import ru.avicomp.map.spin.system.Resources;
-import ru.avicomp.map.spin.system.SystemModels;
+import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.AutoPrefixListener;
@@ -101,9 +101,9 @@ public class MapManagerImpl implements MapManager {
         this.graphFactory = Objects.requireNonNull(graphs, "Null graph factory");
         this.functions = Objects.requireNonNull(map, "Null map");
         this.library = createLibraryModel(Objects.requireNonNull(library, "Null primary graph"));
-        this.prefixes = Graphs.collectPrefixes(SystemModels.graphs().values());
+        this.prefixes = Graphs.collectPrefixes(SystemLibraries.graphs().values());
         this.config = Objects.requireNonNull(conf, "Null config");
-        this.arqFactory = MapARQFactory.createSPINARQFactory(SystemModels.functions(), SystemModels.properties());
+        this.arqFactory = MapARQFactory.createSPINARQFactory(SystemLibraries.functions(), SystemLibraries.properties());
         SpinModels.listSpinFunctions(this.library).forEach(this::register);
     }
 
@@ -121,7 +121,7 @@ public class MapManagerImpl implements MapManager {
         // root graph for user defined stuff (note: it is distinct)
         UnionGraph res = new UnionGraph(graph);
         // avc.spin, avc.lib, avc.fn, avc.xsd, avc.math, etc:
-        SystemModels.graphs(false).forEach(res::addGraph);
+        SystemLibraries.graphs(false).forEach(res::addGraph);
         // topbraid spinmapl (the top graph of the spin family):
         res.addGraph(getSpinLibraryGraph());
         return new OntGraphModelImpl(res, SpinModelConfig.ONT_LIB_PERSONALITY);
@@ -134,7 +134,7 @@ public class MapManagerImpl implements MapManager {
      */
     public static UnionGraph getSpinLibraryGraph() {
         return Graphs.toUnion(Resources.SPINMAPL.getGraph(),
-                SystemModels.graphs(true).collect(Collectors.toSet()));
+                SystemLibraries.graphs(true).collect(Collectors.toSet()));
     }
 
     /**
