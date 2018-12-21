@@ -71,12 +71,22 @@ public enum Resources {
         this.spin = spin;
     }
 
+    /**
+     * Gets the library graph name (Ontology IRI).
+     *
+     * @return String, not {@code null}
+     */
     public String getURI() {
         return uri;
     }
 
+    /**
+     * Gets a system in-memory graph for this library.
+     *
+     * @return {@link Graph}, not {@code null}
+     */
     public Graph getGraph() {
-        return SystemLibraries.graphs().get(getURI());
+        return Loader.GRAPHS.get(getURI());
     }
 
     /**
@@ -90,7 +100,7 @@ public enum Resources {
             Map<String, Graph> res = new HashMap<>();
             for (Resources f : values()) {
                 Graph g = new GraphMem();
-                try (InputStream in = SystemLibraries.class.getResourceAsStream(f.path)) {
+                try (InputStream in = Loader.class.getResourceAsStream(f.path)) {
                     RDFDataMgr.read(g, in, null, Lang.TURTLE);
                 } catch (IOException e) {
                     throw new UncheckedIOException("Can't load " + f.path, e);

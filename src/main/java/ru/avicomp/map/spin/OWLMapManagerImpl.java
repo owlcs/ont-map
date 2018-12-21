@@ -51,6 +51,7 @@ import java.util.stream.Stream;
 public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager {
     // todo: handle in serialization (see issue #10):
     private final transient MapManagerImpl manager;
+    private transient Set<String> libs;
 
     public OWLMapManagerImpl(Graph primary,
                              DataFactory dataFactory,
@@ -252,10 +253,17 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
         }
     }
 
+    /**
+     * Answers {@code true} if the given ontology id is reserved as system.
+     *
+     * @param id {@link OWLOntologyID} to test
+     * @return boolean
+     */
     public boolean isLibraryModel(OWLOntologyID id) {
         lock.readLock().lock();
         try {
-            Set<String> libs = SystemLibraries.graphs().keySet();
+            if (libs == null)
+                libs = SystemLibraries.graphs().keySet();
             return id.getOntologyIRI()
                     .map(IRI::getIRIString)
                     .filter(libs::contains)

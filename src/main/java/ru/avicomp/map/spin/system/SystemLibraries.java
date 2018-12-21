@@ -56,7 +56,7 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
      * Returns all library models from the system resources.
      * Singleton.
      *
-     * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology iris as keys.
+     * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology IRIs as keys
      */
     public static Map<String, Graph> graphs() {
         return get(() -> graphs);
@@ -117,7 +117,7 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
 
     @Override
     public void start() {
-        LOGGER.debug("START");
+        LOGGER.debug("[START]");
         // The following code is just in case.
         // E.g. to prevent possible internet trips from calls of "model.read(http:..)"
         // or something like that in the depths of topbraid API.
@@ -140,7 +140,9 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
                     Map<String, Graph> eg = ext.graphs();
                     Map<String, Class<? extends Function>> ef = ext.functions();
                     Map<String, Class<? extends PropertyFunction>> epf = ext.properties();
-                    if (eg != null) graphMap.putAll(eg);
+                    if (eg != null) {
+                        eg.forEach((k, v) -> graphMap.put(k, ReadOnlyGraph.wrap(v)));
+                    }
                     if (ef != null) functionMap.putAll(ef);
                     if (epf != null) propertyMap.putAll(epf);
                 });
@@ -153,7 +155,8 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
 
     @Override
     public void stop() {
-        LOGGER.debug("STOP");
+        LOGGER.debug("[STOP]");
+        // reset all caches:
         graphs = null;
         functions = null;
         properties = null;
