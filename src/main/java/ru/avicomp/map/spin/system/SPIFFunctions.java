@@ -116,7 +116,6 @@ class SPIFFunctions {
     /**
      * Property Functions are supplied just in case, there are no usage of them in the API.
      */
-    @SuppressWarnings("unused")
     static final Map<String, Class<? extends PropertyFunction>> PROPERTY_FUNCTIONS =
             Collections.unmodifiableMap(new HashMap<String, Class<? extends PropertyFunction>>() {
                 {

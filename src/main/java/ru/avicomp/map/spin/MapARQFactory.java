@@ -39,6 +39,7 @@ import org.apache.jena.sparql.function.Function;
 import org.apache.jena.sparql.function.FunctionEnv;
 import org.apache.jena.sparql.function.FunctionFactory;
 import org.apache.jena.sparql.function.FunctionRegistry;
+import org.apache.jena.sparql.pfunction.PropertyFunction;
 import org.apache.jena.sparql.pfunction.PropertyFunctionFactory;
 import org.apache.jena.sparql.pfunction.PropertyFunctionRegistry;
 import org.apache.jena.sparql.serializer.SerializationContext;
@@ -84,9 +85,11 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      * and also all available spin and spif functions.
      *
      * @param functions a {@code Map} of {@link Function}s to register, not {@code null}
+     * @param properties a {@code Map} of {@link PropertyFunction}s to register, not {@code null}
      * @return {@link MapARQFactory}, not {@code null}
      */
-    public static MapARQFactory createSPINARQFactory(Map<String, Class<? extends Function>> functions) {
+    public static MapARQFactory createSPINARQFactory(Map<String, Class<? extends Function>> functions,
+                                                     Map<String, Class<? extends PropertyFunction>> properties) {
         Context context = copyContext(ARQ.getContext());
 
         FunctionRegistry fr = FunctionRegistry.get(context);
@@ -103,6 +106,8 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
         pfr.put(OWLRL.propertyChainHelper.getURI(), org.topbraid.spin.arq.PropertyChainHelperPFunction.class);
 
         functions.forEach(fr::put);
+        properties.forEach(pfr::put);
+
         return new MapARQFactory(context);
     }
 

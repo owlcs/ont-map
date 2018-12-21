@@ -25,7 +25,9 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.stream.LocationMapper;
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.apache.jena.sparql.function.Function;
+import org.apache.jena.sparql.pfunction.PropertyFunction;
 import org.apache.jena.sys.JenaSubsystemLifecycle;
+import org.apache.jena.sys.JenaSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.utils.ReadOnlyGraph;
@@ -46,6 +48,11 @@ import java.util.stream.Stream;
 public class SystemModels implements JenaSubsystemLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemModels.class);
 
+    private static volatile Map<String, Graph> graphs;
+    private static volatile Map<String, Class<? extends Function>> functions;
+    private static volatile Map<String, Class<? extends PropertyFunction>> properties;
+
+
     /**
      * Returns all library models from the system resources.
      * Singleton.
@@ -53,7 +60,7 @@ public class SystemModels implements JenaSubsystemLifecycle {
      * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology iris as keys.
      */
     public static Map<String, Graph> graphs() {
-        return Loader.GRAPHS;
+        return get(graphs);
     }
 
     /**
@@ -71,10 +78,34 @@ public class SystemModels implements JenaSubsystemLifecycle {
     /**
      * Returns all ARQ functions to be registered in a manager.
      *
-     * @return Unmodifiable Map with function uri as a key and function java body as a value
+     * @return Unmodifiable Map with uri as a key and {@link Function}-impl class java body as a value
      */
     public static Map<String, Class<? extends Function>> functions() {
-        return SPIFFunctions.FUNCTIONS;
+        return get(functions);
+    }
+
+    /**
+     * Returns all ARQ property functions to be registered in a manager.
+     * A {@link PropertyFunction} has no direct usage in the API, but it can be used to construct real functions.
+     *
+     * @return Unmodifiable Map with uri as a key and {@link PropertyFunction}-impl class java body as a value
+     */
+    public static Map<String, Class<? extends PropertyFunction>> properties() {
+        return get(properties);
+    }
+
+    private static <R> R get(R val) {
+        if (val == null) {
+            init();
+        }
+        if (val == null) {
+            throw new IllegalStateException("Can't init.");
+        }
+        return val;
+    }
+
+    public static void init() {
+        JenaSystem.init();
     }
 
     @Override
@@ -94,11 +125,34 @@ public class SystemModels implements JenaSubsystemLifecycle {
             // the resource name should not begin with '/' if java.lang.ClassLoader#getResourceAsStream is called
             mapper.addAltEntry(r.uri, r.path.replaceFirst("^/", ""));
         }
+        Map<String, Graph> graphMap = new HashMap<>(Loader.GRAPHS);
+        Map<String, Class<? extends Function>> functionMap = new HashMap<>(SPIFFunctions.FUNCTIONS);
+        Map<String, Class<? extends PropertyFunction>> propertyMap = new HashMap<>(SPIFFunctions.PROPERTY_FUNCTIONS);
+        // process all extensions:
+        JenaSystem.get().snapshot().stream()
+                .filter(Extension.class::isInstance).map(Extension.class::cast)
+                .forEach(ext -> {
+                    LOGGER.debug("Load {}", ext);
+                    Map<String, Graph> eg = ext.graphs();
+                    Map<String, Class<? extends Function>> ef = ext.functions();
+                    Map<String, Class<? extends PropertyFunction>> epf = ext.properties();
+                    if (eg != null) graphMap.putAll(eg);
+                    if (ef != null) functionMap.putAll(ef);
+                    if (epf != null) propertyMap.putAll(epf);
+                });
+        LOGGER.debug("[INIT]Graphs: {}, Functions: {}, PropertyFunctions: {}",
+                graphMap.size(), functionMap.size(), propertyMap.size());
+        functions = Collections.unmodifiableMap(functionMap);
+        properties = Collections.unmodifiableMap(propertyMap);
+        graphs = Collections.unmodifiableMap(graphMap);
     }
 
     @Override
     public void stop() {
         LOGGER.debug("STOP");
+        graphs = null;
+        functions = null;
+        properties = null;
     }
 
     /**
