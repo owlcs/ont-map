@@ -109,7 +109,9 @@ public interface MapFunction extends Description {
      *
      * @return boolean
      */
-    boolean canBeNested();
+    default boolean canBeNested() {
+        return true;
+    }
 
     /**
      * Answers {@code true} if a call of this function can contain other function-calls in its arguments.
@@ -123,7 +125,9 @@ public interface MapFunction extends Description {
      * @return boolean
      * @see Call#save(String)
      */
-    boolean canHaveNested();
+    default boolean canHaveNested() {
+        return true;
+    }
 
     /**
      * Answers {@code true} iff this function supports varargs.

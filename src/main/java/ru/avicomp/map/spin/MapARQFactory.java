@@ -364,7 +364,8 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
          * @param spin the SPIN function
          */
         public ARQFunction(org.topbraid.spin.model.Function spin) {
-            this(spin, org.topbraid.spin.system.SPINArgumentChecker.get(), org.topbraid.spin.statistics.SPINStatisticsManager.get());
+            this(spin, org.topbraid.spin.system.SPINArgumentChecker.get(),
+                    org.topbraid.spin.statistics.SPINStatisticsManager.get());
         }
 
         public ARQFunction(org.topbraid.spin.model.Function spin,
@@ -398,9 +399,13 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
         }
 
         @Override
-        public NodeValue exec(Binding binding, ExprList args, String uri, FunctionEnv env) throws ExprEvalException {
+        public NodeValue exec(Binding binding,
+                              ExprList args,
+                              String uri,
+                              FunctionEnv env) throws ExprEvalException {
             Graph activeGraph = env.getActiveGraph();
-            Model model = activeGraph != null ? ModelFactory.createModelForGraph(activeGraph) : ModelFactory.createDefaultModel();
+            Model model = activeGraph != null ?
+                    ModelFactory.createModelForGraph(activeGraph) : ModelFactory.createDefaultModel();
 
             QuerySolutionMap bindings = new QuerySolutionMap();
             Node t = binding.get(Var.alloc(SPIN.THIS_VAR_NAME));
@@ -430,7 +435,9 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
                 argumentChecker.check(spin, bindings);
             }
             Dataset dataset = DatasetImpl.wrap(env.getDataset());
-            if (statisticsManager == null || !statisticsManager.isRecording() || !statisticsManager.isRecordingSPINFunctions()) {
+            if (statisticsManager == null
+                    || !statisticsManager.isRecording()
+                    || !statisticsManager.isRecordingSPINFunctions()) {
                 return executeBody(dataset, model, bindings);
             }
             StringBuilder sb = new StringBuilder();
@@ -489,7 +496,9 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
             return MapARQFactory.this.createQueryExecution(query, newDataset, bindings);
         }
 
-        public NodeValue executeBody(Dataset dataset, Model defaultModel, QuerySolution bindings) throws ExprEvalException {
+        public NodeValue executeBody(Dataset dataset,
+                                     Model defaultModel,
+                                     QuerySolution bindings) throws ExprEvalException {
             try (QueryExecution qexec = createQueryExecution(dataset, defaultModel, bindings)) {
                 if (query.isAskType()) {
                     return NodeValue.makeBoolean(qexec.execAsk());
@@ -531,7 +540,10 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
 
         @Override
         public String toString() {
-            return String.format("%s{func=<%s>, query='%s'}", getClass().getSimpleName(), spin.getURI(), queryString);
+            return String.format("%s{func=<%s>, query='%s'}",
+                    getClass().getSimpleName(),
+                    spin.getURI(),
+                    queryString);
         }
     }
 }

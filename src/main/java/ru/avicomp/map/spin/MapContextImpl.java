@@ -113,8 +113,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public MapContextImpl addClassBridge(MapFunction.Call filterFunction,
                                          MapFunction.Call mappingFunction) throws MapJenaException {
-        validateContextMapping(mappingFunction);
-        validateContextFilter(filterFunction);
+        ContextHelper context = ContextHelper.create(this);
+        validateContextMapping(mappingFunction, context);
+        validateContextFilter(filterFunction, context);
         MapModelImpl m = getModel();
 
         // collects target expression statements to be deleted :
@@ -128,8 +129,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
                 .map(Optional::get)
                 .allMatch(r -> r.hasProperty(AVC.filter))) {
             RDFNode filterExpression = filterFunction == null ? null : m.createExpression(filterFunction);
-            // add Mapping-0-1 to create individual with target type
-            ContextMappingHelper.addPrimaryRule(this, filterExpression);
+            // add primary rule (Mapping-0-1) to create individual with target rdf:type
+            context.createRule(target(), filterExpression, RDF.type);
         }
 
         // add target expression
@@ -151,16 +152,16 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
                                                MapFunction.Call mappingFunction,
                                                Property target) throws MapJenaException {
         // the target property must "belong" to the target class:
-        ContextMappingHelper helper = ContextMappingHelper.create(this);
-        if (!helper.isTargetProperty(target)) {
+        ContextHelper context = ContextHelper.create(this);
+        if (!context.isTargetProperty(target)) {
             throw exception(PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY).addProperty(target).build();
         }
-        validatePropertyMapping(mappingFunction);
-        validatePropertyFilter(filterFunction);
+        validatePropertyMapping(mappingFunction, context);
+        validatePropertyFilter(filterFunction, context);
         MapModelImpl m = getModel();
         RDFNode filterExpression = filterFunction != null ? m.createExpression(filterFunction) : null;
         RDFNode mappingExpression = m.createExpression(mappingFunction);
-        Resource mapping = ContextMappingHelper.addMappingRule(helper, mappingExpression, filterExpression, target);
+        Resource mapping = context.createRule(mappingExpression, filterExpression, target);
         writeFunctions(mappingFunction, filterFunction);
         return asPropertyBridge(mapping);
     }
@@ -363,27 +364,34 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         return new MapPropertiesImpl(resource.asNode(), getModel());
     }
 
-    protected void validateContextMapping(MapFunction.Call func) throws MapJenaException {
-        if (!testFunction(func, CONTEXT_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
+    protected void validateContextMapping(MapFunction.Call func,
+                                          ContextHelper context) throws MapJenaException {
+        if (!testFunction(func, context, CONTEXT_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
             throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(func).build();
         }
     }
 
-    protected void validateContextFilter(MapFunction.Call func) throws MapJenaException {
-        validateFilterFunction(func, CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION, CONTEXT_WRONG_FILTER_FUNCTION);
+    protected void validateContextFilter(MapFunction.Call func,
+                                         ContextHelper context) throws MapJenaException {
+        validateFilterFunction(func, context,
+                CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION, CONTEXT_WRONG_FILTER_FUNCTION);
     }
 
-    protected void validatePropertyMapping(MapFunction.Call func) throws MapJenaException {
-        if (testFunction(func, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
+    protected void validatePropertyMapping(MapFunction.Call func,
+                                           ContextHelper context) throws MapJenaException {
+        if (testFunction(func, context, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
             throw exception(PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION).addFunction(func).build();
         }
     }
 
-    protected void validatePropertyFilter(MapFunction.Call func) throws MapJenaException {
-        validateFilterFunction(func, PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION, PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION);
+    protected void validatePropertyFilter(MapFunction.Call func,
+                                          ContextHelper context) throws MapJenaException {
+        validateFilterFunction(func, context,
+                PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION, PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION);
     }
 
     protected void validateFilterFunction(MapFunction.Call func,
+                                          ContextHelper context,
                                           Exceptions requireBoolean,
                                           Exceptions wrongFunction) throws MapJenaException {
         if (func == null) {
@@ -393,11 +401,19 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         if (!f.isBoolean()) {
             throw exception(requireBoolean).addFunction(f).build();
         }
-        testFunction(func, wrongFunction);
+        testFunction(func, context, wrongFunction);
     }
 
-    protected MapFunction.Call testFunction(MapFunction.Call func, Exceptions code) throws MapJenaException {
-        return getModel().testFunction(func, exception(code).addFunction(func).build());
+    protected MapFunction.Call testFunction(MapFunction.Call func,
+                                            ContextHelper context,
+                                            Exceptions code) throws MapJenaException {
+        return ValidationHelper.testFunction(func, context, exception(code).addFunction(func).build());
+    }
+
+    @Override
+    public void validate(MapFunction.Call func) throws MapJenaException {
+        ValidationHelper.testFunction(func, ContextHelper.create(this),
+                exception(CONTEXT_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
     protected Exceptions.Builder exception(Exceptions code) {

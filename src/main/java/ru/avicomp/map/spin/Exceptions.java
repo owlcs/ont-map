@@ -41,7 +41,8 @@ public enum Exceptions {
     MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED,
     MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK,
 
-    // while building context:
+    // while building context or function validation:
+    CONTEXT_FUNCTION_VALIDATION_FAIL,
     CONTEXT_REQUIRE_TARGET_FUNCTION,
     CONTEXT_WRONG_MAPPING_FUNCTION,
     CONTEXT_WRONG_FILTER_FUNCTION,
@@ -69,7 +70,6 @@ public enum Exceptions {
     // while building call:
     FUNCTION_BUILD_FAIL,
     FUNCTION_BUILD_NO_REQUIRED_ARG,
-
 
     // while inference:
     INFERENCE_NO_CONTEXTS,
@@ -148,6 +148,9 @@ public enum Exceptions {
         }
     }
 
+    /**
+     * Commonly used key-codes to build exception.
+     */
     public enum Key {
         MAPPING,
         CONTEXT,
@@ -162,6 +165,9 @@ public enum Exceptions {
         INSTANCE,
     }
 
+    /**
+     * MapException impl, a result of {@link Builder}.
+     */
     public final class SpinMapException extends MapJenaException {
         private final Map<Key, List<String>> map;
         private final Exceptions code;
@@ -173,16 +179,17 @@ public enum Exceptions {
         }
 
         public String getString(Key k) {
-            List<String> vals;
-            return map.isEmpty() || (vals = getList(k)).isEmpty() ? null : vals.get(0);
+            List<String> res;
+            return map.isEmpty() || (res = map.get(k)).isEmpty() ? null : res.get(0);
         }
 
+        @SuppressWarnings({"unused"})
         public List<String> getList(Key k) {
-            return map.get(k);
+            return Collections.unmodifiableList(map.get(k));
         }
 
         public Map<Key, List<String>> getInfo() {
-            return map;
+            return Collections.unmodifiableMap(map);
         }
 
         public Exceptions getCode() {

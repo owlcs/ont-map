@@ -34,22 +34,22 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION;
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE;
+import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
- * Auxiliary class-helper intended to validate a {@link MapFunction.Arg function-call argument} values,
+ * Auxiliary class-helper intended to validate a {@link MapFunction.Call function-call} argument values,
  * which could be either nested function or string representation of literal or resource.
  * Just to relieve the main (context) class.
  */
-class ArgValidationHelper {
+@SuppressWarnings("WeakerAccess")
+public class ValidationHelper {
     private static final Set<Resource> PROPERTIES = Stream.of(RDF.Property,
             OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).collect(Iter.toUnmodifiableSet());
 
     private final MapModelImpl model;
     private final MapFunction.Arg argument;
 
-    ArgValidationHelper(MapModelImpl model, MapFunction.Arg argument) {
+    ValidationHelper(MapModelImpl model, MapFunction.Arg argument) {
         this.model = model;
         this.argument = argument;
     }
@@ -106,6 +106,7 @@ class ArgValidationHelper {
 
     /**
      * Validates string argument input against specified mapping model.
+     * todo: validate property ranges if it is possible
      *
      * @param string String argument value (iri or literal string form)
      * @throws MapJenaException if parameter string value does not match argument type
@@ -167,6 +168,60 @@ class ArgValidationHelper {
 
     private static boolean isDT(RDFNode node) {
         return AVC.numeric.equals(node) || node.canAs(OntDT.class);
+    }
+
+    /**
+     * Tests the given function against the specified context, throwing {@link MapJenaException} on fail.
+     *
+     * @param function {@link MapFunction.Call} to test, not {@code null}
+     * @param context  {@link ContextHelper}, not {@code null}
+     * @param error    {@link MapJenaException} an error holder,
+     *                 this exception will be thrown in case validation is fail
+     * @return the same map-function as specified in first place if validation is OK
+     * @throws MapJenaException the same exception as specified in second place
+     */
+    public static MapFunction.Call testFunction(MapFunction.Call function,
+                                                ContextHelper context,
+                                                MapJenaException error) throws MapJenaException {
+        // todo: handle context in validation
+        return testFunction(function, context.getModel(), error);
+    }
+
+    /**
+     * Tests the given function against the specified mapping model, throwing {@link MapJenaException} on fail.
+     *
+     * @param function {@link MapFunction.Call} to test, not {@code null}
+     * @param model    {@link MapModelImpl}, not {@code null}
+     * @param error    {@link MapJenaException} an error holder,
+     *                 this exception will be thrown in case validation is fail
+     * @return the same map-function as specified in first place if validation is OK
+     * @throws MapJenaException the same exception as specified in second place
+     */
+    public static MapFunction.Call testFunction(MapFunction.Call function,
+                                                MapModelImpl model,
+                                                MapJenaException error) throws MapJenaException {
+        function.asMap().forEach((arg, value) -> {
+            try {
+                ValidationHelper v = new ValidationHelper(model, arg);
+                if (value instanceof String) {
+                    v.testStringValue((String) value);
+                    return;
+                }
+                if (value instanceof MapFunction.Call) {
+                    MapFunction.Call nested = (MapFunction.Call) value;
+                    v.testFunctionValue(nested);
+                    testFunction(nested, model, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION
+                            .create().addFunction(nested).build());
+                    return;
+                }
+                throw new MapJenaException.IllegalState("Should never happen, unexpected value: " + value);
+            } catch (MapJenaException e) {
+                error.addSuppressed(e);
+            }
+        });
+        if (error.getSuppressed().length == 0)
+            return function;
+        throw error;
     }
 
     /**

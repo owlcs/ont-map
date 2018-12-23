@@ -351,13 +351,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                 res = null;
             }
         }
-        if (res == null) { // anonymous contexts are not allowed since them can be used as function call parameter
+        if (res == null) {
+            // right now anonymous contexts are not allowed since them can be used as function call parameter
             res = createResource("urn:uuid:" + UUID.randomUUID());
         }
-        res.addProperty(RDF.type, SPINMAP.Context);
-        res.addProperty(SPINMAP.sourceClass, source);
-        res.addProperty(SPINMAP.targetClass, target);
-        return res;
+        return res.addProperty(RDF.type, SPINMAP.Context)
+                .addProperty(SPINMAP.sourceClass, source)
+                .addProperty(SPINMAP.targetClass, target);
     }
 
     @Override
@@ -396,6 +396,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return manager;
     }
 
+    /**
+     * Lists ontological properties for the given OWL class.
+     *
+     * @param ce {@link OntCE}
+     * @return Stream of {@link Property properties}
+     */
     public Stream<Property> properties(OntCE ce) {
         return getManager().getClassProperties(this).properties(ce);
     }
@@ -590,7 +596,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         if (expr.isLiteral() || expr.isURIResource()) {
             f = man.getFunction(SPINMAP.equals.getURI());
             String v = (expr.isLiteral() ? expr :
-                    ContextMappingHelper.findProperty(mapping, expr.asResource(), isFilter)).asNode().toString();
+                    ContextHelper.findProperty(mapping, expr.asResource(), isFilter)).asNode().toString();
             args.put(f.getArg(SP.arg1.getURI()), v);
             return new ModelCallImpl(this, f, args);
         }
@@ -620,7 +626,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                         if (r.isAnon()) {
                             v = parseExpression(mapping, r, isFilter);
                         } else if (SpinModels.isSpinArgVariable(r)) {
-                            v = ContextMappingHelper.findProperty(mapping, r, isFilter).asNode().toString();
+                            v = ContextHelper.findProperty(mapping, r, isFilter).asNode().toString();
                         }
                     }
                     if (v == null) {
@@ -631,7 +637,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return new ModelCallImpl(this, f, args);
     }
 
-
     /**
      * Validates a function-call against this model.
      *
@@ -640,41 +645,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        testFunction(func, exception(MAPPING_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
-    }
-
-    /**
-     * Tests the given function, throwing {@link MapJenaException} on fail.
-     *
-     * @param function {@link MapFunction.Call} to test
-     * @param error    {@link MapJenaException} an error holder,
-     *                 this exception will be thrown in case validation is fail
-     * @return the same map-function as specified in first place
-     * @throws MapJenaException the same exception as specified in second place
-     */
-    public MapFunction.Call testFunction(MapFunction.Call function,
-                                         MapJenaException error) throws MapJenaException {
-        function.asMap().forEach((arg, value) -> {
-            try {
-                ArgValidationHelper v = new ArgValidationHelper(this, arg);
-                if (value instanceof String) {
-                    v.testStringValue((String) value);
-                    return;
-                }
-                if (value instanceof MapFunction.Call) {
-                    MapFunction.Call nested = (MapFunction.Call) value;
-                    v.testFunctionValue(nested);
-                    testFunction(nested, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION.create().addFunction(nested).build());
-                    return;
-                }
-                throw new MapJenaException.IllegalState("Should never happen, unexpected value: " + value);
-            } catch (MapJenaException e) {
-                error.addSuppressed(e);
-            }
-        });
-        if (error.getSuppressed().length == 0)
-            return function;
-        throw error;
+        ValidationHelper.testFunction(func, this, exception(MAPPING_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
     protected Exceptions.Builder exception(Exceptions code) {
