@@ -165,14 +165,13 @@ public interface MapContext extends MapResource {
 
     /**
      * Validates the specified function-call against this context.
+     * If no exception occurs, then the function is considered as good enough to be used in a context.
      *
-     * @param func {@link MapFunction.Call} an expression.
-     * @throws MapJenaException if something is wrong with the function, e.g. wrong argument types.
+     * @param func {@link MapFunction.Call} a function-call to test, not {@code null}
+     * @throws MapJenaException if something is wrong with the function, e.g. wrong argument types
      * @see MapModel#validate(MapFunction.Call)
      */
-    default void validate(MapFunction.Call func) throws MapJenaException {
-        getModel().validate(func);
-    }
+    void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
      * Adds a primary rule to bind two class expressions.
@@ -203,7 +202,7 @@ public interface MapContext extends MapResource {
      *
      * @param func   {@link ru.avicomp.map.MapFunction.Call}, expression
      * @param target property, either {@link ru.avicomp.ontapi.jena.model.OntNAP} or {@link ru.avicomp.ontapi.jena.model.OntNDP}
-     * @return {@link PropertyBridge} a container with all input settings.
+     * @return {@link PropertyBridge} a container with all input settings
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
      * @see #addPropertyBridge(MapFunction.Call, MapFunction.Call, Property)
      */

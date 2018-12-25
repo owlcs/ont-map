@@ -40,14 +40,14 @@ import java.util.stream.Stream;
  * Created by @szuev on 16.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
+public class PropertyBridgeImpl extends OntObjectImpl implements PropertyBridge {
 
-    public MapPropertiesImpl(Node n, EnhGraph m) {
+    public PropertyBridgeImpl(Node n, EnhGraph m) {
         super(n, m);
     }
 
     @Override
-    public MapPropertiesImpl asResource() {
+    public PropertyBridgeImpl asResource() {
         return this;
     }
 
@@ -58,10 +58,10 @@ public class MapPropertiesImpl extends OntObjectImpl implements PropertyBridge {
 
     @Override
     public Stream<Property> sources() {
-        return Iter.asStream(listProperties())
-                .filter(s -> SpinModels.isSourcePredicate(s.getPredicate()))
-                .map(Statement::getObject)
-                .map(s -> s.as(Property.class));
+        return Iter.asStream(listProperties()
+                .filterKeep(s -> SpinModels.isSourcePredicate(s.getPredicate()))
+                .mapWith(Statement::getObject)
+                .mapWith(s -> s.as(Property.class)));
     }
 
     @Override

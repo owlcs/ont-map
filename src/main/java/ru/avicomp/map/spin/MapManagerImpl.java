@@ -36,10 +36,7 @@ import ru.avicomp.map.spin.system.Resources;
 import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
-import ru.avicomp.map.utils.AutoPrefixListener;
-import ru.avicomp.map.utils.ClassPropertyMapListener;
-import ru.avicomp.map.utils.LocalClassPropertyMapImpl;
-import ru.avicomp.map.utils.ReadOnlyGraph;
+import ru.avicomp.map.utils.*;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
@@ -451,7 +448,7 @@ public class MapManagerImpl implements MapManager {
                     // if it is contained in the map and has different content, but it is avc:runtime -> OK, re-register
                     // if it is no contained anywhere -> OK, register and add definition to the primary graph
                     if (functions.containsKey(f.getURI())) {
-                        if (SpinModels.containsResource(library, f)) {
+                        if (ModelUtils.containsResource(library, f)) {
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("Function <{}> is already within the manager {}.", f, MapManagerImpl.this);
                             return;

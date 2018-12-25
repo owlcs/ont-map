@@ -25,6 +25,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -32,10 +33,8 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -43,6 +42,8 @@ import java.util.stream.Stream;
  * encapsulating spin/spinmap rules (in the form of {@link Resource Jena Resource}s).
  * <p>
  * Created by @szuev on 13.05.2018.
+ *
+ * @see ModelUtils
  */
 @SuppressWarnings("WeakerAccess")
 public class SpinModels {
@@ -57,13 +58,33 @@ public class SpinModels {
      * @param context {@link Resource}
      * @return boolean
      */
+    @SuppressWarnings("unused")
     public static boolean isNamedIndividualSelfContext(Resource context) {
-        return context.hasProperty(SPINMAP.targetClass, OWL.NamedIndividual) && Iter.asStream(context.listProperties(SPINMAP.target))
-                .map(Statement::getObject)
-                .filter(RDFNode::isAnon).map(RDFNode::asResource)
-                .map(s -> s.hasProperty(RDF.type, SPINMAPL.self)).findFirst().isPresent();
+        return context.hasProperty(SPINMAP.targetClass, OWL.NamedIndividual)
+                && Iter.findFirst(context.listProperties(SPINMAP.target)
+                .mapWith(Statement::getObject).filterKeep(RDFNode::isAnon)
+                .mapWith(RDFNode::asResource)
+                .mapWith(s -> s.hasProperty(RDF.type, SPINMAPL.self))).isPresent();
     }
 
+    /**
+     * Answers {@code true} if the specified resource
+     * represents a {@link SPINMAP#Context spinmap:Context}.
+     *
+     * @param inModel a {@link Resource} within a {@link Model}
+     * @return boolean
+     */
+    public static boolean isContext(Resource inModel) {
+        return inModel.hasProperty(RDF.type, SPINMAP.Context);
+    }
+
+    /**
+     * Gets a {@link SPIN#body spin:body} as a set of statements.
+     *
+     * @param m        {@link Model}
+     * @param function {@link Resource}
+     * @return Set of {@link Statement}s
+     */
     public static Set<Statement> getLocalFunctionBody(Model m, Resource function) {
         if (m instanceof UnionModel) {
             m = ((UnionModel) m).getBaseModel();
@@ -78,18 +99,37 @@ public class SpinModels {
         return res.map(Models::getAssociatedStatements).orElse(Collections.emptySet());
     }
 
+    /**
+     * Answers {@code true} if the given property is a mapping source predicate.
+     *
+     * @param p {@link Property}
+     * @return boolean
+     */
     public static boolean isSourcePredicate(Property p) {
         return p.getLocalName().matches("^" + SPINMAP.SOURCE_PREDICATE + "\\d+$");
     }
 
-    public static boolean isVariable(Resource inModel) {
-        return inModel.hasProperty(RDF.type, SP.Variable);
+    /**
+     * Answers {@code true} if the specified resource
+     * represents a spin argument variable (e.g. {@code http://spinrdf.org/spin#_arg1}).
+     *
+     * @param inModel a {@link Resource} within a {@link Model}
+     * @return boolean
+     */
+    public static boolean isSpinArgVariable(Resource inModel) {
+        return isVariable(inModel)
+                && SPIN.NS.equals(inModel.getNameSpace())
+                && inModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
     }
 
-    public static boolean isSpinArgVariable(Resource isModel) {
-        return isVariable(isModel)
-                && SPIN.NS.equals(isModel.getNameSpace())
-                && isModel.getLocalName().matches("^" + SPIN._ARG + "\\d+$");
+    /**
+     * Answers {@code true} if the specified resource represents a spin variable.
+     *
+     * @param inModel a {@link Resource} within a {@link Model}
+     * @return boolean
+     */
+    public static boolean isVariable(Resource inModel) {
+        return inModel.hasProperty(RDF.type, SP.Variable);
     }
 
     /**
@@ -180,62 +220,6 @@ public class SpinModels {
     }
 
     /**
-     * Answers {@code true} if the given resource belongs to the specified {@code model} including all its content.
-     * Always returns {@code true} if {@code test.getModel()} equals to the {@code model}.
-     *
-     * @param model {@link Model} which
-     * @param test  {@link Resource} to test, not {@code null}
-     * @return boolean, {@code true} if the given resource is contained in the model
-     * @see Models#getAssociatedStatements(Resource)
-     */
-    public static boolean containsResource(Model model, final Resource test) {
-        return Objects.requireNonNull(test.getModel(), "Unattached resource: " + test) == model
-                || isEquivalent(test, test.inModel(model));
-    }
-
-    /**
-     * Answers {@code true} if the given two resources are equivalent to each other.
-     * This means that their differs only in b-node ids, all other nodes and structure are identical.
-     * Note: it is a recursive method.
-     * Example of equivalent resources:
-     * {@code <x> rdf:type <t1> ; <p1> _:b0 . _:b0 rdf:type <t2> . } and
-     * {@code <x> rdf:type <t1> ; <p1> _:b1 . _:b1 rdf:type <t2> . }
-     *
-     * @param left  {@link Resource}, not {@code null}
-     * @param right {@link Resource}, not {@code null}
-     * @return boolean, {@code true} if the given resources are equivalent
-     */
-    private static boolean isEquivalent(Resource left, Resource right) {
-        if (left == right) return true;
-        if (left.isURIResource() && !left.equals(right)) return false;
-        Set<Statement> leftSet = left.listProperties().toSet();
-        Set<Statement> rightSet = right.listProperties().toSet();
-        if (leftSet.size() != rightSet.size()) return false;
-        for (Statement s : leftSet) {
-            Property p = s.getPredicate();
-            Set<Statement> forPredicate = rightSet.stream()
-                    .filter(x -> p.equals(x.getPredicate())).collect(Collectors.toSet());
-            if (forPredicate.isEmpty()) {
-                return false;
-            }
-            RDFNode o = s.getObject();
-            if (!o.isAnon()) { // literal or uri
-                if (forPredicate.stream().noneMatch(x -> o.equals(x.getObject()))) {
-                    return false;
-                }
-                continue;
-            }
-            // anon:
-            Resource r = o.asResource();
-            if (forPredicate.stream().filter(x -> x.getObject().isAnon())
-                    .map(Statement::getResource).noneMatch(x -> isEquivalent(r, x))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
      * Prints the given spin resource-function "as it is" into the specified graph.
      *
      * @param model    {@link Model} the graph to print, not {@code null}
@@ -244,22 +228,30 @@ public class SpinModels {
      */
     public static Resource printSpinFunctionBody(Model model, Resource function) {
         listSpinArguments(function).forEach(s -> getSpinProperty(model, s));
-        return addResourceContent(model, function);
+        return ModelUtils.addResourceContent(model, function);
     }
 
     /**
-     * Adds all the content associated with the given resource (including sub-resource tree)
-     * into the specified model.
-     * Returns a resource that is in the model.
+     * Answers {@code true} if the specified rule-resource derives {@code rdf:type} declaration.
      *
-     * @param m {@link Model} the graph to add content, not {@code null}
-     * @param r {@link Resource}, not {@code null}
-     * @return the same resource, but belonged to the specified model
-     * @see Models#getAssociatedStatements(Resource)
+     * @param rule {@link Resource}
+     * @return boolean
      */
-    public static Resource addResourceContent(Model m, Resource r) {
-        Models.getAssociatedStatements(r).forEach(m::add);
-        return r.inModel(m);
+    public static boolean isDeclarationMapping(Resource rule) {
+        return rule.hasProperty(SPINMAP.targetPredicate1, RDF.type);
     }
 
+    /**
+     * Answers a {@code _:x rdf:type spinmap:Context} resource that is attached to the specified rule.
+     *
+     * @param rule {@link Resource}, rule, not null
+     * @return Optional around the contexts resource declaration.
+     */
+    public static Optional<Resource> context(Resource rule) {
+        return Iter.findFirst(rule.listProperties(SPINMAP.context)
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isResource)
+                .mapWith(RDFNode::asResource)
+                .filterKeep(SpinModels::isContext));
+    }
 }

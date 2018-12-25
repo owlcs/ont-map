@@ -117,13 +117,14 @@ public interface MapModel {
      *
      * @param func {@link MapFunction.Call} the expression to test
      * @throws MapJenaException iif the given function is not good enough to be used in this mapping
+     * @see MapContext#validate(MapFunction.Call)
      */
     void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
      * Returns the name of this mapping, which is an ontological IRI.
      *
-     * @return String or {@code null} if it is an anonymous
+     * @return String or {@code null} if it is an anonymous ontology
      */
     default String getIRI() {
         return asGraphModel().getID().getURI();

@@ -32,7 +32,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
-import ru.avicomp.map.utils.ReadOnlyGraph;
+import ru.avicomp.map.utils.GraphUtils;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntClass;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
@@ -320,7 +320,7 @@ public class SaveFunctionTest {
         MapManager m2 = Managers.createMapManager(m.getGraph()); // <-- passing an unmodifiable graph!
         Assert.assertEquals(3, m2.functions().filter(MapFunction::isUserDefined).count());
 
-        MapManager m3 = Managers.createOWLMapManager(ReadOnlyGraph.unwrap(m.getGraph()), new ReentrantReadWriteLock());
+        MapManager m3 = Managers.createOWLMapManager(GraphUtils.unwrap(m.getGraph()), new ReentrantReadWriteLock());
         TestUtils.debug(TestUtils.getPrimaryGraph(m3));
         Assert.assertEquals(3, m3.functions().filter(MapFunction::isUserDefined).count());
 

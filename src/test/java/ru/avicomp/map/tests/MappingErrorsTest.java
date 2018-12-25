@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.FN;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
@@ -40,7 +41,6 @@ import static ru.avicomp.map.spin.Exceptions.Key;
 /**
  * Created by @szuev on 18.04.2018.
  */
-@SuppressWarnings("WeakerAccess")
 public class MappingErrorsTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MappingErrorsTest.class);
 
@@ -256,12 +256,13 @@ public class MappingErrorsTest {
     }
 
     @Test
-    public void testValidateFunction() {
+    public void testValidateFunctionAgainstModel() {
         MapManager m = Managers.createMapManager();
 
         MapFunction.Call func1 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, "x").build();
         try {
             m.createMapModel().validate(func1);
+            Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
             assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
@@ -275,6 +276,7 @@ public class MappingErrorsTest {
                         .create().addLiteral(SP.arg1, "x").build()).build();
         try {
             m.createMapModel().validate(func3);
+            Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
             assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
@@ -286,6 +288,7 @@ public class MappingErrorsTest {
 
         try {
             m.createMapModel().validate(func4);
+            Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
             assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
@@ -299,6 +302,31 @@ public class MappingErrorsTest {
                 .addFunction(SP.arg1, m.getFunction(SP.ceil)
                         .create().addLiteral(SP.arg1, -1).build()).build();
         m.createMapModel().validate(func5);
+    }
+
+    @Test
+    public void testValidateFunctionAgainstContext() {
+        MapManager m = Managers.createMapManager();
+        OntGraphModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        s.setID("http://ont");
+        OntClass c1 = s.createOntEntity(OntClass.class, "s");
+        OntClass c2 = s.createOntEntity(OntClass.class, "t");
+        OntNDP p = s.createOntEntity(OntNDP.class, "p");
+        MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
+        MapFunction.Call toTest = m.getFunction(AVC.asIRI).create().addProperty(SP.arg1, p).build();
+        try {
+            context.validate(toTest);
+            Assert.fail("Validation passed.");
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+            Assert.assertEquals(1, j.getSuppressed().length);
+            MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
+            assertCode(j2, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+            Assert.assertEquals(0, j2.getSuppressed().length);
+        }
+        // add to context
+        p.addDomain(c1);
+        context.validate(toTest);
     }
 
     static void assertCode(MapJenaException j, Exceptions code) {

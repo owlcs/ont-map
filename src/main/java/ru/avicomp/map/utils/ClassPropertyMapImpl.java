@@ -24,10 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.ontapi.jena.OntJenaException;
-import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.model.OntCE;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntOPE;
+import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,14 +73,15 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         Set<Property> res = directProperties(ce).collect(Collectors.toSet());
         // if one of the direct properties contains in propertyChain List in the first place,
         // then that propertyChain can be added to the result list as effective property
-        listPropertyChains(model)
+        ModelUtils.listPropertyChains(model)
                 .filter(p -> res.stream()
                         .filter(x -> x.canAs(OntOPE.class))
                         .map(x -> x.as(OntOPE.class))
-                        .anyMatch(x -> isHeadOfPropertyChain(p, x)))
+                        .anyMatch(x -> ModelUtils.isHeadOfPropertyChain(p, x)))
                 .map(OntPE::asProperty).forEach(res::add);
 
-        Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() : Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
+        Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() :
+                Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
 
         Stream<OntCE> intersectionRestriction =
                 ce instanceof OntCE.IntersectionOf ? ((OntCE.IntersectionOf) ce).components()
@@ -96,7 +103,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
 
     /**
      * Lists all direct class properties.
-     * TODO: move to ONT-API ?
+     * TODO: move to ModelUtils or ONT-API utils ?
      *
      * @param ce {@link OntCE}
      * @return Stream of {@link Property properties}
@@ -119,35 +126,6 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
             LOGGER.warn("Can't find properties for restriction {}: {}", ce, j.getMessage());
         }
         return res;
-    }
-
-    /**
-     * Lists all {@code owl:propertyChainAxiom} object properties.
-     * TODO: move to ONT-API ?
-     *
-     * @param m {@link OntGraphModel}
-     * @return Stream of {@link OntOPE}s
-     */
-    public static Stream<OntOPE> listPropertyChains(OntGraphModel m) {
-        return m.statements(null, OWL.propertyChainAxiom, null)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.canAs(OntOPE.class))
-                .map(s -> s.as(OntOPE.class));
-    }
-
-    /**
-     * Answers if the left argument has a {@code owl:propertyChainAxiom} list
-     * that contains the right argument in the first position.
-     *
-     * @param superProperty  {@link OntOPE}, not {@code null}
-     * @param candidate {@link OntOPE}
-     * @return boolean
-     */
-    public static boolean isHeadOfPropertyChain(OntOPE superProperty, OntOPE candidate) {
-        return superProperty.listPropertyChains()
-                .map(OntList::first)
-                .filter(Optional::isPresent)
-                .map(Optional::get).anyMatch(p -> Objects.equals(p, candidate));
     }
 
 }

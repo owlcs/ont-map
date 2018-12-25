@@ -27,6 +27,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.BuiltIn;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -43,61 +44,56 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class ValidationHelper {
-    private static final Set<Resource> PROPERTIES = Stream.of(RDF.Property,
+    private static final Set<Resource> PROPERTY_TYPES = Stream.of(RDF.Property,
             OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty).collect(Iter.toUnmodifiableSet());
 
-    private final MapModelImpl model;
-    private final MapFunction.Arg argument;
-
-    ValidationHelper(MapModelImpl model, MapFunction.Arg argument) {
-        this.model = model;
-        this.argument = argument;
-    }
-
     /**
-     * Validates function argument input against specified mapping model.
+     * Validates a function argument input against the specified mapping model.
      *
-     * @param call {@link MapFunction} argument value (nested function call)
+     * @param argument {@link MapFunction.Arg}, not {@code null}
+     * @param value    {@link MapFunction} argument value to test, nested function call, not {@code null}
+     * @param model    {@link MapModelImpl}, not {@code null}
      * @throws MapJenaException if nested function return type does not match argument type
      */
-    void testFunctionValue(MapFunction.Call call) throws MapJenaException {
-        MapFunction function = call.getFunction();
+    private static void testFunctionValue(MapFunction.Arg argument,
+                                          MapFunction.Call value,
+                                          MapModelImpl model) throws MapJenaException {
         Resource type = model.createResource(argument.type());
-        Resource value = model.createResource(function.type());
+        Resource rdf = model.createResource(value.getFunction().type());
         Exceptions.Builder error = FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION.create()
                 .addArg(argument)
-                .addFunction(function)
+                .addFunction(value.getFunction())
                 .addArgType(type)
-                .addArgValue(value);
-        if (type.equals(value)) {
+                .addArgValue(rdf);
+        if (type.equals(rdf)) {
             return;
         }
-        if (AVC.undefined.equals(type) || AVC.undefined.equals(value)) {
+        if (AVC.undefined.equals(type) || AVC.undefined.equals(rdf)) {
             // seems it is okay
             return;
         }
         if (RDFS.Literal.equals(type)) {
-            if (isDT(value)) return;
+            if (isDT(rdf)) return;
             throw error.build();
         }
-        if (canSafeCast(type, value)) { // auto cast:
+        if (canSafeCast(type, rdf)) { // auto cast:
             return;
         }
         if (RDF.PlainLiteral.equals(type)) {
-            if (XSD.xstring.equals(value)) return;
+            if (XSD.xstring.equals(rdf)) return;
             throw error.build();
         }
         if (RDF.Property.equals(type)) {
-            if (PROPERTIES.contains(value))
+            if (PROPERTY_TYPES.contains(rdf))
                 return;
             throw error.build();
         }
         if (RDFS.Class.equals(type)) {
-            if (OWL.Class.equals(value)) return;
+            if (OWL.Class.equals(rdf)) return;
             throw error.build();
         }
         if (RDFS.Resource.equals(type)) {
-            if (!isDT(value))
+            if (!isDT(rdf))
                 return;
             throw error.build();
         }
@@ -105,27 +101,33 @@ public class ValidationHelper {
     }
 
     /**
-     * Validates string argument input against specified mapping model.
-     * todo: validate property ranges if it is possible
+     * Validates a string argument input against the specified mapping model,
+     * regarding context if it is given.
      *
-     * @param string String argument value (iri or literal string form)
+     * @param argument {@link MapFunction.Arg}, not {@code null}
+     * @param value    String argument value to test, uri or literal full string form
+     * @param model    {@link MapModelImpl}, not {@code null}
+     * @param context  {@link ContextHelper} or {@code null}
      * @throws MapJenaException if parameter string value does not match argument type
      */
-    void testStringValue(String string) throws MapJenaException {
+    private static void testStringValue(MapFunction.Arg argument,
+                                        String value,
+                                        MapModelImpl model,
+                                        ContextHelper context) throws MapJenaException {
         Resource type = model.createResource(argument.type());
-        RDFNode value = model.toNode(string);
+        RDFNode rdf = model.toNode(value);
         Exceptions.Builder error = FUNCTION_CALL_WRONG_ARGUMENT_VALUE.create()
                 .addArg(argument)
                 .addArgType(type)
-                .addArgValue(value);
+                .addArgValue(rdf);
         // anything:
         if (AVC.undefined.equals(type)) {
             return;
         }
         // value is literal
-        if (value.isLiteral()) {
+        if (rdf.isLiteral()) {
             if (RDFS.Literal.equals(type)) return;
-            Resource valueType = model.getResource(value.asLiteral().getDatatypeURI());
+            Resource valueType = model.getResource(rdf.asLiteral().getDatatypeURI());
             if (type.equals(valueType)) return;
             if (canSafeCast(type, valueType)) { // auto-cast:
                 return;
@@ -136,29 +138,39 @@ public class ValidationHelper {
             }
             throw error.build();
         }
-        // then resource
+        // value is resource
         if (RDFS.Resource.equals(type)) {
+            // the given type is also resource
             return;
         }
         if (RDFS.Datatype.equals(type)) {
-            if (value.canAs(OntDR.class)) return;
+            if (rdf.canAs(OntDR.class)) return;
             throw error.build();
         }
         if (RDFS.Class.equals(type)) {
-            if (value.canAs(OntCE.class)) return;
+            if (rdf.canAs(OntCE.class)) return;
             throw error.build();
         }
         if (SPINMAP.Context.equals(type)) {
-            if (value.asResource().hasProperty(RDF.type, SPINMAP.Context)) return;
+            if (SpinModels.isContext(rdf.asResource())) return;
             throw error.build();
         }
         if (RDF.Property.equals(type)) {
-            //if (node.isURIResource() && node.canAs(OntPE.class)) return;
-            // can be passed built-in property, e.g. rdf:type
-            if (value.isURIResource()) return;
+            if (context != null && ((MapFunctionImpl) argument.getFunction()).isMappingPropertyFunction()) {
+                if (!context.getSourceClassProperties().contains(rdf)) {
+                    throw error.build();
+                }
+            }
+            if (rdf.isURIResource()) {
+                //noinspection SuspiciousMethodCalls
+                if (BuiltIn.get().reservedProperties().contains(rdf))
+                    return;
+                if (rdf.canAs(OntPE.class))
+                    return;
+            }
             throw error.build();
         }
-        if (isDT(type) && (value.canAs(OntNDP.class) || value.canAs(OntNAP.class))) {
+        if (isDT(type) && (rdf.canAs(OntNDP.class) || rdf.canAs(OntNAP.class))) {
             // todo: validate also range for datatype properties while building mapping
             // (property can go both as iri or as assertion value, it is determined while building rule)
             return;
@@ -177,14 +189,12 @@ public class ValidationHelper {
      * @param context  {@link ContextHelper}, not {@code null}
      * @param error    {@link MapJenaException} an error holder,
      *                 this exception will be thrown in case validation is fail
-     * @return the same map-function as specified in first place if validation is OK
      * @throws MapJenaException the same exception as specified in second place
      */
-    public static MapFunction.Call testFunction(MapFunction.Call function,
-                                                ContextHelper context,
-                                                MapJenaException error) throws MapJenaException {
-        // todo: handle context in validation
-        return testFunction(function, context.getModel(), error);
+    public static void testFunction(MapFunction.Call function,
+                                    ContextHelper context,
+                                    MapJenaException error) throws MapJenaException {
+        testFunction(function, context.getModel(), context, error);
     }
 
     /**
@@ -194,23 +204,28 @@ public class ValidationHelper {
      * @param model    {@link MapModelImpl}, not {@code null}
      * @param error    {@link MapJenaException} an error holder,
      *                 this exception will be thrown in case validation is fail
-     * @return the same map-function as specified in first place if validation is OK
      * @throws MapJenaException the same exception as specified in second place
      */
-    public static MapFunction.Call testFunction(MapFunction.Call function,
-                                                MapModelImpl model,
-                                                MapJenaException error) throws MapJenaException {
+    public static void testFunction(MapFunction.Call function,
+                                    MapModelImpl model,
+                                    MapJenaException error) throws MapJenaException {
+        testFunction(function, model, null, error);
+    }
+
+    private static void testFunction(MapFunction.Call function,
+                                     MapModelImpl model,
+                                     ContextHelper context,
+                                     MapJenaException error) throws MapJenaException {
         function.asMap().forEach((arg, value) -> {
             try {
-                ValidationHelper v = new ValidationHelper(model, arg);
                 if (value instanceof String) {
-                    v.testStringValue((String) value);
+                    testStringValue(arg, (String) value, model, context);
                     return;
                 }
                 if (value instanceof MapFunction.Call) {
                     MapFunction.Call nested = (MapFunction.Call) value;
-                    v.testFunctionValue(nested);
-                    testFunction(nested, model, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION
+                    testFunctionValue(arg, nested, model);
+                    testFunction(nested, model, context, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION
                             .create().addFunction(nested).build());
                     return;
                 }
@@ -219,9 +234,8 @@ public class ValidationHelper {
                 error.addSuppressed(e);
             }
         });
-        if (error.getSuppressed().length == 0)
-            return function;
-        throw error;
+        if (error.getSuppressed().length != 0)
+            throw error;
     }
 
     /**

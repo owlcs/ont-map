@@ -33,7 +33,6 @@ import java.util.Objects;
  * <p>
  * Created by @szuev on 21.06.2018.
  */
-@SuppressWarnings("WeakerAccess")
 public class ReadOnlyGraph extends UnmodifiableGraph {
 
     private static final Capabilities READ_ONLY_CAPABILITIES = new Capabilities() {
@@ -95,20 +94,10 @@ public class ReadOnlyGraph extends UnmodifiableGraph {
      *
      * @param g {@link Graph}, not {@code null}
      * @return {@link ReadOnlyGraph} around the given graph
+     * @see GraphUtils#unwrap(Graph)
      */
     public static ReadOnlyGraph wrap(Graph g) {
         return g instanceof ReadOnlyGraph ? (ReadOnlyGraph) g : new ReadOnlyGraph(g);
-    }
-
-    /**
-     * Unwraps the given graph if it is {@link ReadOnlyGraph}.
-     * TODO: move to ONT-API Graphs Utils ?
-     *
-     * @param g {@link Graph}
-     * @return {@link Graph}, the same as input or modifiable content from {@link ReadOnlyGraph} container.
-     */
-    public static Graph unwrap(Graph g) {
-        return g instanceof ReadOnlyGraph ? ((ReadOnlyGraph) g).getWrapped() : g;
     }
 
     @Override

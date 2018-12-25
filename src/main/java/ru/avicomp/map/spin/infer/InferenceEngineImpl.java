@@ -37,6 +37,8 @@ import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.utils.GraphLogListener;
+import ru.avicomp.map.utils.GraphUtils;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
@@ -159,17 +161,17 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
         // insets the source data into the query model, if it is absent:
-        if (!MapGraphUtils.containsAll(queryGraph, source)) {
+        if (!GraphUtils.containsAll(queryGraph, source)) {
             queryGraph.addGraph(source);
         }
         // don't quite understand why without target it doesn't always work
-        if (!MapGraphUtils.containsAll(queryGraph, target)) {
+        if (!GraphUtils.containsAll(queryGraph, target)) {
             queryGraph.addGraph(target);
         }
         Set<Node> inMemory = new HashSet<>();
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
-            Set<OntCE> classes = MapGraphUtils.getClasses(i);
+            Set<OntCE> classes = ModelUtils.getClasses(i);
             Map<String, Set<QueryWrapper>> visited;
             processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
@@ -195,7 +197,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @see #assembleQueryModel()
      */
     public OntGraphModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
-        if (MapGraphUtils.containsAll(query, source)) { // the source contains schema
+        if (GraphUtils.containsAll(query, source)) { // the source contains schema
             return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         }
         // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
@@ -229,7 +231,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
             Resource i = target.asRDFNode(iterator.next()).asResource();
-            Set<Resource> classes = MapGraphUtils.getClasses(i);
+            Set<Resource> classes = ModelUtils.getClasses(i);
             processOne(queries, classes, processed, individuals, target, i);
             iterator.remove();
         }
@@ -255,7 +257,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         queries.stream()
                 .filter(c -> classes.contains(c.getSubject()))
                 .forEach(q -> {
-                    if (!processed.computeIfAbsent(MapGraphUtils.getResourceID(individual), i -> new HashSet<>()).add(q)) {
+                    if (!processed.computeIfAbsent(ModelUtils.getResourceID(individual), i -> new HashSet<>()).add(q)) {
                         LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
                         return;
                     }

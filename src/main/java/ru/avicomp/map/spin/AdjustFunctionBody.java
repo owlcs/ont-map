@@ -45,7 +45,7 @@ public interface AdjustFunctionBody extends BiFunction<Model, MapFunction.Call, 
      *
      * @param model {@link Model} model containing spin-function body
      * @param args  {@link MapFunction.Call} function call to get arguments
-     * @return true if map model graph has been changed
+     * @return {@code true} if the mapping model graph has been changed
      * @throws MapJenaException if something is wrong with arguments or during operation
      */
     Boolean apply(Model model, MapFunction.Call args) throws MapJenaException;

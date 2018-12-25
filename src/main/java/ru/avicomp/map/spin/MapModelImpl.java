@@ -32,6 +32,7 @@ import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
@@ -62,10 +63,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl(UnionGraph base, OntPersonality personality, MapManagerImpl manager) {
         super(base, personality);
         this.manager = manager;
-    }
-
-    public static String getLocalName(Resource resource) {
-        return resource.isURIResource() ? resource.getLocalName() : resource.getId().getLabelString();
     }
 
     @Override
@@ -289,7 +286,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     public Stream<Resource> contextsByTargetExpression(RDFNode expression) {
         return statements(null, SPINMAP.target, expression).map(Statement::getSubject)
-                .filter(s -> s.hasProperty(RDF.type, SPINMAP.Context));
+                .filter(SpinModels::isContext);
     }
 
     public Stream<Resource> contextsByRuleExpression(RDFNode expression) {
@@ -345,7 +342,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         String ont = getID().getURI();
         Resource res = null;
         if (ont != null && !ont.contains("#")) {
-            String name = String.format(CONTEXT_TEMPLATE, getLocalName(source), getLocalName(target));
+            String name = String.format(CONTEXT_TEMPLATE,
+                    ModelUtils.getResourceName(source), ModelUtils.getResourceName(target));
             res = createResource(ont + "#" + name);
             if (containsResource(res)) { // found different resource with the same local name
                 res = null;
@@ -494,13 +492,14 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return boolean
      */
     public boolean isEntity(Resource res) {
-        if (res.hasProperty(RDF.type, SP.Variable)) return false;
+        if (SpinModels.isVariable(res)) return false;
         // todo: this checking is a temporary solution and not correct
         return Iter.findFirst(res.listProperties()).isPresent();
     }
 
     /**
-     * Answers if specified property links classes together through domain/range or restriction relationships.
+     * Answers {@code true}
+     * if the specified property links classes together through domain/range or restriction relationships.
      *
      * @param property {@link OntOPE} property to test
      * @param domain   {@link OntCE} "domain" candidate

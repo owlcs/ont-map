@@ -148,9 +148,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     @Override
-    public MapPropertiesImpl addPropertyBridge(MapFunction.Call filterFunction,
-                                               MapFunction.Call mappingFunction,
-                                               Property target) throws MapJenaException {
+    public PropertyBridgeImpl addPropertyBridge(MapFunction.Call filterFunction,
+                                                MapFunction.Call mappingFunction,
+                                                Property target) throws MapJenaException {
         // the target property must "belong" to the target class:
         ContextHelper context = ContextHelper.create(this);
         if (!context.isTargetProperty(target)) {
@@ -201,7 +201,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         return listPropertyBridges().map(PropertyBridge.class::cast);
     }
 
-    public Stream<MapPropertiesImpl> listPropertyBridges() {
+    public Stream<PropertyBridgeImpl> listPropertyBridges() {
         return listRules() // skip primary rule:
                 .filter(r -> !(r.hasProperty(SPINMAP.expression, target())
                         && r.hasProperty(SPINMAP.targetPredicate1, RDF.type)))
@@ -304,7 +304,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     @Override
-    public MapPropertiesImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
+    public PropertyBridgeImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
         if (this.equals(other)) {
             throw exception(CONTEXT_ATTACHED_CONTEXT_SELF_CALL).build();
         }
@@ -334,7 +334,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     /**
-     * Creates a function call builder for {@code spinmapl:relatedSubjectContext} or {@code spinmapl:relatedObjectContext}
+     * Creates a function call builder for
+     * {@code spinmapl:relatedSubjectContext} or {@code spinmapl:relatedObjectContext}.
      *
      * @param func {@link Resource}
      * @param p    {@link Property}
@@ -358,10 +359,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
      * Makes a new {@link PropertyBridge} instance.
      *
      * @param resource {@link Resource} to wrap
-     * @return {@link MapPropertiesImpl}
+     * @return {@link PropertyBridgeImpl}
      */
-    protected MapPropertiesImpl asPropertyBridge(Resource resource) {
-        return new MapPropertiesImpl(resource.asNode(), getModel());
+    protected PropertyBridgeImpl asPropertyBridge(Resource resource) {
+        return new PropertyBridgeImpl(resource.asNode(), getModel());
     }
 
     protected void validateContextMapping(MapFunction.Call func,
@@ -407,7 +408,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     protected MapFunction.Call testFunction(MapFunction.Call func,
                                             ContextHelper context,
                                             Exceptions code) throws MapJenaException {
-        return ValidationHelper.testFunction(func, context, exception(code).addFunction(func).build());
+        ValidationHelper.testFunction(func, context, exception(code).addFunction(func).build());
+        return func;
     }
 
     @Override

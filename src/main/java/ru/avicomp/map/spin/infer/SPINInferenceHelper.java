@@ -31,6 +31,8 @@ import org.topbraid.spin.util.*;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.SpinModels;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -100,9 +102,9 @@ public class SPINInferenceHelper {
      * @return {@link Comparator} comparator for {@link CommandWrapper}s
      */
     public static Comparator<CommandWrapper> createMapComparator() {
-        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> MapGraphUtils.context(r)
+        Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
                 .map(String::valueOf).orElse("Unknown"))
-                .thenComparing(Comparator.comparing(MapGraphUtils::isDeclarationMapping).reversed());
+                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
         Comparator<CommandWrapper> res = (left, right) -> {
             java.util.Optional<Resource> r1 = rule(left);
             Optional<Resource> r2 = rule(right);
@@ -171,8 +173,8 @@ public class SPINInferenceHelper {
         Template baseTemplate = templateCall.getTemplate();
         if (baseTemplate == null) return EMPTY_ITERATOR;
         Map<String, RDFNode> bindings = templateCall.getArgumentsMapByVarNames();
-        ExtendedIterator<CommandWrapper> res = MapGraphUtils.listSuperClasses(baseTemplate)
-                .filterKeep(r -> MapGraphUtils.hasIndirectType(r, SPIN.Template))
+        ExtendedIterator<CommandWrapper> res = ModelUtils.listSuperClasses(baseTemplate)
+                .filterKeep(r -> ModelUtils.hasIndirectType(r, SPIN.Template))
                 .mapWith(r -> r.as(Template.class))
                 .filterKeep(t -> hasAllNonOptionalArguments(t, bindings))
                 .mapWith(Module::getBody)
@@ -206,6 +208,7 @@ public class SPINInferenceHelper {
      * @return new {@link CommandWrapper}
      * @see SPINQueryFinder#createCommandWrapper(Map, Statement, boolean, boolean, String, String, Command, Resource)
      */
+    @SuppressWarnings("JavadocReference")
     public static CommandWrapper createCommandWrapper(ARQFactory factory,
                                                       Statement statement,
                                                       boolean withClass,
@@ -259,6 +262,7 @@ public class SPINInferenceHelper {
      * @return true if template is good to use
      * @see SPINQueryFinder#hasAllNonOptionalArguments(Template, Map)
      */
+    @SuppressWarnings("JavadocReference")
     private static boolean hasAllNonOptionalArguments(Template template, Map<String, RDFNode> bindings) {
         return template.getArguments(false).stream().filter(a -> !a.isOptional())
                 .map(Argument::getVarName).allMatch(bindings::containsKey);

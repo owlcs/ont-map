@@ -614,13 +614,15 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * To compare arguments URIs.
+     * A helper to compare argument URIs.
      * Created by @szz on 18.12.2018.
      */
+    @SuppressWarnings("WeakerAccess")
     public static class ArgURIComparator implements Comparator<String> {
 
         /**
-         * Answers {@code true} if the specified string corresponds index argument (e.g. {@code http://spinrdf.org/sp#arg1}).
+         * Answers {@code true}
+         * if the specified string corresponds index argument (e.g. {@code http://spinrdf.org/sp#arg1}).
          *
          * @param name String to test, not {@code null}
          * @return boolean
@@ -632,7 +634,7 @@ public abstract class MapFunctionImpl implements MapFunction {
         /**
          * Parses index from a index argument.
          *
-         * @param name String, not {@code null}, e.g. {@code http://spinrdf.org/sp#sp1}
+         * @param name String, not {@code null}, e.g. {@code http://spinrdf.org/sp#arg1}
          * @return int, index (for the example above it is {@code 1})
          */
         static int parseIndex(String name) {
