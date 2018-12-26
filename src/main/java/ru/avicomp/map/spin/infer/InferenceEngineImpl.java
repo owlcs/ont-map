@@ -231,7 +231,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
             Resource i = target.asRDFNode(iterator.next()).asResource();
-            Set<Resource> classes = ModelUtils.getClasses(i);
+            Set<Resource> classes = ModelUtils.getDirectClasses(i);
             processOne(queries, classes, processed, individuals, target, i);
             iterator.remove();
         }

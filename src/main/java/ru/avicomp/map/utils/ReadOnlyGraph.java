@@ -33,6 +33,7 @@ import java.util.Objects;
  * <p>
  * Created by @szuev on 21.06.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public class ReadOnlyGraph extends UnmodifiableGraph {
 
     private static final Capabilities READ_ONLY_CAPABILITIES = new Capabilities() {

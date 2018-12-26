@@ -7,7 +7,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -68,11 +68,12 @@ public class ModelUtils {
 
     /**
      * Gets all object resources from {@code rdf:type} statement for the specified subject resource in the model.
+     * It is not recursive method: it does not consider {@code rdf:type}s of returned resources.
      *
      * @param individual {@link Resource}, individual, not {@code null}
      * @return Set of {@link Resource}, classes
      */
-    public static Set<Resource> getClasses(Resource individual) {
+    public static Set<Resource> getDirectClasses(Resource individual) {
         return individual.listProperties(RDF.type)
                 .mapWith(Statement::getObject)
                 .filterKeep(RDFNode::isResource)
@@ -81,7 +82,7 @@ public class ModelUtils {
     }
 
     /**
-     * Gets all types (classes) for an individual, taken into account class hierarchy.
+     * Gets all types (classes) for the given individual, taken into account the class hierarchy.
      *
      * @param individual {@link OntIndividual}, not {@code null}
      * @return Set of {@link OntCE class expressions}
@@ -95,6 +96,85 @@ public class ModelUtils {
     private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
         if (!res.add(ce)) return;
         ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
+    }
+
+    /**
+     * Finds a range for the given object property.
+     * Returns an empty result in case {@code rdfs:range} cannot be defined uniquely.
+     *
+     * @param p {@link OntOPE}, not {@code null}
+     * @return Optional around the {@link OntCE}
+     * @see <a href='https://www.w3.org/TR/owl2-syntax/#Object_Property_Range'>9.2.6 Object Property Range</a>
+     * @see OntOPE#range()
+     */
+    public static Optional<OntCE> range(OntOPE p) {
+        if (p.canAs(OntOPE.Inverse.class)) {
+            p = p.as(OntOPE.Inverse.class).getDirect();
+        }
+        return findRange(p.as(OntNOP.class), OntNOP.class, OntCE.class, new HashSet<>());
+    }
+
+    /**
+     * Finds a range for the given data property.
+     * Returns an empty result in case {@code rdfs:range} cannot be defined uniquely.
+     *
+     * @param p {@link OntNDP}, not {@code null}
+     * @return Optional around the {@link OntDR}
+     * @see <a href='https://www.w3.org/TR/owl2-syntax/#Data_Property_Range'>9.3.5 Data Property Range</a>
+     * @see OntNDP#range()
+     */
+    public static Optional<OntDR> range(OntNDP p) {
+        return findRange(p, OntNDP.class, OntDR.class, new HashSet<>());
+    }
+
+    /**
+     * Finds a range for the given annotation property.
+     * Returns an empty result in case {@code rdfs:range} cannot be defined uniquely.
+     *
+     * @param p {@link OntNAP}, not {@code null}
+     * @return Optional around the {@link Property}
+     * @see <a href='https://www.w3.org/TR/owl2-syntax/#Annotation_Property_Range'>10.2.4 Annotation Property Range</a>
+     * @see OntNAP#range()
+     */
+    public static Optional<Property> range(OntNAP p) {
+        return findRange(p, OntNAP.class, Property.class, new HashSet<>());
+    }
+
+    /**
+     * Finds a range for a given property.
+     * First it looks direct {@code rdfs:range} declarations and returns an empty result,
+     * if there are more then one ranges
+     * Then, it looks at the property hierarchy.
+     * Again, more then one {@code rdfs:range}s means ambiguous situation and the method returns empty result.
+     *
+     * @param property     {@link P}
+     * @param propertyType class type of {@link P}
+     * @param rangeType    class type of {@link R}
+     * @param seen         Set to control possible recursions
+     * @param <P>          any concrete subtype of {@link OntPE}
+     * @param <R>          any concrete subtype of {@link Resource}
+     * @return Optional around {@link R}
+     */
+    private static <P extends OntPE, R extends Resource> Optional<R> findRange(P property,
+                                                                               Class<P> propertyType,
+                                                                               Class<R> rangeType,
+                                                                               Set<P> seen) {
+        Set<R> res = property.range()
+                .filter(x -> x.canAs(rangeType)).map(x -> x.as(rangeType))
+                .collect(Collectors.toSet());
+        if (res.isEmpty()) { // inherit from some super property :
+            res = property.subPropertyOf() // : direct super properties
+                    .filter(x -> x.canAs(propertyType))
+                    .map(x -> x.as(propertyType))
+                    .filter(seen::add)
+                    .map(x -> findRange(x, propertyType, rangeType, seen)) // : recursion
+                    .filter(Optional::isPresent).map(Optional::get)
+                    .collect(Collectors.toSet());
+        }
+        if (res.size() != 1) { // : ambiguous situation
+            return Optional.empty();
+        }
+        return Optional.of(res.iterator().next());
     }
 
     /**

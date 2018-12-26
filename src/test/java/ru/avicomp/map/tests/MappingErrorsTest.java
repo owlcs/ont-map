@@ -19,6 +19,7 @@
 package ru.avicomp.map.tests;
 
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,10 +30,12 @@ import ru.avicomp.map.*;
 import ru.avicomp.map.spin.Exceptions;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.FN;
+import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntClass;
+import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
@@ -305,7 +308,7 @@ public class MappingErrorsTest {
     }
 
     @Test
-    public void testValidateFunctionAgainstContext() {
+    public void testContextValidatePropertyFunction() {
         MapManager m = Managers.createMapManager();
         OntGraphModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("http://ont");
@@ -327,6 +330,37 @@ public class MappingErrorsTest {
         // add to context
         p.addDomain(c1);
         context.validate(toTest);
+    }
+
+    @Test
+    public void testContextValidatePropertyRange() {
+        MapManager m = Managers.createMapManager();
+        OntGraphModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        s.setID("http://ont");
+        OntClass c1 = s.createOntEntity(OntClass.class, "s");
+        OntClass c2 = s.createOntEntity(OntClass.class, "t");
+        OntNDP p = s.createOntEntity(OntNDP.class, "p");
+
+        MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
+        MapFunction.Call toTest = m.getFunction(MATH.atan2).create().addProperty(SP.arg1, p).build();
+        try {
+            context.validate(toTest);
+            Assert.fail("Validation passed.");
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+        }
+        // add to context
+        p.addDomain(c1);
+        context.validate(toTest);
+
+        // add range:
+        p.addRange(s.getOntEntity(OntDT.class, XSD.xstring));
+        try {
+            context.validate(toTest);
+            Assert.fail("Validation passed.");
+        } catch (MapJenaException j) {
+            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+        }
     }
 
     static void assertCode(MapJenaException j, Exceptions code) {

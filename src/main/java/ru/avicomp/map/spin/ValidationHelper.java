@@ -26,6 +26,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.BuiltIn;
 import ru.avicomp.ontapi.jena.utils.Iter;
@@ -102,7 +103,7 @@ public class ValidationHelper {
 
     /**
      * Validates a string argument input against the specified mapping model,
-     * regarding context if it is given.
+     * taking into account the context info if it is given.
      *
      * @param argument {@link MapFunction.Arg}, not {@code null}
      * @param value    String argument value to test, uri or literal full string form
@@ -126,15 +127,11 @@ public class ValidationHelper {
         }
         // value is literal
         if (rdf.isLiteral()) {
-            if (RDFS.Literal.equals(type)) return;
-            Resource valueType = model.getResource(rdf.asLiteral().getDatatypeURI());
-            if (type.equals(valueType)) return;
-            if (canSafeCast(type, valueType)) { // auto-cast:
-                return;
+            if (RDFS.Literal.equals(type)) {
+                return; // : any datatype can be accepted
             }
-            if (RDF.PlainLiteral.equals(type)) {
-                if (XSD.xstring.equals(valueType)) return;
-                throw error.build();
+            if (match(type, model.getResource(rdf.asLiteral().getDatatypeURI()))) {
+                return;
             }
             throw error.build();
         }
@@ -170,16 +167,40 @@ public class ValidationHelper {
             }
             throw error.build();
         }
-        if (isDT(type) && (rdf.canAs(OntNDP.class) || rdf.canAs(OntNAP.class))) {
-            // todo: validate also range for datatype properties while building mapping
-            // (property can go both as iri or as assertion value, it is determined while building rule)
+        if (isDT(type) && rdf.canAs(OntPE.class)) {
+            if (context == null) { // can't validate
+                return;
+            }
+            if (!context.getSourceClassProperties().contains(rdf)) { // not a mapping property
+                throw error.build();
+            }
+            if (rdf.canAs(OntOPE.class)) { // object property is given
+                throw error.build();
+            }
+            // since actual value would be inferred, validate range for a mapping property
+            if (RDFS.Literal.equals(type)) {
+                return; // : any datatype can be accepted
+            }
+            Resource range = null;
+            if (rdf.canAs(OntNDP.class)) { // datatype property
+                // todo: not sure what to do with anonymous data ranges
+                range = ModelUtils.range(rdf.as(OntNDP.class))
+                        .filter(x -> x.canAs(OntDT.class))
+                        .map(x -> x.as(OntDT.class))
+                        .orElse(null);
+            } else if (rdf.canAs(OntNAP.class)) { // annotation property
+                range = ModelUtils.range(rdf.as(OntNAP.class)).orElse(null);
+            }
+            if (range == null) { // can't determine range, then can be passed everything
+                return;
+            }
+            if (!match(type, range)) {
+                throw error.build();
+            }
             return;
         }
+        // unknown situation:
         throw error.build();
-    }
-
-    private static boolean isDT(RDFNode node) {
-        return AVC.numeric.equals(node) || node.canAs(OntDT.class);
     }
 
     /**
@@ -236,6 +257,32 @@ public class ValidationHelper {
         });
         if (error.getSuppressed().length != 0)
             throw error;
+    }
+
+    /**
+     * Answers {@code true} if the specified datatypes are matching.
+     *
+     * @param given   {@link Resource} the datatype from function argument constraint, not {@code null}
+     * @param desired {@link Resource} the datatype specified as argument value (or as part of it), not {@code null}
+     * @return boolean
+     */
+    public static boolean match(Resource given, Resource desired) {
+        if (given.equals(desired)) return true;
+        if (RDF.PlainLiteral.equals(given)) {
+            return XSD.xstring.equals(desired);
+        }
+        // auto-cast:
+        return canSafeCast(given, desired);
+    }
+
+    /**
+     * Answers {@code true} if the given rdf-node represents a {@link OntDT OWL Datatype}.
+     *
+     * @param node {@link RDFNode} to test, not {@code null}
+     * @return boolean
+     */
+    public static boolean isDT(RDFNode node) {
+        return AVC.numeric.equals(node) || node.canAs(OntDT.class);
     }
 
     /**
