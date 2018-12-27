@@ -20,10 +20,7 @@ package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.vocabulary.RDFS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
-import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntOPE;
@@ -43,15 +40,13 @@ import java.util.stream.Stream;
  * It seems that these rules are not the standard, and right now definitely not fully covered OWL2 specification.
  * Moreover for SPIN-API it does not seem to matter whether they are right:
  * it does not use them directly while inference context.
- * But we deal only with OWL2 ontologies, so we need strict constraints to used while construct mapping.
+ * But we deal only with OWL2 ontologies, so we need strict constraints to used while construct mappings.
  * Also we need something to draw class-property box in GUI.
  * <p>
  * Created by @szuev on 19.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
 public class ClassPropertyMapImpl implements ClassPropertyMap {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClassPropertyMapImpl.class);
 
     // any named class expression in Topbraid Composer has a rdfs:label as attached property.
     public static final Set<Property> OWL_THING_PROPERTIES = Collections.singleton(RDFS.label);
@@ -70,7 +65,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         if (Objects.equals(ce, OWL.Thing)) {
             return OWL_THING_PROPERTIES.stream().peek(p -> p.inModel(model));
         }
-        Set<Property> res = directProperties(ce).collect(Collectors.toSet());
+        Set<Property> res = ModelUtils.listProperties(ce).map(OntPE::asProperty).collect(Collectors.toSet());
         // if one of the direct properties contains in propertyChain List in the first place,
         // then that propertyChain can be added to the result list as effective property
         ModelUtils.listPropertyChains(model)
@@ -100,32 +95,4 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
 
         return Stream.concat(classes.flatMap(c -> collect(c, visited)), res.stream()).distinct();
     }
-
-    /**
-     * Lists all direct class properties.
-     * TODO: move to ModelUtils or ONT-API utils ?
-     *
-     * @param ce {@link OntCE}
-     * @return Stream of {@link Property properties}
-     */
-    protected static Stream<Property> directProperties(OntCE ce) {
-        Stream<Property> res = ce.properties().map(OntPE::asProperty);
-        try {
-            if (ce instanceof OntCE.ONProperty) {
-                Property p = ((OntCE.ONProperty) ce).getOnProperty().asProperty();
-                res = Stream.concat(res, Stream.of(p));
-            }
-            if (ce instanceof OntCE.ONProperties) { // OWL2
-                Stream<? extends OntPE> props = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
-                res = Stream.concat(res, props.map(OntPE::asProperty));
-            }
-        } catch (OntJenaException j) {
-            // Ignore. Somebody can broke class expression manually, for example by deleting property declaration,
-            // In that case ONT-API throws exception on calling method ONProperty#asProperty
-            // TODO: (ONT-API hint) maybe need discard the restriction with the broken content
-            LOGGER.warn("Can't find properties for restriction {}: {}", ce, j.getMessage());
-        }
-        return res;
-    }
-
 }

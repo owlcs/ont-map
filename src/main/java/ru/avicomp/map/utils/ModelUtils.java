@@ -21,7 +21,12 @@ package ru.avicomp.map.utils;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.util.iterator.WrappedIterator;
+import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.util.JenaUtil;
+import ru.avicomp.ontapi.jena.OntJenaException;
+import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -31,6 +36,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,6 +50,7 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class ModelUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModelUtils.class);
 
     /**
      * Represents the given resource as string.
@@ -106,12 +113,11 @@ public class ModelUtils {
      * @return Optional around the {@link OntCE}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Object_Property_Range'>9.2.6 Object Property Range</a>
      * @see OntOPE#range()
+     * @see ModelUtils#ranges(OntOPE)
      */
     public static Optional<OntCE> range(OntOPE p) {
-        if (p.canAs(OntOPE.Inverse.class)) {
-            p = p.as(OntOPE.Inverse.class).getDirect();
-        }
-        return findRange(p.as(OntNOP.class), OntNOP.class, OntCE.class, new HashSet<>());
+        return findRange(p, x -> listRanges(x.as(OntOPE.class)),
+                OntPE::subPropertyOf, OntOPE.class, OntCE.class, new HashSet<>());
     }
 
     /**
@@ -122,6 +128,7 @@ public class ModelUtils {
      * @return Optional around the {@link OntDR}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Data_Property_Range'>9.3.5 Data Property Range</a>
      * @see OntNDP#range()
+     * @see ModelUtils#ranges(OntNDP)
      */
     public static Optional<OntDR> range(OntNDP p) {
         return findRange(p, OntNDP.class, OntDR.class, new HashSet<>());
@@ -135,9 +142,53 @@ public class ModelUtils {
      * @return Optional around the {@link Property}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Annotation_Property_Range'>10.2.4 Annotation Property Range</a>
      * @see OntNAP#range()
+     * @see ModelUtils#ranges(OntNAP)
      */
     public static Optional<Property> range(OntNAP p) {
         return findRange(p, OntNAP.class, Property.class, new HashSet<>());
+    }
+
+    /**
+     * List all {@code rdfs:domain} class expressions for the given {@link OntOPE object property}
+     * including inferred from property hierarchy.
+     *
+     * @param ope {@link OntOPE}, not {@code null}
+     * @return Stream
+     * @see #range(OntOPE)
+     * @see #listRanges(OntOPE)
+     */
+    public static Stream<OntCE> ranges(OntOPE ope) {
+        return listRanges(ope, p -> listRanges(p.as(OntOPE.class)), OntPE::subPropertyOf,
+                new HashSet<>()).filter(x -> x.canAs(OntCE.class)).map(x -> x.as(OntCE.class)).distinct();
+    }
+
+    /**
+     * List all {@code rdfs:domain} data ranges for the given {@link OntNDP data property}
+     * including inferred from property hierarchy.
+     *
+     * @param p {@link OntNDP}, not {@code null}
+     * @return Stream
+     * @see #range(OntNDP)
+     */
+    public static Stream<OntDR> ranges(OntNDP p) {
+        return listRanges(p, new HashSet<>()).filter(x -> x.canAs(OntDR.class)).map(x -> x.as(OntDR.class));
+    }
+
+    /**
+     * List all {@code rdfs:domain} IRIs for the given {@link OntNAP annotation property}
+     * including inferred from class hierarchy.
+     *
+     * @param p {@link OntNAP}, not {@code null}
+     * @return Stream
+     * @see #range(OntNAP)
+     */
+    public static Stream<Property> ranges(OntNAP p) {
+        return listRanges(p, new HashSet<>()).filter(RDFNode::isURIResource).map(x -> x.as(Property.class));
+    }
+
+
+    private static Stream<? extends Resource> listRanges(OntPE p, Set<Resource> seen) {
+        return listRanges(p, OntPE::range, OntPE::subPropertyOf, seen);
     }
 
     /**
@@ -158,16 +209,25 @@ public class ModelUtils {
     private static <P extends OntPE, R extends Resource> Optional<R> findRange(P property,
                                                                                Class<P> propertyType,
                                                                                Class<R> rangeType,
-                                                                               Set<P> seen) {
-        Set<R> res = property.range()
+                                                                               Set<Resource> seen) {
+        return findRange(property, OntPE::range, OntPE::subPropertyOf, propertyType, rangeType, seen);
+    }
+
+    private static <P extends OntPE, R extends Resource> Optional<R> findRange(P property,
+                                                                               Function<OntPE, Stream<? extends Resource>> ranges,
+                                                                               Function<OntPE, Stream<? extends Resource>> superProperties,
+                                                                               Class<P> propertyType,
+                                                                               Class<R> rangeType,
+                                                                               Set<Resource> seen) {
+        Set<R> res = ranges.apply(property)
                 .filter(x -> x.canAs(rangeType)).map(x -> x.as(rangeType))
                 .collect(Collectors.toSet());
         if (res.isEmpty()) { // inherit from some super property :
-            res = property.subPropertyOf() // : direct super properties
+            res = superProperties.apply(property) // : direct super properties
                     .filter(x -> x.canAs(propertyType))
                     .map(x -> x.as(propertyType))
                     .filter(seen::add)
-                    .map(x -> findRange(x, propertyType, rangeType, seen)) // : recursion
+                    .map(x -> findRange(x, ranges, superProperties, propertyType, rangeType, seen)) // : recursion
                     .filter(Optional::isPresent).map(Optional::get)
                     .collect(Collectors.toSet());
         }
@@ -175,6 +235,85 @@ public class ModelUtils {
             return Optional.empty();
         }
         return Optional.of(res.iterator().next());
+    }
+
+    /**
+     * Lists all {@code rdfs:range}s for the given {@link OntOPE object property expression}.
+     * The returned stream contains not only classes from the {@code rdfs:range} axioms,
+     * but also from {@code rdfs:domain} axioms, if a property is inverse.
+     *
+     * @param p {@link OntOPE}
+     * @return Stream of {@link OntCE}s
+     * @see <a href='https://www.w3.org/TR/owl2-syntax/#Inverse_Object_Properties'>6.1.1 Inverse Object Properties</a>
+     * @see <a href='https://www.w3.org/TR/owl2-syntax/#Inverse_Object_Properties_2'>9.2.4 Inverse Object Properties</a>
+     */
+    private static Stream<OntCE> listRanges(OntOPE p) {
+        return Stream.concat(p.range(), p.inverseOf().flatMap(OntDOP::domain));
+    }
+
+    private static Stream<? extends Resource> listRanges(OntPE p,
+                                                         Function<OntPE, Stream<? extends Resource>> findRanges,
+                                                         Function<OntPE, Stream<? extends Resource>> findSuperProperties,
+                                                         Set<Resource> seen) {
+        if (!seen.add(p)) return Stream.empty();
+        Stream<? extends Resource> res = findRanges.apply(p);
+        return Stream.concat(res, findSuperProperties.apply(p)
+                .flatMap(x -> listRanges(x.as(OntPE.class), findRanges, findSuperProperties, seen)));
+    }
+
+    /**
+     * Lists all properties that are related to the given class expression.
+     * The class hierarchy are not taken into account.
+     * The result includes the following cases:
+     * <ul>
+     * <li>right part of {@code rdfs:domain}, see {@link OntCE#properties()}</li>
+     * <li>the subject of {@code owl:inverseOf}, if it is in {@code rdfs:range} relation with the given {@link OntCE}</li>
+     * <li>{@code owl:onProperties} and {@code owl:onProperty} relations</li>
+     * </ul>
+     *
+     * @param ce {@link OntCE}, not {@code null}
+     * @return <b>not</b> distinct Stream of {@link OntPE properties}
+     * @see OntCE#properties()
+     * @see #listRanges(OntOPE)
+     */
+    public static Stream<OntPE> listProperties(OntCE ce) {
+        // direct domains
+        Stream<OntPE> domains = ce.properties();
+        // indirect domains (ranges for inverseOf object properties):
+        Stream<OntPE> ranges = ce.getModel().statements(null, OWL.inverseOf, null)
+                .filter(x -> ce.hasProperty(RDFS.range, x.getObject()))
+                .filter(x -> x.getSubject().canAs(OntOPE.class))
+                .map(x -> x.getSubject().as(OntPE.class));
+        // on properties for restrictions
+        Stream<? extends OntPE> onProps = Stream.empty();
+        try {
+            if (ce instanceof OntCE.ONProperty) {
+                onProps = Stream.of(((OntCE.ONProperty) ce).getOnProperty());
+            } else if (ce instanceof OntCE.ONProperties) { // OWL2 know-how:
+                onProps = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
+            }
+        } catch (OntJenaException j) {
+            // Ignore. Somebody can broke class expression manually, for example by deleting property declaration,
+            // In that case ONT-API throws exception on calling method ONProperty#asProperty
+            // TODO: (ONT-API hint) maybe need discard the restriction with the broken content
+            LOGGER.warn("Can't find properties for restriction {}: {}", ce, j.getMessage());
+        }
+        return Stream.of(domains, ranges, onProps).flatMap(Function.identity());
+    }
+
+    /**
+     * Gets ont-object class type.
+     *
+     * @param object instance of {@link O}
+     * @param <O>    any subtype of {@link OntObject}
+     * @return {@link Class} of {@link O}
+     */
+    @SuppressWarnings("unchecked")
+    public static <O extends OntObject> Class<O> getOWLType(O object) {
+        if (object instanceof OntObjectImpl) {
+            return (Class<O>) ((OntObjectImpl) object).getActualClass();
+        }
+        return (Class<O>) OntObjectImpl.findActualClass(object);
     }
 
     /**

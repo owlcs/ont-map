@@ -498,34 +498,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Answers {@code true}
-     * if the specified property links classes together through domain/range or restriction relationships.
-     *
-     * @param property {@link OntOPE} property to test
-     * @param domain   {@link OntCE} "domain" candidate
-     * @param range    {@link OntCE} "range" candidate
-     * @return true if it is link property.
-     * @see ru.avicomp.map.utils.ClassPropertyMapImpl#directProperties(OntCE)
-     */
-    @SuppressWarnings("JavadocReference")
-    public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
-        Property p = property.asProperty();
-        if (properties(domain).noneMatch(p::equals)) return false;
-        // range
-        if (property.range().anyMatch(r -> Objects.equals(r, range))) return true;
-        // object some/all values from or cardinality restriction
-        return statements(null, OWL.onProperty, property)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.canAs(OntCE.ComponentRestrictionCE.class))
-                .map(s -> s.as(OntCE.ComponentRestrictionCE.class))
-                .map(OntCE.Value::getValue)
-                .map(RDFNode.class::cast)
-                .filter(RDFNode::isResource)
-                .map(RDFNode::asResource)
-                .anyMatch(range::equals);
-    }
-
-    /**
      * Returns a Set of all linked properties.
      *
      * @param left  {@link OntCE}
@@ -536,6 +508,34 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return ontObjects(OntOPE.class)
                 .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Answers {@code true}
+     * if the specified property links classes together through domain/range or restriction relationships.
+     *
+     * @param property {@link OntOPE} property to test, not {@code null}
+     * @param domain   {@link OntCE} "domain" candidate, not {@code null}
+     * @param range    {@link OntCE} "range" candidate, not {@code null}
+     * @return {@code true} if it is link property
+     * @see ModelUtils#listProperties(OntCE)
+     * @see ModelUtils#ranges(OntOPE)
+     */
+    public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
+        Property p = property.asProperty();
+        if (properties(domain).noneMatch(p::equals)) return false;
+        // range
+        if (ModelUtils.ranges(property).anyMatch(r -> Objects.equals(r, range))) return true;
+        // object some/all values from or cardinality restriction
+        return statements(null, OWL.onProperty, property)
+                .map(OntStatement::getSubject)
+                .filter(s -> s.canAs(OntCE.ComponentRestrictionCE.class))
+                .map(s -> s.as(OntCE.ComponentRestrictionCE.class))
+                .map(OntCE.Value::getValue)
+                .map(RDFNode.class::cast)
+                .filter(RDFNode::isResource)
+                .map(RDFNode::asResource)
+                .anyMatch(range::equals);
     }
 
     /**

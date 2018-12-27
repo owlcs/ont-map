@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
 
@@ -212,7 +212,8 @@ public class ClassPropertiesTest {
 
     private static String classProperties(OntCE ce) {
         OntGraphModel m = ce.getModel();
-        return Stream.concat(Stream.of("[" + ((OntObjectImpl) ce).getActualClass().getSimpleName() + "]" + m.shortForm(ce.asNode().toString())),
+        return Stream.concat(Stream.of(String.format("[%s]%s",
+                ModelUtils.getOWLType(ce).getSimpleName(), m.shortForm(ce.asNode().toString()))),
                 manager.getClassProperties(m)
                         .properties(ce)
                         .sorted(Comparator.comparing(Resource::getURI))
@@ -222,11 +223,13 @@ public class ClassPropertiesTest {
 
     private static String propertyClasses(OntPE pe) {
         OntGraphModel m = pe.getModel();
-        return Stream.concat(Stream.of("[" + ((OntObjectImpl) pe).getActualClass().getSimpleName() + "]" + m.shortForm(pe.asNode().toString())),
+        return Stream.concat(Stream.of(String.format("[%s]%s",
+                ModelUtils.getOWLType(pe).getSimpleName(), m.shortForm(pe.asNode().toString()))),
                 manager.getClassProperties(m)
                         .classes(pe)
                         .map(FrontsNode::asNode)
-                        .sorted(Comparator.comparing(Node::isURI).thenComparing((Function<Node, String>) Node::toString))
+                        .sorted(Comparator.comparing(Node::isURI)
+                                .thenComparing((Function<Node, String>) Node::toString))
                         .map(c -> m.shortForm(c.toString())))
                 .collect(Collectors.joining("\n\t"));
     }

@@ -33,7 +33,9 @@ import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ru.avicomp.map.spin.Exceptions.*;
@@ -168,33 +170,29 @@ public class ValidationHelper {
             throw error.build();
         }
         if (isDT(type) && rdf.canAs(OntPE.class)) {
+            if (rdf.canAs(OntOPE.class)) { // object property is given
+                throw error.build();
+            }
             if (context == null) { // can't validate
                 return;
             }
             if (!context.getSourceClassProperties().contains(rdf)) { // not a mapping property
                 throw error.build();
             }
-            if (rdf.canAs(OntOPE.class)) { // object property is given
-                throw error.build();
-            }
             // since actual value would be inferred, validate range for a mapping property
             if (RDFS.Literal.equals(type)) {
                 return; // : any datatype can be accepted
             }
-            Resource range = null;
+            Set<Resource> ranges = Collections.emptySet();
             if (rdf.canAs(OntNDP.class)) { // datatype property
-                // todo: not sure what to do with anonymous data ranges
-                range = ModelUtils.range(rdf.as(OntNDP.class))
-                        .filter(x -> x.canAs(OntDT.class))
-                        .map(x -> x.as(OntDT.class))
-                        .orElse(null);
+                ranges = ModelUtils.ranges(rdf.as(OntNDP.class)).collect(Collectors.toSet());
             } else if (rdf.canAs(OntNAP.class)) { // annotation property
-                range = ModelUtils.range(rdf.as(OntNAP.class)).orElse(null);
+                ranges = ModelUtils.ranges(rdf.as(OntNAP.class)).collect(Collectors.toSet());
             }
-            if (range == null) { // can't determine range, then can be passed everything
+            if (ranges.isEmpty()) { // can't determine range, then can be passed everything
                 return;
             }
-            if (!match(type, range)) {
+            if (ranges.stream().noneMatch(r -> match(type, r))) {
                 throw error.build();
             }
             return;
