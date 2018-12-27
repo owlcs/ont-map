@@ -20,7 +20,6 @@ package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
 import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
@@ -62,10 +61,14 @@ public enum Exceptions {
     PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION,
     PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION,
 
-    // while validation call in model:
+    // while validation function call:
     FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION,
-    FUNCTION_CALL_WRONG_ARGUMENT_VALUE,
-    FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION,
+    FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE,
+    FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE,
+    FUNCTION_CALL_WRONG_ARGUMENT_UNHANDLED_CASE,
+    FUNCTION_CALL_WRONG_ARGUMENT_NONEXISTENT_PROPERTY,
+    FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY,
+    FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE,
 
     // while building call:
     FUNCTION_BUILD_FAIL,
@@ -104,14 +107,6 @@ public enum Exceptions {
 
         Builder addArg(MapFunction.Arg arg) {
             return add(ARG, arg.name());
-        }
-
-        Builder addArgType(Resource value) {
-            return add(ARG_TYPE, value);
-        }
-
-        Builder addArgValue(RDFNode value) {
-            return add(ARG_VALUE, value);
         }
 
         Builder addProperty(Property property) {

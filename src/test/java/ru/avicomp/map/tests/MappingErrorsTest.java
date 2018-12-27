@@ -39,7 +39,7 @@ import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
-import static ru.avicomp.map.spin.Exceptions.Key;
+import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
  * Created by @szuev on 18.04.2018.
@@ -81,7 +81,7 @@ public class MappingErrorsTest {
             c.addClassBridge(filterFunction, mapFunction);
             Assert.fail("Class bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION);
+            assertCode(j, CONTEXT_NOT_BOOLEAN_FILTER_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -103,7 +103,7 @@ public class MappingErrorsTest {
             context.addClassBridge(f.create().build());
             Assert.fail("Expression has been added successfully");
         } catch (Exceptions.SpinMapException e) {
-            assertCode(e, Exceptions.CONTEXT_REQUIRE_TARGET_FUNCTION);
+            assertCode(e, CONTEXT_REQUIRE_TARGET_FUNCTION);
             Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
             Assert.assertEquals(src.getURI(), e.getString(Key.CONTEXT_SOURCE));
             Assert.assertEquals(dst.getURI(), e.getString(Key.CONTEXT_TARGET));
@@ -135,7 +135,7 @@ public class MappingErrorsTest {
             c.addPropertyBridge(mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION);
+            assertCode(j, PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -167,7 +167,7 @@ public class MappingErrorsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION);
+            assertCode(j, PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -197,7 +197,7 @@ public class MappingErrorsTest {
             c.addPropertyBridge(filterFunction, mapFunction, sp2);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY);
+            assertCode(j, PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -230,10 +230,10 @@ public class MappingErrorsTest {
             c.addPropertyBridge(filterFunction, mapFunction, tp1);
             Assert.fail("Property bridge is added successfully");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION);
+            assertCode(j, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION);
             Assert.assertEquals(1, j.getSuppressed().length);
             Throwable e = j.getSuppressed()[0];
-            assertCode((MapJenaException) e, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+            assertCode((MapJenaException) e, FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -267,9 +267,9 @@ public class MappingErrorsTest {
             m.createMapModel().validate(func1);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
-            assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+            assertCode((MapJenaException) j.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
         MapFunction.Call func2 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, 2.3).build();
         m.createMapModel().validate(func2);
@@ -281,9 +281,9 @@ public class MappingErrorsTest {
             m.createMapModel().validate(func3);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
-            assertCode((MapJenaException) j.getSuppressed()[0], Exceptions.FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
+            assertCode((MapJenaException) j.getSuppressed()[0], FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
         }
         MapFunction.Call func4 = m.getFunction(SP.floor).create()
                 .addFunction(SP.arg1, m.getFunction(SP.ceil)
@@ -293,12 +293,12 @@ public class MappingErrorsTest {
             m.createMapModel().validate(func4);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.MAPPING_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
             MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
-            assertCode(j2, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION);
+            assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE);
             Assert.assertEquals(1, j2.getSuppressed().length);
-            assertCode((MapJenaException) j2.getSuppressed()[0], Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+            assertCode((MapJenaException) j2.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
 
         MapFunction.Call func5 = m.getFunction(SP.floor).create()
@@ -321,10 +321,10 @@ public class MappingErrorsTest {
             context.validate(toTest);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, CONTEXT_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
             MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
-            assertCode(j2, Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_VALUE);
+            assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY);
             Assert.assertEquals(0, j2.getSuppressed().length);
         }
         // add to context
@@ -347,7 +347,10 @@ public class MappingErrorsTest {
             context.validate(toTest);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, CONTEXT_FUNCTION_VALIDATION_FAIL);
+            MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
+            assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY);
+            Assert.assertEquals(0, j2.getSuppressed().length);
         }
         // add to context
         p.addDomain(c1);
@@ -359,7 +362,10 @@ public class MappingErrorsTest {
             context.validate(toTest);
             Assert.fail("Validation passed.");
         } catch (MapJenaException j) {
-            assertCode(j, Exceptions.CONTEXT_FUNCTION_VALIDATION_FAIL);
+            assertCode(j, CONTEXT_FUNCTION_VALIDATION_FAIL);
+            MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
+            assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE);
+            Assert.assertEquals(0, j2.getSuppressed().length);
         }
     }
 
