@@ -153,7 +153,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl deleteContext(MapContext context) {
         List<MapContext> related = context.dependentContexts().collect(Collectors.toList());
         if (!related.isEmpty()) {
-            Exceptions.Builder error = exception(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES)
+            Exceptions.Builder error = error(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES)
                     .addContext(context);
             related.forEach(error::addContext);
             throw error.build();
@@ -162,8 +162,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         if (getManager().getConfig().generateNamedIndividuals()) {
             findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
         }
-        deleteContext(c);
-        clear();
+        deleteContext(c).clear();
         // remove unused imports (both owl:import declarations and underling graphs)
         Set<OntID> used = classes().map(this::getOntologyID).collect(Collectors.toSet());
         Set<OntGraphModel> unused = ontologies()
@@ -201,19 +200,21 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
+     * Deletes all unused anymore things,
+     * that could appeared in the base graph while constructing or removing contexts and property bridges.
+     * This includes construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg} properties.
+     *
+     * @return this model
      * @see #clearUnused()
      */
-    protected void clear() {
+    protected MapModelImpl clear() {
         // clean unused functions, mapping templates, properties, variables, etc
         clearUnused();
         // re-run since RDF is disordered and some data can be omitted in the previous step due to dependencies
         clearUnused();
+        return this;
     }
 
-    /**
-     * Deletes unused anymore things, which is appeared in the base graph.
-     * I.e. construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg}s.
-     */
     protected void clearUnused() {
         // delete expressions:
         Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
@@ -239,7 +240,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         found.forEach(Models::deleteAll);
     }
 
-    public void deleteContext(MapContextImpl context) {
+    public MapModelImpl deleteContext(MapContextImpl context) {
         // delete rules:
         Set<Statement> rules = context.listRuleStatements().collect(Collectors.toSet());
         rules.forEach(s -> {
@@ -248,6 +249,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         });
         // delete declaration:
         Models.deleteAll(context);
+        return this;
     }
 
     /**
@@ -364,12 +366,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         OntCE rightClass = right.getTarget();
         Set<OntOPE> res = getLinkProperties(leftClass, rightClass);
         if (res.isEmpty()) {
-            throw exception(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
+            throw error(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(left)
                     .addContext(right).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = exception(MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK)
+            Exceptions.Builder err = error(MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK)
                     .addContext(left)
                     .addContext(right);
             res.forEach(p -> err.addProperty(p.asProperty()));
@@ -540,7 +542,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Creates an expression resource.
-     * Example of expression:
+     * Example of such expression:
      * <pre>{@code
      * [ a  spinmapl:buildURI2 ;
      *      sp:arg1            people:secondName ;
@@ -574,36 +576,30 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return res.addProperty(RDF.type, createResource(func.name()));
     }
 
-    protected ModelCallImpl parseExpression(Resource mapping, RDFNode expr) {
-        return parseExpression(mapping, expr, false);
-    }
-
     /**
-     * Creates a {@link MapFunction.Call function call} from a given expression resource.
+     * Creates a {@link MapFunction.Call function call} from the given expression resource.
      *
-     * @param mapping  {@link Resource} mapping
+     * @param rule  {@link Resource} mapping rule
      * @param expr     {@link RDFNode} expression
      * @param isFilter boolean
      * @return {@link ModelCallImpl}
      * @see #createExpression(MapFunction.Call)
      */
-    protected ModelCallImpl parseExpression(Resource mapping, RDFNode expr, boolean isFilter) {
+    protected ModelCallImpl parseExpression(Resource rule, RDFNode expr, boolean isFilter) {
         MapManagerImpl man = getManager();
         MapFunctionImpl f;
         Map<MapFunctionImpl.ArgImpl, Object> args = new HashMap<>();
-
         if (expr.isLiteral() || expr.isURIResource()) {
             f = man.getFunction(SPINMAP.equals.getURI());
-            String v = (expr.isLiteral() ? expr :
-                    ContextHelper.findProperty(mapping, expr.asResource(), isFilter)).asNode().toString();
+            String v = (expr.isLiteral() ? expr : ContextHelper.findProperty(rule, expr.asResource(), isFilter))
+                    .asNode().toString();
             args.put(f.getArg(SP.arg1.getURI()), v);
             return new ModelCallImpl(this, f, args);
         }
-        if (!expr.isAnon()) throw new MapJenaException.IllegalState("Should never happen: " + expr.toString());
-        Resource expression = expr.asResource();
-        String name = expression.getRequiredProperty(RDF.type).getObject().asResource().getURI();
+        Resource res = expr.asResource();
+        String name = res.getRequiredProperty(RDF.type).getObject().asResource().getURI();
         f = man.getFunction(name);
-        expression.listProperties()
+        res.listProperties()
                 .filterDrop(s -> RDF.type.equals(s.getPredicate()))
                 .forEachRemaining(s -> {
                     String uri = s.getPredicate().getURI();
@@ -623,9 +619,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     if (n.isResource()) {
                         Resource r = n.asResource();
                         if (r.isAnon()) {
-                            v = parseExpression(mapping, r, isFilter);
+                            v = parseExpression(rule, r, isFilter);
                         } else if (SpinModels.isSpinArgVariable(r)) {
-                            v = ContextHelper.findProperty(mapping, r, isFilter).asNode().toString();
+                            v = ContextHelper.findProperty(rule, r, isFilter).asNode().toString();
                         }
                     }
                     if (v == null) {
@@ -644,10 +640,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        ValidationHelper.testFunction(func, this, exception(MAPPING_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
+        ValidationHelper.testFunction(func, this, error(MAPPING_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
-    protected Exceptions.Builder exception(Exceptions code) {
+    protected Exceptions.Builder error(Exceptions code) {
         return code.create().add(Key.MAPPING, toString());
     }
 

@@ -46,33 +46,52 @@ import java.util.stream.Stream;
 @SuppressWarnings("WeakerAccess")
 public class ContextHelper {
     private final MapContextImpl context;
+    private final Resource mapping;
 
-    private Resource mapping;
+    // lazy collected caches for source and target properties:
     private Set<? extends RDFNode> sourceClassProperties;
     private Set<? extends RDFNode> targetClassProperties;
 
-    private ContextHelper(MapContextImpl context) {
+    private ContextHelper(MapContextImpl context, Resource mapping) {
         this.context = Objects.requireNonNull(context);
-    }
-
-    static ContextHelper create(MapContextImpl context) {
-        return new ContextHelper(context);
+        this.mapping = mapping;
     }
 
     /**
-     * Adds a mapping template call to the graph as {@code spinmap:rule}.
+     * Creates a fresh context with empty mapping rule.
+     * No changes in the graph at this stage is made.
      *
-     * @param mappingExpression resource describing mapping expression
-     * @param filterExpression  resource describing filter expression
-     * @param target            {@link Property}
-     * @return {@link Resource}
+     * @param context {@link MapContextImpl}, real resource-context
+     * @return {@link ContextHelper}
      */
-    Resource createRule(RDFNode mappingExpression, RDFNode filterExpression, Property target) {
-        MapModelImpl m = getModel();
-        Resource mapping = mapping();
-        Optional<Resource> classMapRule = context.primaryRule();
-        mapping.addProperty(SPINMAP.context, context)
-                .addProperty(SPINMAP.targetPredicate1, target);
+    static ContextHelper create(MapContextImpl context) {
+        return new ContextHelper(context, context.getModel().createResource());
+    }
+
+    /**
+     * Wraps the given context as context-helper.
+     * No changes in the graph at this stage is made.
+     *
+     * @param context {@link MapContextImpl}, real resource-context
+     * @return {@link ContextHelper}
+     */
+    static ContextHelper wrap(MapContextImpl context) {
+        //return new ContextHelper(context, context.primaryRule().orElse(null));
+        return new ContextHelper(context, null);
+    }
+
+    /**
+     * Adds a mapping template call to the graph as {@code spinmap:rule}, writes the given expressions to it.
+     *
+     * @param mappingExpression {@link RDFNode} describing mapping expression
+     * @param filterExpression  {@link RDFNode} describing filter expression
+     * @param target            {@link Property}
+     * @return {@link Resource}, the mapping rule
+     */
+    Resource populate(RDFNode mappingExpression, RDFNode filterExpression, Property target) {
+        Resource res = getMappingRule();
+        Optional<Resource> classRule = context.primaryRule();
+        res.addProperty(SPINMAP.context, context).addProperty(SPINMAP.targetPredicate1, target);
         List<Property> mappingPredicates = addExpression(SPINMAP.expression, mappingExpression).getSources();
         List<Property> filterPredicates;
         if (filterExpression != null) {
@@ -82,8 +101,9 @@ public class ContextHelper {
         }
 
         boolean hasDefaults = hasDefaults();
-        boolean hasClassMapFilter = classMapRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
+        boolean hasClassMapFilter = classRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
 
+        MapModelImpl m = getModel();
         Resource template;
         int mappingSources = (int) mappingPredicates.stream().distinct().count();
         if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
@@ -91,12 +111,12 @@ public class ContextHelper {
             template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
         } else {
             // use custom (avc) mapping
-            template = TemplateBuilder.createMappingTemplate(m, classMapRule.isPresent(),
+            template = TemplateBuilder.createMappingTemplate(m, classRule.isPresent(),
                     filterPredicates, mappingPredicates);
         }
-        context.getSource().addProperty(SPINMAP.rule, mapping.addProperty(RDF.type, template));
-        simplify(mapping);
-        return mapping;
+        context.getSource().addProperty(SPINMAP.rule, res.addProperty(RDF.type, template));
+        simplify(res);
+        return res;
     }
 
     /**
@@ -120,12 +140,12 @@ public class ContextHelper {
     }
 
     /**
-     * Tries to find property in the mapping by variable (e.g. {@code spin:_arg1}).
+     * Tries to find property in the mapping rule by the spin variable (e.g. {@code spin:_arg1}).
      * Sorry for that ugly solution.
      *
-     * @param mapping  {@link Resource}
-     * @param var      {@link Resource}
-     * @param isFilter boolean, true if it is filter in AVC template
+     * @param mapping  {@link Resource} rule
+     * @param var      {@link Resource} variable
+     * @param isFilter boolean, {@code true} if it is filter in AVC template
      * @return {@link Property}
      * @throws JenaException in case no property found
      */
@@ -177,21 +197,21 @@ public class ContextHelper {
     }
 
     /**
-     * Gets and caches properties belonging to the source context class.
+     * Gets and caches all properties belonging to the source context class.
      *
      * @return Set of properties
      */
-    Set<? extends RDFNode> getSourceClassProperties() {
+    public Set<? extends RDFNode> getSourceClassProperties() {
         return sourceClassProperties == null ?
                 sourceClassProperties = getClassProperties(context.getSource()) : sourceClassProperties;
     }
 
     /**
-     * Gets and caches properties belonging to the target context class.
+     * Gets and caches all properties belonging to the target context class.
      *
      * @return Set of properties
      */
-    Set<? extends RDFNode> getTargetClassProperties() {
+    public Set<? extends RDFNode> getTargetClassProperties() {
         return targetClassProperties == null ?
                 targetClassProperties = getClassProperties(context.target()) : targetClassProperties;
     }
@@ -221,16 +241,16 @@ public class ContextHelper {
     }
 
     private ExtendedIterator<Statement> listProperties() {
-        return mapping().listProperties().filterKeep(s -> s.getObject().isURIResource());
+        return getMappingRule().listProperties().filterKeep(s -> s.getObject().isURIResource());
     }
 
     /**
-     * Creates an anonymous resource, the object for a statement {@code spinmap:rule}.
+     * Returns an anonymous resource, the object for a statement with the {@code spinmap:rule} predicate.
      *
      * @return {@link Resource}
      */
-    private Resource mapping() {
-        return mapping == null ? mapping = getModel().createResource() : mapping;
+    private Resource getMappingRule() {
+        return MapJenaException.notNull(mapping, "Incomplete context");
     }
 
     public MapModelImpl getModel() {
@@ -245,7 +265,7 @@ public class ContextHelper {
      * @return {@link ExprRes} container with property collections that will be needed when building a mapping template.
      */
     ExprRes addExpression(Property expressionPredicate, RDFNode expressionObject) {
-        mapping().addProperty(expressionPredicate, expressionObject);
+        getMappingRule().addProperty(expressionPredicate, expressionObject);
         ExprRes res = addExpression(expressionPredicate);
         if (!res.target.isEmpty()) {
             throw new MapJenaException.Unsupported("TODO: expressions with arguments from right side " +
@@ -259,7 +279,7 @@ public class ContextHelper {
         MapModelImpl m = getModel();
         Map<Property, Property> sourcePredicatesMap = getSourcePredicatesMap();
         Map<Property, Property> targetPredicatesMap = getTargetPredicatesMap();
-        Statement expression = mapping().getRequiredProperty(expressionPredicate);
+        Statement expression = getMappingRule().getRequiredProperty(expressionPredicate);
         // properties from expression, not distinct flat list, i.e. with possible repetitions
         List<Statement> properties = Stream.concat(Stream.of(expression), Models.listProperties(expression.getObject()))
                 .filter(s -> isContextProperty(s.getObject()))
@@ -291,7 +311,7 @@ public class ContextHelper {
             // process default value
             if (expr.hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
                 Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
-                mapping().addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()),
+                getMappingRule().addProperty(m.createArgProperty(AVC.predicateDefaultValue(predicate.getLocalName()).getURI()),
                         defaultValue);
             }
         }
@@ -304,7 +324,7 @@ public class ContextHelper {
         Property predicate;
         if (!prev.containsKey(property)) {
             predicate = generator.apply(prev.size() + 1);
-            mapping().addProperty(predicate, property);
+            getMappingRule().addProperty(predicate, property);
             prev.put(property, predicate);
         } else {
             predicate = prev.get(property);

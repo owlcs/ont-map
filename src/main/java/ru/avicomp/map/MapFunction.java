@@ -312,7 +312,8 @@ public interface MapFunction extends Description {
         }
 
         /**
-         * Creates a fresh map-function from this function-chain.
+         * Creates a fresh map-function as a synonym for this function-chain,
+         * discarding all model-dependent entity values.
          * <p>
          * Note: currently this functionality is available only to those {@link Call}s,
          * that belong to a {@link MapModel mapping}s.

@@ -71,7 +71,7 @@ public class PropertyBridgeImpl extends OntObjectImpl implements PropertyBridge 
 
     @Override
     public ModelCallImpl getMapping() {
-        return getModel().parseExpression(this, getRequiredProperty(SPINMAP.expression).getObject());
+        return getModel().parseExpression(this, getRequiredProperty(SPINMAP.expression).getObject(), false);
     }
 
     @Override

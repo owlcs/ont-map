@@ -48,24 +48,6 @@ import static ru.avicomp.map.spin.Exceptions.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class ValidationHelper {
-    private static final Set<Resource> PROPERTY_TYPES = Stream.of(RDF.Property,
-            OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty)
-            .collect(Iter.toUnmodifiableSet());
-
-    private final MapFunction.Arg argument;
-    private final Object value;
-    private final MapModelImpl model;
-    private final ContextHelper context;
-
-    private ValidationHelper(MapFunction.Arg argument,
-                             Object value,
-                             MapModelImpl model,
-                             ContextHelper context) {
-        this.argument = Objects.requireNonNull(argument);
-        this.value = Objects.requireNonNull(value);
-        this.model = Objects.requireNonNull(model);
-        this.context = context;
-    }
 
     /**
      * Tests the given function against the specified context, throwing {@link MapJenaException} on fail.
@@ -101,27 +83,31 @@ public class ValidationHelper {
                                      MapModelImpl model,
                                      ContextHelper context,
                                      MapJenaException error) throws MapJenaException {
-        function.asMap().forEach((arg, value) -> {
-            try {
-                ValidationHelper v = new ValidationHelper(arg, value, model, context);
-                if (value instanceof String) {
-                    v.testStringValue();
-                    return;
-                }
-                if (value instanceof MapFunction.Call) {
-                    v.testFunctionValue();
-                    MapFunction.Call nested = (MapFunction.Call) value;
-                    testFunction(nested, model, context, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE
-                            .create().addFunction(nested).build());
-                    return;
-                }
-                throw new MapJenaException.IllegalState("Should never happen, unexpected value: " + value);
-            } catch (MapJenaException e) {
-                error.addSuppressed(e);
-            }
-        });
+        function.asMap().forEach((arg, value) -> getArgumentValidator(arg, value, model, context).validate(error));
         if (error.getSuppressed().length != 0)
             throw error;
+    }
+
+    /**
+     * Creates an argument validator.
+     *
+     * @param arg     {@link MapFunction.Arg} argument
+     * @param value   either String or {@link MapFunction.Call}
+     * @param model   {@link MapModelImpl}
+     * @param context {@link ContextHelper}
+     * @return {@link Arg}
+     */
+    private static Arg getArgumentValidator(MapFunction.Arg arg,
+                                            Object value,
+                                            MapModelImpl model,
+                                            ContextHelper context) {
+        if (value instanceof String) {
+            return new StringArg(arg, (String) value, model, context);
+        }
+        if (value instanceof MapFunction.Call) {
+            return new CallArg(arg, (MapFunction.Call) value, model, context);
+        }
+        throw new MapJenaException.IllegalState("Should never happen, unexpected value: " + value);
     }
 
     /**
@@ -209,166 +195,217 @@ public class ValidationHelper {
         return false;
     }
 
-    private Exceptions.Builder error(Exceptions code) {
-        return code.create()
-                .addArg(argument)
-                .add(Key.ARG_TYPE, getStringType())
-                .add(Key.ARG_VALUE, getStringValue());
-    }
+    private static class StringArg extends Arg {
+        private StringArg(MapFunction.Arg argument,
+                          String value,
+                          MapModelImpl model,
+                          ContextHelper context) {
+            super(argument, value, model, context);
+        }
 
-    private String getStringValue() {
-        if (value instanceof String) {
+        @Override
+        String getValueKey() {
             return (String) value;
         }
-        if (value instanceof MapFunction.Call) {
-            return ((MapFunction.Call) value).getFunction().name();
-        }
-        throw new MapJenaException.IllegalState();
-    }
 
-    private RDFNode getRDFValue() {
-        if (value instanceof String) {
-            return model.toNode(String.valueOf(value));
-        }
-        if (value instanceof MapFunction.Call) {
-            return model.createResource(((MapFunction.Call) this.value).getFunction().type());
-        }
-        throw new MapJenaException.IllegalState();
-    }
-
-    private String getStringType() {
-        return argument.type();
-    }
-
-    private Resource getRDFType() {
-        return model.createResource(argument.type());
-    }
-
-    /**
-     * Validates a function argument input against the specified mapping model.
-     */
-    private void testFunctionValue() throws MapJenaException {
-        Resource type = getRDFType();
-        Resource value = getRDFValue().asResource();
-        Exceptions.Builder error = error(FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
-        if (type.equals(value)) {
-            return;
-        }
-        if (AVC.undefined.equals(type) || AVC.undefined.equals(value)) {
-            // seems it is okay
-            return;
-        }
-        if (RDFS.Literal.equals(type)) {
-            if (isDT(value)) return;
-            throw error.build();
-        }
-        if (canSafeCast(type, value)) { // auto cast:
-            return;
-        }
-        if (RDF.PlainLiteral.equals(type)) {
-            if (XSD.xstring.equals(value)) return;
-            throw error.build();
-        }
-        if (RDF.Property.equals(type)) {
-            if (PROPERTY_TYPES.contains(value))
-                return;
-            throw error.build();
-        }
-        if (RDFS.Class.equals(type)) {
-            if (OWL.Class.equals(value)) return;
-            throw error.build();
-        }
-        if (RDFS.Resource.equals(type)) {
-            if (!isDT(value))
-                return;
-            throw error.build();
-        }
-        throw error.build();
-    }
-
-    /**
-     * Validates a string argument input against the specified mapping model,
-     * taking into account the context info if it is given.
-     */
-    private void testStringValue() throws MapJenaException {
-        Resource type = getRDFType();
-        RDFNode value = getRDFValue();
-        Exceptions.Builder error = error(FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
-        // anything:
-        if (AVC.undefined.equals(type)) {
-            return;
-        }
-        // value is literal
-        if (value.isLiteral()) {
-            if (RDFS.Literal.equals(type)) {
-                return; // : any datatype can be accepted
-            }
-            if (match(type, model.getResource(value.asLiteral().getDatatypeURI()))) {
+        @Override
+        void testValue() {
+            Resource type = getRDFType();
+            RDFNode value = model.toNode(String.valueOf(this.value));
+            Exceptions.Builder error = error(FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
+            // anything:
+            if (AVC.undefined.equals(type)) {
                 return;
             }
-            throw error.build();
-        }
-        // value is resource
-        if (RDFS.Resource.equals(type)) {
-            // the given type is also resource
-            return;
-        }
-        if (RDFS.Datatype.equals(type)) {
-            if (value.canAs(OntDR.class)) return;
-            throw error.build();
-        }
-        if (RDFS.Class.equals(type)) {
-            if (value.canAs(OntCE.class)) return;
-            throw error.build();
-        }
-        if (SPINMAP.Context.equals(type)) {
-            if (SpinModels.isContext(value.asResource())) return;
-            throw error.build();
-        }
-        if (RDF.Property.equals(type)) {
-            if (context != null && ((MapFunctionImpl) argument.getFunction()).isMappingPropertyFunction()) {
-                if (!context.getSourceClassProperties().contains(value)) {
-                    throw error(FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY).build();
+            // value is literal
+            if (value.isLiteral()) {
+                if (RDFS.Literal.equals(type)) {
+                    return; // : any datatype can be accepted
                 }
-            }
-            if (value.isURIResource()) {
-                //noinspection SuspiciousMethodCalls
-                if (BuiltIn.get().reservedProperties().contains(value))
+                if (match(type, model.getResource(value.asLiteral().getDatatypeURI()))) {
                     return;
-                if (value.canAs(OntPE.class))
-                    return;
-            }
-            throw error(FUNCTION_CALL_WRONG_ARGUMENT_NONEXISTENT_PROPERTY).build();
-        }
-        if (isDT(type) && value.canAs(OntPE.class)) {
-            if (value.canAs(OntOPE.class)) { // object property is given
+                }
                 throw error.build();
             }
-            if (context == null) { // can't validate
+            // value is resource
+            if (RDFS.Resource.equals(type)) {
+                // the given value is also resource
                 return;
             }
-            if (!context.getSourceClassProperties().contains(value)) { // not a mapping property
-                throw error(FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY).build();
+            if (RDFS.Datatype.equals(type)) {
+                if (value.canAs(OntDR.class)) return;
+                throw error.build();
             }
-            // since actual value would be inferred, validate range for a mapping property
-            if (RDFS.Literal.equals(type)) {
-                return; // : any datatype can be accepted
+            if (RDFS.Class.equals(type)) {
+                if (value.canAs(OntCE.class)) return;
+                throw error.build();
             }
-            Set<Resource> ranges = Collections.emptySet();
-            if (value.canAs(OntNDP.class)) { // datatype property
-                ranges = ModelUtils.ranges(value.as(OntNDP.class)).collect(Collectors.toSet());
-            } else if (value.canAs(OntNAP.class)) { // annotation property
-                ranges = ModelUtils.ranges(value.as(OntNAP.class)).collect(Collectors.toSet());
+            if (SPINMAP.Context.equals(type)) {
+                if (SpinModels.isContext(value.asResource())) return;
+                throw error.build();
             }
-            if (ranges.isEmpty()) { // can't determine range, then can be passed everything
+            if (RDF.Property.equals(type)) {
+                if (context != null && getFrameFunction().isMappingPropertyFunction()) {
+                    if (!context.getSourceClassProperties().contains(value)) {
+                        throw error(FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY).build();
+                    }
+                }
+                if (value.isURIResource()) {
+                    //noinspection SuspiciousMethodCalls
+                    if (BuiltIn.get().reservedProperties().contains(value))
+                        return;
+                    if (value.canAs(OntPE.class))
+                        return;
+                }
+                throw error(FUNCTION_CALL_WRONG_ARGUMENT_NONEXISTENT_PROPERTY).build();
+            }
+            if (isDT(type) && value.canAs(OntPE.class)) {
+                if (!value.canAs(OntNDP.class) && !value.canAs(OntNAP.class)) {
+                    // object property can't assert literals
+                    throw error(FUNCTION_CALL_WRONG_ARGUMENT_OBJECT_PROPERTY).build();
+                }
+                if (context == null) { // can't validate
+                    return;
+                }
+                if (!context.getSourceClassProperties().contains(value)) { // not a mapping property
+                    throw error(FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY).build();
+                }
+                // since actual value would be inferred, validate range for a mapping property
+                if (RDFS.Literal.equals(type)) {
+                    return; // : any datatype can be accepted
+                }
+                Set<Resource> ranges = Collections.emptySet();
+                if (value.canAs(OntNDP.class)) { // datatype property
+                    ranges = ModelUtils.ranges(value.as(OntNDP.class)).collect(Collectors.toSet());
+                } else if (value.canAs(OntNAP.class)) { // annotation property
+                    ranges = ModelUtils.ranges(value.as(OntNAP.class)).collect(Collectors.toSet());
+                }
+                if (ranges.isEmpty()) { // can't determine range, then can be passed everything
+                    return;
+                }
+                if (ranges.stream().noneMatch(r -> match(type, r))) {
+                    throw error(FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE).build();
+                }
                 return;
             }
-            if (ranges.stream().noneMatch(r -> match(type, r))) {
-                throw error(FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE).build();
-            }
-            return;
+            // unhandled situation:
+            throw error(FUNCTION_CALL_WRONG_ARGUMENT_UNHANDLED_CASE).build();
         }
-        // unhandled situation:
-        throw error(FUNCTION_CALL_WRONG_ARGUMENT_UNHANDLED_CASE).build();
+    }
+
+    private static class CallArg extends Arg {
+        private CallArg(MapFunction.Arg argument,
+                        MapFunction.Call value,
+                        MapModelImpl model,
+                        ContextHelper context) {
+            super(argument, value, model, context);
+        }
+
+        @Override
+        String getValueKey() {
+            return ((MapFunction.Call) value).getFunction().name();
+        }
+
+        @Override
+        void testChain() {
+            testValue();
+            MapFunction.Call nested = (MapFunction.Call) value;
+            testFunction(nested, model, context, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE
+                    .create().addFunction(nested).build());
+        }
+
+        @Override
+        void testValue() {
+            Resource type = getRDFType();
+            Resource value = model.createResource(((MapFunction.Call) this.value).getFunction().type());
+            Exceptions.Builder error = error(FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
+            if (type.equals(value)) {
+                return;
+            }
+            if (AVC.undefined.equals(type) || AVC.undefined.equals(value)) {
+                // seems it is okay
+                return;
+            }
+            if (RDFS.Literal.equals(type)) {
+                if (isDT(value)) return;
+                throw error.build();
+            }
+            if (canSafeCast(type, value)) { // auto cast:
+                return;
+            }
+            if (RDF.PlainLiteral.equals(type)) {
+                if (XSD.xstring.equals(value)) return;
+                throw error.build();
+            }
+            if (RDF.Property.equals(type)) {
+                if (PROPERTY_TYPES.contains(value))
+                    return;
+                throw error.build();
+            }
+            if (RDFS.Class.equals(type)) {
+                if (OWL.Class.equals(value)) return;
+                throw error.build();
+            }
+            if (RDFS.Resource.equals(type)) {
+                if (!isDT(value))
+                    return;
+                throw error.build();
+            }
+            throw error.build();
+        }
+    }
+
+    /**
+     * An abstraction to validate argument value.
+     */
+    private abstract static class Arg {
+        static final Set<Resource> PROPERTY_TYPES = Stream.of(RDF.Property,
+                OWL.ObjectProperty, OWL.DatatypeProperty, OWL.AnnotationProperty)
+                .collect(Iter.toUnmodifiableSet());
+        protected final Object value;
+        protected final MapModelImpl model;
+        protected final ContextHelper context;
+        private final MapFunction.Arg argument;
+
+        private Arg(MapFunction.Arg argument,
+                    Object value,
+                    MapModelImpl model,
+                    ContextHelper context) {
+            this.argument = Objects.requireNonNull(argument);
+            this.value = Objects.requireNonNull(value);
+            this.model = Objects.requireNonNull(model);
+            this.context = context;
+        }
+
+        void validate(MapJenaException error) {
+            try {
+                testChain();
+            } catch (MapJenaException e) {
+                error.addSuppressed(e);
+            }
+        }
+
+        void testChain() {
+            testValue();
+        }
+
+        abstract void testValue();
+
+        Exceptions.Builder error(Exceptions code) {
+            return code.create()
+                    .addArg(argument)
+                    .add(Key.ARG_TYPE, argument.type())
+                    .add(Key.ARG_VALUE, getValueKey());
+        }
+
+        abstract String getValueKey();
+
+        Resource getRDFType() {
+            return model.createResource(argument.type());
+        }
+
+        MapFunctionImpl getFrameFunction() {
+            return (MapFunctionImpl) argument.getFunction();
+        }
     }
 }

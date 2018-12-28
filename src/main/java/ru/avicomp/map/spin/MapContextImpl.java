@@ -130,7 +130,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
                 .allMatch(r -> r.hasProperty(AVC.filter))) {
             RDFNode filterExpression = filterFunction == null ? null : m.createExpression(filterFunction);
             // add primary rule (Mapping-0-1) to create individual with target rdf:type
-            context.createRule(target(), filterExpression, RDF.type);
+            context.populate(target(), filterExpression, RDF.type);
         }
 
         // add target expression
@@ -154,14 +154,14 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         // the target property must "belong" to the target class:
         ContextHelper context = ContextHelper.create(this);
         if (!context.isTargetProperty(target)) {
-            throw exception(PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY).addProperty(target).build();
+            throw error(PROPERTY_BRIDGE_WRONG_TARGET_PROPERTY).addProperty(target).build();
         }
         validatePropertyMapping(mappingFunction, context);
         validatePropertyFilter(filterFunction, context);
         MapModelImpl m = getModel();
         RDFNode filterExpression = filterFunction != null ? m.createExpression(filterFunction) : null;
         RDFNode mappingExpression = m.createExpression(mappingFunction);
-        Resource mapping = context.createRule(mappingExpression, filterExpression, target);
+        Resource mapping = context.populate(mappingExpression, filterExpression, target);
         writeFunctions(mappingFunction, filterFunction);
         return asPropertyBridge(mapping);
     }
@@ -169,16 +169,15 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public ModelCallImpl getMapping() {
         MapModelImpl m = getModel();
-        Optional<RDFNode> target = Iter.findFirst(m.listObjectsOfProperty(this, SPINMAP.target));
-        return target.map(n -> m.parseExpression(m.createResource(), n.asResource())).orElse(null);
+        Optional<Resource> expr = Iter.findFirst(m.listObjectsOfProperty(this, SPINMAP.target))
+                .map(RDFNode::asResource);
+        return expr.map(e -> m.parseExpression(null, e, false)).orElse(null);
     }
 
     @Override
     public ModelCallImpl getFilter() {
-        Optional<Resource> mapping = primaryRule().filter(r -> r.hasProperty(AVC.filter));
-        return mapping
-                .map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true))
-                .orElse(null);
+        Optional<Resource> expr = primaryRule().filter(r -> r.hasProperty(AVC.filter));
+        return expr.map(r -> getModel().parseExpression(r, r.getPropertyResourceValue(AVC.filter), true)).orElse(null);
     }
 
     /**
@@ -209,10 +208,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     }
 
     /**
-     * Gets a primary (class to class) mapping rule as ordinal resource.
+     * Gets the primary (class to class) mapping rule as ordinal resource.
      * For a valid (see {@link MapContext#isValid()}) standalone context
-     * the result should be present, otherwise it may be empty.
-     * Example of such mapping:
+     * the result should be present, otherwise, if the mapping is incomplete, it is empty.
+     * Example of such mapping rule:
      * <pre>{@code
      * [ a  spinmap:Mapping-0-1 ;
      *      spinmap:context           map:Context-SourceClass-TargetClass ;
@@ -274,10 +273,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         OntCE src1 = getSource();
         Set<OntOPE> res = getModel().getLinkProperties(src1, src2);
         if (res.isEmpty()) {
-            throw exception(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
+            throw error(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = exception(CONTEXT_RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
+            Exceptions.Builder err = error(CONTEXT_RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
                     .add(Key.CONTEXT_SOURCE, src2);
             res.forEach(p -> err.addProperty(p.asProperty()));
             throw err.build();
@@ -295,7 +294,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         } else if (m.isLinkProperty(link, source, getSource())) {
             builder = createRelatedContextTargetFunction(SPINMAPL.relatedObjectContext, property);
         } else {
-            throw exception(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
+            throw error(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
                     .addProperty(property)
                     .add(Key.CONTEXT_SOURCE, source).build();
         }
@@ -306,17 +305,17 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     @Override
     public PropertyBridgeImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
         if (this.equals(other)) {
-            throw exception(CONTEXT_ATTACHED_CONTEXT_SELF_CALL).build();
+            throw error(CONTEXT_ATTACHED_CONTEXT_SELF_CALL).build();
         }
         MapModelImpl m = getModel();
         OntCE target = other.getTarget();
         OntCE source = other.getSource();
         if (!getSource().equals(source)) {
-            throw exception(CONTEXT_ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
+            throw error(CONTEXT_ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }
         Property property = link.asProperty();
         if (!m.isLinkProperty(link, getTarget(), target)) {
-            throw exception(CONTEXT_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
+            throw error(CONTEXT_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(other)
                     .addProperty(property).build();
         }
@@ -368,7 +367,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     protected void validateContextMapping(MapFunction.Call func,
                                           ContextHelper context) throws MapJenaException {
         if (!testFunction(func, context, CONTEXT_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
-            throw exception(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(func).build();
+            throw error(CONTEXT_REQUIRE_TARGET_FUNCTION).addFunction(func).build();
         }
     }
 
@@ -381,7 +380,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     protected void validatePropertyMapping(MapFunction.Call func,
                                            ContextHelper context) throws MapJenaException {
         if (testFunction(func, context, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION).getFunction().isTarget()) {
-            throw exception(PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION).addFunction(func).build();
+            throw error(PROPERTY_BRIDGE_REQUIRE_NONTARGET_FUNCTION).addFunction(func).build();
         }
     }
 
@@ -400,7 +399,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         }
         MapFunction f = func.getFunction();
         if (!f.isBoolean()) {
-            throw exception(requireBoolean).addFunction(f).build();
+            throw error(requireBoolean).addFunction(f).build();
         }
         testFunction(func, context, wrongFunction);
     }
@@ -408,17 +407,17 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
     protected MapFunction.Call testFunction(MapFunction.Call func,
                                             ContextHelper context,
                                             Exceptions code) throws MapJenaException {
-        ValidationHelper.testFunction(func, context, exception(code).addFunction(func).build());
+        ValidationHelper.testFunction(func, context, error(code).addFunction(func).build());
         return func;
     }
 
     @Override
     public void validate(MapFunction.Call func) throws MapJenaException {
-        ValidationHelper.testFunction(func, ContextHelper.create(this),
-                exception(CONTEXT_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
+        ValidationHelper.testFunction(func, ContextHelper.wrap(this),
+                error(CONTEXT_FUNCTION_VALIDATION_FAIL).addFunction(func).build());
     }
 
-    protected Exceptions.Builder exception(Exceptions code) {
+    protected Exceptions.Builder error(Exceptions code) {
         return code.create().addContext(this);
     }
 

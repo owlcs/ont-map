@@ -18,6 +18,7 @@
 
 package ru.avicomp.map.tests;
 
+import org.apache.jena.graph.Factory;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
@@ -34,10 +35,8 @@ import ru.avicomp.map.spin.vocabulary.MATH;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntDT;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
+import ru.avicomp.ontapi.jena.model.*;
 
 import static ru.avicomp.map.spin.Exceptions.*;
 
@@ -367,6 +366,34 @@ public class MappingErrorsTest {
             assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE);
             Assert.assertEquals(0, j2.getSuppressed().length);
         }
+    }
+
+    @Test
+    public void testContextValidateObjectProperty() {
+        MapManager m = Managers.createMapManager();
+        OntGraphModel s = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX)
+                .setNsPrefixes(OntModelFactory.STANDARD);
+        s.setID("http://ont");
+        OntClass c1 = s.createOntEntity(OntClass.class, "s");
+        OntClass c2 = s.createOntEntity(OntClass.class, "t");
+        OntNOP p = s.createOntEntity(OntNOP.class, "p");
+        p.addDomain(c1);
+
+        MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
+        MapFunction.Call toTest = m.getFunction(MATH.atan2).create().addProperty(SP.arg1, p).build();
+        try {
+            context.validate(toTest);
+            Assert.fail("Validation passed.");
+        } catch (MapJenaException j) {
+            assertCode(j, CONTEXT_FUNCTION_VALIDATION_FAIL);
+            MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
+            assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_OBJECT_PROPERTY);
+            Assert.assertEquals(0, j2.getSuppressed().length);
+        }
+
+        // add punning
+        s.createOntEntity(OntNDP.class, "p");
+        context.validate(toTest);
     }
 
     static void assertCode(MapJenaException j, Exceptions code) {
