@@ -66,6 +66,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
+    public String name() {
+        return ModelUtils.getResourceID(getID());
+    }
+
+    @Override
     public Stream<OntGraphModel> ontologies() {
         Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
         Stream<OntGraphModel> imports = super.imports(SpinModelConfig.ONT_PERSONALITY)
@@ -153,8 +158,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl deleteContext(MapContext context) {
         List<MapContext> related = context.dependentContexts().collect(Collectors.toList());
         if (!related.isEmpty()) {
-            Exceptions.Builder error = error(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES)
-                    .addContext(context);
+            Exceptions.Builder error = error(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES).addContext(context);
             related.forEach(error::addContext);
             throw error.build();
         }
@@ -367,13 +371,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         Set<OntOPE> res = getLinkProperties(leftClass, rightClass);
         if (res.isEmpty()) {
             throw error(MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
-                    .addContext(left)
-                    .addContext(right).build();
+                    .addContext(left).addContext(right).build();
         }
         if (res.size() != 1) {
             Exceptions.Builder err = error(MAPPING_ATTACHED_CONTEXT_AMBIGUOUS_CLASS_LINK)
-                    .addContext(left)
-                    .addContext(right);
+                    .addContext(left).addContext(right);
             res.forEach(p -> err.addProperty(p.asProperty()));
             throw err.build();
         }
@@ -579,7 +581,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Creates a {@link MapFunction.Call function call} from the given expression resource.
      *
-     * @param rule  {@link Resource} mapping rule
+     * @param rule     {@link Resource} mapping rule
      * @param expr     {@link RDFNode} expression
      * @param isFilter boolean
      * @return {@link ModelCallImpl}

@@ -94,18 +94,17 @@ public class MappingErrorsTest {
         OntClass src = m.createOntEntity(OntClass.class, ns + "src");
         OntClass dst = m.createOntEntity(OntClass.class, ns + "dst");
         MapModel map = manager.createMapModel();
-        MapContext context = map.createContext(src, dst);
-        Assert.assertNotNull(context);
+        MapContext c = map.createContext(src, dst);
+        Assert.assertNotNull(c);
         MapFunction f = manager.getFunction(manager.prefixes().expandPrefix("smf:currentUserName"));
         Assert.assertNotNull(f);
         try {
-            context.addClassBridge(f.create().build());
+            c.addClassBridge(f.create().build());
             Assert.fail("Expression has been added successfully");
         } catch (Exceptions.SpinMapException e) {
             assertCode(e, CONTEXT_REQUIRE_TARGET_FUNCTION);
-            Assert.assertEquals(f.name(), e.getString(Key.FUNCTION));
-            Assert.assertEquals(src.getURI(), e.getString(Key.CONTEXT_SOURCE));
-            Assert.assertEquals(dst.getURI(), e.getString(Key.CONTEXT_TARGET));
+            Assert.assertEquals(f.name(), e.getDetails(Key.FUNCTION));
+            Assert.assertEquals(c.name(), e.getDetails(Key.CONTEXT));
         }
     }
 

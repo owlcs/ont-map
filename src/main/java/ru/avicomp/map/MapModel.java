@@ -122,11 +122,11 @@ public interface MapModel {
     void validate(MapFunction.Call func) throws MapJenaException;
 
     /**
-     * Returns the name of this mapping, which is an ontological IRI.
+     * Returns the name of this mapping, that is expected to be an ontological IRI.
      *
-     * @return String or {@code null} if it is an anonymous ontology
+     * @return String, not {@code null}
      */
-    default String getIRI() {
+    default String name() {
         return asGraphModel().getID().getURI();
     }
 

@@ -33,14 +33,6 @@ import java.util.stream.Stream;
 public interface MapContext extends MapResource {
 
     /**
-     * Answers an URI.
-     * A context cannot be anonymous since it is used as parameter in internal mechanisms.
-     *
-     * @return String, not {@code null}
-     */
-    String getURI();
-
-    /**
      * Returns a source class expression.
      *
      * @return {@link OntCE}
@@ -172,6 +164,17 @@ public interface MapContext extends MapResource {
      * @see MapModel#validate(MapFunction.Call)
      */
     void validate(MapFunction.Call func) throws MapJenaException;
+
+    /**
+     * Answers a context name,
+     * that uniquely identifies it in the {@link MapModel mapping model}.
+     * Also, ir is expected that the name equals to IRI of the corresponding {@link #asResource() resource}.
+     *
+     * @return String, not {@code null}
+     */
+    default String name() {
+        return asResource().getURI();
+    }
 
     /**
      * Adds a primary rule to bind two class expressions.

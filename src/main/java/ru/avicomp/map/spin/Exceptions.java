@@ -25,6 +25,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 import static ru.avicomp.map.spin.Exceptions.Key.*;
 
@@ -61,7 +62,7 @@ public enum Exceptions {
     PROPERTY_BRIDGE_WRONG_FILTER_FUNCTION,
     PROPERTY_BRIDGE_NOT_BOOLEAN_FILTER_FUNCTION,
 
-    // while validation function call:
+    // while validation call:
     FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION,
     FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE,
     FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE,
@@ -71,9 +72,14 @@ public enum Exceptions {
     FUNCTION_CALL_WRONG_ARGUMENT_NON_CONTEXT_PROPERTY,
     FUNCTION_CALL_WRONG_ARGUMENT_INCOMPATIBLE_RANGE,
 
-    // while building call:
-    FUNCTION_BUILD_FAIL,
-    FUNCTION_BUILD_NO_REQUIRED_ARG,
+    // while assemble call:
+    FUNCTION_CALL_PUT_NOT_ASSIGNABLE_ARG,
+    FUNCTION_CALL_PUT_SELF_REF,
+    FUNCTION_CALL_PUT_CANNOT_BE_NESTED,
+    FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED,
+    // while build call:
+    FUNCTION_CALL_BUILD_FAIL,
+    FUNCTION_CALL_BUILD_NO_REQUIRED_ARG,
 
     // while inference:
     INFERENCE_NO_CONTEXTS,
@@ -88,7 +94,7 @@ public enum Exceptions {
     public class Builder {
         private final EnumMap<Key, List<String>> map;
 
-        Builder() {
+        private Builder() {
             this.map = new EnumMap<>(Key.class);
         }
 
@@ -101,20 +107,18 @@ public enum Exceptions {
         }
 
         Builder addContext(MapContext context) {
-            return add(CONTEXT, context.getURI())
-                    .add(CONTEXT_SOURCE, context.getSource())
-                    .add(CONTEXT_TARGET, ((MapContextImpl) context).target());
+            return add(CONTEXT, context.name());
         }
 
         Builder addArg(MapFunction.Arg arg) {
-            return add(ARG, arg.name());
+            return addFunction(arg.getFunction()).add(ARG_NAME, arg.name()).add(ARG_TYPE, arg.type());
         }
 
         Builder addProperty(Property property) {
             return add(PROPERTY, property);
         }
 
-        public Builder add(Key key, RDFNode n) {
+        Builder add(Key key, RDFNode n) {
             return add(key, n.asNode().toString());
         }
 
@@ -132,14 +136,14 @@ public enum Exceptions {
         }
 
         public SpinMapException build(Throwable cause) {
-            return build(message(), cause);
+            return build(buildMessage(), cause);
         }
 
         public SpinMapException build(String message, Throwable cause) {
             return new SpinMapException(Exceptions.this, map, message, cause);
         }
 
-        String message() {
+        String buildMessage() {
             return name() + ": " + map;
         }
     }
@@ -150,11 +154,10 @@ public enum Exceptions {
     public enum Key {
         MAPPING,
         CONTEXT,
-        CONTEXT_SOURCE,
-        CONTEXT_TARGET,
         FUNCTION,
+        CLASS,
         PROPERTY,
-        ARG,
+        ARG_NAME,
         ARG_TYPE,
         ARG_VALUE,
         QUERY,
@@ -162,34 +165,41 @@ public enum Exceptions {
     }
 
     /**
-     * MapException impl, a result of {@link Builder}.
+     * MapException impl, a result of {@link Builder}, immutable.
      */
     public final class SpinMapException extends MapJenaException {
-        private final Map<Key, List<String>> map;
+        private final Map<Key, List<String>> details;
         private final Exceptions code;
 
-        SpinMapException(Exceptions code, Map<Key, List<String>> map, String message, Throwable cause) {
+        private SpinMapException(Exceptions code, Map<Key, List<String>> map, String message, Throwable cause) {
             super(message, cause);
             this.code = code;
-            this.map = Collections.unmodifiableMap(map);
+            this.details = immutableMap(() -> new EnumMap<>(Key.class), map);
         }
 
-        public String getString(Key k) {
-            List<String> res;
-            return map.isEmpty() || (res = map.get(k)).isEmpty() ? null : res.get(0);
+        /**
+         * Gets the details for the given key.
+         *
+         * @param k {@link Key}
+         * @return String or {@code null}
+         */
+        public String getDetails(Key k) {
+            List<String> values;
+            return details.isEmpty() ? null : (values = details.get(k)).isEmpty() ? null : values.get(0);
         }
 
-        @SuppressWarnings({"unused"})
-        public List<String> getList(Key k) {
-            return Collections.unmodifiableList(map.get(k));
-        }
-
-        public Map<Key, List<String>> getInfo() {
-            return Collections.unmodifiableMap(map);
+        public Map<Key, List<String>> getDetails() {
+            return details;
         }
 
         public Exceptions getCode() {
             return code;
         }
+    }
+
+    private static <K, V> Map<K, List<V>> immutableMap(Supplier<Map<K, List<V>>> create, Map<K, List<V>> from) {
+        Map<K, List<V>> tmp = create.get();
+        from.forEach((key, values) -> tmp.put(key, Collections.unmodifiableList(values)));
+        return Collections.unmodifiableMap(tmp);
     }
 }

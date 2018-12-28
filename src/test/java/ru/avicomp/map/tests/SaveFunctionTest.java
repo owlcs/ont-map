@@ -89,8 +89,8 @@ public class SaveFunctionTest {
         OntNDP r = TestUtils.findOntEntity(dst2, OntNDP.class, "r");
 
         MapModel map2 = m.createMapModel();
-        map2.asGraphModel().setID(map1.getIRI())
-                .setVersionIRI(map1.getIRI() + "/version#2");
+        map2.asGraphModel().setID(map1.name())
+                .setVersionIRI(map1.name() + "/version#2");
         map2.createContext(s, t, m.getFunction(SPINMAPL.self).create().build())
                 .addPropertyBridge(func.create().addProperty(SP.arg1, x).addProperty(SP.arg2, y).build(), r);
 

@@ -35,6 +35,7 @@ import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.PropertyBridge;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntOPE;
@@ -63,6 +64,11 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
+    }
+
+    @Override
+    public String name() {
+        return ModelUtils.getResourceID(this);
     }
 
     @Override
@@ -273,11 +279,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         OntCE src1 = getSource();
         Set<OntOPE> res = getModel().getLinkProperties(src1, src2);
         if (res.isEmpty()) {
-            throw error(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CONTEXT_SOURCE, src2).build();
+            throw error(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Key.CLASS, src2).build();
         }
         if (res.size() != 1) {
-            Exceptions.Builder err = error(CONTEXT_RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK)
-                    .add(Key.CONTEXT_SOURCE, src2);
+            Exceptions.Builder err = error(CONTEXT_RELATED_CONTEXT_AMBIGUOUS_CLASS_LINK).add(Key.CLASS, src2);
             res.forEach(p -> err.addProperty(p.asProperty()));
             throw err.build();
         }
@@ -296,10 +301,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         } else {
             throw error(CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED)
                     .addProperty(property)
-                    .add(Key.CONTEXT_SOURCE, source).build();
+                    .add(Key.CLASS, source).build();
         }
         return m.createContext(source, getTarget())
-                .addClassBridge(null, builder.add(SPINMAPL.context.getURI(), getURI()).build());
+                .addClassBridge(null, builder.add(SPINMAPL.context.getURI(), name()).build());
     }
 
     @Override
@@ -316,8 +321,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         Property property = link.asProperty();
         if (!m.isLinkProperty(link, getTarget(), target)) {
             throw error(CONTEXT_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
-                    .addContext(other)
-                    .addProperty(property).build();
+                    .addContext(other).addProperty(property).build();
         }
         // todo: following is a temporary solution, will be replaced with common method #addPropertyBridge ... or not?
         Resource mapping = m.createResource()

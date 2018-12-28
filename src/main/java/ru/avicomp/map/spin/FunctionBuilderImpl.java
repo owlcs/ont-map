@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_BUILD_FAIL;
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_BUILD_NO_REQUIRED_ARG;
+import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_BUILD_FAIL;
+import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG;
 
 /**
  * The implementation of {@link MapFunction.Builder} to produce {@link MapFunctionImpl.CallImpl}.
@@ -78,14 +78,14 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
      * @param predicate String, iri of predicate, not {@code null}
      * @param value     either {@link FunctionBuilderImpl} or {@link String}, not {@code null}
      * @return this instance
-     * @throws MapJenaException.IllegalArgument if the given pair is not suited for this function
+     * @throws MapJenaException if the given value is not suited for this function argument
      */
-    protected FunctionBuilderImpl put(String predicate, Object value) throws MapJenaException.IllegalArgument {
+    protected FunctionBuilderImpl put(String predicate, Object value) throws MapJenaException {
         MapJenaException.notNull(value, "Null argument value");
         MapFunctionImpl function = getFunction();
         MapFunctionImpl.ArgImpl arg = function.getArg(predicate);
         if (!arg.isAssignable()) {
-            throw new MapJenaException.IllegalArgument("Argument " + arg + " is not assignable.");
+            throw Exceptions.FUNCTION_CALL_PUT_NOT_ASSIGNABLE_ARG.create().addArg(arg).build();
         }
         checkValue(value);
         if (arg.isVararg()) {
@@ -118,21 +118,23 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     }
 
     public void validateValue(MapFunction.Builder value) throws MapJenaException {
+        MapFunctionImpl function = getFunction();
         FunctionBuilderImpl builder = (FunctionBuilderImpl) value;
         if (builder.listCalls().anyMatch(this::equals)) {
-            throw new MapJenaException.IllegalArgument(String.format("[%s]: " +
-                    "Attempt to build recursion. " +
-                    "The function-call %s refers to this builder in a chain.", this, builder));
+            // Attempt to build recursion.
+            throw Exceptions.FUNCTION_CALL_PUT_SELF_REF.create().addFunction(function).build();
         }
-        MapFunctionImpl function = getFunction();
         MapFunctionImpl nested = builder.getFunction();
         if (!function.canHaveNested()) {
-            throw new MapJenaException.IllegalArgument(String.format("[%s]:" +
-                    "The function %s is not allowed to accept nested functions.", this, function.name()));
+            throw Exceptions.FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED.create()
+                    .addFunction(function)
+                    .add(Exceptions.Key.ARG_VALUE, nested.name()).build();
         }
         if (!nested.canBeNested()) {
-            throw new MapJenaException.IllegalArgument(String.format("[%s]: " +
-                    "The function %s is not allowed to be a nested.", this, nested.name()));
+            throw Exceptions.FUNCTION_CALL_PUT_CANNOT_BE_NESTED.create()
+                    .addFunction(nested)
+                    .add(Exceptions.Key.ARG_VALUE, function.name())
+                    .build();
         }
     }
 
@@ -170,7 +172,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     @Override
     public MapFunctionImpl.CallImpl build() throws MapJenaException {
         MapFunctionImpl function = getFunction();
-        Exceptions.SpinMapException error = exception(FUNCTION_BUILD_FAIL).build();
+        Exceptions.SpinMapException error = FUNCTION_CALL_BUILD_FAIL.create().addFunction(function).build();
         Map<MapFunctionImpl.ArgImpl, Object> map = new HashMap<>();
         input.forEach((key, value) -> {
             Object v;
@@ -202,7 +204,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
                 return;
             String def = a.defaultValue();
             if (def == null) {
-                error.addSuppressed(exception(FUNCTION_BUILD_NO_REQUIRED_ARG).addArg(a).build());
+                error.addSuppressed(FUNCTION_CALL_BUILD_NO_REQUIRED_ARG.create().addArg(a).build());
             } else {
                 map.put(a, def);
             }
@@ -215,10 +217,6 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             throw (Exceptions.SpinMapException) suppressed[0];
         }
         throw error;
-    }
-
-    protected Exceptions.Builder exception(Exceptions code) {
-        return code.create().add(Exceptions.Key.FUNCTION, getFunction().name());
     }
 
     @Override

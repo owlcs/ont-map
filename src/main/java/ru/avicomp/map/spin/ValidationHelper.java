@@ -377,6 +377,14 @@ public class ValidationHelper {
             this.context = context;
         }
 
+        abstract void testValue();
+
+        abstract String getValueKey();
+
+        void testChain() {
+            testValue();
+        }
+
         void validate(MapJenaException error) {
             try {
                 testChain();
@@ -385,20 +393,9 @@ public class ValidationHelper {
             }
         }
 
-        void testChain() {
-            testValue();
-        }
-
-        abstract void testValue();
-
         Exceptions.Builder error(Exceptions code) {
-            return code.create()
-                    .addArg(argument)
-                    .add(Key.ARG_TYPE, argument.type())
-                    .add(Key.ARG_VALUE, getValueKey());
+            return code.create().addArg(argument).add(Key.ARG_VALUE, getValueKey());
         }
-
-        abstract String getValueKey();
 
         Resource getRDFType() {
             return model.createResource(argument.type());

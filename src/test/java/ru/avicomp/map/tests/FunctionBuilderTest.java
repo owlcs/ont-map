@@ -103,20 +103,30 @@ public class FunctionBuilderTest {
         }
     }
 
-    @Test(expected = MapJenaException.IllegalArgument.class)
+    @Test
     public void testAddTargetFunctionAsNested() {
-        manager.getFunction(SP.resource("contains"))
-                .create()
-                .addLiteral(SP.arg1, "a")
-                .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create());
+        try {
+            manager.getFunction(SP.resource("contains"))
+                    .create()
+                    .addLiteral(SP.arg1, "a")
+                    .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create());
+            Assert.fail("Possible to add target function as nested");
+        } catch (MapJenaException j) {
+            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_CALL_PUT_CANNOT_BE_NESTED);
+        }
     }
 
-    @Test(expected = MapJenaException.IllegalArgument.class)
+    @Test
     public void testAddPropertyFunctionWithNestedCall() {
-        manager.getFunction(AVC.withDefault)
-                .create()
-                .add(SP.arg1.getURI(), manager.getFunction(manager.prefixes().expandPrefix("afn:now")).create())
-                .add(SP.arg2.getURI(), "val");
+        try {
+            manager.getFunction(AVC.withDefault)
+                    .create()
+                    .add(SP.arg1.getURI(), manager.getFunction(manager.prefixes().expandPrefix("afn:now")).create())
+                    .add(SP.arg2.getURI(), "val");
+            Assert.fail("Possible to a nested function to property function");
+        } catch (MapJenaException j) {
+            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED);
+        }
     }
 
     @Test
@@ -147,25 +157,25 @@ public class FunctionBuilderTest {
             f.create().build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
-            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_BUILD_FAIL);
+            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_FAIL);
             Assert.assertEquals(3, j.getSuppressed().length);
-            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Exceptions.Key.FUNCTION));
+            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getDetails(Exceptions.Key.FUNCTION));
             Arrays.stream(j.getSuppressed()).map(Exceptions.SpinMapException.class::cast)
-                    .forEach(x -> MappingErrorsTest.assertCode(x, Exceptions.FUNCTION_BUILD_NO_REQUIRED_ARG));
+                    .forEach(x -> MappingErrorsTest.assertCode(x, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG));
         }
         try {
             f.create().add(manager.prefixes().expandPrefix("sp:arg1"), "x").build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) { // no required arg
-            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_BUILD_FAIL);
+            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_FAIL);
             Assert.assertEquals(2, j.getSuppressed().length);
-            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getString(Exceptions.Key.FUNCTION));
+            Assert.assertEquals(f.name(), ((Exceptions.SpinMapException) j).getDetails(Exceptions.Key.FUNCTION));
         }
         try {
             manager.getFunction(SPINMAPL.buildURI1).create().addLiteral(SPINMAPL.template, "x").build();
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
-            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_BUILD_NO_REQUIRED_ARG);
+            MappingErrorsTest.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
         }
     }
 }
