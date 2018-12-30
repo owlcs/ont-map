@@ -85,7 +85,7 @@ public class UUIDMapTest extends MapTestData1 {
                 .filter(OntStatement::isLocal)
                 .collect(Collectors.toList());
         Assert.assertEquals(1, statements.size());
-        Assert.assertEquals(55, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
+        Assert.assertEquals(56, Models.getAssociatedStatements(statements.get(0).getSubject()).size());
         return res;
     }
 

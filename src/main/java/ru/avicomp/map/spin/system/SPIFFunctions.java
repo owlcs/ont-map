@@ -26,9 +26,7 @@ import ru.avicomp.map.spin.functions.spif.buildString;
 import ru.avicomp.map.spin.functions.spif.buildStringFromRDFList;
 import ru.avicomp.map.spin.functions.spif.buildURI;
 import ru.avicomp.map.spin.functions.spif.buildUniqueURI;
-import ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator;
 import ru.avicomp.map.spin.vocabulary.SPIF;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,9 +53,6 @@ class SPIFFunctions {
             Collections.unmodifiableMap(new HashMap<String, Class<? extends Function>>() {
 
                 {
-                    // optimization:
-                    put(SPINMAPL.concatWithSeparator.getURI(), concatWithSeparator.class);
-
                     // from org.topbraid.spin.arq.functions:
                     add("invoke", InvokeFunction.class);
                     add("walkObjects", WalkObjectsFunction.class);

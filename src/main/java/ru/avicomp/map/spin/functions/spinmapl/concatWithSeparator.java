@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ARQ impl-optimization for a
+ * An ARQ impl-optimization for a
  * {@link ru.avicomp.map.spin.vocabulary.SPINMAPL#concatWithSeparator spinmapl:concatWithSeparator}.
  * The query:
  * <pre>{@code

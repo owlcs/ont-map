@@ -21,6 +21,7 @@ avc:UUID  a                 spinmap:TargetFunction ;
         rdfs:label          "MD5 UUID" ;
         rdfs:seeAlso        <https://www.w3.org/TR/sparql11-query/#func-uuid> , sp:UUID ;
         rdfs:subClassOf     spinmap:TargetFunctions ;
+        avc:optimize        "ru.avicomp.map.spin.functions.avc.UUID" ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( [ a        sp:iri ;
                                                       sp:arg1  [ sp:varName  "uri" ]

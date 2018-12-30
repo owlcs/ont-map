@@ -180,6 +180,7 @@ public class LIBLibraryMaker {
                         "Each call of AVC:UUID returns the same UUID IRI.\n" +
                         "Example: <urn:uuid:f3bf688d44e249fade9ca8ca23e29884>.\n" +
                         "Can work both with named and anonymous individuals.")
+                .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.avc.UUID.class.getName())
                 .addProperty(SPIN.body,
                         QueryHelper.parseQuery("SELECT IRI(?uri)\n" +
                                 "WHERE {\n" +
