@@ -24,6 +24,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shared.PrefixMapping;
+import org.junit.Assert;
 import org.semanticweb.owlapi.io.OWLOntologyDocumentSource;
 import org.semanticweb.owlapi.io.StringDocumentSource;
 import org.semanticweb.owlapi.model.OWLDocumentFormat;
@@ -37,8 +38,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.MapFunctionImpl;
-import ru.avicomp.map.spin.SpinModelConfig;
+import ru.avicomp.map.spin.*;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.tests.ClassPropertiesTest;
 import ru.avicomp.ontapi.OntFormat;
@@ -51,6 +51,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -70,6 +71,35 @@ public class TestUtils {
             .lock();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
+
+    /**
+     * Creates a manager without any optimization.
+     * For debugging.
+     *
+     * @return {@link MapManager}
+     * @see MapConfigImpl
+     */
+    public static MapManager createMapManagerWithoutOptimization() {
+        return new MapManagerImpl(Factory.createGraphMem(),
+                Factory::createGraphMem,
+                new HashMap<>(),
+                new MapConfigImpl() {
+                    @Override
+                    public boolean optimizeQueries() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean optimizeFunctions() {
+                        return false;
+                    }
+                }) {
+            @Override
+            public String toString() {
+                return String.format("ManagerWithoutOptimization[%s]", super.toString());
+            }
+        };
+    }
 
     public static String asString(Model m) {
         StringWriter s = new StringWriter();
@@ -192,5 +222,11 @@ public class TestUtils {
     public static void debug(MapJenaException j) {
         LOGGER.debug("Exception: {}", j.getMessage());
         Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
+    }
+
+    public static void assertCode(MapJenaException j, Exceptions code) {
+        debug(j);
+        Exceptions.SpinMapException s = (Exceptions.SpinMapException) j;
+        Assert.assertEquals(code, s.getCode());
     }
 }

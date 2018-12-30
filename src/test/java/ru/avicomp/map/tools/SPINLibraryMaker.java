@@ -113,7 +113,10 @@ public class SPINLibraryMaker {
                 .addProperty(RDFS.label, "Mapping functions")
                 .addProperty(RDFS.comment, "Describes the functions that are intended to manage mapping template call.");
 
-        // Customize mathematical functions:
+        // Customization:
+
+        SPINMAPL.concatWithSeparator.inModel(m)
+                .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator.class.getName());
 
         // FN:abs (sp:abs and fn:abs both uses org.apache.jena.sparql.expr.nodevalue.XSDFuncOp#abs()).
         // Choose sp:abs since it must be used more commonly

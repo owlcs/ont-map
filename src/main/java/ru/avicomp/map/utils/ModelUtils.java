@@ -186,7 +186,6 @@ public class ModelUtils {
         return listRanges(p, new HashSet<>()).filter(RDFNode::isURIResource).map(x -> x.as(Property.class));
     }
 
-
     private static Stream<? extends Resource> listRanges(OntPE p, Set<Resource> seen) {
         return listRanges(p, OntPE::range, OntPE::subPropertyOf, seen);
     }

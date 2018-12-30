@@ -269,12 +269,35 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
-     * Returns {@link AdjustFunctionBody} helper in the form of {@link Optional}.
+     * Returns {@link AdjustFunctionBody} helper wrapped as {@link Optional}.
      *
-     * @return Optional of {@link AdjustFunctionBody}
+     * @return Optional around the {@link AdjustFunctionBody} impl
+     * @see AVC#runtime
      */
     protected Optional<AdjustFunctionBody> runtimeBody() {
-        String classPath = Iter.findFirst(func.listProperties(AVC.runtime)
+        return findClass(AdjustFunctionBody.class, AVC.runtime).map(type -> {
+            try {
+                return type.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new MapJenaException.IllegalState(name() + ": can't init runtime body", e);
+            }
+        });
+    }
+
+    /**
+     * Returns a class-type of ARQ function wrapped as {@link Optional}.
+     * This is used for optimization.
+     *
+     * @return Optional around the class-type of {@link org.apache.jena.sparql.function.Function Jena ARQ function}
+     * @see AVC#optimize
+     */
+    protected Optional<Class<org.apache.jena.sparql.function.Function>> optimizeClass() {
+        return findClass(org.apache.jena.sparql.function.Function.class, AVC.optimize);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <X> Optional<Class<X>> findClass(Class<X> type, Property property) {
+        String classPath = Iter.findFirst(func.listProperties(property)
                 .mapWith(Statement::getObject)
                 .filterKeep(RDFNode::isLiteral)
                 .mapWith(RDFNode::asLiteral)
@@ -283,14 +306,14 @@ public abstract class MapFunctionImpl implements MapFunction {
             return Optional.empty();
         }
         try {
-            Class<?> impl = Class.forName(classPath);
-            if (!AdjustFunctionBody.class.isAssignableFrom(impl)) {
+            Class impl = Class.forName(classPath);
+            if (!type.isAssignableFrom(impl)) {
                 throw new MapJenaException.IllegalState(name() +
                         ": incompatible class type: " + classPath + " <> " + impl.getName());
             }
-            return Optional.of((AdjustFunctionBody) impl.newInstance());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new MapJenaException.IllegalState(name() + ": can't init " + classPath, e);
+            return Optional.of(impl);
+        } catch (ClassNotFoundException e) {
+            throw new MapJenaException.IllegalState(name() + ": can't find " + classPath, e);
         }
     }
 

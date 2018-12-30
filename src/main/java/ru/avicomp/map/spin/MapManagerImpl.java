@@ -236,10 +236,15 @@ public class MapManagerImpl implements MapManager {
             throw new MapJenaException("Wrong model attached - lack of personalities: " + inModel, upe);
         }
         ExtraPrefixes.add(f); // <- wtf?
-        functions.put(f.getURI(), new FunctionImpl(f));
+        FunctionImpl map = new FunctionImpl(f);
+        functions.put(f.getURI(), map);
         if (f.isMagicProperty()) {
             arqFactory.registerProperty(f);
         } else {
+            if (!config.optimizeFunctions() && map.optimizeClass().isPresent()) {
+                // unregister java-ARQ body to use spin (SPARQL) body instead:
+                arqFactory.getFunctionRegistry().remove(f.getURI());
+            }
             arqFactory.registerFunction(f);
         }
     }

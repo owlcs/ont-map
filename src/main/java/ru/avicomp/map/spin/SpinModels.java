@@ -29,7 +29,6 @@ import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Collections;
@@ -51,53 +50,6 @@ public class SpinModels {
     public static final Set<Resource> FUNCTION_TYPES = Stream.of(SPIN.Function,
             SPIN.MagicProperty,
             SPINMAP.TargetFunction).collect(Iter.toUnmodifiableSet());
-
-    /**
-     * Checks if the specified resource describes a self mapping context to produce {@code owl:NamedIndividual}s.
-     *
-     * @param context {@link Resource}
-     * @return boolean
-     */
-    @SuppressWarnings("unused")
-    public static boolean isNamedIndividualSelfContext(Resource context) {
-        return context.hasProperty(SPINMAP.targetClass, OWL.NamedIndividual)
-                && Iter.findFirst(context.listProperties(SPINMAP.target)
-                .mapWith(Statement::getObject).filterKeep(RDFNode::isAnon)
-                .mapWith(RDFNode::asResource)
-                .mapWith(s -> s.hasProperty(RDF.type, SPINMAPL.self))).isPresent();
-    }
-
-    /**
-     * Answers {@code true} if the specified resource
-     * represents a {@link SPINMAP#Context spinmap:Context}.
-     *
-     * @param inModel a {@link Resource} within a {@link Model}
-     * @return boolean
-     */
-    public static boolean isContext(Resource inModel) {
-        return inModel.hasProperty(RDF.type, SPINMAP.Context);
-    }
-
-    /**
-     * Gets a {@link SPIN#body spin:body} as a set of statements.
-     *
-     * @param m        {@link Model}
-     * @param function {@link Resource}
-     * @return Set of {@link Statement}s
-     */
-    public static Set<Statement> getLocalFunctionBody(Model m, Resource function) {
-        if (m instanceof UnionModel) {
-            m = ((UnionModel) m).getBaseModel();
-        }
-        Optional<Resource> res = Iter.findFirst(m.listStatements(function, RDF.type, SPIN.Function)
-                .mapWith(Statement::getSubject)
-                .filterKeep(r -> r.hasProperty(SPIN.body))
-                .mapWith(r -> r.getRequiredProperty(SPIN.body))
-                .mapWith(Statement::getObject)
-                .filterKeep(RDFNode::isAnon)
-                .mapWith(RDFNode::asResource));
-        return res.map(Models::getAssociatedStatements).orElse(Collections.emptySet());
-    }
 
     /**
      * Answers {@code true} if the given property is a mapping source predicate.
@@ -130,39 +82,6 @@ public class SpinModels {
      */
     public static boolean isVariable(Resource inModel) {
         return inModel.hasProperty(RDF.type, SP.Variable);
-    }
-
-    /**
-     * Lists all spin-api functions.
-     * All functions must be named.
-     * Auxiliary method.
-     *
-     * @param model {@link Model}
-     * @return <b>distinct</b> Stream of {@link Resource}s
-     */
-    public static Stream<Resource> listSpinFunctions(Model model) {
-        return Iter.asStream(model.listStatements(null, RDF.type, (RDFNode) null))
-                .filter(s -> s.getSubject().isURIResource())
-                .filter(s -> s.getObject().isURIResource())
-                .filter(s -> FUNCTION_TYPES.contains(s.getObject().asResource()))
-                .map(Statement::getSubject)
-                .distinct();
-    }
-
-    /**
-     * Retrieves and lists all spin-api arguments as a stream.
-     *
-     * @param function {@link Resource}, must be in model, not {@code null}
-     * @return Stream of URIs
-     */
-    public static Stream<String> listSpinArguments(Resource function) {
-        return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
-                        .filterKeep(s -> s.getObject().isAnon())
-                        .mapWith(Statement::getResource),
-                c -> c.listProperties(SPL.predicate)
-                        .filterKeep(s -> s.getObject().isURIResource())
-                        .mapWith(Statement::getResource)
-                        .mapWith(Resource::getURI)));
     }
 
     /**
@@ -220,6 +139,60 @@ public class SpinModels {
     }
 
     /**
+     * Gets a {@link SPIN#body spin:body} as a set of statements.
+     *
+     * @param m        {@link Model}
+     * @param function {@link Resource}
+     * @return Set of {@link Statement}s
+     */
+    public static Set<Statement> getLocalFunctionBody(Model m, Resource function) {
+        if (m instanceof UnionModel) {
+            m = ((UnionModel) m).getBaseModel();
+        }
+        Optional<Resource> res = Iter.findFirst(m.listStatements(function, RDF.type, SPIN.Function)
+                .mapWith(Statement::getSubject)
+                .filterKeep(r -> r.hasProperty(SPIN.body))
+                .mapWith(r -> r.getRequiredProperty(SPIN.body))
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isAnon)
+                .mapWith(RDFNode::asResource));
+        return res.map(Models::getAssociatedStatements).orElse(Collections.emptySet());
+    }
+
+    /**
+     * Lists all spin-api functions.
+     * All functions must be named.
+     * Auxiliary method.
+     *
+     * @param model {@link Model}
+     * @return <b>distinct</b> Stream of {@link Resource}s
+     */
+    public static Stream<Resource> listSpinFunctions(Model model) {
+        return Iter.asStream(model.listStatements(null, RDF.type, (RDFNode) null))
+                .filter(s -> s.getSubject().isURIResource())
+                .filter(s -> s.getObject().isURIResource())
+                .filter(s -> FUNCTION_TYPES.contains(s.getObject().asResource()))
+                .map(Statement::getSubject)
+                .distinct();
+    }
+
+    /**
+     * Retrieves and lists all spin-api arguments as a stream.
+     *
+     * @param function {@link Resource}, must be in model, not {@code null}
+     * @return Stream of URIs
+     */
+    public static Stream<String> listSpinArguments(Resource function) {
+        return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
+                        .filterKeep(s -> s.getObject().isAnon())
+                        .mapWith(Statement::getResource),
+                c -> c.listProperties(SPL.predicate)
+                        .filterKeep(s -> s.getObject().isURIResource())
+                        .mapWith(Statement::getResource)
+                        .mapWith(Resource::getURI)));
+    }
+
+    /**
      * Prints the given spin resource-function "as it is" into the specified graph.
      *
      * @param model    {@link Model} the graph to print, not {@code null}
@@ -242,6 +215,31 @@ public class SpinModels {
     }
 
     /**
+     * Checks if the specified resource describes a self mapping context to produce instances of the given type.
+     *
+     * @param context {@link Resource}
+     * @param type    {@link Resource}
+     * @return boolean
+     */
+    public static boolean isSelfContext(Resource context, Resource type) {
+        return context.hasProperty(SPINMAP.targetClass, type) && Iter.findFirst(context.listProperties(SPINMAP.target)
+                .mapWith(Statement::getObject).filterKeep(RDFNode::isAnon)
+                .mapWith(RDFNode::asResource)
+                .filterKeep(s -> s.hasProperty(RDF.type, SPINMAPL.self))).isPresent();
+    }
+
+    /**
+     * Answers {@code true} if the specified resource
+     * represents a {@link SPINMAP#Context spinmap:Context}.
+     *
+     * @param inModel a {@link Resource} within a {@link Model}
+     * @return boolean
+     */
+    public static boolean isContext(Resource inModel) {
+        return inModel.hasProperty(RDF.type, SPINMAP.Context);
+    }
+
+    /**
      * Answers a {@code _:x rdf:type spinmap:Context} resource that is attached to the specified rule.
      *
      * @param rule {@link Resource}, rule, not null
@@ -254,4 +252,5 @@ public class SpinModels {
                 .mapWith(RDFNode::asResource)
                 .filterKeep(SpinModels::isContext));
     }
+
 }

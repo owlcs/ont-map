@@ -64,30 +64,22 @@ public class SPINInferenceHelper {
     private static final ExtendedIterator<CommandWrapper> EMPTY_ITERATOR = NullIterator.instance();
 
     /**
-     * Answers {@code true} if the given query is
-     * for generating {@link OWL#NamedIndividual owl:NamedIndividuals} declarations.
+     * Answers a {@code rdf:type} if the given query is simplest declaration generator,
+     * for example, for creating {@link OWL#NamedIndividual owl:NamedIndividual}s.
      *
      * @param cw {@link QueryWrapper}, not {@code null}
-     * @return boolean
+     * @return {@link Resource} or {@code null}
      */
-    public static boolean isNamedIndividualDeclaration(QueryWrapper cw) {
-        return isDeclaration(cw, OWL.NamedIndividual);
-    }
-
-    /**
-     * Answers {@code true} if the given query is for generating {@code rdf:type} declarations.
-     * Such query corresponds the {@code spinmap:Mapping-0-1} with {@code spinmapl:self} target function.
-     *
-     * @param cw   {@link QueryWrapper}, not {@code null}
-     * @param type {@link Resource} type to check
-     * @return boolean
-     */
-    public static boolean isDeclaration(QueryWrapper cw, Resource type) {
+    public static Resource getTypeDeclaration(QueryWrapper cw) {
         Map<String, RDFNode> input = cw.getTemplateBinding();
-        return input.size() == 3
-                && type.equals(input.get(SPINMAP.expression.getLocalName()))
-                && RDF.type.equals(input.get(SPINMAP.targetPredicate1.getLocalName()))
-                && isSelfQuery(cw.getQuery());
+        if (input.size() != 3) return null;
+        RDFNode res = input.get(SPINMAP.expression.getLocalName());
+        if (res == null || !res.isURIResource()) return null;
+        RDFNode context = input.get(SPINMAP.context.getLocalName());
+        if (context == null || !context.isResource()) return null;
+        if (!RDF.type.equals(input.get(SPINMAP.targetPredicate1.getLocalName()))) return null;
+        return SpinModels.isSelfContext(context.asResource(), res.asResource()) && isSelfQuery(cw.getQuery()) ?
+                res.asResource() : null;
     }
 
     private static boolean isSelfQuery(org.apache.jena.query.Query query) {
@@ -277,6 +269,7 @@ public class SPINInferenceHelper {
      * @return a fresh in-memory {@link Model} with new triples
      * @see org.topbraid.spin.inference.SPINInferences#runQueryOnInstance(QueryWrapper, Model, Model, Resource, boolean)
      */
+    @SuppressWarnings("unused")
     public static Model runQueryOnInstance(QueryWrapper query, Resource instance) {
         return runQueryOnInstance(ARQFactory.get(), query, instance, null);
     }

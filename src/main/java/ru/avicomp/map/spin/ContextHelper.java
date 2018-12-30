@@ -100,13 +100,13 @@ public class ContextHelper {
             filterPredicates = Collections.emptyList();
         }
 
-        boolean hasDefaults = hasDefaults();
-        boolean hasClassMapFilter = classRule.map(r -> r.hasProperty(AVC.filter)).orElse(false);
-
         MapModelImpl m = getModel();
         Resource template;
-        int mappingSources = (int) mappingPredicates.stream().distinct().count();
-        if (filterExpression == null && !hasClassMapFilter && !hasDefaults && mappingSources < 3) {
+        int mappingSources;
+        if (filterExpression == null
+                && !classRule.map(r -> r.hasProperty(AVC.filter)).orElse(false)
+                && !hasDefaults()
+                && (mappingSources = (int) mappingPredicates.stream().distinct().count()) < 3) {
             // use standard (spinmap) mapping, which does not support filter and default values
             template = SPINMAP.Mapping(mappingSources, 1).inModel(m);
         } else {

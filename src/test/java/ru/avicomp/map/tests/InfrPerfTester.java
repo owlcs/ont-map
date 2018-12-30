@@ -23,6 +23,7 @@ import org.apache.jena.graph.compose.Union;
 import org.apache.jena.mem.GraphMem;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Level;
 import org.junit.*;
@@ -33,7 +34,9 @@ import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.OntGraphDocumentSource;
+import ru.avicomp.ontapi.OntManagers;
 import ru.avicomp.ontapi.OntologyManager;
 import ru.avicomp.ontapi.OntologyModel;
 import ru.avicomp.ontapi.jena.OntModelFactory;
@@ -50,12 +53,7 @@ import java.util.stream.Collectors;
 /**
  * A tester (not a test) for checking inference performance,
  * for investigation and finding an optimal way.
- *
- * this (100_000) ~ 6m52s, 7m9s, 6m26s, 5m57s; 5m14,5m14s
- * n-i ~ 4:50s, 4m37s, 3m53s, 3m48s, 3m51s, 3m47s; 4m:15s
- * classic ~ 5m50s,5m:29s
- * d2rq (100_000) - 10m43s (cache), 11m9s (no cache)
- *
+ * It demonstrates that query and function optimizations speed up inference up to <b>2.5</b> times.
  * <p>
  * Created by @szz on 13.11.2018.
  */
@@ -77,7 +75,6 @@ public class InfrPerfTester {
 
     @BeforeClass
     public static void before() {
-        LOGGER.info("Start.");
         log4jLevel = org.apache.log4j.Logger.getRootLogger().getLevel();
         org.apache.log4j.Logger.getRootLogger().setLevel(Level.INFO);
     }
@@ -85,15 +82,35 @@ public class InfrPerfTester {
     @AfterClass
     public static void after() {
         org.apache.log4j.Logger.getRootLogger().setLevel(log4jLevel);
+    }
+
+    @Before
+    public void beforeTest() {
+        LOGGER.info("Start.");
+    }
+
+    @After
+    public void afterTest() {
         LOGGER.info("Fin.");
     }
 
     @Test
     public void testInference() {
-        OWLMapManager manager = Managers.createOWLMapManager();
-        OntGraphModel target = createTargetModel(manager);
-        OntGraphModel source = createSourceModel(manager, individualsNum);
-        MapModel map = composeMapping(manager, source, target);
+        OWLMapManager m = Managers.createOWLMapManager();
+        testInference(m, m);
+    }
+
+    @Test
+    public void testInferenceNoOptimization() {
+        OntologyManager m1 = OntManagers.createONT();
+        MapManager m2 = TestUtils.createMapManagerWithoutOptimization();
+        testInference(m1, m2);
+    }
+
+    public void testInference(OntologyManager ontologyManager, MapManager mappingManager) {
+        OntGraphModel target = createTargetModel(ontologyManager);
+        OntGraphModel source = createSourceModel(ontologyManager, individualsNum);
+        MapModel map = composeMapping(mappingManager, source, target);
         Graph data = (Graph) ((Union) source.getBaseGraph()).getR();
 
         map.runInference(data, target.getBaseGraph());
@@ -101,13 +118,14 @@ public class InfrPerfTester {
     }
 
     public static void validate(OntGraphModel target, long c) {
-        Assert.assertEquals(c, target.listNamedIndividuals().count());
-        /*
+        //Assert.assertEquals(c, target.listNamedIndividuals().count());
         Assert.assertEquals(c, target.listNamedIndividuals()
                 .peek(i -> Assert.assertEquals(1, i.positiveAssertions()
                         .map(Statement::getObject)
-                        .peek(x -> LOGGER.debug("{} => {}", i, x))
                         .peek(x -> {
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("{} => {}", i, x);
+                            }
                             Long ind = Long.parseLong(i.getLocalName().replaceFirst("[^\\d]+", ""));
                             String actual = x.asLiteral().getString();
                             String expected = String.format("val-2-%d, val-1-%d", ind, ind);
@@ -115,7 +133,6 @@ public class InfrPerfTester {
                         })
                         .count()))
                 .count());
-                */
     }
 
 

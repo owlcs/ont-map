@@ -155,11 +155,18 @@ public class AVC {
     /**
      * A property-indicator, which means the function require special treatment in runtime before inference.
      * The right part of a statement with this predicate must be a valid class-path to
-     * {@link ru.avicomp.map.spin.AdjustFunctionBody} impl as a string (plain) literal.
+     * a {@link ru.avicomp.map.spin.AdjustFunctionBody} impl as a string (plain) literal.
      *
      * @see ru.avicomp.map.spin.AdjustFunctionBody
      */
     public static final Property runtime = property("runtime");
+
+    /**
+     * A property-indicator to tell that SPARQL-based function has also an ARQ-optimization.
+     * The right part of a statement with this predicate must be a valid class-path to
+     * a {@link org.apache.jena.sparql.function.Function} impl as a string (plain) literal.
+     */
+    public static final Property optimize = property("optimize");
 
     /**
      * Expression predicate to use in conditional templates as a filter.

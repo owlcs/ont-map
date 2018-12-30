@@ -40,15 +40,30 @@ public class MapConfigImpl {
 
     /**
      * Answers {@code true}
-     * if inference must be optimized, which includes replacing some spin queries with direct operations on a graph.
-     * An example of such optimization is replacement processing {@link ru.avicomp.map.spin.vocabulary.SPINMAPL#self spinmapl:self} map-instructions,
+     * if inference must be optimized, that includes replacing some spin queries with direct operations on a graph,
+     * which are significantly faster than SPARQL.
+     * <p>
+     * An example of such optimization is runtime replacement processing
+     * {@link ru.avicomp.map.spin.vocabulary.SPINMAPL#self spinmapl:self} map-instructions,
      * that produces {@link ru.avicomp.ontapi.jena.vocabulary.OWL#NamedIndividual owl:NamedIndividuals} declarations,
-     * with direct writing a correspondig triple into a graph.
+     * with direct writing a corresponding triple into a graph.
      * Please note: the result of inference must not be differ depending on whether this option is enabled or not.
      *
      * @return boolean
      */
     public boolean optimizeQueries() {
+        return true;
+    }
+
+    /**
+     * Answers {@code true} if the system must use ARQ-bodies instead of SPARQL-bodies
+     * while expression evaluation if possible.
+     * This is a part of optimization, since direct execution is expected to be faster than analysing and execution of SPARQL queries.
+     *
+     * @return boolean
+     * @see ru.avicomp.map.spin.vocabulary.AVC#optimize
+     */
+    public boolean optimizeFunctions() {
         return true;
     }
 }

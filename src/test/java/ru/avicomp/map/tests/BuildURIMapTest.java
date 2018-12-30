@@ -62,7 +62,8 @@ public class BuildURIMapTest extends MapTestData1 {
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         List<OntIndividual.Named> named = src.listNamedIndividuals()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        List<OntIndividual.Anonymous> anons = src.ontObjects(OntIndividual.Anonymous.class).collect(Collectors.toList());
+        List<OntIndividual.Anonymous> anons = src.ontObjects(OntIndividual.Anonymous.class)
+                .collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
         Assert.assertEquals(3, named.size());
         Assert.assertEquals(1, anons.size());
@@ -115,11 +116,13 @@ public class BuildURIMapTest extends MapTestData1 {
     }
 
     private static String getDataPropertyAssertionStringValue(OntIndividual individual, OntNDP property) {
-        return individual.objects(property, Literal.class).map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
+        return individual.objects(property, Literal.class)
+                .map(Literal::getString).findFirst().orElseThrow(AssertionError::new);
     }
 
     private static void assertDataPropertyAssertion(OntGraphModel m, Resource i, OntNDP p, Literal v) {
-        Assert.assertTrue("Can't find [" + m.shortForm(i.getURI()) + " " + m.shortForm(p.getURI()) + " '" + m.shortForm(v.toString()) + "']", m.contains(i, p, v));
+        Assert.assertTrue(String.format("Can't find [%s %s '%s']",
+                m.shortForm(i.getURI()), m.shortForm(p.getURI()), m.shortForm(v.toString())), m.contains(i, p, v));
     }
 
     private static void assertIndividualLabel(OntGraphModel m, Resource i) {
@@ -133,7 +136,8 @@ public class BuildURIMapTest extends MapTestData1 {
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
         OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
         OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
+        List<OntNDP> props = src.listDataProperties()
+                .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
         OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
 
@@ -163,15 +167,18 @@ public class BuildURIMapTest extends MapTestData1 {
         TestUtils.debug(propertyFunction1, pm);
         TestUtils.debug(propertyFunction2, pm);
 
-        MapModel res = createMappingModel(manager, "Used functions: spinmapl:buildURI2, spinmapl:concatWithSeparator, spinmap:equals");
+        MapModel res = createMappingModel(manager,
+                "Used functions: spinmapl:buildURI2, spinmapl:concatWithSeparator, spinmap:equals");
 
         res.createContext(srcClass, dstClass, targetFunction)
                 .addPropertyBridge(propertyFunction1, dstProp).getContext()
                 .addPropertyBridge(propertyFunction2, dst.getRDFSLabel());
         Assert.assertEquals(1, res.contexts().count());
         Assert.assertEquals(2, res.ontologies().count());
-        Assert.assertEquals(srcClass, res.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
-        Assert.assertEquals(dstClass, res.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(srcClass, res.contexts()
+                .map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new));
+        Assert.assertEquals(dstClass, res.contexts()
+                .map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new));
         return res;
     }
 

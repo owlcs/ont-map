@@ -46,7 +46,6 @@ import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
@@ -75,6 +74,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected final MapConfigImpl config;
     protected final MapARQFactory factory;
 
+    // A threshold for internal nodes cache.
     // Assume there is Hotspot Java 6 VM (x32)
     // Then java6 (actually java8 much less, java9 even less) approximate String memory size would be: 8 * (int) ((((no chars) * 2) + 45) / 8)
     // org.apache.jena.graph.Node_Blank contains BlankNodeId which in turn contains a String (id) ~ size: 8 (header) + 8 + (string size)
@@ -281,9 +281,21 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @return List of {@link QueryWrapper}s
      */
     public Set<ProcessedQuery> selectMapRules(UnionModel model) {
-        return selectMapRules(model, qw -> (config.optimizeQueries()
-                && SPINInferenceHelper.isNamedIndividualDeclaration(qw)) ?
-                new NamedIndividualQuery(qw) : new ProcessedQuery(qw));
+        return selectMapRules(model, this::wrap);
+    }
+
+    /**
+     * Creates a {@link ProcessedQuery} from {@link QueryWrapper}.
+     *
+     * @param qw {@link QueryWrapper}, not {@code null}
+     * @return {@link ProcessedQuery}
+     */
+    protected ProcessedQuery wrap(QueryWrapper qw) {
+        if (!config.optimizeQueries()) {
+            return new ProcessedQuery(qw);
+        }
+        Resource type = SPINInferenceHelper.getTypeDeclaration(qw);
+        return type != null ? new TypeDeclarationQuery(qw, type) : new ProcessedQuery(qw);
     }
 
     public Set<ProcessedQuery> selectMapRules(UnionModel model, Function<QueryWrapper, ProcessedQuery> mapper) {
@@ -359,21 +371,23 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
     /**
      * A simplified {@link ProcessedQuery}
-     * to produce {@code _:x rdf:type owl:NamedIndividual} triple for a given individual.
+     * to produce {@code _:x rdf:type type} triple for a given individual.
      * Created by @ssz on 14.11.2018.
      */
-    public class NamedIndividualQuery extends ProcessedQuery {
+    public class TypeDeclarationQuery extends ProcessedQuery {
 
-        public NamedIndividualQuery(QueryWrapper qw) {
+        private final Resource type;
+
+        public TypeDeclarationQuery(QueryWrapper qw, Resource type) {
             super(qw);
+            this.type = Objects.requireNonNull(type);
         }
 
         @Override
         public Model run(Resource individual) {
             Model res = ModelFactory.createDefaultModel();
             if (individual.isAnon()) return res;
-            return individual.inModel(res).addProperty(RDF.type, OWL.NamedIndividual).getModel();
+            return individual.inModel(res).addProperty(RDF.type, type).getModel();
         }
     }
-
 }
