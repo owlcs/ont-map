@@ -26,6 +26,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.sparql.expr.NodeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.ARQFactory;
@@ -169,6 +170,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             queryGraph.addGraph(target);
         }
         Set<Node> inMemory = new HashSet<>();
+        Map<Node, NodeValue> factoryCache = factory.getContext().get(MapARQFactory.NODE_TO_VALUE_CACHE);
         // first process all direct individuals from the source graph:
         src.classAssertions().forEach(i -> {
             Set<OntCE> classes = ModelUtils.getClasses(i);
@@ -178,10 +180,14 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             if (inMemory.size() > INTERMEDIATE_NODES_STORE_THRESHOLD) {
                 processMany(queries, visited, dst, inMemory);
             }
+            if (factoryCache.size() > INTERMEDIATE_NODES_STORE_THRESHOLD) {
+                factoryCache.clear();
+            }
         });
         // next iteration: flush temporarily stored individuals that are appeared on first pass,
         // this time it is for dependent queries:
         processMany(queries, new HashMap<>(), dst, inMemory);
+        factoryCache.clear();
     }
 
     /**

@@ -23,7 +23,9 @@ import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.sparql.expr.*;
 import org.apache.jena.sparql.function.FunctionEnv;
 import org.topbraid.spin.arq.AbstractFunction1;
+import ru.avicomp.map.spin.MapARQFactory;
 
+import java.util.Map;
 import java.util.function.UnaryOperator;
 
 /**
@@ -57,8 +59,10 @@ public class UUID extends AbstractFunction1 {
         if (!source.isBlank() && !source.isURI()) {
             throw new ExprEvalException("?source must be either b-node or uri resource");
         }
-        // todo: cache into env.context or env.graph ?
-        String value = source.isBlank() ? source.getBlankNodeId().getLabelString() : source.getURI();
-        return NodeValue.makeNode(NodeFactory.createURI(URI_MAKER.apply(value)));
+        Map<Node, NodeValue> cache = env.getContext().get(MapARQFactory.NODE_TO_VALUE_CACHE);
+        return cache.computeIfAbsent(source, s -> {
+            String res = s.isBlank() ? s.getBlankNodeId().getLabelString() : s.getURI();
+            return NodeValue.makeNode(NodeFactory.createURI(URI_MAKER.apply(res)));
+        });
     }
 }

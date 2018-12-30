@@ -47,6 +47,7 @@ import org.apache.jena.sparql.sse.SSE;
 import org.apache.jena.sparql.util.Context;
 import org.apache.jena.sparql.util.ExprUtils;
 import org.apache.jena.sparql.util.FmtUtils;
+import org.apache.jena.sparql.util.Symbol;
 import org.apache.jena.update.UpdateRequest;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -59,9 +60,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * An extended spin implementation, which is tightly bound with the {@link Context Jena Context}.
+ * An extended spin implementation, that is tightly bound with the {@link Context Jena Context}.
  * This approach is designed to split ARQ registers by managers
  * so that each manager has its own list of functions inside and cannot affects others.
  * <p>
@@ -73,6 +75,13 @@ import java.util.Objects;
  */
 @SuppressWarnings({"WeakerAccess", "unused", "UnusedReturnValue"})
 public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
+    /**
+     * A cache to hold {@code Map<Node, NodeValue>} map.
+     *
+     * @see ru.avicomp.map.spin.functions.avc.UUID
+     */
+    public static final Symbol NODE_TO_VALUE_CACHE = Symbol.create(MapARQFactory.class.getName() + ".NodesCache");
+
     private final Context context;
 
     public MapARQFactory(Context context) {
@@ -90,6 +99,7 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
      */
     public static MapARQFactory createSPINARQFactory(Map<String, Class<? extends Function>> functions,
                                                      Map<String, Class<? extends PropertyFunction>> properties) {
+        // copy of system-wide context:
         Context context = copyContext(ARQ.getContext());
 
         FunctionRegistry fr = FunctionRegistry.get(context);
@@ -105,8 +115,12 @@ public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
         pfr.put(SPIN.select.getURI(), org.topbraid.spin.arq.functions.SelectPFunction.class);
         pfr.put(OWLRL.propertyChainHelper.getURI(), org.topbraid.spin.arq.PropertyChainHelperPFunction.class);
 
+        // register functions and magic properties:
         functions.forEach(fr::put);
         properties.forEach(pfr::put);
+
+        // a cache to be use while processing some target functions (e.g. avc:UUID):
+        context.put(NODE_TO_VALUE_CACHE, new ConcurrentHashMap<>());
 
         return new MapARQFactory(context);
     }
