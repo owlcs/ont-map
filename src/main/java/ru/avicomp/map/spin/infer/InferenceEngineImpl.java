@@ -47,6 +47,7 @@ import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
@@ -301,7 +302,13 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             return new ProcessedQuery(qw);
         }
         Resource type = SPINInferenceHelper.getTypeDeclaration(qw);
-        return type != null ? new TypeDeclarationQuery(qw, type) : new ProcessedQuery(qw);
+        if (type == null) {
+            return new ProcessedQuery(qw);
+        }
+        if (OWL.NamedIndividual.equals(type)) {
+            return new NamedIndividualQuery(qw);
+        }
+        return new TypeDeclarationQuery(qw, type);
     }
 
     public Set<ProcessedQuery> selectMapRules(UnionModel model, Function<QueryWrapper, ProcessedQuery> mapper) {
@@ -376,12 +383,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * A simplified {@link ProcessedQuery}
-     * to produce {@code _:x rdf:type type} triple for a given individual.
-     * Created by @ssz on 14.11.2018.
+     * A simplest {@link ProcessedQuery}
+     * to generate {@code _:x rdf:type type} triple for a given individual.
+     * <p>
+     * Created by @ssz on 30.12.2018.
      */
     public class TypeDeclarationQuery extends ProcessedQuery {
-
         private final Resource type;
 
         public TypeDeclarationQuery(QueryWrapper qw, Resource type) {
@@ -391,9 +398,29 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
 
         @Override
         public Model run(Resource individual) {
-            Model res = ModelFactory.createDefaultModel();
-            if (individual.isAnon()) return res;
-            return individual.inModel(res).addProperty(RDF.type, type).getModel();
+            return individual.inModel(emptyModel()).addProperty(RDF.type, type).getModel();
+        }
+
+        protected Model emptyModel() {
+            return ModelFactory.createDefaultModel();
+        }
+    }
+
+    /**
+     * A {@link ProcessedQuery} to generate {@link OWL#NamedIndividual owl:NamedIndividual} instances.
+     * <p>
+     * Created by @ssz on 14.11.2018.
+     */
+    public class NamedIndividualQuery extends TypeDeclarationQuery {
+
+        public NamedIndividualQuery(QueryWrapper qw) {
+            super(qw, OWL.NamedIndividual);
+        }
+
+        @Override
+        public Model run(Resource individual) {
+            if (individual.isAnon()) return emptyModel();
+            return super.run(individual);
         }
     }
 }
