@@ -20,6 +20,7 @@ package ru.avicomp.map.spin.system;
 
 import org.apache.jena.sparql.function.Function;
 import org.apache.jena.sparql.pfunction.PropertyFunction;
+import org.apache.jena.sys.JenaSubsystemRegistryBasic;
 import org.topbraid.spin.arq.functions.InvokeFunction;
 import org.topbraid.spin.arq.functions.WalkObjectsFunction;
 import ru.avicomp.map.spin.functions.spif.buildString;
@@ -103,8 +104,7 @@ class SPIFFunctions {
                 }
 
                 private void add(String name, String classPath) {
-                    Class<? extends Function> impl = load(classPath);
-                    add(name, impl);
+                    add(name, load(classPath));
                 }
 
                 private void add(String name, Class<? extends Function> impl) {
@@ -129,7 +129,10 @@ class SPIFFunctions {
                 }
 
                 private void add(String name, String classPath) {
-                    Class<? extends PropertyFunction> impl = load(classPath);
+                    add(name, load(classPath));
+                }
+
+                private void add(String name, Class<? extends PropertyFunction> impl) {
                     put(SPIF.NS + name, impl);
                     put("http://www.topbraid.org/tops#" + name, impl);
                 }
@@ -138,7 +141,9 @@ class SPIFFunctions {
     @SuppressWarnings("unchecked")
     private static <X> Class<X> load(String classPath) {
         try {
-            return (Class<X>) Class.forName(classPath);
+            // some classes cannot be initialized before Jena starts
+            // (e.g. ForPFunction has access to jena in static initialization)
+            return (Class<X>) Class.forName(classPath, false, JenaSubsystemRegistryBasic.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Can't load impl class " + classPath + ".", e);
         }
