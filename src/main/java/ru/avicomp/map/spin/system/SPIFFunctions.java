@@ -20,7 +20,6 @@ package ru.avicomp.map.spin.system;
 
 import org.apache.jena.sparql.function.Function;
 import org.apache.jena.sparql.pfunction.PropertyFunction;
-import org.apache.jena.sys.JenaSubsystemRegistryBasic;
 import org.topbraid.spin.arq.functions.InvokeFunction;
 import org.topbraid.spin.arq.functions.WalkObjectsFunction;
 import ru.avicomp.map.spin.functions.spif.buildString;
@@ -141,9 +140,12 @@ class SPIFFunctions {
     @SuppressWarnings("unchecked")
     private static <X> Class<X> load(String classPath) {
         try {
-            // some classes cannot be initialized before Jena starts
-            // (e.g. ForPFunction has access to jena in static initialization)
-            return (Class<X>) Class.forName(classPath, false, JenaSubsystemRegistryBasic.class.getClassLoader());
+            // Some of the SPIF classes above cannot be initialized before Jena starts
+            // (e.g. ForPFunction has access to jena in static initialization block -
+            // this leads to ExceptionInInitializerError in some circumstances)
+            // So, load with postponed class initialization.
+            // Also, use the current (the same) class loader.
+            return (Class<X>) Class.forName(classPath, false, SPIFFunctions.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Can't load impl class " + classPath + ".", e);
         }
