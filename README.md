@@ -14,8 +14,8 @@ just only through top-level operations and objects, which can be represented as 
 ## Dependencies 
  - **[ONT-API, ver 1.4.0-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
- - [Jena-ARQ, ver 3.9.0](https://github.com/apache/jena) transitively from ONT-API
- - [OWL-API, ver 5.1.8](https://github.com/owlcs/owlapi) transitively from ONT-API
+ - [Jena-ARQ, ver 3.10.0](https://github.com/apache/jena) transitively from ONT-API
+ - [OWL-API, ver 5.1.9](https://github.com/owlcs/owlapi) transitively from ONT-API
  
 ## License
 * Apache License Version 2.0
@@ -46,7 +46,7 @@ Although, anonymous individuals are theoretically possible, currently they are n
 * A simple mapping example with inference:
 
         // get the manager:
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = Managers.createMapManager();
         // get built-in prefixes:
         PrefixMapping pm = manager.prefixes();
         // get some target-function: 
@@ -67,10 +67,10 @@ Although, anonymous individuals are theoretically possible, currently they are n
         
 * Printing all supported functions:
 
-        MapManager manager = Managers.getMapManager();
+        MapManager manager = Managers.createMapManager();
         manager.functions()
                 .sorted(Comparator.comparing((MapFunction f) -> !f.isTarget())
-                .thenComparing(MapFunction::returnType)
+                .thenComparing(MapFunction::type)
                 .thenComparing(MapFunction::name))
                 .forEach(System.out::println);
                 

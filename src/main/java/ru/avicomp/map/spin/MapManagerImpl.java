@@ -39,6 +39,7 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.*;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
+import ru.avicomp.ontapi.jena.impl.PersonalityModel;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
@@ -325,8 +326,8 @@ public class MapManagerImpl implements MapManager {
      * @return {@link MapModelImpl}
      */
     public MapModelImpl newMapModelImpl(OntGraphModel m) {
-        return newMapModelImpl(m.getGraph(), m instanceof OntGraphModelImpl ?
-                ((OntGraphModelImpl) m).getPersonality() : null);
+        return newMapModelImpl(m.getGraph(),
+                m instanceof PersonalityModel ? ((PersonalityModel) m).getOntPersonality() : null);
     }
 
     /**
@@ -365,7 +366,7 @@ public class MapManagerImpl implements MapManager {
         // it provides own rules order, and each rule is processed only once.
         res.add(SPINMAP.rule, SPIN.rulePropertyMaxIterationCount, res.createTypedLiteral(2));
         // add spinmapl (a top of library,  do not add avc.*.ttl addition) to owl:imports:
-        res.addImport(new OntGraphModelImpl(getTopSpinGraph(), res.getPersonality()));
+        res.addImport(new OntGraphModelImpl(getTopSpinGraph(), res.getOntPersonality()));
     }
 
     /**

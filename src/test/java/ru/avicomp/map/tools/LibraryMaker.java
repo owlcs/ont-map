@@ -32,6 +32,7 @@ import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
+import ru.avicomp.ontapi.jena.impl.conf.PersonalityBuilder;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 /**
@@ -45,7 +46,8 @@ abstract class LibraryMaker {
     }
 
     static OntGraphModel createModel(Graph graph) {
-        OntPersonality p = OntModelConfig.ONT_PERSONALITY_BUILDER.build(SpinModelConfig.LIB_PERSONALITY, OntModelConfig.StdMode.LAX);
+        OntPersonality p = PersonalityBuilder.from(OntModelConfig.ONT_PERSONALITY_LAX)
+                .addPersonality(SpinModelConfig.LIB_PERSONALITY).build();
         OntGraphModel res = OntModelFactory.createModel(graph, p);
         PrefixMapping pm = PrefixMapping.Factory.create().setNsPrefix("avc", AVC.NS);
         AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), SPINLibrary.prefixes()).addPrefixes(pm);

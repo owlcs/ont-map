@@ -34,6 +34,7 @@ import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
+import ru.avicomp.ontapi.jena.impl.conf.PersonalityBuilder;
 
 /**
  * Settings and personalities for a {@link Model jena model} which contain spin rules and other stuff.
@@ -46,9 +47,10 @@ public class SpinModelConfig {
     // OWL2 personality (lax version)
     public static final OntPersonality ONT_PERSONALITY = OntModelConfig.ONT_PERSONALITY_LAX.copy();
     // SPIN personality
-    public static Personality<RDFNode> LIB_PERSONALITY = init(OntModelConfig.STANDARD_PERSONALITY.copy());
+    public static Personality<RDFNode> LIB_PERSONALITY = init(OntModelConfig.getStandardPersonality());
     // OWL2 + SPIN personality
-    public static final OntPersonality ONT_LIB_PERSONALITY = ONT_PERSONALITY.copy().add(LIB_PERSONALITY);
+    public static final OntPersonality ONT_LIB_PERSONALITY = PersonalityBuilder.from(ONT_PERSONALITY)
+            .addPersonality(LIB_PERSONALITY).build();
 
     /**
      * See org.topbraid.spin.vocabulary.SP#init(Personality)
