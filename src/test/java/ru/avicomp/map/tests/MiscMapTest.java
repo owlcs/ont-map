@@ -18,21 +18,25 @@
 
 package ru.avicomp.map.tests;
 
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
-import ru.avicomp.ontapi.jena.model.OntClass;
-import ru.avicomp.ontapi.jena.model.OntGraphModel;
-import ru.avicomp.ontapi.jena.model.OntNDP;
+import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.vocabulary.XSD;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by @ssz on 01.12.2018.
@@ -157,5 +161,44 @@ public class MiscMapTest {
             String n = i.getRequiredProperty(dstName).getString();
             Assert.assertEquals(names[2] + ", " + names[0] + " " + names[1], n);
         }).count());
+    }
+
+    @Test
+    public void testInferenceWhenTargetPropertyIsArgument() {
+        OntGraphModel src = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        src.setID("http://src");
+
+        OntClass c1 = src.createOntEntity(OntClass.class, "C1");
+        c1.createIndividual("I1");
+        src.createOntEntity(OntNDP.class, "P1");
+
+        OntGraphModel dst = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        dst.setID("http://dst");
+        OntClass c2 = dst.createOntEntity(OntClass.class, "C2");
+        OntNAP p2 = dst.createOntEntity(OntNAP.class, "P2");
+        p2.addDomain(c2);
+        p2.addRange(XSD.xstring.inModel(src).as(OntDT.class));
+        OntNAP p1 = dst.createOntEntity(OntNAP.class, "P1");
+        p1.addDomain(c2);
+        p1.addRange(XSD.xstring.inModel(src).as(OntDT.class));
+
+
+        MapManager man = Managers.createMapManager();
+        MapFunction.Call uuid = man.getFunction(AVC.UUID).create().build();
+        MapFunction eq = man.getFunction(SPINMAP.equals);
+
+        MapModel map = man.createMapModel();
+        map.createContext(c1, c2, uuid)
+                .addPropertyBridge(eq.create()
+                        .add(SP.arg1.getURI(), p1.getURI()).build(), p2);
+
+        man.getInferenceEngine(map).run(src, dst);
+        TestUtils.debug(dst);
+
+        Set<OntIndividual> individuals = c2.individuals().collect(Collectors.toSet());
+        Assert.assertEquals(1, individuals.size());
+        Set<Statement> assertions = individuals.iterator().next().listProperties(p2).toSet();
+        Assert.assertEquals(1, assertions.size());
+        Assert.assertEquals(p1, assertions.iterator().next().getResource());
     }
 }

@@ -21,6 +21,8 @@ package ru.avicomp.map.spin;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.JenaException;
 import org.apache.jena.util.iterator.ExtendedIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
@@ -45,6 +47,8 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class ContextHelper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContextHelper.class);
+
     private final MapContextImpl context;
     private final Resource mapping;
 
@@ -185,6 +189,7 @@ public class ContextHelper {
         return getMapPredicates(SPINMAP.SOURCE_PREDICATE);
     }
 
+    @SuppressWarnings("unused")
     Map<Property, Property> getTargetPredicatesMap() {
         return getMapPredicates(SPINMAP.TARGET_PREDICATE);
     }
@@ -223,7 +228,7 @@ public class ContextHelper {
     }
 
     boolean isContextProperty(RDFNode node) {
-        return node.isURIResource() && (isSourceProperty(node) || isTargetProperty(node));
+        return node.isURIResource() && isSourceProperty(node);
     }
 
     boolean isSourceProperty(RDFNode property) {
@@ -267,9 +272,8 @@ public class ContextHelper {
     ExprRes addExpression(Property expressionPredicate, RDFNode expressionObject) {
         getMappingRule().addProperty(expressionPredicate, expressionObject);
         ExprRes res = addExpression(expressionPredicate);
-        if (!res.target.isEmpty()) {
-            throw new MapJenaException.Unsupported("TODO: expressions with arguments from right side " +
-                    "are not supported right now.");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Expression settings: {}", res);
         }
         return res;
     }
@@ -278,7 +282,6 @@ public class ContextHelper {
         ExprRes res = new ExprRes();
         MapModelImpl m = getModel();
         Map<Property, Property> sourcePredicatesMap = getSourcePredicatesMap();
-        Map<Property, Property> targetPredicatesMap = getTargetPredicatesMap();
         Statement expression = getMappingRule().getRequiredProperty(expressionPredicate);
         // properties from expression, not distinct flat list, i.e. with possible repetitions
         List<Statement> properties = Stream.concat(Stream.of(expression), Models.listProperties(expression.getObject()))
@@ -300,14 +303,8 @@ public class ContextHelper {
                 m.remove(s);
             }
             // add mapping predicate
-            Property predicate;
-            if (isSourceProperty(property)) {
-                predicate = processPredicate(property, sourcePredicatesMap, m::getSourcePredicate);
-                res.sources.add(predicate);
-            } else {
-                predicate = processPredicate(property, targetPredicatesMap, m::getTargetPredicate);
-                res.target.add(predicate);
-            }
+            Property predicate = processPredicate(property, sourcePredicatesMap, m::getSourcePredicate);
+            res.sources.add(predicate);
             // process default value
             if (expr.hasProperty(RDF.type, AVC.withDefault) && expr.hasProperty(SP.arg2)) {
                 Literal defaultValue = expr.getProperty(SP.arg2).getObject().asLiteral();
@@ -335,17 +332,20 @@ public class ContextHelper {
     /**
      * Expression settings holder.
      * {@code sources} - List of mapping source predicates, e.g. {@code spinmap:sourcePredicate1}, with possible repetitions
-     * {@code targets} - List of mapping target predicates, e.g. {@code spinmap:targetPredicate1}, with possible repetitions
      * {@code replacement} - Property-Variable map, where keys are existing properties either from source or target classes
      * and values - spin variables, e.g. {@code spin:_arg1}
      */
     class ExprRes {
         private final List<Property> sources = new ArrayList<>();
-        private final List<Property> target = new ArrayList<>();
         private final Map<Property, Resource> replacement = new HashMap<>();
 
         public List<Property> getSources() {
             return Collections.unmodifiableList(sources);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("sources=%s, replacement=%s", sources, replacement);
         }
     }
 }
