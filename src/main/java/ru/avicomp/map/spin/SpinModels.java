@@ -253,4 +253,14 @@ public class SpinModels {
                 .filterKeep(SpinModels::isContext));
     }
 
+    /**
+     * Answers {@code true} if the given uri is a name of the top-level spin graph,
+     * that belongs to every mapping produced by the ONT-MAP.
+     *
+     * @param uri String
+     * @return boolean
+     */
+    public static boolean isTopSpinURI(String uri) {
+        return SPINMAPL.BASE_URI.equals(uri);
+    }
 }

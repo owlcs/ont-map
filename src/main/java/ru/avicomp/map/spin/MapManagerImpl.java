@@ -35,7 +35,6 @@ import ru.avicomp.map.spin.infer.InferenceEngineImpl;
 import ru.avicomp.map.spin.system.Resources;
 import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.*;
 import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.OntGraphModelImpl;
@@ -381,18 +380,7 @@ public class MapManagerImpl implements MapManager {
     @Override
     public boolean isMapModel(OntGraphModel m) {
         if (m instanceof MapModelImpl) return true;
-        return m.getID().imports().anyMatch(this::isTopSpinURI);
-    }
-
-    /**
-     * Answers {@code true} if the given uri is a name of the top-level spin graph,
-     * that belongs to every mapping produced by the ONT-MAP.
-     *
-     * @param uri String
-     * @return boolean
-     */
-    public boolean isTopSpinURI(String uri) {
-        return SPINMAPL.BASE_URI.equals(uri);
+        return m.getID().imports().anyMatch(SpinModels::isTopSpinURI);
     }
 
     @Override
@@ -432,7 +420,7 @@ public class MapManagerImpl implements MapManager {
     protected MapModelImpl reassemble(OntGraphModel m, OntPersonality p) {
         MapModelImpl res = newMapModelImpl(m.getBaseGraph(), p);
         m.imports()
-                .filter(i -> !isTopSpinURI(i.getID().getURI())) // skip spin-top graph to be added then separately
+                .filter(i -> !SpinModels.isTopSpinURI(i.getID().getURI())) // skip spin-top graph to be added then separately
                 .map(ModelGraphInterface::getGraph)
                 .forEach(res.getGraph()::addGraph);
         // add spin-top lib:

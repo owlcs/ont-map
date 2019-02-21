@@ -18,10 +18,13 @@
 
 package ru.avicomp.map.tests;
 
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
 import org.junit.Test;
+import org.semanticweb.owlapi.io.FileDocumentSource;
+import org.semanticweb.owlapi.model.OWLDocumentFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
@@ -31,10 +34,17 @@ import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
+import ru.avicomp.ontapi.OntFormat;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -200,5 +210,34 @@ public class MiscMapTest {
         Set<Statement> assertions = individuals.iterator().next().listProperties(p2).toSet();
         Assert.assertEquals(1, assertions.size());
         Assert.assertEquals(p1, assertions.iterator().next().getResource());
+    }
+
+    @Test
+    public void testReloadToOWLManager() throws Exception {
+        UUIDMapTest d = new UUIDMapTest();
+        MapModel map = d.assembleMapping();
+        List<Path> imports = new ArrayList<>();
+        for (OntGraphModel m : map.ontologies().collect(Collectors.toList())) {
+            imports.add(saveAsTempTurtle(null, m));
+        }
+        Path mapSrc = saveAsTempTurtle("mapping", map.asGraphModel());
+
+        LOGGER.debug("Reload to OWL Manager");
+        OWLMapManager manager = Managers.createOWLMapManager();
+        OWLDocumentFormat ttl = OntFormat.TURTLE.createOwlFormat();
+        for (Path p : imports) {
+            manager.loadOntologyFromOntologyDocument(new FileDocumentSource(p.toFile(), ttl));
+        }
+        OntGraphModel model = manager.loadOntologyFromOntologyDocument(new FileDocumentSource(mapSrc.toFile(), ttl))
+                .asGraphModel();
+        TestUtils.debug(model);
+        Assert.assertEquals(map.asGraphModel().size(), model.size());
+    }
+
+    private static Path saveAsTempTurtle(String prefix, Model m) throws IOException {
+        LOGGER.debug("Save model {}", prefix);
+        Path res = Files.createTempFile(prefix, "ttl");
+        m.write(Files.newBufferedWriter(res, StandardOpenOption.WRITE), "ttl");
+        return res;
     }
 }

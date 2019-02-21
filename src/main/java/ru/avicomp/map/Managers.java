@@ -23,6 +23,7 @@ import org.apache.jena.graph.Graph;
 import org.semanticweb.owlapi.model.IRI;
 import ru.avicomp.map.spin.MapManagerImpl;
 import ru.avicomp.map.spin.OWLMapManagerImpl;
+import ru.avicomp.map.spin.SpinModels;
 import ru.avicomp.map.spin.system.SystemLibraries;
 import ru.avicomp.ontapi.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
@@ -63,8 +64,12 @@ public class Managers {
             }).orElse(null);
     /**
      * The filter to skip transformations on system library graphs (from {@code file://resources/etc})
+     * and on any incoming spin-rdf mapping file.
      */
-    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> !SystemLibraries.graphs().containsKey(Graphs.getURI(g));
+    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> {
+        if (SystemLibraries.graphs().containsKey(Graphs.getURI(g))) return false;
+        return Graphs.getImports(g).stream().noneMatch(SpinModels::isTopSpinURI);
+    };
 
     /**
      * Creates a non-concurrent spin-based {@link MapManager}.

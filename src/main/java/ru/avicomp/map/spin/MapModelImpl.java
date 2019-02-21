@@ -74,7 +74,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public Stream<OntGraphModel> ontologies() {
         Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
         Stream<OntGraphModel> imports = super.imports(SpinModelConfig.ONT_PERSONALITY)
-                .filter(m -> !manager.isTopSpinURI(m.getID().getURI()));
+                .filter(m -> !SpinModels.isTopSpinURI(m.getID().getURI()));
         return Stream.concat(res, imports);
     }
 
