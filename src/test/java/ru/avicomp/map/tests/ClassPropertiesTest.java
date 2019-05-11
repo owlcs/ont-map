@@ -181,13 +181,13 @@ public class ClassPropertiesTest {
         ClassPropertyMap map = manager.getClassProperties(top);
         Assert.assertEquals(5, map.properties(clazz).count());
 
-        OntObject p1 = top.createOntEntity(OntNDP.class, "http://dp1").addDomain(clazz).getSubject();
+        OntObject p1 = top.createOntEntity(OntNDP.class, "http://dp1").addDomain(clazz);
         Assert.assertEquals(6, map.properties(clazz).count());
 
         top.removeOntObject(p1);
         Assert.assertEquals(5, map.properties(clazz).count());
 
-        OntObject p2 = sub.createOntEntity(OntNDP.class, "http://dp2").addDomain(clazz).getSubject();
+        OntObject p2 = sub.createOntEntity(OntNDP.class, "http://dp2").addDomain(clazz);
         Assert.assertEquals(6, map.properties(clazz).count());
 
         sub.removeOntObject(p2);

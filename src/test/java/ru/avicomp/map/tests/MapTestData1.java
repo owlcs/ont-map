@@ -70,8 +70,7 @@ abstract class MapTestData1 extends AbstractMapTest {
         prop1.addDomain(class1);
         prop2.addDomain(class1);
         prop3.addDomain(class1);
-        OntClass class2 = m.createOntEntity(OntClass.class, ns + "SubClass1");
-        class2.addSubClassOf(class1);
+        OntClass class2 = m.createOntEntity(OntClass.class, ns + "SubClass1").addSuperClass(class1);
 
         // individuals:
         OntIndividual individual1 = class2.createIndividual(ns + "a");

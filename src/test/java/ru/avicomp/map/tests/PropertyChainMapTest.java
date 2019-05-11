@@ -154,10 +154,9 @@ public class PropertyChainMapTest extends MapTestData6 {
         OntNOP OAGUU = TestUtils.findOntEntity(m, OntNOP.class, "OAGUU");
         OntNOP OAHUU = TestUtils.findOntEntity(m, OntNOP.class, "OAHUU");
         OntNOP OASUU = m.createOntEntity(OntNOP.class, m.expandPrefix("ex:OASUU"));
-        OASUU.addSubPropertyOf(m.getOntEntity(OntNOP.class, OWL.topObjectProperty));
-        OASUU.setTransitive(true);
+        OASUU.addSuperProperty(m.getOntEntity(OntNOP.class, OWL.topObjectProperty)).setTransitive(true);
         // add property chain relationship:
-        OASUU.addSuperPropertyOf(OAGUU, OAHUU);
+        OASUU.addPropertyChain(OAGUU, OAHUU);
         addDataIndividual(m, SHIP_1_NAME, SHIP_1_COORDINATES);
         addDataIndividual(m, SHIP_2_NAME, SHIP_2_COORDINATES);
         addDataIndividual(m, SHIP_3_NAME, SHIP_3_COORDINATES);

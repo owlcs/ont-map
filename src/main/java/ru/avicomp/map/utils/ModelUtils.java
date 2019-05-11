@@ -286,10 +286,8 @@ public class ModelUtils {
         // on properties for restrictions
         Stream<? extends OntPE> onProps = Stream.empty();
         try {
-            if (ce instanceof OntCE.ONProperty) {
-                onProps = Stream.of(((OntCE.ONProperty) ce).getOnProperty());
-            } else if (ce instanceof OntCE.ONProperties) { // OWL2 know-how:
-                onProps = ((OntCE.ONProperties<? extends OntPE>) ce).onProperties();
+            if (ce instanceof OntCE.RestrictionCE) {
+                onProps = Stream.of(((OntCE.RestrictionCE) ce).getProperty());
             }
         } catch (OntJenaException j) {
             // Ignore. Somebody can broke class expression manually, for example by deleting property declaration,

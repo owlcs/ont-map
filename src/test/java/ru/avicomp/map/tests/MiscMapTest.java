@@ -61,12 +61,9 @@ public class MiscMapTest {
         s.setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("source");
         OntClass A = s.createOntEntity(OntClass.class, "A");
-        OntClass B = s.createOntEntity(OntClass.class, "B");
-        B.addSubClassOf(A);
-        OntNDP p1 = s.createOntEntity(OntNDP.class, "d1");
-        p1.addDomain(A);
-        OntNDP p2 = s.createOntEntity(OntNDP.class, "d2");
-        p2.addDomain(B);
+        OntClass B = s.createOntEntity(OntClass.class, "B").addSuperClass(A);
+        OntNDP p1 = s.createOntEntity(OntNDP.class, "d1").addDomain(A);
+        OntNDP p2 = s.createOntEntity(OntNDP.class, "d2").addDomain(B);
         B.createIndividual("I").addProperty(p1, "v1").addProperty(p2, "v2");
         TestUtils.debug(s);
 

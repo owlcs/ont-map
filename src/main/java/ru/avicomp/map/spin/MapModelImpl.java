@@ -534,11 +534,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return statements(null, OWL.onProperty, property)
                 .map(OntStatement::getSubject)
                 .filter(s -> s.canAs(OntCE.ComponentRestrictionCE.class))
-                .map(s -> s.as(OntCE.ComponentRestrictionCE.class))
-                .map(OntCE.Value::getValue)
-                .map(RDFNode.class::cast)
+                .map(s -> s.as(OntCE.ComponentRestrictionCE.class).getValue())
                 .filter(RDFNode::isResource)
-                .map(RDFNode::asResource)
                 .anyMatch(range::equals);
     }
 

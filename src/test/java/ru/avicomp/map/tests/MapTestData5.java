@@ -63,7 +63,7 @@ abstract class MapTestData5 extends AbstractMapTest {
             p.addRange(xdouble);
         });
         m.createOntEntity(OntNDP.class, ns + "dstDataProperty3")
-                .addDomain(clazz).getSubject().as(OntNDP.class)
+                .addDomain(clazz)
                 .addRange(xstring);
         return m;
     }

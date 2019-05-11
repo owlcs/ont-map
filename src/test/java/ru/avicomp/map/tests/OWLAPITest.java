@@ -216,7 +216,7 @@ public class OWLAPITest {
         OntClass c = sup.createOntEntity(OntClass.class, ns + "OneMoreClass");
         sup.createOntEntity(OntNOP.class, ns + "OneMoreProperty1").addDomain(c);
         sub.createOntEntity(OntNOP.class, sub.getID().getURI() + "#OneMorePropery2").addDomain(CCPIU_000012);
-        CCPIU_000012.addSubClassOf(c);
+        CCPIU_000012.addSuperClass(c);
 
         TestUtils.debug(sub);
         Assert.assertEquals(20, map_sub.properties(CCPIU_000012)
