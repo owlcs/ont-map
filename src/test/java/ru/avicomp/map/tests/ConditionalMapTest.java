@@ -58,7 +58,7 @@ public class ConditionalMapTest extends MapTestData2 {
         manager.getInferenceEngine(m).run(s, t);
         TestUtils.debug(t);
 
-        Assert.assertEquals(4, t.listNamedIndividuals().count());
+        Assert.assertEquals(4, t.namedIndividuals().count());
 
         LOGGER.info("Re-run inference and validate.");
         manager.getInferenceEngine(m).run(s, t);
@@ -68,7 +68,7 @@ public class ConditionalMapTest extends MapTestData2 {
 
     @Override
     public void validate(OntGraphModel result) {
-        List<OntIndividual.Named> individuals = result.listNamedIndividuals().collect(Collectors.toList());
+        List<OntIndividual.Named> individuals = result.namedIndividuals().collect(Collectors.toList());
         Assert.assertEquals(4, individuals.size());
 
         OntNDP email = TestUtils.findOntEntity(result, OntNDP.class, "email");
@@ -122,7 +122,7 @@ public class ConditionalMapTest extends MapTestData2 {
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "Contact");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        Map<OntDT, OntNDP> propsMap = src.listDatatypes()
+        Map<OntDT, OntNDP> propsMap = src.datatypes()
                 .map(Resource::getLocalName)
                 .collect(Collectors.toMap(
                         s -> TestUtils.findOntEntity(src, OntDT.class, s),

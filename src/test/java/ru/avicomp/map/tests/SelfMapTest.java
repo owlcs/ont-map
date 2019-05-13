@@ -53,7 +53,7 @@ public class SelfMapTest extends AbstractMapTest {
         MapModel m = composeSimplestMapping(Managers.createMapManager(), s, t);
         TestUtils.debug(m);
         m.runInference(s.getGraph(), t.getGraph());
-        Assert.assertEquals(n, t.listNamedIndividuals().count());
+        Assert.assertEquals(n, t.namedIndividuals().count());
     }
 
     @Test
@@ -63,7 +63,7 @@ public class SelfMapTest extends AbstractMapTest {
         MapModel m = composeIfMapping(Managers.createMapManager(), s, t);
         TestUtils.debug(m);
         m.runInference(s.getGraph(), t.getGraph());
-        Assert.assertEquals(4, t.listNamedIndividuals().count());
+        Assert.assertEquals(4, t.namedIndividuals().count());
     }
 
     public static OntGraphModel createTargetModel() {
@@ -91,8 +91,8 @@ public class SelfMapTest extends AbstractMapTest {
 
     public static MapModel composeSimplestMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
-        OntClass sourceClass = source.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass targetClass = target.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
+        OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
         MapModel res = manager.createMapModel();
         MapFunction.Builder self = manager.getFunction(SPINMAPL.self).create();
         res.createContext(sourceClass, targetClass).addClassBridge(self.build());
@@ -101,8 +101,8 @@ public class SelfMapTest extends AbstractMapTest {
 
     public static MapModel composeIfMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
-        OntClass sourceClass = source.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass targetClass = target.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
+        OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
 
         MapModel res = manager.createMapModel();
         res.asGraphModel().getID().addComment("WARNING: " +

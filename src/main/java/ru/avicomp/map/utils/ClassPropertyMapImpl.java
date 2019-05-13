@@ -75,14 +75,14 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
                         .anyMatch(x -> ModelUtils.isHeadOfPropertyChain(p, x)))
                 .map(OntPE::asProperty).forEach(res::add);
 
-        Stream<OntCE> subClassOf = ce.isAnon() ? ce.subClassOf() :
-                Stream.concat(ce.subClassOf(), Stream.of(model.getOWLThing()));
+        Stream<OntCE> subClassOf = ce.isAnon() ? ce.superClasses() :
+                Stream.concat(ce.superClasses(), Stream.of(model.getOWLThing()));
 
         Stream<OntCE> intersectionRestriction =
                 ce instanceof OntCE.IntersectionOf ? ((OntCE.IntersectionOf) ce).getList().members()
                         .filter(c -> c instanceof OntCE.RestrictionCE)
                         : Stream.empty();
-        Stream<OntCE> equivalentIntersections = ce.equivalentClass().filter(OntCE.IntersectionOf.class::isInstance);
+        Stream<OntCE> equivalentIntersections = ce.equivalentClasses().filter(OntCE.IntersectionOf.class::isInstance);
 
         Stream<OntCE> unionClasses =
                 model.ontObjects(OntCE.UnionOf.class)

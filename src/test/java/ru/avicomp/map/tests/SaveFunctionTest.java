@@ -129,8 +129,8 @@ public class SaveFunctionTest {
 
         OntClass s = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass t = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        List<OntNDP> sp = src.listDataProperties().collect(Collectors.toList());
-        OntNDP tp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
+        List<OntNDP> sp = src.dataProperties().collect(Collectors.toList());
+        OntNDP tp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
         MapModel map2 = m.createMapModel(ns + "test");
         map2.createContext(s, t, target.create().addClass(SP.arg1, t).build())
                 .addPropertyBridge(property.create().addProperty(SP.arg1, sp.get(0))

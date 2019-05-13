@@ -119,7 +119,7 @@ public class InfrPerfTester {
 
     public static void validate(OntGraphModel target, long c) {
         //Assert.assertEquals(c, target.listNamedIndividuals().count());
-        Assert.assertEquals(c, target.listNamedIndividuals()
+        Assert.assertEquals(c, target.namedIndividuals()
                 .peek(i -> Assert.assertEquals(1, i.positiveAssertions()
                         .map(Statement::getObject)
                         .peek(x -> {
@@ -138,10 +138,10 @@ public class InfrPerfTester {
 
     public static MapModel composeMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
-        OntClass sourceClass = source.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass targetClass = target.listClasses().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> sourceProperties = source.listDataProperties().collect(Collectors.toList());
-        OntNDP targetProperty = target.listDataProperties().findFirst().orElse(null);
+        OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
+        OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
+        List<OntNDP> sourceProperties = source.dataProperties().collect(Collectors.toList());
+        OntNDP targetProperty = target.dataProperties().findFirst().orElse(null);
         MapModel res = manager.createMapModel();
 
         MapFunction.Builder self = manager.getFunction(SPINMAPL.self).create();
@@ -187,12 +187,8 @@ public class InfrPerfTester {
         res.setID(uri).getModel().setNsPrefixes(OntModelFactory.STANDARD);
         OntClass clazz = res.createOntEntity(OntClass.class, ns + "ClassSource");
         OntDT xsdString = res.getOntEntity(OntDT.class, XSD.xstring);
-        OntNDP prop1 = res.createOntEntity(OntNDP.class, ns + "sourceProperty1");
-        prop1.addRange(xsdString);
-        prop1.addDomain(clazz);
-        OntNDP prop2 = res.createOntEntity(OntNDP.class, ns + "sourceProperty2");
-        prop2.addRange(xsdString);
-        prop2.addDomain(clazz);
+        OntNDP prop1 = res.createOntEntity(OntNDP.class, ns + "sourceProperty1").addRange(xsdString).addDomain(clazz);
+        OntNDP prop2 = res.createOntEntity(OntNDP.class, ns + "sourceProperty2").addRange(xsdString).addDomain(clazz);
 
         Model m = ModelFactory.createModelForGraph(data);
         for (long i = 1; i < num + 1; i++) {
@@ -202,7 +198,7 @@ public class InfrPerfTester {
                     .addProperty(prop2, "val-2-" + i);
         }
         Assert.assertEquals(8, schema.size());
-        Assert.assertEquals(num, res.listNamedIndividuals().count());
+        Assert.assertEquals(num, res.namedIndividuals().count());
         Assert.assertEquals(numberOfOntologies + 1, manager.ontologies().count());
         Assert.assertTrue(manager.contains(IRI.create(uri)));
         return res;

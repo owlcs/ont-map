@@ -61,7 +61,7 @@ public class SplitMapTest extends MapTestData3 {
         TestUtils.debug(t);
 
         LOGGER.info("Validate.");
-        Assert.assertEquals(s.listNamedIndividuals().count() * 2, t.listNamedIndividuals().count());
+        Assert.assertEquals(s.namedIndividuals().count() * 2, t.namedIndividuals().count());
         OntClass contact = TestUtils.findOntEntity(t, OntClass.class, "Contact");
         OntClass address = TestUtils.findOntEntity(t, OntClass.class, "Address");
         OntNOP link = TestUtils.findOntEntity(t, OntNOP.class, "contact-address");
@@ -80,9 +80,9 @@ public class SplitMapTest extends MapTestData3 {
     @Test
     public void testDeleteContext() {
         MapModel m = assembleMapping();
-        OntClass address = m.asGraphModel().listClasses()
+        OntClass address = m.asGraphModel().classes()
                 .filter(s -> Objects.equals(s.getLocalName(), "Address")).findFirst().orElseThrow(AssertionError::new);
-        OntClass contact = m.asGraphModel().listClasses()
+        OntClass contact = m.asGraphModel().classes()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
         Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getTarget(), contact)).findFirst().orElseThrow(AssertionError::new);

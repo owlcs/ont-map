@@ -61,7 +61,7 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     public static void validate(OntGraphModel t, boolean includeSpInResult) {
-        Assert.assertEquals(2, t.listNamedIndividuals().count());
+        Assert.assertEquals(2, t.namedIndividuals().count());
         OntIndividual i1 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I1");
         OntIndividual i2 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I2");
         OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "tp1");
@@ -139,7 +139,7 @@ public class VarArgMapTest extends AbstractMapTest {
         OntNDP prop5 = m.createOntEntity(OntNDP.class, ns + "p5");
         OntNDP prop6 = m.createOntEntity(OntNDP.class, ns + "p6");
         OntNDP prop7 = m.createOntEntity(OntNDP.class, ns + "p7");
-        m.listDataProperties().forEach(p -> p.addDomain(class1));
+        m.dataProperties().forEach(p -> p.addDomain(class1));
 
         OntIndividual.Named individual1 = class1.createIndividual(ns + "I1");
         OntIndividual.Named individual2 = class1.createIndividual(ns + "I2");

@@ -102,7 +102,7 @@ public class ModelUtils {
 
     private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
         if (!res.add(ce)) return;
-        ce.subClassOf().forEach(c -> collectSuperClasses(c, res));
+        ce.superClasses().forEach(c -> collectSuperClasses(c, res));
     }
 
     /**
@@ -117,7 +117,7 @@ public class ModelUtils {
      */
     public static Optional<OntCE> range(OntOPE p) {
         return findRange(p, x -> listRanges(x.as(OntOPE.class)),
-                OntPE::subPropertyOf, OntOPE.class, OntCE.class, new HashSet<>());
+                OntPE::superProperties, OntOPE.class, OntCE.class, new HashSet<>());
     }
 
     /**
@@ -141,7 +141,7 @@ public class ModelUtils {
      * @param p {@link OntNAP}, not {@code null}
      * @return Optional around the {@link Property}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Annotation_Property_Range'>10.2.4 Annotation Property Range</a>
-     * @see OntNAP#range()
+     * @see OntNAP#ranges()
      * @see ModelUtils#ranges(OntNAP)
      */
     public static Optional<Property> range(OntNAP p) {
@@ -158,7 +158,7 @@ public class ModelUtils {
      * @see #listRanges(OntOPE)
      */
     public static Stream<OntCE> ranges(OntOPE ope) {
-        return listRanges(ope, p -> listRanges(p.as(OntOPE.class)), OntPE::subPropertyOf,
+        return listRanges(ope, p -> listRanges(p.as(OntOPE.class)), OntPE::superProperties,
                 new HashSet<>()).filter(x -> x.canAs(OntCE.class)).map(x -> x.as(OntCE.class)).distinct();
     }
 
@@ -187,7 +187,7 @@ public class ModelUtils {
     }
 
     private static Stream<? extends Resource> listRanges(OntPE p, Set<Resource> seen) {
-        return listRanges(p, OntPE::range, OntPE::subPropertyOf, seen);
+        return listRanges(p, OntPE::ranges, OntPE::superProperties, seen);
     }
 
     /**
@@ -209,7 +209,7 @@ public class ModelUtils {
                                                                                Class<P> propertyType,
                                                                                Class<R> rangeType,
                                                                                Set<Resource> seen) {
-        return findRange(property, OntPE::range, OntPE::subPropertyOf, propertyType, rangeType, seen);
+        return findRange(property, OntPE::ranges, OntPE::superProperties, propertyType, rangeType, seen);
     }
 
     private static <P extends OntPE, R extends Resource> Optional<R> findRange(P property,
@@ -247,7 +247,7 @@ public class ModelUtils {
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Inverse_Object_Properties_2'>9.2.4 Inverse Object Properties</a>
      */
     private static Stream<OntCE> listRanges(OntOPE p) {
-        return Stream.concat(p.range(), p.inverseOf().flatMap(OntDOP::domain));
+        return Stream.concat(p.ranges(), p.inverseProperties().flatMap(OntDOP::domains));
     }
 
     private static Stream<? extends Resource> listRanges(OntPE p,
@@ -432,7 +432,7 @@ public class ModelUtils {
      * @return boolean
      */
     public static boolean isHeadOfPropertyChain(OntOPE superProperty, OntOPE candidate) {
-        return superProperty.listPropertyChains()
+        return superProperty.propertyChains()
                 .map(OntList::first)
                 .filter(Optional::isPresent)
                 .map(Optional::get).anyMatch(p -> Objects.equals(p, candidate));

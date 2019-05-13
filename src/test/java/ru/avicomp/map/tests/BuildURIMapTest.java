@@ -58,9 +58,9 @@ public class BuildURIMapTest extends MapTestData1 {
     public void testInference() {
         OntGraphModel src = assembleSource();
         TestUtils.debug(src);
-        List<OntNDP> props = src.listDataProperties()
+        List<OntNDP> props = src.dataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        List<OntIndividual.Named> named = src.listNamedIndividuals()
+        List<OntIndividual.Named> named = src.namedIndividuals()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         List<OntIndividual.Anonymous> anons = src.ontObjects(OntIndividual.Anonymous.class)
                 .collect(Collectors.toList());
@@ -70,7 +70,7 @@ public class BuildURIMapTest extends MapTestData1 {
 
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(dst);
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
@@ -81,7 +81,7 @@ public class BuildURIMapTest extends MapTestData1 {
         TestUtils.debug(dst);
 
         LOGGER.info("Validate.");
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass dstClass = dst.classes().findFirst().orElseThrow(AssertionError::new);
         // one individual is skipped from inferencing:
         Assert.assertEquals(3, dst.statements(null, RDF.type, dstClass).count());
 
@@ -134,12 +134,12 @@ public class BuildURIMapTest extends MapTestData1 {
 
     @Override
     public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = src.listClasses().findFirst().orElseThrow(AssertionError::new);
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> props = src.listDataProperties()
+        OntClass srcClass = src.classes().findFirst().orElseThrow(AssertionError::new);
+        OntClass dstClass = dst.classes().findFirst().orElseThrow(AssertionError::new);
+        List<OntNDP> props = src.dataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = manager.getFunction(SPINMAPL.buildURI2.getURI())
                 .create()

@@ -111,8 +111,8 @@ public class NestedFuncMapTest extends MapTestData1 {
         Assert.assertEquals(composeURI, funcs.get(0));
         Assert.assertEquals(2, m.rules().flatMap(MapResource::functions).count());
 
-        OntGraphModel src = m.ontologies().filter(o -> o.listClasses().anyMatch(sc::equals)).findFirst().orElseThrow(AssertionError::new);
-        OntGraphModel dst = m.ontologies().filter(o -> o.listClasses().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
+        OntGraphModel src = m.ontologies().filter(o -> o.classes().anyMatch(sc::equals)).findFirst().orElseThrow(AssertionError::new);
+        OntGraphModel dst = m.ontologies().filter(o -> o.classes().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
 
         LOGGER.info("Run inference.");
         manager.getInferenceEngine(m).run(src, dst);
@@ -150,10 +150,10 @@ public class NestedFuncMapTest extends MapTestData1 {
                            Supplier<MapFunction.Call> targetFunctionMaker) {
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        List<OntNDP> props = src.listDataProperties().sorted(Comparator.comparing(Resource::getURI))
+        List<OntNDP> props = src.dataProperties().sorted(Comparator.comparing(Resource::getURI))
                 .collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = targetFunctionMaker.get();
 
@@ -193,10 +193,10 @@ public class NestedFuncMapTest extends MapTestData1 {
     }
 
     void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
-        OntNDP dstProp = dst.listDataProperties().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> props = src.listDataProperties()
+        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
+        List<OntNDP> props = src.dataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
-        List<OntIndividual.Named> srcIndividuals = src.listNamedIndividuals()
+        List<OntIndividual.Named> srcIndividuals = src.namedIndividuals()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
         Assert.assertEquals(3, srcIndividuals.size());
@@ -208,7 +208,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         String v22 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(1));
         String v23 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(2));
 
-        Assert.assertEquals(srcIndividuals.size(), dst.listNamedIndividuals().count());
+        Assert.assertEquals(srcIndividuals.size(), dst.namedIndividuals().count());
         String ns = dst.getNsPrefixURI("target");
         List<OntIndividual.Named> dstIndividuals = srcIndividuals.stream()
                 .map(i -> ns + i.getLocalName())

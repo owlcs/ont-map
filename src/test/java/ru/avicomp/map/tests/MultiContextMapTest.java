@@ -63,7 +63,7 @@ public class MultiContextMapTest extends MapTestData6 {
 
     private void validate(OntGraphModel dst) {
         LOGGER.info("Validate.");
-        Assert.assertEquals(3, dst.listNamedIndividuals().count());
+        Assert.assertEquals(3, dst.namedIndividuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
         validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
         validateIndividual(dst, SHIP_3_NAME, SHIP_3_COORDINATES);

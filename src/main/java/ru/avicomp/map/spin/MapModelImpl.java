@@ -95,7 +95,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return listContexts().map(MapContext.class::cast);
     }
 
-    public Stream<OntCE> classes() {
+    public Stream<OntCE> contextClasses() {
         return listContexts().flatMap(MapContextImpl::classes).distinct();
     }
 
@@ -168,7 +168,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         }
         deleteContext(c).clear();
         // remove unused imports (both owl:import declarations and underling graphs)
-        Set<OntID> used = classes().map(this::getOntologyID).collect(Collectors.toSet());
+        Set<OntID> used = contextClasses().map(this::getOntologyID).collect(Collectors.toSet());
         Set<OntGraphModel> unused = ontologies()
                 .filter(o -> !used.contains(o.getID()))
                 .filter(o -> !Objects.equals(o, this))

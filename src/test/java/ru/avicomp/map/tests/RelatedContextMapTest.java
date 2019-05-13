@@ -46,7 +46,7 @@ public class RelatedContextMapTest extends MapTestData2 {
 
     @Override
     public void validate(OntGraphModel result) {
-        Assert.assertEquals(4, result.listNamedIndividuals().count());
+        Assert.assertEquals(4, result.namedIndividuals().count());
 
         OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Bob");
         OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Jane");
@@ -101,9 +101,9 @@ public class RelatedContextMapTest extends MapTestData2 {
     @Test
     public void testDeleteContext() {
         MapModel m = assembleMapping();
-        OntClass person = m.asGraphModel().listClasses()
+        OntClass person = m.asGraphModel().classes()
                 .filter(s -> Objects.equals(s.getLocalName(), "Person")).findFirst().orElseThrow(AssertionError::new);
-        OntClass contact = m.asGraphModel().listClasses()
+        OntClass contact = m.asGraphModel().classes()
                 .filter(s -> Objects.equals(s.getLocalName(), "Contact")).findFirst().orElseThrow(AssertionError::new);
         Function<List<MapContext>, MapContext> firstContext = contexts -> contexts.stream()
                 .filter(c -> Objects.equals(c.getSource(), contact)).findFirst().orElseThrow(AssertionError::new);

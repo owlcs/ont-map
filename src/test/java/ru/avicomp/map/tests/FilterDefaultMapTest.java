@@ -53,8 +53,8 @@ public class FilterDefaultMapTest extends MapTestData2 {
     @Override
     public void validate(OntGraphModel result) {
         // expected 4 individuals, one of them are naked
-        Assert.assertEquals(4, result.listNamedIndividuals().count());
-        Map<Long, Long> map = result.listNamedIndividuals()
+        Assert.assertEquals(4, result.namedIndividuals().count());
+        Map<Long, Long> map = result.namedIndividuals()
                 .map(i -> i.positiveAssertions().count())
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         Assert.assertEquals(2, map.size());

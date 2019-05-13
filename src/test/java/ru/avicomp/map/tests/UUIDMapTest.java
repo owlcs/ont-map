@@ -49,7 +49,7 @@ public class UUIDMapTest extends MapTestData1 {
         OntGraphModel dst = assembleTarget();
         TestUtils.debug(dst);
 
-        OntClass dstClass = dst.listClasses().findFirst().orElseThrow(AssertionError::new);
+        OntClass dstClass = dst.classes().findFirst().orElseThrow(AssertionError::new);
 
         MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
@@ -57,10 +57,10 @@ public class UUIDMapTest extends MapTestData1 {
 
         manager.getInferenceEngine(mapping).run(src, dst);
         TestUtils.debug(dst);
-        Assert.assertEquals(4, dst.listNamedIndividuals().count());
+        Assert.assertEquals(4, dst.namedIndividuals().count());
 
         manager.getInferenceEngine(mapping).run(src, dst);
-        Assert.assertEquals(4, dst.listNamedIndividuals().count());
+        Assert.assertEquals(4, dst.namedIndividuals().count());
         Assert.assertEquals(4, dstClass.individuals().count());
     }
 

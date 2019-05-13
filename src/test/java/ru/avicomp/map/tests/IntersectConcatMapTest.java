@@ -68,13 +68,13 @@ public class IntersectConcatMapTest extends MapTestData4 {
 
     void validate(MapModel map, OntGraphModel src, OntGraphModel dst) {
         PrefixMapping pm = map.asGraphModel();
-        dst.listNamedIndividuals()
+        dst.namedIndividuals()
                 .flatMap(OntIndividual::positiveAssertions)
                 .sorted(Comparator.comparing((Statement s) -> s.getPredicate().getURI()).thenComparing(s -> s.getSubject().getURI()))
                 .forEach(a -> LOGGER.debug("Assertion: {}", TestUtils.toString(pm, a)));
         // number of source and target individuals are the same:
         OntClass persons = TestUtils.findOntEntity(src, OntClass.class, "persons");
-        Assert.assertEquals(persons.individuals().count(), dst.listNamedIndividuals().count());
+        Assert.assertEquals(persons.individuals().count(), dst.namedIndividuals().count());
         // have 5 data property assertions for address (two of them on the same individual):
         OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
         Set<String> addresses = dst.statements(null, userAddress, null)

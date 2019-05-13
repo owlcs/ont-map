@@ -102,10 +102,10 @@ public class DiffInferenceTest {
 
     public void validate(OntGraphModel t) {
         TestUtils.debug(t);
-        t.listNamedIndividuals().forEach(x -> LOGGER.debug("{}", x));
+        t.namedIndividuals().forEach(x -> LOGGER.debug("{}", x));
         int n = numberAnonymousIndividuals + numberNamedIndividuals;
         Assert.assertEquals("Incorrect number of result individuals.", n,
-                t.listNamedIndividuals()
+                t.namedIndividuals()
                         .peek(x -> LOGGER.debug("{}", x))
                         .count());
         OntNDP prop = TestUtils.findOntEntity(t, OntNDP.class, "targetProperty");
@@ -168,8 +168,8 @@ public class DiffInferenceTest {
         LOGGER.debug("Compose the (spin) mapping.");
         OntClass sourceClass = TestUtils.findOntEntity(src, OntClass.class, "Class");
         OntClass targetClass = TestUtils.findOntEntity(dst, OntClass.class, "ClassTarget");
-        List<OntNDP> sourceProperties = src.listDataProperties().collect(Collectors.toList());
-        OntNDP targetProperty = dst.listDataProperties().findFirst().orElse(null);
+        List<OntNDP> sourceProperties = src.dataProperties().collect(Collectors.toList());
+        OntNDP targetProperty = dst.dataProperties().findFirst().orElse(null);
         MapModel res = manager.createMapModel();
 
         MapFunction.Builder self = manager.getFunction(AVC.UUID).create();//manager.getFunction(AVC.UUID).create();
