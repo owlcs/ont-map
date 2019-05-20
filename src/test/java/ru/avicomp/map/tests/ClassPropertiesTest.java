@@ -21,8 +21,10 @@ package ru.avicomp.map.tests;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.FrontsNode;
 import org.apache.jena.graph.Node;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
+import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,10 +40,7 @@ import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -234,4 +233,49 @@ public class ClassPropertiesTest {
                 .collect(Collectors.joining("\n\t"));
     }
 
+    @Test
+    public void testWithSubProperties() {
+        OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        m.setID("http://test-class-properties-with-subPropertyOf");
+        OntClass c = m.createOntClass("C");
+        OntNDP d1 = m.createDataProperty("d1");
+        OntNDP d2 = m.createDataProperty("d2");
+        OntNOP o1 = m.createObjectProperty("o1");
+        OntNOP o2 = m.createObjectProperty("o2");
+        OntNOP o3 = m.createObjectProperty("o3");
+        OntNOP o4 = m.createObjectProperty("o4");
+
+        d1.addDomain(c).addRange(m.getDatatype(XSD.xstring));
+        o1.addDomain(c);
+
+        MapManager man = Managers.createMapManager();
+        Set<Property> properties1 = man.getClassProperties(m).properties(c)
+                .peek(x -> LOGGER.debug("1) Property: {}", x)).collect(Collectors.toSet());
+        Assert.assertEquals(3, properties1.size());
+        Assert.assertTrue(properties1.contains(d1));
+        Assert.assertTrue(properties1.contains(o1));
+        Assert.assertFalse(properties1.contains(d2));
+
+        d2.addSuperProperty(d1);
+        Set<Property> properties2 = man.getClassProperties(m).properties(c)
+                .peek(x -> LOGGER.debug("2) Property: {}", x)).collect(Collectors.toSet());
+        Assert.assertEquals(4, properties2.size());
+        Assert.assertTrue(properties2.contains(d1));
+        Assert.assertTrue(properties2.contains(d2));
+
+        o4.addSuperProperty(o3.addSuperProperty(o2.addSuperProperty(o1)));
+        Set<Property> properties3 = man.getClassProperties(m).properties(c)
+                .peek(x -> LOGGER.debug("3) Property: {}", x)).collect(Collectors.toSet());
+        Assert.assertEquals(7, properties3.size());
+
+        o2.addDomain(m.getOWLThing());
+        Set<Property> properties4 = man.getClassProperties(m).properties(c)
+                .peek(x -> LOGGER.debug("4) Property: {}", x)).collect(Collectors.toSet());
+        Assert.assertEquals(4, properties4.size());
+
+        o3.addDomain(c);
+        Set<Property> properties5 = man.getClassProperties(m).properties(c)
+                .peek(x -> LOGGER.debug("5) Property: {}", x)).collect(Collectors.toSet());
+        Assert.assertEquals(6, properties5.size());
+    }
 }

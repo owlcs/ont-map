@@ -22,10 +22,7 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.util.iterator.WrappedIterator;
 import org.apache.jena.vocabulary.RDFS;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.topbraid.spin.util.JenaUtil;
-import ru.avicomp.ontapi.jena.OntJenaException;
 import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Models;
@@ -50,7 +47,6 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class ModelUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModelUtils.class);
 
     /**
      * Represents the given resource as string.
@@ -271,7 +267,7 @@ public class ModelUtils {
      * </ul>
      *
      * @param ce {@link OntCE}, not {@code null}
-     * @return <b>not</b> distinct Stream of {@link OntPE properties}
+     * @return <b>distinct</b> Stream of {@link OntPE properties}
      * @see OntCE#properties()
      * @see #listRanges(OntOPE)
      */
@@ -280,22 +276,14 @@ public class ModelUtils {
         Stream<OntPE> domains = ce.properties();
         // indirect domains (ranges for inverseOf object properties):
         Stream<OntPE> ranges = ce.getModel().statements(null, OWL.inverseOf, null)
-                .filter(x -> ce.hasProperty(RDFS.range, x.getObject()))
-                .filter(x -> x.getSubject().canAs(OntOPE.class))
+                .filter(x -> x.getSubject().canAs(OntOPE.class) && ce.hasProperty(RDFS.range, x.getObject()))
                 .map(x -> x.getSubject().as(OntPE.class));
         // on properties for restrictions
         Stream<? extends OntPE> onProps = Stream.empty();
-        try {
-            if (ce instanceof OntCE.RestrictionCE) {
-                onProps = Stream.of(((OntCE.RestrictionCE) ce).getProperty());
-            }
-        } catch (OntJenaException j) {
-            // Ignore. Somebody can broke class expression manually, for example by deleting property declaration,
-            // In that case ONT-API throws exception on calling method ONProperty#asProperty
-            // TODO: (ONT-API hint) maybe need discard the restriction with the broken content
-            LOGGER.warn("Can't find properties for restriction {}: {}", ce, j.getMessage());
+        if (ce instanceof OntCE.RestrictionCE) {
+            onProps = Stream.of(((OntCE.RestrictionCE) ce).getProperty());
         }
-        return Stream.of(domains, ranges, onProps).flatMap(Function.identity());
+        return Stream.of(domains, ranges, onProps).flatMap(Function.identity()).distinct();
     }
 
     /**
