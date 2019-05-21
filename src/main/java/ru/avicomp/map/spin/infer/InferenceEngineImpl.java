@@ -45,6 +45,7 @@ import ru.avicomp.ontapi.jena.UnionGraph;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.model.OntCE;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntIndividual;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -53,6 +54,7 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An implementation of {@link MapManager.InferenceEngine} adapted to the ontology (OWL2) data mapping paradigm.
@@ -173,7 +175,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Set<Node> inMemory = new HashSet<>();
         Map<Node, NodeValue> factoryCache = factory.getContext().get(MapARQFactory.NODE_TO_VALUE_CACHE);
         // first process all direct individuals from the source graph:
-        src.classAssertions().forEach(i -> {
+        listIndividuals(src, dst).forEach(i -> {
             Set<OntCE> classes = ModelUtils.getClasses(i);
             Map<String, Set<QueryWrapper>> visited;
             processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
@@ -189,6 +191,22 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // this time it is for dependent queries:
         processMany(queries, new HashMap<>(), dst, inMemory);
         factoryCache.clear();
+    }
+
+    /**
+     * Lists all individuals from the given source ontology.
+     * Warning: in case the source and the target match,
+     * the method puts all found individuals to memory to avoid {@link ConcurrentModificationException}.
+     *
+     * @param src {@link OntGraphModel}, the source, not {@code null}
+     * @param dst {@link Model}, the target, not {@code null}
+     * @return {@code Stream} of {@link OntIndividual}s
+     */
+    protected Stream<OntIndividual> listIndividuals(OntGraphModel src, Model dst) {
+        if (Graphs.getBase(src.getBaseGraph()) == Graphs.getBase(dst.getGraph())) {
+            return src.classAssertions().collect(Collectors.toList()).stream();
+        }
+        return src.classAssertions();
     }
 
     /**

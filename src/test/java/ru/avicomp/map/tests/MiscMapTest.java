@@ -237,4 +237,20 @@ public class MiscMapTest {
         m.write(Files.newBufferedWriter(res, StandardOpenOption.WRITE), "ttl");
         return res;
     }
+
+    @Test
+    public void testInferenceWhenSourceAndTargetMatch() {
+        OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        m.setID("http://src");
+        OntClass c1 = m.createOntClass("C1");
+        c1.createIndividual("I1");
+        OntClass c2 = m.createOntClass("C2");
+
+        MapManager man = Managers.createMapManager();
+        MapFunction.Call uuid = man.getFunction(AVC.UUID).create().build();
+        MapModel map = man.createMapModel();
+        map.createContext(c1, c2, uuid);
+        man.getInferenceEngine(map).run(m, m);
+        Assert.assertEquals(2, map.asGraphModel().classAssertions().peek(x -> LOGGER.debug("Res:{}", x)).count());
+    }
 }
