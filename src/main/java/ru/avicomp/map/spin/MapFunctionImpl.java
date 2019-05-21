@@ -49,7 +49,8 @@ import java.util.stream.Stream;
 @SuppressWarnings({"WeakerAccess"})
 public abstract class MapFunctionImpl implements MapFunction {
     public static final String STRING_VALUE_SEPARATOR = "\n";
-    public static final Comparator<Arg> ARG_COMPARATOR = ArgURIComparator.comparing(Arg::name);
+    public static final Comparator<Arg> ARG_COMPARATOR = Comparator.comparing(Arg::isVararg)
+            .thenComparing(ArgURIComparator.comparing(Arg::name));
 
     protected final org.topbraid.spin.model.Module func;
     protected List<ArgImpl> arguments;
@@ -83,6 +84,11 @@ public abstract class MapFunctionImpl implements MapFunction {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lists all argument impls.
+     *
+     * @return ordered {@code Stream}
+     */
     public Stream<ArgImpl> listArgs() {
         return getArguments().stream();
     }

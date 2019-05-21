@@ -34,6 +34,7 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 /**
  * Created by @ssz on 15.12.2018.
@@ -176,6 +177,69 @@ public class FunctionBuilderTest {
             Assert.fail("Expected error");
         } catch (MapJenaException j) {
             TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+        }
+    }
+
+    @Test
+    public void testBuildMissedOptionalArg() {
+        MapFunction f = manager.getFunction(AVC.objectWithFilter);
+        try {
+            f.create().build();
+            Assert.fail("Expected error");
+        } catch (MapJenaException j) {
+            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_FAIL);
+            Assert.assertEquals(2, j.getSuppressed().length);
+            TestUtils.assertCode(j.getSuppressed()[0], Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+            TestUtils.assertCode(j.getSuppressed()[1], Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+        }
+
+        f.create().add(SP.arg1.getURI(), "subject").add(SP.arg2.getURI(), "predicate").build();
+
+        try {
+            f.create().add(SP.arg1.getURI(), "subject")
+                    .add(SP.arg2.getURI(), "predicate")
+                    .add(SP.arg4.getURI(), "object").build();
+            Assert.fail("Expected error");
+        } catch (MapJenaException j) {
+            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_MISSED_OPTIONAL_ARG);
+            Assert.assertEquals(0, j.getSuppressed().length);
+            Assert.assertEquals(SP.arg3.getURI(), ((Exceptions.SpinMapException) j).getDetails(Exceptions.Key.ARG_NAME));
+        }
+
+        f.create().add(SP.arg1.getURI(), "subject")
+                .add(SP.arg2.getURI(), "first-predicate")
+                .add(SP.arg3.getURI(), "second-predicate").build();
+
+        f.create().add(SP.arg1.getURI(), "subject")
+                .add(SP.arg2.getURI(), "first-predicate")
+                .add(SP.arg3.getURI(), "second-predicate")
+                .add(SP.arg4.getURI(), "object").build();
+
+        Stream.of(f.create().add(SP.arg3.getURI(), "predicate").add(SP.arg4.getURI(), "object"),
+                f.create().add(SP.arg3.getURI(), "predicate")).forEach(b -> {
+            try {
+                b.build();
+                Assert.fail("Expected error");
+            } catch (MapJenaException j) {
+                TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_FAIL);
+                Assert.assertEquals(2, j.getSuppressed().length);
+                Exceptions.SpinMapException sme1 = (Exceptions.SpinMapException) j.getSuppressed()[0];
+                Exceptions.SpinMapException sme2 = (Exceptions.SpinMapException) j.getSuppressed()[1];
+                TestUtils.assertCode(sme1, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+                TestUtils.assertCode(sme2, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+                Assert.assertEquals(SP.arg1.getURI(), sme1.getDetails(Exceptions.Key.ARG_NAME));
+                Assert.assertEquals(SP.arg2.getURI(), sme2.getDetails(Exceptions.Key.ARG_NAME));
+            }
+        });
+
+        try {
+            f.create().add(SP.arg1.getURI(), "subject")
+                    .add(SP.arg3.getURI(), "second-predicate").build();
+            Assert.fail("Expected error");
+        } catch (MapJenaException j) {
+            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG);
+            Assert.assertEquals(0, j.getSuppressed().length);
+            Assert.assertEquals(SP.arg2.getURI(), ((Exceptions.SpinMapException) j).getDetails(Exceptions.Key.ARG_NAME));
         }
     }
 }

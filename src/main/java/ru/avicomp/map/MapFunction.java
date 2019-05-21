@@ -133,9 +133,11 @@ public interface MapFunction extends Description {
      * Answers {@code true} iff this function supports varargs.
      * Most functions does not support varargs and this method will return {@code false}.
      * Examples of vararg functions: {@code sp:concat}, {@code sp:in}.
-     * To avoid ambiguous situations it is expected that vararg function has one and only one v ararg argument.
+     * To avoid ambiguous situations
+     * it is expected that vararg function has one and only one vararg argument.
      *
-     * @return true if function has varargs
+     * @return {@code true} if function has varargs
+     * @see Arg#isVararg()
      */
     default boolean isVararg() {
         return args().anyMatch(Arg::isVararg);
@@ -215,6 +217,7 @@ public interface MapFunction extends Description {
          * Answers {@code true} if this argument is a fictitious indicator for a function that supports varargs.
          *
          * @return {@code true} in case of vararg
+         * @see MapFunction#isVararg()
          */
         boolean isVararg();
 

@@ -80,6 +80,7 @@ public enum Exceptions {
     // while build call:
     FUNCTION_CALL_BUILD_FAIL,
     FUNCTION_CALL_BUILD_NO_REQUIRED_ARG,
+    FUNCTION_CALL_BUILD_MISSED_OPTIONAL_ARG,
 
     // while inference:
     INFERENCE_NO_CONTEXTS,

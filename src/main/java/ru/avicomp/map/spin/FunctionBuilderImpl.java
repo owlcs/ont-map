@@ -24,12 +24,12 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_BUILD_FAIL;
-import static ru.avicomp.map.spin.Exceptions.FUNCTION_CALL_BUILD_NO_REQUIRED_ARG;
+import static ru.avicomp.map.spin.Exceptions.*;
 
 /**
  * The implementation of {@link MapFunction.Builder} to produce {@link MapFunctionImpl.CallImpl}.
@@ -171,7 +171,6 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
 
     @Override
     public MapFunctionImpl.CallImpl build() throws MapJenaException {
-        MapFunctionImpl function = getFunction();
         Exceptions.SpinMapException error = FUNCTION_CALL_BUILD_FAIL.create().addFunction(function).build();
         Map<MapFunctionImpl.ArgImpl, Object> map = new HashMap<>();
         input.forEach((key, value) -> {
@@ -198,17 +197,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             function.arg(SPINMAP.source.getURI()).ifPresent(a -> map.put(a, SPINMAP.sourceVariable.getURI()));
         }
         // check all required arguments are assigned
-        function.listArgs().forEach(a -> {
-            if (a.isVararg()) return;
-            if (map.containsKey(a) || a.isOptional())
-                return;
-            String def = a.defaultValue();
-            if (def == null) {
-                error.addSuppressed(FUNCTION_CALL_BUILD_NO_REQUIRED_ARG.create().addArg(a).build());
-            } else {
-                map.put(a, def);
-            }
-        });
+        validateAndSetDefaults(map, error);
         Throwable[] suppressed = error.getSuppressed();
         if (suppressed.length == 0) {
             return new MapFunctionImpl.CallImpl(function, map);
@@ -217,6 +206,45 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             throw (Exceptions.SpinMapException) suppressed[0];
         }
         throw error;
+    }
+
+    /**
+     * Validates the input and sets default values.
+     *
+     * @param map   {@code Map} with argument values
+     * @param error {@link Exceptions.SpinMapException} error-holder tp report
+     */
+    protected void validateAndSetDefaults(Map<MapFunctionImpl.ArgImpl, Object> map,
+                                          Exceptions.SpinMapException error) {
+        List<MapFunctionImpl.ArgImpl> listArgs = function.getArguments();
+        for (int i = 0; i < listArgs.size(); i++) {
+            MapFunctionImpl.ArgImpl arg = listArgs.get(i);
+            if (arg.isVararg()) {
+                // must be last
+                if (i == listArgs.size() - 1)
+                    continue;
+                throw new MapJenaException.IllegalState("Vararg is not in last place");
+            }
+            if (map.containsKey(arg)) {
+                // already assigned as expected
+                // but prev is optional without default value ?
+                MapFunctionImpl.ArgImpl prev;
+                if (i != 0 && !map.containsKey(prev = listArgs.get(i - 1))) {
+                    if (prev.isOptional()) {
+                        error.addSuppressed(FUNCTION_CALL_BUILD_MISSED_OPTIONAL_ARG.create().addArg(prev).build());
+                    }
+                }
+                continue;
+            }
+            String def = arg.defaultValue();
+            if (def != null) {
+                map.put(arg, def);
+            }
+            if (arg.isOptional()) {
+                continue;
+            }
+            error.addSuppressed(FUNCTION_CALL_BUILD_NO_REQUIRED_ARG.create().addArg(arg).build());
+        }
     }
 
     @Override

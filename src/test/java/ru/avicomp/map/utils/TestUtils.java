@@ -224,8 +224,9 @@ public class TestUtils {
         Arrays.stream(j.getSuppressed()).forEach(e -> LOGGER.debug("Suppressed: {}", e.getMessage()));
     }
 
-    public static void assertCode(MapJenaException j, Exceptions code) {
-        debug(j);
+    public static void assertCode(Throwable j, Exceptions code) {
+        Assert.assertTrue(j instanceof MapJenaException);
+        debug((MapJenaException) j);
         Exceptions.SpinMapException s = (Exceptions.SpinMapException) j;
         Assert.assertEquals(code, s.getCode());
     }
