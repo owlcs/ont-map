@@ -115,8 +115,15 @@ public class SPINLibraryMaker {
 
         // Customization:
 
+        // SPINMAPL:concatWithSeparator optimization
         SPINMAPL.concatWithSeparator.inModel(m)
                 .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator.class.getName());
+
+        // SPL:object optimization (TODO: add refined arg constraints with spl:optional)
+        SPL.object.inModel(m)
+                //.addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1).addProperty(SPL.optional, Models.TRUE))
+                //.addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2).addProperty(SPL.optional, Models.TRUE))
+                .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spl.object.class.getName());
 
         // FN:abs (sp:abs and fn:abs both uses org.apache.jena.sparql.expr.nodevalue.XSDFuncOp#abs()).
         // Choose sp:abs since it must be used more commonly
@@ -269,7 +276,7 @@ public class SPINLibraryMaker {
                 .addProperty(SPL.predicate, AVC.vararg)
                 .addProperty(SPL.valueType, XSD.xstring));
 
-        // FN:round
+        // FN:round (SP:round has only one argument)
         FN.round.inModel(m)
                 .addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/2005/xpath-functions/#round"))
                 .addProperty(RDFS.comment, "Rounds a value to a specified number of decimal places, rounding upwards if two such values are equally near.")

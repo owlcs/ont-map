@@ -60,6 +60,9 @@ fn:abs  avc:hidden  "Duplicates the function sp:abs." .
 spinmapl:concatWithSeparator
         avc:optimize  "ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator" .
 
+spl:object
+        avc:optimize    "ru.avicomp.map.spin.functions.spl.object" .
+
 sp:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
         avc:constraint  [ spl:predicate  sp:arg1 ;
                           spl:valueType  avc:numeric

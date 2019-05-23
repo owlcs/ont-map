@@ -27,6 +27,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.sparql.expr.NodeValue;
+import org.apache.jena.sparql.util.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.ARQFactory;
@@ -161,6 +162,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @param target  {@link Graph} to write resulting individuals
      */
     protected void run(Collection<ProcessedQuery> queries, Graph source, Graph target) {
+        Context context = factory.getContext();
         UnionGraph queryGraph = (UnionGraph) (queries.iterator().next().getModel()).getGraph();
         OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
@@ -173,7 +175,8 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             queryGraph.addGraph(target);
         }
         Set<Node> inMemory = new HashSet<>();
-        Map<Node, NodeValue> factoryCache = factory.getContext().get(MapARQFactory.NODE_TO_VALUE_CACHE);
+
+        Map<Node, NodeValue> factoryCache = context.get(MapARQFactory.NODE_TO_VALUE_CACHE);
         // first process all direct individuals from the source graph:
         listIndividuals(src, dst).forEach(i -> {
             Set<OntCE> classes = ModelUtils.getClasses(i);

@@ -375,6 +375,9 @@ public abstract class MapFunctionImpl implements MapFunction {
     public class ArgImpl implements Arg {
         protected final org.topbraid.spin.model.Argument arg;
         protected final String name;
+        // caches:
+        private Resource returnType;
+        private Boolean optional;
 
         protected ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
             this.arg = Objects.requireNonNull(arg, "Null " + arg.getClass().getName());
@@ -401,22 +404,13 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         public Resource getValueType() {
-            Optional<Resource> r = Iter.findFirst(refinedConstraints()
-                    .filterKeep(s -> Objects.equals(s.getPredicate(), SPL.valueType))
-                    .mapWith(Statement::getObject)
-                    .filterKeep(RDFNode::isURIResource)
-                    .mapWith(RDFNode::asResource));
-            if (r.isPresent()) return r.get();
+            if (returnType != null) return returnType;
+            Optional<Resource> r = findRefinedConstraint(SPL.valueType)
+                    .filter(RDFNode::isURIResource)
+                    .map(RDFNode::asResource);
+            if (r.isPresent()) return returnType = r.get();
             Resource res = arg.getValueType();
-            return res == null ? AVC.undefined : res;
-        }
-
-        public ExtendedIterator<Statement> refinedConstraints() {
-            return Iter.flatMap(func.listProperties(AVC.constraint)
-                    .mapWith(Statement::getObject)
-                    .filterKeep(RDFNode::isAnon)
-                    .mapWith(RDFNode::asResource)
-                    .filterKeep(r -> r.hasProperty(SPL.predicate, arg.getPredicate())), Resource::listProperties);
+            return returnType = res == null ? AVC.undefined : res;
         }
 
         @Override
@@ -427,7 +421,43 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         @Override
         public boolean isOptional() {
-            return arg.isOptional();
+            if (optional != null) return optional;
+            Optional<RDFNode> res = findRefinedConstraint(SPL.optional).filter(RDFNode::isLiteral);
+            if (res.isPresent()) {
+                if (Models.TRUE.equals(res.get())) {
+                    return optional = true;
+                }
+                if (Models.FALSE.equals(res.get())) {
+                    return optional = false;
+                }
+            }
+            return optional = arg.isOptional();
+        }
+
+        /**
+         * Finds a refined constraint value for the givent predicate
+         *
+         * @param property {@link Property}, not {@code null}
+         * @return {@code Optional} around {@link RDFNode}
+         */
+        public Optional<RDFNode> findRefinedConstraint(Property property) {
+            return Iter.findFirst(listRefinedConstraints()
+                    .filterKeep(s -> Objects.equals(s.getPredicate(), property))
+                    .mapWith(Statement::getObject));
+        }
+
+        /**
+         * Lists all refined constraints for this argument.
+         *
+         * @return {@code ExtendedIterator} over {@link Statement}s
+         * @see AVC#constraint
+         */
+        public ExtendedIterator<Statement> listRefinedConstraints() {
+            return Iter.flatMap(func.listProperties(AVC.constraint)
+                    .mapWith(Statement::getObject)
+                    .filterKeep(RDFNode::isAnon)
+                    .mapWith(RDFNode::asResource)
+                    .filterKeep(r -> r.hasProperty(SPL.predicate, arg.getPredicate())), Resource::listProperties);
         }
 
         @Override

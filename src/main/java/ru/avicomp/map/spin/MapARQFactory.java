@@ -76,7 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings({"WeakerAccess", "unused", "UnusedReturnValue"})
 public class MapARQFactory extends org.topbraid.spin.arq.ARQFactory {
     /**
-     * A cache to hold {@code Map<Node, NodeValue>} map.
+     * A cache-key to hold {@code Map<Node, NodeValue>} map.
      *
      * @see ru.avicomp.map.spin.functions.avc.UUID
      */

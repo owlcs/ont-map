@@ -42,7 +42,11 @@ abstract class LibraryMaker {
 
 
     static Resource createConstraint(Model m, Property predicate, Resource returnType) {
-        return m.createResource().addProperty(SPL.predicate, predicate).addProperty(SPL.valueType, returnType);
+        return createConstraint(m, predicate).addProperty(SPL.valueType, returnType);
+    }
+
+    static Resource createConstraint(Model m, Property predicate) {
+        return m.createResource().addProperty(SPL.predicate, predicate);
     }
 
     static OntGraphModel createModel(Graph graph) {

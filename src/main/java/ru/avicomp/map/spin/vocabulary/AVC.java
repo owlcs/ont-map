@@ -163,6 +163,7 @@ public class AVC {
 
     /**
      * A property-indicator to tell that SPARQL-based function has also an ARQ-optimization.
+     * Function calls with this property can be executed in two ways: as SPARQL or as ARQ, depending on config setting.
      * The right part of a statement with this predicate must be a valid class-path to
      * a {@link org.apache.jena.sparql.function.Function} impl as a string (plain) literal.
      */
