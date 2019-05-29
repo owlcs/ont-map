@@ -18,6 +18,7 @@
 
 package ru.avicomp.map.spin;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
@@ -431,12 +432,10 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
          */
         public Resource getValueType() {
             if (returnType != null) return returnType;
-            Optional<Resource> r = findRefinedConstraint(SPL.valueType)
-                    .filter(RDFNode::isURIResource)
-                    .map(RDFNode::asResource);
-            if (r.isPresent()) return returnType = r.get();
-            Resource res = arg.getValueType();
-            return returnType = res == null ? AVC.undefined : res;
+            return returnType = Iter.findFirst(listStatements(SPL.valueType)
+                    .mapWith(Statement::getObject)
+                    .filterKeep(RDFNode::isURIResource)
+                    .mapWith(RDFNode::asResource)).orElse(AVC.undefined);
         }
 
         @Override
@@ -453,38 +452,27 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
         @SuppressWarnings("OptionalAssignedToNull")
         public Optional<RDFNode> defaultValueNode() {
             if (defaultValue != null) return defaultValue;
-            Optional<RDFNode> res = findRefinedConstraint(SPL.defaultValue);
-            if (res.isPresent()) {
-                return defaultValue = res;
-            }
-            return defaultValue = Optional.ofNullable(arg.getDefaultValue());
+            return defaultValue = Iter.findFirst(listStatements(SPL.defaultValue).mapWith(Statement::getObject));
         }
 
         @Override
         public boolean isOptional() {
             if (optional != null) return optional;
-            Optional<RDFNode> res = findRefinedConstraint(SPL.optional).filter(RDFNode::isLiteral);
-            if (res.isPresent()) {
-                if (Models.TRUE.equals(res.get())) {
-                    return optional = true;
-                }
-                if (Models.FALSE.equals(res.get())) {
-                    return optional = false;
-                }
-            }
-            return optional = arg.isOptional();
+            return optional = Iter.findFirst(listStatements(SPL.optional)
+                    .filterKeep(x -> Models.TRUE.equals(x.getObject()))).isPresent();
         }
 
         /**
-         * Finds a refined constraint value for the given predicate.
+         * Lists all argument statements,
+         * both from refined constraint and immutable core spin library, in this order.
          *
-         * @param property {@link Property}, not {@code null}
-         * @return {@code Optional} around {@link RDFNode}
+         * @param predicate {@link Property}, possible {@code null}
+         * @return {@link ExtendedIterator} over {@link Statement}s
          */
-        public Optional<RDFNode> findRefinedConstraint(Property property) {
-            return Iter.findFirst(listRefinedConstraints()
-                    .filterKeep(s -> Objects.equals(s.getPredicate(), property))
-                    .mapWith(Statement::getObject));
+        public ExtendedIterator<Statement> listStatements(Property predicate) {
+            return Iter.concat(listRefinedConstraints()
+                            .filterKeep(s -> predicate == null || s.getPredicate().equals(predicate)),
+                    arg.listProperties(predicate));
         }
 
         /**
@@ -537,12 +525,25 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
 
         @Override
         public String getComment(String lang) {
-            return Models.langValues(arg, RDFS.comment, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
+            return langLiterals(RDFS.comment, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
         }
 
         @Override
         public String getLabel(String lang) {
-            return Models.langValues(arg, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
+            return langLiterals(RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
+        }
+
+        private Stream<String> langLiterals(Property predicate, String lang) {
+            return Iter.asStream(listStatements(predicate)
+                    .filterKeep(x -> x.getObject().isLiteral() && filterByLang(x.getLiteral(), lang))
+                    .mapWith(Statement::getString));
+        }
+
+        private boolean filterByLang(Literal literal, String tag) { // todo: use Models method
+            String other = literal.getLanguage();
+            if (StringUtils.isEmpty(tag))
+                return StringUtils.isEmpty(other);
+            return tag.trim().equalsIgnoreCase(other);
         }
 
         @Override
