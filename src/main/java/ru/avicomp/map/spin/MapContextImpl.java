@@ -60,7 +60,7 @@ import static ru.avicomp.map.spin.Exceptions.*;
  * Created by @szuev on 14.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapContextImpl extends OntObjectImpl implements MapContext {
+public class MapContextImpl extends OntObjectImpl implements MapContext, ToString {
 
     public MapContextImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -430,8 +430,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext {
         return toString(getModel());
     }
 
+    @Override
     public String toString(PrefixMapping pm) {
-        return toString(r -> r.isAnon() ? r.toString() : pm.shortForm(r.getURI()));
+        return toString(r -> r.isAnon() ? r.toString() : ToString.getShortForm(pm, r.getURI()));
     }
 
     private String toString(Function<Resource, String> toString) {

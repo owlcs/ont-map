@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 16.04.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class PropertyBridgeImpl extends OntObjectImpl implements PropertyBridge {
+public class PropertyBridgeImpl extends OntObjectImpl implements PropertyBridge, ToString {
 
     public PropertyBridgeImpl(Node n, EnhGraph m) {
         super(n, m);
@@ -90,8 +90,9 @@ public class PropertyBridgeImpl extends OntObjectImpl implements PropertyBridge 
         return toString(getModel());
     }
 
+    @Override
     public String toString(PrefixMapping pm) {
-        return toString(p -> pm.shortForm(p.getURI()));
+        return toString(p -> ToString.getShortForm(pm, p.getURI()));
     }
 
     public String toString(Function<Property, String> map) {

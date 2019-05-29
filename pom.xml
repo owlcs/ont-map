@@ -81,8 +81,8 @@
             <version>1.0.1</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.jena</groupId>
-                    <artifactId>jena-arq</artifactId>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
             <optional>true</optional>

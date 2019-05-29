@@ -18,6 +18,8 @@
 
 package ru.avicomp.map.spin;
 
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Property;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
@@ -69,6 +71,11 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     public FunctionBuilderImpl clear() {
         input.clear();
         return this;
+    }
+
+    @Override
+    public FunctionBuilderImpl addLiteral(Property predicate, Literal literal) {
+        return add(predicate.getURI(), function.getAsString(literal));
     }
 
     /**
@@ -249,9 +256,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
 
     @Override
     public String toString() {
-        return String.format("%s(%s)@%s",
-                MapFunction.Builder.class.getSimpleName(),
-                getFunction().name(),
-                Integer.toHexString(hashCode()));
+        return String.format("%s(%s)@%s", MapFunction.Builder.class.getSimpleName(),
+                getFunction().name(), Integer.toHexString(hashCode()));
     }
 }

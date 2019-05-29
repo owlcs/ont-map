@@ -26,7 +26,7 @@ import org.topbraid.spin.arq.AbstractFunction2;
 import ru.avicomp.ontapi.jena.utils.Iter;
 
 /**
- * An ARQ impl-optimization for a {@link org.topbraid.spin.vocabulary.SPL spl:object}.
+ * An ARQ impl-optimization for a {@link org.topbraid.spin.vocabulary.SPL#object spl:object}.
  * The body query:
  * <pre>{@code
  * SELECT ?object

@@ -22,7 +22,6 @@ import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.XSD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.arq.ARQ2SPIN;
@@ -31,11 +30,13 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,7 +58,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
 
     @Override
     public String toString(PrefixMapping pm) {
-        String name = pm.shortForm(getFunction().name());
+        String name = ToString.getShortForm(pm, getFunction().name());
         List<MapFunctionImpl.ArgImpl> args = listSortedVisibleArgs().collect(Collectors.toList());
         if (args.size() == 1) { // print without predicate
             return name + "(" + getStringValue(pm, args.get(0)) + ")";
@@ -73,14 +74,9 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
         }
         RDFNode n = model.toNode((String) v);
         if (n.isLiteral()) {
-            Literal l = n.asLiteral();
-            String u = l.getDatatypeURI();
-            if (XSD.xstring.getURI().equals(u)) {
-                return l.getLexicalForm();
-            }
-            return String.format("%s^^%s", l.getLexicalForm(), pm.shortForm(u));
+            return ToString.getShortForm(pm, n.asLiteral());
         }
-        return pm.shortForm(n.asNode().toString());
+        return ToString.getShortForm(pm, n.asNode().toString());
     }
 
     @Override
@@ -116,32 +112,20 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                     "it does not accept nested functions. Save operation is prohibited for such functions.");
         }
         Model lib = manager.getLibrary();
+        PrefixMapping pm = manager.prefixes();
         MapFunctionImpl res = newFunction(lib, name);
 
-        Map<Resource, FutureArg> map = new LinkedHashMap<>();
-        String expr = writeExpression(res, map);
-        List<FutureArg> list = new ArrayList<>(map.values());
-        // reorder so that optional arguments go last:
-        list.sort(Comparator.comparing(x -> x.arg.isOptional()));
-        for (int i = 0; i < list.size(); i++) {
-            FutureArg fa = list.get(i);
-            String tmp = fa.key;
-            int index = i + 1;
-            Property arg = SpinModels.getSPArgProperty(lib, index);
-            // replace arg variable references
-            expr = expr.replace(tmp, arg.getLocalName());
-            fa.key = arg.getURI();
-        }
+        Expression expr = createExpression(res, i -> SpinModels.getSPArgProperty(lib, i));
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Create function <{}> based on query '{}'", name, expr);
+            LOGGER.debug("Create function <{}> based on query '{}'", name, expr.toString(pm));
         }
-        expr = String.format("SELECT ?res\nWHERE {\n\tBIND(%s AS ?res)\n}", expr);
+        String txt = String.format("SELECT ?res\nWHERE {\n\tBIND(%s AS ?res)\n}", expr.toString(lib));
         // make query:
         org.apache.jena.query.Query query;
         try {
-            query = manager.getFactory().createQuery(expr, model);
+            query = manager.getFactory().createQuery(txt, model);
         } catch (QueryException qe) {
-            throw new MapJenaException.IllegalState("Unable to create a query from expression '" + expr + "'", qe);
+            throw new MapJenaException.IllegalState("Unable to create a query from the expression '" + txt + "'", qe);
         }
         // print the function resource into the managers primary graph:
         Resource f = res.asResource()
@@ -152,30 +136,18 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                 .flatMap(MapFunctionImpl::listSuperClasses)
                 .forEach(x -> f.addProperty(RDFS.subClassOf, x));
         // process arguments:
-        PrefixMapping pm = manager.prefixes();
-        list.forEach(arg -> {
-            MapFunctionImpl.ArgImpl argFrom = arg.arg;
+        expr.getArguments().forEach(arg -> {
             Resource constraint = lib.createResource()
                     .addProperty(RDF.type, SPL.Argument)
-                    .addProperty(SPL.predicate, lib.createProperty(arg.key))
-                    .addProperty(SPL.valueType, argFrom.getValueType());
+                    .addProperty(SPL.predicate, arg.getPredicate())
+                    .addProperty(SPL.valueType, arg.getValueType());
             f.addProperty(SPIN.constraint, constraint);
             // copy labels:
-            argFrom.asResource().listProperties(RDFS.label)
-                    .forEachRemaining(s -> constraint.addProperty(s.getPredicate(), s.getObject()));
-            // autogenerated comment:
-            if (argFrom.isAutoGenerated()) {
-                constraint.addProperty(RDFS.comment, "Copied from " + pm.shortForm(argFrom.getFunction().name()));
-            } else {
-                constraint.addProperty(RDFS.comment, String.format("Copied from %s/%s",
-                        pm.shortForm(argFrom.getFunction().name()),
-                        pm.shortForm(argFrom.name())));
-            }
-            String dv = argFrom.defaultValue();
-            if (dv != null) {
-                constraint.addProperty(SPL.defaultValue, dv);
-            }
-            if (argFrom.isOptional()) {
+            arg.getLabels().forEach(x -> constraint.addProperty(RDFS.label, x));
+            // copy comments:
+            arg.getComments(pm).forEach(x -> constraint.addProperty(RDFS.comment, x));
+            arg.defaultValue().ifPresent(x -> constraint.addProperty(SPL.defaultValue, x));
+            if (arg.isOptional()) {
                 constraint.addProperty(SPL.optional, Models.TRUE);
             }
         });
@@ -216,87 +188,215 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
     }
 
     /**
-     * Makes a string representation of an expression for specified function (first input),
-     * storing information about arguments in the map (second input).
+     * Creates an expression using the given {@code IntFunction} to generate constraint predicates.
      *
-     * @param func a function to create, here it is used as a factory to create new {@link MapFunction.Arg}
-     * @param args mutable map to store new arguments
-     * @return full expression
+     * @param func              {@link MapFunctionImpl} - new function, not {@code null}
+     * @param predicateProvider {@link IntFunction}, not {@code null}
+     * @return {@link Expression}
      */
-    protected String writeExpression(MapFunctionImpl func,
-                                     Map<Resource, FutureArg> args) {
-        return String.format("<%s>(%s)", getFunction().name(),
-                listSortedArgs()
-                        .map(a -> writeExpression(a, func, args)).collect(Collectors.joining(", ")));
+    public Expression createExpression(MapFunctionImpl func, IntFunction<Property> predicateProvider) {
+        Expression res = new Expression(func).write(this);
+        List<FutureArg> list = new ArrayList<>(res.getArguments());
+        // reorder so that optional arguments go last:
+        list.sort(Comparator.comparing(FutureArg::isOptional));
+        for (int i = 0; i < list.size(); i++) {
+            // replace arg variable references with existing sp predicate
+            list.get(i).key = predicateProvider.apply(i + 1);
+        }
+        return res;
     }
 
     /**
-     * Makes a string representation of an expression argument-part.
-     *
-     * @param arg  {@link MapFunctionImpl.ArgImpl} to parse
-     * @param func new function to create
-     * @param args mutable map to store new arguments
-     * @return a part of expression that corresponds the given argument
-     * @see ru.avicomp.map.spin.vocabulary.AVC#PropertyFunctions
+     * An expression representation of the function call.
      */
-    protected String writeExpression(MapFunctionImpl.ArgImpl arg,
-                                     MapFunctionImpl func,
-                                     Map<Resource, FutureArg> args) {
-        Object value = get(arg);
-        if (!(value instanceof String)) {
-            ModelCallImpl call = ((ModelCallImpl) value);
-            if (!call.getFunction().canHaveNested()) {
-                // skip avc:PropertyFunctions
-                return "?" + args.computeIfAbsent(model.createResource(call.toString()), r -> new FutureArg(arg)).key;
+    public static class Expression implements ToString {
+        private final MapFunctionImpl func;
+        private Map<Resource, FutureArg> values = new LinkedHashMap<>();
+        private List<Symbol> content = new ArrayList<>();
+
+        protected Expression(MapFunctionImpl func) {
+            this.func = Objects.requireNonNull(func);
+        }
+
+        public Collection<FutureArg> getArguments() {
+            return values.values();
+        }
+
+        /**
+         * Inserts a separator into the {@link #content} copy.
+         *
+         * @param separator {@link Symbol}
+         * @return {@code List} of {@link Symbol}s
+         */
+        public List<Symbol> withSeparator(Symbol separator) {
+            List<Symbol> res = new ArrayList<>();
+            int size = content.size();
+            for (int i = 0; i < size; i++) {
+                Symbol s = content.get(i);
+                res.add(s);
+                if (Symbol.LEFT_BRACKET.equals(s)) {
+                    continue;
+                }
+                if (i == size - 1) {
+                    break;
+                }
+                Symbol next = content.get(i + 1);
+                if (Symbol.isBracket(next)) {
+                    continue;
+                }
+                res.add(separator);
             }
-            return call.writeExpression(func, args);
-        }
-        RDFNode n = model.toNode((String) value);
-        // literal:
-        if (n.isLiteral()) {
-            Literal literal = n.asLiteral();
-            String txt = literal.getLexicalForm();
-            String dtURI = literal.getDatatypeURI();
-            // TODO: what if the dt belongs to the mapping (i.e. source?)
-            if (XSD.xstring.getURI().equals(dtURI)) {
-                return txt;
-            }
-            return String.format("%s^^<%s>", txt, dtURI);
-        }
-        // resource belonging to the model:
-        Resource res = n.asResource();
-        // a property, class-expression, datatype or spinmap-context (what else ?)
-        // they must be discarded from expression as ontology specific.
-        if (model.isEntity(res)) {
-            return "?" + args.computeIfAbsent(res, r -> new FutureArg(arg)).key;
-        }
-        // just standalone IRI (variable or constant)
-        if (res.isURIResource()) {
-            return "<" + res.asNode().toString() + ">";
-        }
-        throw new MapJenaException.IllegalState("Fail to create function <" + func.name() + ">: " +
-                "don't know what to do with anonymous value for the argument <" + arg.name() + ">.");
-    }
-
-    /**
-     * A container for {@link MapFunctionImpl.ArgImpl}, that is used while building new function query.
-     */
-    protected class FutureArg {
-        protected final MapFunctionImpl.ArgImpl arg;
-        protected String key;
-
-        public FutureArg(MapFunctionImpl.ArgImpl arg) {
-            this(UUID.randomUUID().toString(), arg);
-        }
-
-        private FutureArg(String key, MapFunctionImpl.ArgImpl arg) {
-            this.key = key;
-            this.arg = arg;
+            return res;
         }
 
         @Override
-        public String toString() {
-            return String.format("%s(%s)", key, arg.name());
+        public String toString(PrefixMapping pm) {
+            return withSeparator(Symbol.SEPARATOR).stream().map(x -> x.toString(pm)).collect(Collectors.joining());
+        }
+
+        /**
+         * Writes an expression for the given function call.
+         *
+         * @param call {@link ModelCallImpl}
+         * @return {@link Expression}
+         */
+        public Expression write(ModelCallImpl call) {
+            content.add(pm -> ToString.getShortForm(pm, call.getFunction().name()));
+            content.add(Symbol.LEFT_BRACKET);
+            call.listSortedArgs().forEach(c -> write(call, c));
+            content.add(Symbol.RIGHT_BRACKET);
+            return this;
+        }
+
+        /**
+         * Writes an expression for the given function call argument.
+         *
+         * @param call {@link ModelCallImpl} a base call
+         * @param arg  {@link MapFunctionImpl.ArgImpl} to parse
+         * @see ru.avicomp.map.spin.vocabulary.AVC#PropertyFunctions
+         */
+        protected void write(ModelCallImpl call, MapFunctionImpl.ArgImpl arg) {
+            Object value = call.get(arg);
+            if (!(value instanceof String)) {
+                ModelCallImpl other = ((ModelCallImpl) value);
+                if (!other.getFunction().canHaveNested()) {
+                    // skip avc:PropertyFunctions -> add as resource value
+                    addEntity(arg, call.model.createResource(other.toString()));
+                    return;
+                }
+                write(other);
+                return;
+            }
+            RDFNode node = call.model.toNode((String) value);
+            // literal:
+            if (node.isLiteral()) {
+                content.add(pm -> ToString.getShortForm(pm, node.asLiteral()));
+                return;
+            }
+            // resource belonging to the model:
+            Resource res = node.asResource();
+            // a property, class-expression, datatype or spinmap-context (what else ?)
+            // they must be discarded from expression as ontology specific.
+            if (call.model.isEntity(res)) {
+                addEntity(arg, res);
+                return;
+            }
+            // just standalone IRI (variable or constant)
+            if (res.isURIResource()) {
+                // TODO: what if the dt belongs to the mapping (i.e. source?)
+                content.add(pm -> ToString.getShortForm(pm, res.getURI()));
+                return;
+            }
+            throw new MapJenaException.IllegalState("Fail to create the function <" + func.name() + ">: " +
+                    "don't know what to do with anonymous value for the argument <" + arg.name() + ">.");
+        }
+
+        private void addEntity(MapFunctionImpl.ArgImpl arg, Resource value) {
+            content.add(values.computeIfAbsent(value, r -> new FutureArg()).add(arg));
+        }
+    }
+
+    /**
+     * A container for {@link MapFunctionImpl.ArgImpl}s,
+     * that is used while building new function query and spin constraints.
+     */
+    protected static class FutureArg implements Symbol {
+        protected final Set<MapFunctionImpl.ArgImpl> argList = new HashSet<>();
+        protected Property key;
+
+        FutureArg add(MapFunctionImpl.ArgImpl arg) {
+            argList.add(arg);
+            return this;
+        }
+
+        @Override
+        public String toString(PrefixMapping pm) {
+            return "?" + getPredicate().getLocalName();
+        }
+
+        public Property getPredicate() {
+            if (key == null)
+                throw new MapJenaException.IllegalState();
+            return key;
+        }
+
+        public Resource getValueType() {
+            // todo: must return most specific:
+            return argList.stream()
+                    .map(MapFunctionImpl.ArgImpl::getValueType)
+                    .findFirst()
+                    .orElseThrow(MapJenaException.IllegalState::new);
+        }
+
+        public Optional<RDFNode> defaultValue() {
+            // todo: must return most specific:
+            return argList.stream()
+                    .map(MapFunctionImpl.ArgImpl::defaultValueNode)
+                    .filter(Optional::isPresent).map(Optional::get)
+                    .findFirst();
+        }
+
+        public boolean isOptional() {
+            return argList.stream().allMatch(MapFunctionImpl.ArgImpl::isOptional);
+        }
+
+        private Literal createLiteral(String txt) {
+            return ResourceFactory.createPlainLiteral(txt);
+        }
+
+        public Set<Literal> getLabels() {
+            return Iter.flatMap(Iter.create(argList), x -> x.asResource().listProperties(RDFS.label))
+                    .mapWith(Statement::getLiteral)
+                    .toSet();
+        }
+
+        public Set<Literal> getComments(PrefixMapping pm) {
+            return Iter.flatMap(Iter.create(argList),
+                    x -> Iter.concat(Iter.of(generateComment(pm, x)),
+                            x.asResource().listProperties(RDFS.comment).mapWith(Statement::getLiteral)))
+                    .toSet();
+        }
+
+        private Literal generateComment(PrefixMapping pm, MapFunctionImpl.ArgImpl arg) {
+            if (arg.isAutoGenerated()) {
+                return createLiteral(String.format("Copied from %s",
+                        ToString.getShortForm(pm, arg.getFunction().name())));
+            }
+            return createLiteral(String.format("Copied from %s/%s",
+                    ToString.getShortForm(pm, arg.getFunction().name()), ToString.getShortForm(pm, arg.name())));
+        }
+    }
+
+    /**
+     * A part of {@link Expression}.
+     */
+    protected interface Symbol extends ToString {
+        Symbol SEPARATOR = pm -> ", ";
+        Symbol LEFT_BRACKET = pm -> "(";
+        Symbol RIGHT_BRACKET = pm -> ")";
+
+        static boolean isBracket(Symbol s) {
+            return LEFT_BRACKET.equals(s) || RIGHT_BRACKET.equals(s);
         }
     }
 

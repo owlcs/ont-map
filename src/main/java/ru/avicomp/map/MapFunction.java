@@ -202,7 +202,7 @@ public interface MapFunction extends Description {
         /**
          * Gets a default value as string.
          *
-         * @return String (iri) or {@code null}
+         * @return String (iri or literal) or {@code null}
          */
         String defaultValue();
 
@@ -318,14 +318,27 @@ public interface MapFunction extends Description {
          * Creates a fresh map-function as a synonym for this function-chain,
          * discarding all model-dependent entity values.
          * <p>
-         * Note: currently this functionality is available only to those {@link Call}s,
+         * Notes:
+         * <p>
+         * Currently this functionality is available only to those {@link Call}s,
          * that belong to a {@link MapModel mapping}s.
          * At the abstract (manager) level this method invocation will cause a {@link MapJenaException}.
          * To get models calls use {@link MapResource#getMapping()} and {@link MapResource#getFilter()}.
          * <p>
-         * Also note that functions, whose calls cannot contain other calls, also are not allowed to be saved,
+         * Those functions, whose calls cannot contain other calls, also are not allowed to be saved,
          * even at the model level.
-         * If such a function appears in a chain it will be excluded from consideration.
+         * If such a function appears in a chain it will be excluded from consideration,
+         * as an ontology-dependent argument value.
+         * <p>
+         * All {@link Arg#isOptional() optional} arguments will be placed at the left in the resulted function.
+         * An argument is considered as optional if and only if
+         * all corresponding arguments of the source functions are optional.
+         * Consider an example.
+         * If a chain {@code f1(x) * f2(y, x)} is given, where {@code arg1} of {@code f1} is only optional,
+         * then the result function will not have any optional arguments.
+         * But if {@code arg2} of {@code f2} is also optional,
+         * then the result chain will have two arguments: {@code arg1}, which is required,
+         * and {@code arg2}, which is optional (since both args of {@code f1} and {@code f2} are optional).
          *
          * @param name String, a new function name (iri), not {@code null}
          * @return {@link MapFunction}, that is a synonym for this function-chain
@@ -357,7 +370,7 @@ public interface MapFunction extends Description {
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
          * To list all built-in datatypes the method {@link BuiltIn.Vocabulary#datatypes()} can be used.
-         * To list all model datatypes the expression {@link OntGraphModel#listDatatypes()}
+         * To list all model datatypes the expression {@link OntGraphModel#datatypes()}
          *
          * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param value     String, value, not {@code null}

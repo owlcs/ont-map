@@ -457,6 +457,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      *
      * @param value String, not {@code null}
      * @return {@link RDFNode} literal or resource (can be anonymous), not {@code null}
+     * @see MapFunctionImpl#getAsString(RDFNode)
      */
     public RDFNode toNode(String value) {
         if (Objects.requireNonNull(value, "Null value").contains("^^")) { // must be typed literal

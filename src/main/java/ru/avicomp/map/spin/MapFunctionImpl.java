@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * Created by @szuev on 09.04.2018.
  */
 @SuppressWarnings({"WeakerAccess"})
-public abstract class MapFunctionImpl implements MapFunction {
+public abstract class MapFunctionImpl implements MapFunction, ToString {
     public static final String STRING_VALUE_SEPARATOR = "\n";
     public static final Comparator<Arg> ARG_COMPARATOR = Comparator.comparing(Arg::isVararg)
             .thenComparing(ArgURIComparator.comparing(Arg::name));
@@ -219,12 +219,10 @@ public abstract class MapFunctionImpl implements MapFunction {
         return Models.langValues(func, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
     }
 
+    @Override
     public String toString(PrefixMapping pm) {
-        return String.format("%s [%s](%s)",
-                pm.shortForm(type()),
-                pm.shortForm(name()), listArgs()
-                        .map(a -> a.toString(pm))
-                        .collect(Collectors.joining(", ")));
+        return String.format("%s [%s](%s)", ToString.getShortForm(pm, type()), ToString.getShortForm(pm, name()),
+                listArgs().map(a -> a.toString(pm)).collect(Collectors.joining(", ")));
     }
 
     /**
@@ -368,16 +366,37 @@ public abstract class MapFunctionImpl implements MapFunction {
     }
 
     /**
+     * Converts a {@link RDFNode} to a {@code String}.
+     * It is a reverse operation to the {@link MapModelImpl#toNode(String)},
+     * and is used to pass arguments to a function and to get function parts from RDF.
+     *
+     * @param node {@link RDFNode}, not {@code null}
+     * @return String
+     * @see MapModelImpl#toNode(String)
+     */
+    protected String getAsString(RDFNode node) {
+        if (node.isLiteral()) {
+            return node.asNode().toString(false);
+        }
+        if (node.isURIResource()) {
+            return node.asResource().getURI();
+        }
+        throw new MapJenaException.IllegalState();
+    }
+
+    /**
      * {@link Arg} impl.
      *
      * @see org.topbraid.spin.model.Argument
      */
-    public class ArgImpl implements Arg {
+    public class ArgImpl implements Arg, ToString {
         protected final org.topbraid.spin.model.Argument arg;
         protected final String name;
-        // caches:
+        // caches (currently it is not possible to change a function or its part):
         private Resource returnType;
         private Boolean optional;
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+        private Optional<RDFNode> defaultValue;
 
         protected ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
             this.arg = Objects.requireNonNull(arg, "Null " + arg.getClass().getName());
@@ -403,6 +422,13 @@ public abstract class MapFunctionImpl implements MapFunction {
             return getValueType().getURI();
         }
 
+        /**
+         * Returns an argument value type.
+         * If it is undefined, then {@link AVC#undefined avc:undefined} is returned,
+         * which means the function may accept anything - any resource or literal.
+         *
+         * @return {@link Resource}, not {@code null}
+         */
         public Resource getValueType() {
             if (returnType != null) return returnType;
             Optional<Resource> r = findRefinedConstraint(SPL.valueType)
@@ -415,8 +441,23 @@ public abstract class MapFunctionImpl implements MapFunction {
 
         @Override
         public String defaultValue() {
-            RDFNode r = arg.getDefaultValue();
-            return r == null ? null : r.toString();
+            return defaultValueNode().map(MapFunctionImpl.this::getAsString).orElse(null);
+        }
+
+        /**
+         * Returns a default value as {@code Optional} around the {@link RDFNode}.
+         *
+         * @return {@code Optional}, never {@code null}
+         * @see SPL#defaultValue
+         */
+        @SuppressWarnings("OptionalAssignedToNull")
+        public Optional<RDFNode> defaultValueNode() {
+            if (defaultValue != null) return defaultValue;
+            Optional<RDFNode> res = findRefinedConstraint(SPL.defaultValue);
+            if (res.isPresent()) {
+                return defaultValue = res;
+            }
+            return defaultValue = Optional.ofNullable(arg.getDefaultValue());
         }
 
         @Override
@@ -435,7 +476,7 @@ public abstract class MapFunctionImpl implements MapFunction {
         }
 
         /**
-         * Finds a refined constraint value for the givent predicate
+         * Finds a refined constraint value for the given predicate.
          *
          * @param property {@link Property}, not {@code null}
          * @return {@code Optional} around {@link RDFNode}
@@ -504,8 +545,9 @@ public abstract class MapFunctionImpl implements MapFunction {
             return Models.langValues(arg, RDFS.label, lang).collect(Collectors.joining(STRING_VALUE_SEPARATOR));
         }
 
+        @Override
         public String toString(PrefixMapping pm) {
-            return String.format("%s%s=%s", pm.shortForm(name()), info(), pm.shortForm(type()));
+            return String.format("%s%s=%s", ToString.getShortForm(pm, name()), info(), ToString.getShortForm(pm, type()));
         }
 
         private String info() {
@@ -533,7 +575,7 @@ public abstract class MapFunctionImpl implements MapFunction {
      * An implementation of {@link MapFunction.Call},
      * that is used as argument while building {@link MapModelImpl mapping model}.
      */
-    public static class CallImpl implements Call {
+    public static class CallImpl implements Call, ToString {
         // values can be either string or another function calls
         protected final Map<ArgImpl, Object> parameters;
         protected final MapFunctionImpl function;
@@ -620,10 +662,11 @@ public abstract class MapFunctionImpl implements MapFunction {
          * @param pm {@link PrefixMapping}
          * @return String
          */
+        @Override
         public String toString(PrefixMapping pm) {
             return listSortedVisibleArgs()
                     .map(a -> toString(pm, a))
-                    .collect(Collectors.joining(", ", pm.shortForm(getFunction().name()) + "(", ")"));
+                    .collect(Collectors.joining(", ", ToString.getShortForm(pm, getFunction().name()) + "(", ")"));
         }
 
         protected String toString(PrefixMapping pm, ArgImpl a) {
@@ -641,7 +684,7 @@ public abstract class MapFunctionImpl implements MapFunction {
         protected String getStringValue(PrefixMapping pm, ArgImpl a) {
             Object v = parameters.get(a);
             if (v instanceof CallImpl) return ((CallImpl) v).toString(pm);
-            return pm.shortForm(String.valueOf(v));
+            return ToString.getShortForm(pm, String.valueOf(v));
         }
 
         /**
@@ -653,7 +696,7 @@ public abstract class MapFunctionImpl implements MapFunction {
          * @return String
          */
         protected String getStringKey(PrefixMapping pm, ArgImpl a) {
-            return pm.shortForm(a.name());
+            return ToString.getShortForm(pm, a.name());
         }
 
         @Override
