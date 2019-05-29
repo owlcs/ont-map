@@ -189,13 +189,13 @@ public class SaveFunctionTest {
                         .addLiteral(SPINMAPL.template, "result:res-{?1}"))
                 .addPropertyBridge(deriveName.create()
                         .addFunction(SP.arg1, OASUU)
-                        .addProperty(SP.arg2, DEUUU)
-                        .addClass(SP.arg3, CCPAS_000011), nameProp)
+                        .addProperty(SP.arg3, DEUUU)
+                        .addClass(SP.arg2, CCPAS_000011), nameProp)
                 .getContext()
                 .addPropertyBridge(deriveMessage.create()
                         .addFunction(SP.arg1, OASUU)
-                        .addProperty(SP.arg2, DEUUU)
-                        .addClass(SP.arg3, CCPAS_000005)
+                        .addProperty(SP.arg3, DEUUU)
+                        .addClass(SP.arg2, CCPAS_000005)
                         .addClass(SP.arg4, CCPAS_000006), messageProp)
                 .getModel();
         TestUtils.debug(map2);

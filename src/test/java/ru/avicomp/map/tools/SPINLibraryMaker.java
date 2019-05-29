@@ -119,10 +119,10 @@ public class SPINLibraryMaker {
         SPINMAPL.concatWithSeparator.inModel(m)
                 .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator.class.getName());
 
-        // SPL:object optimization (TODO: add refined arg constraints with spl:optional)
+        // SPL:object optimization and optional args
         SPL.object.inModel(m)
-                //.addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1).addProperty(SPL.optional, Models.TRUE))
-                //.addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2).addProperty(SPL.optional, Models.TRUE))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg1).addProperty(SPL.optional, Models.TRUE))
+                .addProperty(AVC.constraint, LibraryMaker.createConstraint(m, SP.arg2).addProperty(SPL.optional, Models.TRUE))
                 .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spl.object.class.getName());
 
         // FN:abs (sp:abs and fn:abs both uses org.apache.jena.sparql.expr.nodevalue.XSDFuncOp#abs()).
