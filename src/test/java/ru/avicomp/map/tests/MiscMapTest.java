@@ -239,7 +239,7 @@ public class MiscMapTest {
     }
 
     @Test
-    public void testInferenceWhenSourceAndTargetMatch() {
+    public void testInferenceWhenSourceAndTargetGraphsMatch() {
         OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         m.setID("http://src");
         OntClass c1 = m.createOntClass("C1");
@@ -253,4 +253,5 @@ public class MiscMapTest {
         man.getInferenceEngine(map).run(m, m);
         Assert.assertEquals(2, map.asGraphModel().classAssertions().peek(x -> LOGGER.debug("Res:{}", x)).count());
     }
+
 }

@@ -136,7 +136,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Also notice that the result graph is not distinct,
      * since the mapping may contain also a source data (in additional to the schema, that is required for a mapping).
      * The nature of source is unknown, the distinct mode might unpredictable degrade performance and memory usage.
-     * Therefore, it is expected that an iterator over query model must be faster.
+     * Therefore, it is expected that an iterator over the query model must be faster.
      *
      * @return {@link UnionModel} with SPIN personalities
      * @see SpinModelConfig#LIB_PERSONALITY
@@ -197,7 +197,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Lists all individuals from the given source ontology.
+     * Finds and lists all individuals from the given source ontology.
      * Warning: in case the source and the target match,
      * the method puts all found individuals to memory to avoid {@link ConcurrentModificationException}.
      *
@@ -216,7 +216,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Assembles the source model from the given source graph, that may contain either raw data or data with schema.
      * The mapping must contain both the source and the target schemas,
      * but may also include source data in case it is in the same graph with the schema.
-     * This method returns an OWL model both with the schema and data and without any other additions.
+     * This method returns an OWL model both with the schema and data and without any other additions (spin library).
      *
      * @param query  {@link UnionGraph}, the query model, not {@code null}
      * @param source {@link Graph}, not {@code null}
@@ -268,31 +268,31 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     /**
      * Runs a query collection against the single individual.
      *
-     * @param queries    Collection of all {@link ProcessedQuery}s found in the {@link #mapping}
-     * @param classes    Set of class expressions, which the given individual is belonged to
-     * @param processed  Map of already processed individual-queries to prevent possible recursion,
-     *                   it is not expected to be large
-     * @param store      Set of {@link Node}s, the collection of result individuals to process in the next step
-     * @param target     {@link Model} to write inference result (individuals and property assertions)
-     * @param individual {@link Resource} the current individual to process
+     * @param queries   Collection of all {@link ProcessedQuery}s found in the {@link #mapping}
+     * @param classes   Set of class expressions, which the given individual is belonged to
+     * @param processed Map of already processed individual-queries to prevent possible recursion,
+     *                  it is not expected to be large
+     * @param store     Set of {@link Node}s, the collection of result individuals to process in the next step
+     * @param target    {@link Model} to write inference result (individuals and property assertions)
+     * @param source    {@link Resource} the current individual to process
      */
     protected void processOne(Collection<ProcessedQuery> queries,
                               Set<? extends Resource> classes,
                               Map<String, Set<QueryWrapper>> processed,
                               Set<Node> store,
                               Model target,
-                              Resource individual) {
+                              Resource source) {
         queries.stream()
-                .filter(c -> classes.contains(c.getSubject()))
+                .filter(q -> classes.contains(q.getSubject()))
                 .forEach(q -> {
-                    if (!processed.computeIfAbsent(ModelUtils.getResourceID(individual), i -> new HashSet<>()).add(q)) {
-                        LOGGER.warn("The query '{}' has been already processed for individual {}.", q, individual);
+                    if (!processed.computeIfAbsent(ModelUtils.getResourceID(source), i -> new HashSet<>()).add(q)) {
+                        LOGGER.warn("The query '{}' has been already processed for individual {}.", q, source);
                         return;
                     }
-                    LOGGER.debug("RUN: {} ::: '{}'", individual, q);
+                    LOGGER.debug("RUN: {} ::: '{}'", source, q);
                     // use a fresh model, otherwise there is a danger of java.util.ConcurrentModificationException
                     // while graph iterating by some unclear reason if there are dependent rules in the mapping
-                    Model res = q.run(individual);
+                    Model res = q.run(source);
                     res.listStatements().forEachRemaining(s -> {
                         if (RDF.type.equals(s.getPredicate())) {
                             store.add(s.getSubject().asNode());
@@ -303,7 +303,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     }
 
     /**
-     * Lists all valid spin map rules (i.e. {@code spinmap:rule}).
+     * Lists all valid spin map rules (i.e. {@code spinmap:rule}) from the given query model.
      *
      * @param model {@link UnionModel} a query model
      * @return List of {@link QueryWrapper}s

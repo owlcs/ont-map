@@ -59,14 +59,28 @@ public class ModelUtils {
     }
 
     /**
-     * Gets the local name of the specified resource if it is an uri,
-     * if it is blank - returns its b-node-id.
+     * Attempts to get a human readable name of the given resource if it is possible.
+     * A local name is used in case the resource has it,
+     * otherwise the method returns either a blank node id or some computed string,
+     * which is always the same for a given resource.
      *
-     * @param res {@link Resource}, not {@code null}
-     * @return String, not {@code null}
+     * @param r {@link Resource}, not {@code null}
+     * @return String, not {@code null} or empty
      */
-    public static String getResourceName(Resource res) {
-        return res.isURIResource() ? res.getLocalName() : res.getId().getLabelString();
+    public static String getResourceName(Resource r) {
+        if (Objects.requireNonNull(r).isAnon()) {
+            return r.getId().getLabelString();
+        }
+        String res = r.getLocalName();
+        if (res != null && !res.isEmpty()) {
+            return res;
+        }
+        String uri = r.getURI();
+        res = uri.replaceFirst("^[^\\w]+", "");
+        if (res.isEmpty()) { // as a last attempt
+            return r.getClass().getSimpleName() + "-" + Integer.toHexString(r.hashCode());
+        }
+        return res;
     }
 
     /**

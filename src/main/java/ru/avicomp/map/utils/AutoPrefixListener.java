@@ -26,12 +26,10 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.shared.PrefixMapping;
 import ru.avicomp.ontapi.jena.UnionGraph;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * {@link GraphListener Graph Listener} to produce good looking model.
@@ -57,9 +55,11 @@ public class AutoPrefixListener extends BaseGraphListener {
         asIterable(t).forEach(n -> {
             String pref = extractor.extract(n);
             if (pref == null) return;
+            String ns = extractor.getNameSpace(n);
+            if (ns == null) return;
             if (map.computeIfAbsent(pref, i -> new AtomicLong()).incrementAndGet() != 1)
                 return;
-            prefixes.setNsPrefix(pref, extractor.getNameSpace(n));
+            prefixes.setNsPrefix(pref, ns);
         });
     }
 
@@ -98,7 +98,7 @@ public class AutoPrefixListener extends BaseGraphListener {
             //if (ns.endsWith("/")) return null;
             String res = NodeFactory.createURI(ns).getLocalName();
             if (StringUtils.isEmpty(res)) return null;
-            return res.replace(".", "-").toLowerCase();
+            return makePrefix(res);
         });
         attachAutoPrefixListener(g, extractor);
         return extractor;
@@ -121,6 +121,23 @@ public class AutoPrefixListener extends BaseGraphListener {
                 .map(AutoPrefixListener.class::cast)
                 .forEach(m::unregister);
         m.register(new AutoPrefixListener(pm, extractor));
+    }
+
+    /**
+     * Auxiliary method,
+     * that attempts to compute a good-looking prefix from the given ns.
+     *
+     * @param ns String, not {@code null}
+     * @return String
+     */
+    public static String makePrefix(String ns) {
+        if (!ns.contains(".") // is it enough ?
+                && ns.length() < 10) {
+            return ns;
+        }
+        return Arrays.stream(ns.split("[.\\-]"))
+                .map(x -> String.valueOf(x.charAt(0)))
+                .collect(Collectors.joining());
     }
 
     /**

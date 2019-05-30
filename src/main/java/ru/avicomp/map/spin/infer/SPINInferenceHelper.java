@@ -96,7 +96,10 @@ public class SPINInferenceHelper {
     public static Comparator<CommandWrapper> createMapComparator() {
         Comparator<Resource> mapRuleComparator = Comparator.comparing((Resource r) -> SpinModels.context(r)
                 .map(String::valueOf).orElse("Unknown"))
-                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed());
+                .thenComparing(Comparator.comparing(SpinModels::isDeclarationMapping).reversed())
+                // for convenience sake place NamedIndividuals last (although it is not required),
+                // the line can be safely deleted, if will cause a problem:
+                .thenComparing(Comparator.comparing(SpinModels::hasNamedIndividualExpression).reversed());
         Comparator<CommandWrapper> res = (left, right) -> {
             java.util.Optional<Resource> r1 = rule(left);
             Optional<Resource> r2 = rule(right);

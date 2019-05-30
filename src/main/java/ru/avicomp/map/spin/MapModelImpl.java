@@ -57,7 +57,8 @@ import static ru.avicomp.map.spin.Exceptions.*;
 public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapManagerImpl.class);
 
-    private static final String CONTEXT_TEMPLATE = "Context-%s-%s";
+    private static final String CONTEXT_NAME_TEMPLATE = "Context-%s-%s";
+
     private final MapManagerImpl manager;
 
     public MapModelImpl(UnionGraph base, OntPersonality personality, MapManagerImpl manager) {
@@ -333,7 +334,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Creates a {@code spinmap:Context} resource for specified source and target resources.
+     * Creates an unique {@code spinmap:Context} resource for the specified source and target resources.
      * <pre>{@code
      * _:x rdf:type spinmap:Context ;
      *   spinmap:sourceClass <src> ;
@@ -345,20 +346,22 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return {@link Resource}
      */
     protected Resource makeContext(Resource source, Resource target) {
-        String ont = getID().getURI();
-        Resource res = null;
-        if (ont != null && !ont.contains("#")) {
-            String name = String.format(CONTEXT_TEMPLATE,
-                    ModelUtils.getResourceName(source), ModelUtils.getResourceName(target));
-            res = createResource(ont + "#" + name);
-            if (containsResource(res)) { // found different resource with the same local name
-                res = null;
+        String name = String.format(CONTEXT_NAME_TEMPLATE,
+                ModelUtils.getResourceName(source), ModelUtils.getResourceName(target));
+        Resource res;
+        String base = getID().getURI();
+        if (base == null || base.contains("#")) { // anonymous mapping or incorrect uri
+            base = "urn:mapping:" + ModelUtils.getResourceName(getID());
+        }
+        do {
+            if (base == null) {
+                base = "urn:context:" + UUID.randomUUID();
             }
-        }
-        if (res == null) {
-            // right now anonymous contexts are not allowed since them can be used as function call parameter
-            res = createResource("urn:uuid:" + UUID.randomUUID());
-        }
+            // right now anonymous contexts are not allowed
+            // since they can be used as function call argument parameter
+            res = createResource(base + "#" + name);
+            base = null;
+        } while (containsResource(res));
         return res.addProperty(RDF.type, SPINMAP.Context)
                 .addProperty(SPINMAP.sourceClass, source)
                 .addProperty(SPINMAP.targetClass, target);

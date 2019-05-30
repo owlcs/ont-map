@@ -29,9 +29,11 @@ import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -215,6 +217,17 @@ public class SpinModels {
     }
 
     /**
+     * Answers {@code true} if the specified rule-resource has {@link SPINMAP#expression spinmap:expression}
+     * with {@link OWL#NamedIndividual owl:NamedIndividual} as object.
+     *
+     * @param rule {@link Resource}
+     * @return boolean
+     */
+    public static boolean hasNamedIndividualExpression(Resource rule) {
+        return rule.hasProperty(SPINMAP.expression, OWL.NamedIndividual);
+    }
+
+    /**
      * Checks if the specified resource describes a self mapping context to produce instances of the given type.
      *
      * @param context {@link Resource}
@@ -240,17 +253,24 @@ public class SpinModels {
     }
 
     /**
-     * Answers a {@code _:x rdf:type spinmap:Context} resource that is attached to the specified rule.
+     * Answers a subject resource from a statement {@code _:x rdf:type spinmap:Context}
+     * that is attached to the specified rule.
      *
      * @param rule {@link Resource}, rule, not null
      * @return Optional around the contexts resource declaration.
      */
     public static Optional<Resource> context(Resource rule) {
         return Iter.findFirst(rule.listProperties(SPINMAP.context)
-                .mapWith(Statement::getObject)
-                .filterKeep(RDFNode::isResource)
-                .mapWith(RDFNode::asResource)
-                .filterKeep(SpinModels::isContext));
+                .mapWith(s -> {
+                    if (!s.getObject().isResource())
+                        return null;
+                    Resource r = s.getResource();
+                    if (!isContext(r)) {
+                        return null;
+                    }
+                    return r;
+                })
+                .filterKeep(Objects::nonNull));
     }
 
     /**
