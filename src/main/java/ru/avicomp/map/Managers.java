@@ -127,7 +127,7 @@ public class Managers {
      */
     public static OWLMapManager createOWLMapManager(Graph primary, ReadWriteLock lock) {
         OntologyFactory.Builder builder = new OntologyBuilderImpl();
-        OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLLoaderImpl(builder));
+        OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLFactoryWrapper(builder));
         OntologyFactory ontologyFactory = new OntologyFactoryImpl(builder, loader);
         DataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
         OWLMapManagerImpl res = new OWLMapManagerImpl(primary, dataFactory, ontologyFactory, lock);
