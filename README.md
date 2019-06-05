@@ -7,12 +7,12 @@ The mapping can be serialized as a [SPIN](http://spinrdf.org/)-rules RDF file, a
 
 ## Motivation
 Pure SPIN, which is an RDF-superstructure over SPARQL, is a fairly complex language when it comes to mapping between ontologies, 
-and it is incompatible with OWL2.
+and it is incompatible with OWL-centric systems like OWL-API.
 **ONT-MAP** offers a way for building mappings without any knowledge about SPIN or SPARQL, 
 just only through top-level operations and objects, which can be represented as some high-level pseudo-language.
 
 ## Dependencies 
- - **[ONT-API, ver 1.4.0-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
+ - **[ONT-API, ver 1.4.1-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
  - [Jena-ARQ, ver 3.10.0](https://github.com/apache/jena) transitively from ONT-API
  - [OWL-API, ver 5.1.9](https://github.com/owlcs/owlapi) transitively from ONT-API
@@ -64,6 +64,8 @@ Although, anonymous individuals are theoretically possible, currently they are n
         mapping.createContext(sourceClass, targetClass, call);
         // run spin-inference:
         manager.getInferenceEngine(mapping).run(source, target);
+        
+* A runnable example can be found on ONT-API wiki: https://github.com/avicomp/ont-api/wiki/Examples#ex9        
         
 * Printing all supported functions:
 
