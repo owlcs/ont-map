@@ -19,7 +19,14 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.graph.Node;
+import org.apache.jena.rdf.model.AnonId;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.shared.JenaException;
+import org.apache.jena.util.iterator.ExtendedIterator;
+import org.apache.jena.util.iterator.NullIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +37,6 @@ import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.ClassPropertyMapListener;
 import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.OntJenaException;
@@ -66,6 +72,20 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         this.manager = manager;
     }
 
+    /**
+     * Recursively lists all parents for the given {@link RDFNode RDF Node}.
+     * TODO: move to ONT-API ({@link Models})?
+     *
+     * @param inModel, not {@code null} must be attached to a model
+     * @return {@link ExtendedIterator} of {@link RDFNode}s
+     * @see Models#listSubjects(RDFNode)
+     */
+    public static ExtendedIterator<RDFNode> listParents(RDFNode inModel) {
+        ExtendedIterator<? extends RDFNode> direct = inModel.getModel().listResourcesWithProperty(null, inModel);
+        ExtendedIterator<RDFNode> res = Iter.flatMap(direct, s -> s.isAnon() ? listParents(s) : NullIterator.instance());
+        return Iter.concat(Iter.of(inModel), res);
+    }
+
     @Override
     public String name() {
         return ModelUtils.getResourceID(getID());
@@ -81,7 +101,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     /**
      * Answers {@code true} if this mapping model has local defined owl-entities declarations.
-     * TODO: move to ONT-API?
+     * TODO: move to ONT-API ({@link OntGraphModelImpl}?)
      *
      * @return boolean
      */
@@ -91,61 +111,88 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         }
     }
 
+    /**
+     * Returns a first found typed object from a statement with specified subject and predicate or throws an exception.
+     * TODO: it is a generic method. Move to ONT-API ({@link ru.avicomp.ontapi.jena.impl.UnionModel}?)
+     *
+     * @param s    {@link Resource} to be used as subject in SPO-search pattern, not {@code null}
+     * @param p    {@link Property} to be used as predicate in SPO-search pattern, not {@code null}
+     * @param type {@link Class}-type of the returned object
+     * @param <X>  any subtype of {@link RDFNode}
+     * @return {@link X}, not {@code null}
+     * @throws JenaException in case the object cannot be found or it has incompatible type
+     */
+    public <X extends RDFNode> X getRequiredObject(Resource s, Property p, Class<X> type) throws JenaException {
+        return Iter.findFirst(getBaseGraph().find(s.asNode(), p.asNode(), Node.ANY)
+                .mapWith(x -> getNodeAs(x.getObject(), type)))
+                .orElseThrow(() -> new MapJenaException.IllegalState(String.format("Can't find %s from pattern [%s, %s, ANY]", type, s, p)));
+    }
+
+    /**
+     * Returns a first found typed object from a statement with specified subject and predicate.
+     * TODO: it is a generic method. Move to ONT-API ({@link ru.avicomp.ontapi.jena.impl.UnionModel}?)
+     *
+     * @param s    {@link Resource} to be used as subject in SPO-search pattern, not {@code null}
+     * @param p    {@link Property} to be used as predicate in SPO-search pattern, not {@code null}
+     * @param type {@link Class}-type of the returned object
+     * @param <X>  any subtype of {@link RDFNode}
+     * @return {@link X} or {@code null}
+     */
+    public <X extends RDFNode> X getObject(Resource s, Property p, Class<X> type) {
+        return Iter.findFirst(getBaseGraph().find(s.asNode(), p.asNode(), Node.ANY)
+                .mapWith(x -> findNodeAs(x.getObject(), type)))
+                .orElse(null);
+    }
+
+    public ExtendedIterator<Resource> listResourcesOfProperty(Resource s, Property p) {
+        return listObjectsOfProperty(s, p).filterKeep(RDFNode::isResource).mapWith(RDFNode::asResource);
+    }
+
     @Override
     public Stream<MapContext> contexts() {
-        return listContexts().map(MapContext.class::cast);
+        return Iter.asStream(listContexts());
     }
 
-    public Stream<OntCE> contextClasses() {
-        return listContexts().flatMap(MapContextImpl::classes).distinct();
+    public ExtendedIterator<OntCE> listContextClasses() {
+        return Iter.distinct(Iter.flatMap(listContexts(), MapContextImpl::listClasses));
     }
 
-    public Stream<MapContextImpl> listContexts() {
-        return asContextStream(statements(null, RDF.type, SPINMAP.Context).map(OntStatement::getSubject));
-    }
-
-    /**
-     * Makes a stream of {@link MapContextImpl} from a stream of {@link Resource}s.
-     * Auxiliary method.
-     *
-     * @param stream Stream
-     * @return Stream
-     */
-    private Stream<MapContextImpl> asContextStream(Stream<Resource> stream) {
-        return stream.map(r -> r.as(OntObject.class))
-                .filter(s -> s.objects(SPINMAP.targetClass, OntClass.class).findAny().isPresent())
-                .filter(s -> s.objects(SPINMAP.sourceClass, OntClass.class).findAny().isPresent())
-                .map(this::asContext);
+    public ExtendedIterator<MapContextImpl> listContexts() {
+        return listContextResources().mapWith(this::asContext).filterKeep(MapContextImpl::isPublic);
     }
 
     /**
-     * Finds a context by source and target resources.
+     * Lists all chained contexts/
      *
-     * @param source {@link Resource}
-     * @param target {@link Resource}
-     * @return Optional around context
+     * @param context {@link MapContextImpl}, not {@code null}
+     * @return {@link ExtendedIterator} over all {@link MapContextImpl} that has a source class that matches
+     * the target class of the specified context
      */
-    public Optional<MapContextImpl> findContext(Resource source, Resource target) {
-        return statements(null, RDF.type, SPINMAP.Context)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.hasProperty(SPINMAP.targetClass, target))
-                .filter(s -> s.hasProperty(SPINMAP.sourceClass, source))
-                .map(this::asContext)
-                .findFirst();
+    protected ExtendedIterator<MapContextImpl> listContextsFor(MapContextImpl context) {
+        return listContextResources(context.getTargetClass(), null)
+                .filterDrop(context::equals)
+                .mapWith(this::asContext);
+    }
+
+    public ExtendedIterator<Resource> listContextResources(Resource source, Resource target) {
+        return listContextResources().filterKeep(s -> s.hasProperty(SPINMAP.targetClass, target)
+                && s.hasProperty(SPINMAP.sourceClass, source));
+    }
+
+    public ExtendedIterator<Resource> listContextResources() {
+        return listResourcesWithProperty(RDF.type, SPINMAP.Context);
     }
 
     @Override
     public MapContextImpl createContext(OntCE source, OntCE target) {
-        return contexts()
-                .filter(s -> Objects.equals(s.getSource(), source))
-                .filter(s -> Objects.equals(s.getTarget(), target))
-                .map(MapContextImpl.class::cast)
-                .findFirst()
+        return Iter.findFirst(listContexts()
+                .filterKeep(s -> Objects.equals(s.getSource(), source) && Objects.equals(s.getTarget(), target))
+                .mapWith(MapContextImpl.class::cast))
                 .orElseGet(() -> asContext(makeContext(source, target)));
     }
 
     /**
-     * Wraps a resource as {@link MapContextImpl}.
+     * Wraps the given resource as {@link MapContextImpl}.
      * Auxiliary method.
      *
      * @param context {@link Resource}
@@ -157,19 +204,16 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     @Override
     public MapModelImpl deleteContext(MapContext context) {
-        List<MapContext> related = context.dependentContexts().collect(Collectors.toList());
+        MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
+        List<MapContext> related = c.dependentContexts().collect(Collectors.toList());
         if (!related.isEmpty()) {
             Exceptions.Builder error = error(MAPPING_CONTEXT_CANNOT_BE_DELETED_DUE_TO_DEPENDENCIES).addContext(context);
             related.forEach(error::addContext);
             throw error.build();
         }
-        MapContextImpl c = ((MapContextImpl) MapJenaException.notNull(context, "Null context"));
-        if (getManager().getConfig().generateNamedIndividuals()) {
-            findContext(c.getTarget(), OWL.NamedIndividual).ifPresent(this::deleteContext);
-        }
-        deleteContext(c).clear();
+        c.deleteAll();
         // remove unused imports (both owl:import declarations and underling graphs)
-        Set<OntID> used = contextClasses().map(this::getOntologyID).collect(Collectors.toSet());
+        Set<OntID> used = listContextClasses().mapWith(this::getOntologyID).toSet();
         Set<OntGraphModel> unused = ontologies()
                 .filter(o -> !used.contains(o.getID()))
                 .filter(o -> !Objects.equals(o, this))
@@ -212,6 +256,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return this model
      * @see #clearUnused()
      */
+    @Deprecated
     protected MapModelImpl clear() {
         // clean unused functions, mapping templates, properties, variables, etc
         clearUnused();
@@ -222,87 +267,20 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     protected void clearUnused() {
         // delete expressions:
-        Set<Resource> found = Stream.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction)
-                .flatMap(type -> statements(null, RDF.type, type)
-                        .map(OntStatement::getSubject)
-                        // defined locally
-                        .filter(OntObject::isLocal)
-                        // no usage
-                        .filter(s -> !getBaseModel().contains(null, RDF.type, s)))
-                .collect(Collectors.toSet());
-        found.forEach(Models::deleteAll);
+        Iter.flatMap(Iter.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction),
+                t -> listOntStatements(null, RDF.type, t)).mapWith(OntStatement::getSubject)
+                .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, RDF.type, s))
+                .toSet().forEach(Models::deleteAll);
         // delete properties and variables:
-        found = Stream.concat(statements(null, RDFS.subPropertyOf, SP.arg)
-                        .map(OntStatement::getSubject)
-                        .filter(OntObject::isLocal)
-                        .map(s -> s.as(Property.class))
-                        .filter(s -> !getBaseModel().contains(null, s)),
-                statements(null, RDF.type, SP.Variable)
-                        .map(OntStatement::getSubject)
-                        .filter(OntObject::isLocal)
-                        .filter(s -> !getBaseModel().contains(null, null, s)))
-                .collect(Collectors.toSet());
-        found.forEach(Models::deleteAll);
-    }
-
-    public MapModelImpl deleteContext(MapContextImpl context) {
-        // delete rules:
-        Set<Statement> rules = context.listRuleStatements().collect(Collectors.toSet());
-        rules.forEach(s -> {
-            Models.deleteAll(s.getObject().asResource());
-            remove(s);
-        });
-        // delete declaration:
-        Models.deleteAll(context);
-        return this;
+        Iter.concat(listOntStatements(null, RDFS.subPropertyOf, SP.arg).mapWith(OntStatement::getSubject)
+                        .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, s.as(Property.class))),
+                listOntStatements(null, RDF.type, SP.Variable).mapWith(OntStatement::getSubject)
+                        .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, null, s)))
+                .toSet().forEach(Models::deleteAll);
     }
 
     /**
-     * Lists all contexts that depend on the specified by function call.
-     * A context can be used as parameter in different function-calls, usually with predicate {@code spinmapl:context}.
-     * There is one exclusion: {@code spinmap:targetResource},
-     * it uses {@code spinmap:context} as predicate for argument with type {@code spinmap:Context}.
-     *
-     * @param context {@link MapContextImpl} to check
-     * @return distinct stream of other contexts
-     */
-    public Stream<MapContextImpl> listRelatedContexts(MapContextImpl context) {
-        Stream<Resource> targetResourceExpressions = statements(null, RDF.type, SPINMAP.targetResource)
-                .map(Statement::getSubject)
-                .filter(s -> s.hasProperty(SPINMAP.context, context));
-        Stream<Resource> otherExpressions = statements(null, SPINMAPL.context, context).map(Statement::getSubject);
-        Stream<Resource> res = Stream.concat(targetResourceExpressions, otherExpressions)
-                .filter(RDFNode::isAnon)
-                .flatMap(e -> Stream.concat(Stream.of(e), Models.listSubjects(e)))
-                .flatMap(e -> Stream.concat(contextsByRuleExpression(e), contextsByTargetExpression(e)))
-                .filter(RDFNode::isURIResource)
-                .distinct();
-        return asContextStream(res);
-    }
-
-    /**
-     * Lists all contexts that depend on the specified by derived type.
-     *
-     * @param context {@link MapContextImpl} to check
-     * @return distinct stream of other contexts
-     */
-    public Stream<MapContextImpl> listChainedContexts(MapContextImpl context) {
-        Resource clazz = context.target();
-        return listContexts().filter(c -> !c.equals(context)).filter(c -> Objects.equals(c.source(), clazz));
-    }
-
-    public Stream<Resource> contextsByTargetExpression(RDFNode expression) {
-        return statements(null, SPINMAP.target, expression).map(Statement::getSubject)
-                .filter(SpinModels::isContext);
-    }
-
-    public Stream<Resource> contextsByRuleExpression(RDFNode expression) {
-        return statements(null, SPINMAP.expression, expression).map(OntStatement::getSubject)
-                .flatMap(s -> s.objects(SPINMAP.context, Resource.class));
-    }
-
-    /**
-     * Creates a {@code spinmap:Context} which binds specified class-expressions.
+     * Creates a {@link SPINMAP#Context spinmap:Context} which binds specified class-expressions.
      * It also adds imports for ontologies where arguments are declared in.
      * In case {@link MapConfigImpl#generateNamedIndividuals()}{@code == true}
      * an additional hidden contexts to generate {@code owl:NamedIndividuals} is created.
@@ -324,13 +302,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     LOGGER.debug("Import {}", m);
                 })
                 .forEach(MapModelImpl.this::addImport);
-        Resource res = makeContext(source.asResource(), target.asResource());
-        if (getManager().getConfig().generateNamedIndividuals()
-                && !findContext(target.asResource(), OWL.NamedIndividual).isPresent()) {
-            MapFunction.Call expr = getManager().getFunction(SPINMAPL.self.getURI()).create().build();
-            asContext(makeContext(target.asResource(), OWL.NamedIndividual)).addClassBridge(expr);
-        }
-        return res;
+        return makeContext(source.asResource(), target.asResource());
     }
 
     /**
@@ -419,16 +391,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      */
     public Property getSourcePredicate(int i) {
         return createArgProperty(SPINMAP.sourcePredicate(i).getURI());
-    }
-
-    /**
-     * Returns {@code spinmap:targetPredicate$i} argument property.
-     *
-     * @param i int
-     * @return {@link Property}
-     */
-    public Property getTargetPredicate(int i) {
-        return createArgProperty(SPINMAP.targetPredicate(i).getURI());
     }
 
     /**
@@ -608,7 +570,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     String uri = s.getPredicate().getURI();
                     MapFunctionImpl.ArgImpl a;
                     if (f.isVararg() && !f.hasArg(uri)) {
-                        List<MapFunctionImpl.ArgImpl> varargs = f.listArgs()
+                        List<MapFunctionImpl.ArgImpl> varargs = f.argImpls()
                                 .filter(MapFunctionImpl.ArgImpl::isVararg)
                                 .collect(Collectors.toList());
                         if (varargs.size() != 1)
@@ -661,7 +623,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             function.write(MapModelImpl.this);
             function.runtimeBody().ifPresent(x -> x.apply(MapModelImpl.this, call));
             // print sub-class-of and dependencies:
-            Stream.concat(function.listSuperClasses(), function.listDependencies())
+            Stream.concat(function.superClasses(), function.dependencyResources())
                     .map(Resource::getURI)
                     .distinct()
                     .map(manager::getFunction)
@@ -676,4 +638,5 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public String toString() {
         return String.format("MapModel{%s}", Graphs.getName(getBaseGraph()));
     }
+
 }

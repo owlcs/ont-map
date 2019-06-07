@@ -614,7 +614,7 @@ public class MapManagerImpl implements MapManager {
          * @return Set of {@link FunctionImpl}s, possible empty
          */
         public Set<FunctionImpl> getDependencies() {
-            return dependencies != null ? dependencies : (dependencies = listDependencies()
+            return dependencies != null ? dependencies : (dependencies = dependencyResources()
                     .map(r -> MapJenaException.notNull(functions.get(r.getURI()), "Can't find function " + r))
                     .collect(Collectors.toSet()));
         }

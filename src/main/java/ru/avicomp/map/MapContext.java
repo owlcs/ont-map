@@ -93,7 +93,7 @@ public interface MapContext extends MapResource {
     /**
      * Lists all property bridges.
      *
-     * @return Stream of {@link PropertyBridge}
+     * @return {@code Stream} of {@link PropertyBridge}s
      */
     Stream<PropertyBridge> properties();
 
@@ -149,9 +149,9 @@ public interface MapContext extends MapResource {
     PropertyBridge attachContext(MapContext other, OntOPE link) throws MapJenaException;
 
     /**
-     * Lists all contexts that depend on this.
+     * Lists all contexts that depend on this somehow.
      *
-     * @return Stream of contexts
+     * @return {@code Stream} of contexts
      */
     Stream<MapContext> dependentContexts();
 
@@ -214,7 +214,7 @@ public interface MapContext extends MapResource {
     }
 
     /**
-     * Answers iff this context is valid for (SPIN-)map-inference.
+     * Answers {@code true} iff this context is valid for (SPIN-)map-inference.
      *
      * @return boolean
      */

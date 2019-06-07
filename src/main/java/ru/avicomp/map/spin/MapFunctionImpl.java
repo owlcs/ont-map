@@ -32,6 +32,7 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
+import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -90,13 +91,13 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
      *
      * @return ordered {@code Stream}
      */
-    public Stream<ArgImpl> listArgs() {
+    public Stream<ArgImpl> argImpls() {
         return getArguments().stream();
     }
 
     @Override
     public Stream<Arg> args() {
-        return listArgs().map(Function.identity());
+        return argImpls().map(Function.identity());
     }
 
     @Override
@@ -107,12 +108,23 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     }
 
     public Optional<ArgImpl> arg(String predicate) {
-        return listArgs().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
+        return argImpls().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
     }
 
     @Override
     public boolean isTarget() {
         return func.hasProperty(RDF.type, SPINMAP.TargetFunction);
+    }
+
+    /**
+     * Answers {@code true} if the function, which is expected to be {@link #isTarget() target},
+     * can produce anonymous resources.
+     *
+     * @return boolean
+     * @see Resource#isAnon()
+     */
+    public boolean canProduceBNodes() {
+        return SPINMAPL.self.equals(func);
     }
 
     @Override
@@ -223,14 +235,14 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     @Override
     public String toString(PrefixMapping pm) {
         return String.format("%s [%s](%s)", ToString.getShortForm(pm, type()), ToString.getShortForm(pm, name()),
-                listArgs().map(a -> a.toString(pm)).collect(Collectors.joining(", ")));
+                argImpls().map(a -> a.toString(pm)).collect(Collectors.joining(", ")));
     }
 
     /**
      * Answers {@code true} if this function has a SPARQL query (select) expression.
      *
      * @return boolean
-     * @see #listDependencies()
+     * @see #dependencyResources()
      */
     public boolean isSparqlExpression() {
         return func.hasProperty(SPIN.body);
@@ -254,7 +266,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
      * possible empty (if no SPARQL body or function has a java body)
      * @see #isSparqlExpression()
      */
-    protected Stream<Resource> listDependencies() {
+    protected Stream<Resource> dependencyResources() {
         if (!isSparqlExpression()) return Stream.empty();
         return Models.listProperties(func.getRequiredProperty(SPIN.body).getObject().asResource())
                 .filter(s -> RDF.type.equals(s.getPredicate()))
@@ -267,9 +279,9 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     /**
      * List all super classes of this function.
      *
-     * @return Stream of {@link Resource IRI Resource}s
+     * @return {@code Stream} over {@link Resource IRI Resource}s
      */
-    protected Stream<Resource> listSuperClasses() {
+    protected Stream<Resource> superClasses() {
         return Iter.asStream(func.listProperties(RDFS.subClassOf).mapWith(Statement::getResource));
     }
 
@@ -596,30 +608,30 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
             return listSortedVisibleArgs().map(Function.identity());
         }
 
-        public Stream<MapFunctionImpl.CallImpl> directFunctionCalls() {
-            return parameters.values().stream()
-                    .filter(MapFunctionImpl.CallImpl.class::isInstance)
-                    .map(MapFunctionImpl.CallImpl.class::cast);
+        public ExtendedIterator<CallImpl> listDirectFunctionCalls() {
+            return Iter.create(parameters.values())
+                    .filterKeep(MapFunctionImpl.CallImpl.class::isInstance)
+                    .mapWith(MapFunctionImpl.CallImpl.class::cast);
         }
 
-        public Stream<MapFunctionImpl.CallImpl> listFunctions(boolean direct) {
-            if (direct) return directFunctionCalls();
-            return directFunctionCalls().flatMap(f -> Stream.concat(Stream.of(f), f.listFunctions(false)));
+        public ExtendedIterator<CallImpl> listFunctions(boolean direct) {
+            if (direct) return listDirectFunctionCalls();
+            return Iter.flatMap(listDirectFunctionCalls(), f -> Iter.concat(Iter.of(f), f.listFunctions(false)));
         }
 
         @Override
         public Stream<MapFunction.Call> functions(boolean direct) {
-            return listFunctions(direct).map(Function.identity());
+            return Iter.asStream(listFunctions(direct));
         }
 
         /**
          * Lists all functions related to this function call.
          * The returned string contains the function from this call in the first position.
          *
-         * @return Stream of {@link MapFunctionImpl}s
+         * @return {@link ExtendedIterator} of {@link MapFunctionImpl}s
          */
-        public Stream<MapFunctionImpl> listAllFunctions() {
-            return Stream.concat(Stream.of(getFunction()), listFunctions(false).map(CallImpl::getFunction));
+        public ExtendedIterator<MapFunctionImpl> listAllFunctions() {
+            return Iter.concat(Iter.of(getFunction()), listFunctions(false).mapWith(CallImpl::getFunction));
         }
 
         @Override

@@ -35,7 +35,6 @@ import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -133,7 +132,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                 .addProperty(RDF.type, from.isTarget() ? SPINMAP.TargetFunction : SPIN.Function);
         // inherit all super classes:
         res.dependencies().map(x -> (MapFunctionImpl) x)
-                .flatMap(MapFunctionImpl::listSuperClasses)
+                .flatMap(MapFunctionImpl::superClasses)
                 .forEach(x -> f.addProperty(RDFS.subClassOf, x));
         // process arguments:
         expr.getArguments().forEach(arg -> {
@@ -177,7 +176,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
 
             @Override
             public Stream<MapFunction> dependencies() {
-                return ModelCallImpl.this.listAllFunctions().filter(MapFunctionImpl::canHaveNested).map(Function.identity());
+                return Iter.asStream(ModelCallImpl.this.listAllFunctions().filterKeep(MapFunctionImpl::canHaveNested));
             }
 
             @Override

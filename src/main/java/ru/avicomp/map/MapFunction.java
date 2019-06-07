@@ -35,7 +35,9 @@ import java.util.stream.Stream;
 /**
  * A common interface for functions used while building OWL2 -&gt; OWL2 mappings.
  * It is not a part of jena model graph system (i.e. not a {@link org.apache.jena.rdf.model.RDFNode rdf-node}).
- * At the moment it is assumed that any string methods must return absolute IRIs.
+ * At the moment it is assumed that any string methods must accept and return absolute IRIs or literal full forms.
+ * This approach was chosen so that there is no reference
+ * to a specific model with all its OWL entities and other RDF stuff.
  * <p>
  * Created by @szuev on 06.04.2018.
  */
@@ -64,7 +66,7 @@ public interface MapFunction extends Description {
     Stream<Arg> args();
 
     /**
-     * Answers {@code true} if it is a target function.
+     * Answers {@code true} iff it is a target function.
      * A target function allows to bind two class-expressions in one context.
      * Non-target function is used to bind property expressions.
      *

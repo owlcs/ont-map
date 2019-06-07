@@ -207,9 +207,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      */
     protected Stream<OntIndividual> listIndividuals(OntGraphModel src, Model dst) {
         if (Graphs.getBase(src.getBaseGraph()) == Graphs.getBase(dst.getGraph())) {
-            return src.classAssertions().collect(Collectors.toList()).stream();
+            return src.individuals().collect(Collectors.toList()).stream();
         }
-        return src.classAssertions();
+        return src.individuals();
     }
 
     /**

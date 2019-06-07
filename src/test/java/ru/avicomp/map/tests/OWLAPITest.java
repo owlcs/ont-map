@@ -119,14 +119,16 @@ public class OWLAPITest {
         OntClass class1 = o1.asGraphModel().createOntEntity(OntClass.class, iri + "#Class1");
         OntClass class2 = o1.asGraphModel().createOntEntity(OntClass.class, iri + "#Class2");
         Assert.assertEquals(2, o1.axioms().count());
-        manager.asMapModel(o1.asGraphModel())
-                .createContext(class1, class2, manager.getFunction(SPINMAPL.self).create().build());
+        manager.asMapModel(o1.asGraphModel()).createContext(class1, class2,
+                // do not choose a function that produce additional content in the mapping itself (like avc:.*),
+                // otherwise additional annotation assertion axioms are expected:
+                manager.getFunction(SPINMAPL.composeURI).create().addLiteral(SPINMAPL.template, "x").build());
         TestUtils.debug(m1);
         Assert.assertEquals(1, m1.rules().count());
         MapModel m2 = manager.mappings().findFirst().orElseThrow(AssertionError::new);
         OWLOntology o2 = manager.ontologies().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals(1, m2.rules().count());
-        Assert.assertEquals(2, o2.axioms().count());
+        Assert.assertEquals(2, o2.axioms().peek(x -> LOGGER.debug("AXIOMS: {}", x)).count());
     }
 
     @Test

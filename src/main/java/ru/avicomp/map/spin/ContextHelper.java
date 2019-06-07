@@ -80,7 +80,7 @@ public class ContextHelper {
      * @return {@link ContextHelper}
      */
     static ContextHelper wrap(MapContextImpl context) {
-        //return new ContextHelper(context, context.primaryRule().orElse(null));
+        //return new ContextHelper(context, context.findPrimaryRule().orElse(null));
         return new ContextHelper(context, null);
     }
 
@@ -92,9 +92,9 @@ public class ContextHelper {
      * @param target            {@link Property}
      * @return {@link Resource}, the mapping rule
      */
-    Resource populate(RDFNode mappingExpression, RDFNode filterExpression, Property target) {
+    Resource addMappingRule(RDFNode mappingExpression, RDFNode filterExpression, Property target) {
         Resource res = getMappingRule();
-        Optional<Resource> classRule = context.primaryRule();
+        Optional<Resource> classRule = context.findPrimaryRule();
         res.addProperty(SPINMAP.context, context).addProperty(SPINMAP.targetPredicate1, target);
         List<Property> mappingPredicates = addExpression(SPINMAP.expression, mappingExpression).getSources();
         List<Property> filterPredicates;
@@ -218,7 +218,7 @@ public class ContextHelper {
      */
     public Set<? extends RDFNode> getTargetClassProperties() {
         return targetClassProperties == null ?
-                targetClassProperties = getClassProperties(context.target()) : targetClassProperties;
+                targetClassProperties = getClassProperties(context.getTargetClass()) : targetClassProperties;
     }
 
     private Set<Property> getClassProperties(Resource clazz) {

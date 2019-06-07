@@ -98,6 +98,21 @@ public class AVC {
     public static final Resource IRI = resource("IRI");
 
     /**
+     * An additional technical no-arg map-target function,
+     * that is used by the system to build and infer technical contexts,
+     * deriving {@link ru.avicomp.ontapi.jena.vocabulary.OWL#NamedIndividual owl:NamedIndividual} declarations.
+     * It is a functional analogue of {@link SPINMAPL#self} but with restriction on IRI-resources.
+     * It returns the resource itself, but only if resource is not blank-node.
+     * This function is private (i.e. {@link org.topbraid.spin.vocabulary.SPIN#private_} is {@code true}),
+     * since there is no any usages with except of described above.
+     *
+     * @see org.topbraid.spin.vocabulary.SPINMAP#TargetFunctions
+     * @see SPINMAPL#self
+     * @see ru.avicomp.map.spin.MapConfigImpl#generateNamedIndividuals()
+     */
+    public static final Resource self = resource("self");
+
+    /**
      * An additional map-property function, that is an analogue of {@code spl:object}, but with filter.
      *
      * @see org.topbraid.spin.vocabulary.SPL#OntologyFunctions

@@ -49,6 +49,16 @@ public class MapJenaException extends JenaException {
         return obj;
     }
 
+    public static <T> T mustNotBeNull(T obj) {
+        return mustNotBeNull(obj, null);
+    }
+
+    public static <T> T mustNotBeNull(T obj, String message) {
+        if (obj == null)
+            throw message == null ? new IllegalState() : new IllegalState(message);
+        return obj;
+    }
+
     public static class Unsupported extends MapJenaException {
         public Unsupported() {
             super();

@@ -198,15 +198,24 @@ public class LIBLibraryMaker {
                 .addProperty(RDFS.seeAlso, ResourceFactory.createResource("https://www.w3.org/TR/sparql11-query/#func-iri"))
                 .addProperty(SPINMAP.shortLabel, "IRI")
                 .addProperty(RDFS.label, "creates IRI resource")
-                .addProperty(RDFS.comment, "A target function.\n" +
-                        "Returns an IRI as target resource (individual).\n" +
-                        "Please note: mapping inference will create only single target individual, merging all sources to one")
+                .addProperty(RDFS.comment, "A target function.\b" +
+                        "Returns an IRI as a single target resource (individual).\n" +
+                        "Please note: inference will create only one target individual per rule with merging all sources to it.")
                 .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT (IRI(?arg1))\nWHERE {\n}", m))
                 .addProperty(SPIN.constraint, m.createResource()
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg1)
                         .addProperty(SPL.valueType, XSD.xstring)
                         .addProperty(RDFS.comment, "An IRI (xsd:string)"));
+
+        // AVC:self
+        AVC.self.inModel(m)
+                .addProperty(RDF.type, SPINMAP.TargetFunction)
+                .addProperty(RDFS.subClassOf, SPINMAP.TargetFunctions)
+                .addProperty(SPIN.returnType, RDFS.Resource)
+                .addProperty(RDFS.seeAlso, SPINMAPL.self)
+                .addProperty(SPIN.private_, Models.TRUE)
+                .addProperty(SPIN.body, QueryHelper.parseQuery("SELECT ?source\nWHERE {\n\tFILTER isIRI(?source) .\n}", m));
 
         // AVC:objectWithFilter
         AVC.objectWithFilter.inModel(m)

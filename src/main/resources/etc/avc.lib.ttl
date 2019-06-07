@@ -60,7 +60,7 @@ avc:UUID  a                 spinmap:TargetFunction ;
         spinmap:shortLabel  "UUID" .
 
 avc:IRI  a                  spinmap:TargetFunction ;
-        rdfs:comment        "A target function.\nReturns an IRI as target resource (individual).\nPlease note: mapping inference will create only single target individual, merging all sources to one" ;
+        rdfs:comment        "A target function.\nReturns an IRI as a single target resource (individual).\nPlease note: inference will create only one target individual per rule with merging all sources to it." ;
         rdfs:label          "creates IRI resource" ;
         rdfs:seeAlso        sp:iri , <https://www.w3.org/TR/sparql11-query/#func-iri> ;
         rdfs:subClassOf     spinmap:TargetFunctions ;
@@ -78,6 +78,22 @@ avc:IRI  a                  spinmap:TargetFunction ;
                             ] ;
         spin:returnType     rdfs:Resource ;
         spinmap:shortLabel  "IRI" .
+
+avc:self  a              spinmap:TargetFunction ;
+        rdfs:seeAlso     spinmapl:self ;
+        rdfs:subClassOf  spinmap:TargetFunctions ;
+        spin:body        [ a                   sp:Select ;
+                           sp:resultVariables  ( [ sp:varName  "source" ]
+                                               ) ;
+                           sp:where            ( [ a              sp:Filter ;
+                                                   sp:expression  [ a        sp:isIRI ;
+                                                                    sp:arg1  [ sp:varName  "source" ]
+                                                                  ]
+                                                 ]
+                                               )
+                         ] ;
+        spin:private     true ;
+        spin:returnType  rdfs:Resource .
 
 avc:groupConcat  a          spin:Function ;
         rdfs:comment        "An aggregate function to concatenate values from assertions with the same individual and property using specified separator.\nNotice: string natural sort order is used." ;

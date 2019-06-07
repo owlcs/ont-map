@@ -52,7 +52,7 @@ import java.util.Optional;
 @SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 public class SPINInferenceHelper {
 
-    private static final String SELF_QUERY = "CONSTRUCT \n" +
+    private static final String SPINMAP_MAPPING_01 = "CONSTRUCT \n" +
             "  { \n" +
             "    ?target ?targetPredicate1 ?newValue .\n" +
             "  }\n" +
@@ -78,12 +78,12 @@ public class SPINInferenceHelper {
         RDFNode context = input.get(SPINMAP.context.getLocalName());
         if (context == null || !context.isResource()) return null;
         if (!RDF.type.equals(input.get(SPINMAP.targetPredicate1.getLocalName()))) return null;
-        return SpinModels.isSelfContext(context.asResource(), res.asResource()) && isSelfQuery(cw.getQuery()) ?
+        return SpinModels.isSelfContext(context.asResource(), res.asResource()) && isSpinmapMapping01(cw.getQuery()) ?
                 res.asResource() : null;
     }
 
-    private static boolean isSelfQuery(org.apache.jena.query.Query query) {
-        return query != null && SELF_QUERY.equals(query.toString());
+    private static boolean isSpinmapMapping01(org.apache.jena.query.Query query) {
+        return query != null && SPINMAP_MAPPING_01.equals(query.toString());
     }
 
     /**
