@@ -58,7 +58,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
     @Override
     public String toString(PrefixMapping pm) {
         String name = ToString.getShortForm(pm, getFunction().name());
-        List<MapFunctionImpl.ArgImpl> args = listSortedVisibleArgs().collect(Collectors.toList());
+        List<MapFunctionImpl.ArgImpl> args = sortedVisibleArgs().collect(Collectors.toList());
         if (args.size() == 1) { // print without predicate
             return name + "(" + getStringValue(pm, args.get(0)) + ")";
         }
@@ -262,7 +262,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
         public Expression write(ModelCallImpl call) {
             content.add(pm -> ToString.getShortForm(pm, call.getFunction().name()));
             content.add(Symbol.LEFT_BRACKET);
-            call.listSortedArgs().forEach(c -> write(call, c));
+            call.sortedArgs().forEach(c -> write(call, c));
             content.add(Symbol.RIGHT_BRACKET);
             return this;
         }

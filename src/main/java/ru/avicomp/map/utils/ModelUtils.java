@@ -122,7 +122,7 @@ public class ModelUtils {
      * @param p {@link OntOPE}, not {@code null}
      * @return Optional around the {@link OntCE}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Object_Property_Range'>9.2.6 Object Property Range</a>
-     * @see OntOPE#range()
+     * @see OntOPE#ranges()
      * @see ModelUtils#ranges(OntOPE)
      */
     public static Optional<OntCE> range(OntOPE p) {
@@ -137,7 +137,7 @@ public class ModelUtils {
      * @param p {@link OntNDP}, not {@code null}
      * @return Optional around the {@link OntDR}
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Data_Property_Range'>9.3.5 Data Property Range</a>
-     * @see OntNDP#range()
+     * @see OntNDP#ranges()
      * @see ModelUtils#ranges(OntNDP)
      */
     public static Optional<OntDR> range(OntNDP p) {

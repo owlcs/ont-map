@@ -283,4 +283,17 @@ public class SpinModels {
     public static boolean isTopSpinURI(String uri) {
         return SPINMAPL.BASE_URI.equals(uri);
     }
+
+    /**
+     * Returns the stream as it is, but with more specific generic type.
+     * TODO: choose more appropriate place for this function. Move to ONT-API (Iter?)?
+     *
+     * @param st  {@link Stream}, not {@code null}
+     * @param <X> anything
+     * @return the same instance
+     */
+    @SuppressWarnings("unchecked")
+    static <X> Stream<X> identityStream(Stream<? extends X> st) {
+        return (Stream<X>) st;
+    }
 }

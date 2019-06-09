@@ -18,7 +18,6 @@
 
 package ru.avicomp.map.spin;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
@@ -97,7 +96,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
 
     @Override
     public Stream<Arg> args() {
-        return argImpls().map(Function.identity());
+        return SpinModels.identityStream(argImpls());
     }
 
     @Override
@@ -547,15 +546,8 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
 
         private Stream<String> langLiterals(Property predicate, String lang) {
             return Iter.asStream(listStatements(predicate)
-                    .filterKeep(x -> x.getObject().isLiteral() && filterByLang(x.getLiteral(), lang))
+                    .filterKeep(x -> x.getObject().isLiteral() && Models.filterByLangTag(x.getLiteral(), lang))
                     .mapWith(Statement::getString));
-        }
-
-        private boolean filterByLang(Literal literal, String tag) { // todo: use Models method
-            String other = literal.getLanguage();
-            if (StringUtils.isEmpty(tag))
-                return StringUtils.isEmpty(other);
-            return tag.trim().equalsIgnoreCase(other);
         }
 
         @Override
@@ -605,7 +597,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
 
         @Override
         public Stream<Arg> args() {
-            return listSortedVisibleArgs().map(Function.identity());
+            return SpinModels.identityStream(sortedVisibleArgs());
         }
 
         public ExtendedIterator<CallImpl> listDirectFunctionCalls() {
@@ -655,8 +647,8 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
          *
          * @return <b>sorted</b> stream of {@link ArgImpl}
          */
-        public Stream<ArgImpl> listSortedVisibleArgs() {
-            return listSortedArgs().filter(ArgImpl::isAssignable);
+        public Stream<ArgImpl> sortedVisibleArgs() {
+            return sortedArgs().filter(ArgImpl::isAssignable);
         }
 
         /**
@@ -665,7 +657,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
          * @return <b>sorted</b> stream of {@link ArgImpl}
          * @see ArgURIComparator
          */
-        public Stream<ArgImpl> listSortedArgs() {
+        public Stream<ArgImpl> sortedArgs() {
             return parameters.keySet().stream().sorted(ARG_COMPARATOR);
         }
 
@@ -677,7 +669,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
          */
         @Override
         public String toString(PrefixMapping pm) {
-            return listSortedVisibleArgs()
+            return sortedVisibleArgs()
                     .map(a -> toString(pm, a))
                     .collect(Collectors.joining(", ", ToString.getShortForm(pm, getFunction().name()) + "(", ")"));
         }

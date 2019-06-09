@@ -46,7 +46,6 @@ import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Models;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -258,7 +257,7 @@ public class MapManagerImpl implements MapManager {
      */
     @Override
     public Stream<MapFunction> functions() {
-        return functions.values().stream().filter(this::filter).map(Function.identity());
+        return SpinModels.identityStream(functions.values().stream().filter(this::filter));
     }
 
     /**
@@ -476,7 +475,7 @@ public class MapManagerImpl implements MapManager {
         OntDT res = AVC.numeric.inModel(getLibrary()).as(OntDT.class);
         OntDR dr = res.equivalentClass().findFirst()
                 .orElseThrow(() -> new IllegalStateException("Can't find owl:equivalentClass for " + res));
-        return dr.as(OntDR.UnionOf.class).dataRanges().map(d -> d.as(OntDT.class));
+        return dr.as(OntDR.UnionOf.class).getList().members().map(d -> d.as(OntDT.class));
     }
 
     /**
@@ -604,7 +603,7 @@ public class MapManagerImpl implements MapManager {
 
         @Override
         public Stream<MapFunction> dependencies() {
-            return getDependencies().stream().map(Function.identity());
+            return SpinModels.identityStream(getDependencies().stream());
         }
 
         /**
