@@ -44,15 +44,15 @@ public class FilterIndividualsMapTest extends MapTestData2 {
     @Override
     public void validate(OntGraphModel result) {
         OntNDP age = TestUtils.findOntEntity(result, OntNDP.class, "user-age");
-        Assert.assertEquals(2, result.namedIndividuals().count());
-        result.namedIndividuals().forEach(i -> {
-            List<Statement> assertions = i.positiveAssertions().collect(Collectors.toList());
-            Assert.assertEquals("Incorrect assertions for individual " + i, 1, assertions.size());
-            Assert.assertEquals(age, assertions.get(0).getPredicate());
-            int a = assertions.get(0).getObject().asLiteral().getInt();
-            LOGGER.debug("Individual: {}, age: {}", i, assertions.get(0).getObject());
-            Assert.assertTrue("Wrong age for individual " + i, a > 25 && a < 100);
-        });
+        Assert.assertEquals(2,
+                result.individuals().peek(i -> {
+                    List<Statement> assertions = i.positiveAssertions().collect(Collectors.toList());
+                    Assert.assertEquals("Incorrect assertions for individual " + i, 1, assertions.size());
+                    Assert.assertEquals(age, assertions.get(0).getPredicate());
+                    int a = assertions.get(0).getObject().asLiteral().getInt();
+                    LOGGER.debug("Individual: {}, age: {}", i, assertions.get(0).getObject());
+                    Assert.assertTrue("Wrong age for individual " + i, a > 25 && a < 100);
+                }).count());
     }
 
     @Override

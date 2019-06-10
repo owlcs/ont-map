@@ -72,7 +72,7 @@ public class GroupConcatTest extends AbstractMapTest {
 
         map.runInference(s.getGraph(), t.getGraph());
         TestUtils.debug(t);
-        List<OntIndividual> individuals = t.namedIndividuals().collect(Collectors.toList());
+        List<OntIndividual> individuals = t.individuals().collect(Collectors.toList());
         Assert.assertEquals(3, individuals.size());
         validateIndividual(t, "http://individual-1", "A,B,C");
         validateIndividual(t, "http://individual-3", "23,D");
@@ -94,7 +94,8 @@ public class GroupConcatTest extends AbstractMapTest {
 
     @Test
     public void testDeletePropertyBridge() {
-        MapModel m = assembleMapping();
+        MapManager manager = manager();
+        MapModel m = assembleMapping(manager);
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
         MapContext c2 = c.deletePropertyBridge(p);
@@ -103,11 +104,14 @@ public class GroupConcatTest extends AbstractMapTest {
         Assert.assertEquals(1, m.contexts().count());
         Assert.assertEquals(2, m.ontologies().count());
         Assert.assertEquals(1, m.rules().count());
-        Assert.assertEquals(29, m.asGraphModel().getBaseGraph().size());
+        long expected = TestUtils.shouldGenerateNamedIndividuals(manager) ? 29 : 18;
+        Assert.assertEquals(expected, m.asGraphModel().getBaseGraph().size());
     }
 
     private void validateIndividual(OntGraphModel m, String name, String value) {
-        OntIndividual i = m.namedIndividuals().filter(s -> Objects.equals(s.getURI(), name)).findFirst().orElseThrow(AssertionError::new);
+        OntIndividual i = m.individuals()
+                .filter(s -> Objects.equals(s.getURI(), name))
+                .findFirst().orElseThrow(AssertionError::new);
         List<OntStatement> assertions = i.positiveAssertions().collect(Collectors.toList());
         Assert.assertEquals(1, assertions.size());
         String actual = assertions.get(0).getObject().asLiteral().getString();

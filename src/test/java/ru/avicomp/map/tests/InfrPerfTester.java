@@ -119,8 +119,7 @@ public class InfrPerfTester {
     }
 
     public static void validate(OntGraphModel target, long c) {
-        //Assert.assertEquals(c, target.listNamedIndividuals().count());
-        Assert.assertEquals(c, target.namedIndividuals()
+        Assert.assertEquals(c, target.individuals()
                 .peek(i -> Assert.assertEquals(1, i.positiveAssertions()
                         .map(Statement::getObject)
                         .peek(x -> {

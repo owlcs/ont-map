@@ -65,7 +65,8 @@ public class DiffInferenceTest {
         Graph data = assembleSrcData(schema);
         OntGraphModel target = assembleTargetModel();
 
-        MapModel mapping = assembleMapping(schema, target.getGraph());
+        MapManager manager = Managers.createMapManager();
+        MapModel mapping = assembleMapping(manager, schema, target.getGraph());
         TestUtils.debug(mapping);
         LoggedGraph logGraph = new LoggedGraph(data);
         mapping.runInference(logGraph, target.getGraph());
@@ -76,7 +77,9 @@ public class DiffInferenceTest {
         Graph t = new GraphMem();
         mapping.runInference(data, t);
         TestUtils.debug(ModelFactory.createModelForGraph(t));
-        Assert.assertEquals((numberNamedIndividuals + numberAnonymousIndividuals) * 3, t.size());
+        int factor = TestUtils.shouldGenerateNamedIndividuals(manager) ? 3 : 2;
+        long expected = (numberNamedIndividuals + numberAnonymousIndividuals) * factor;
+        Assert.assertEquals(expected, t.size());
     }
 
     @Test
@@ -89,7 +92,8 @@ public class DiffInferenceTest {
         withData.add(ModelFactory.createModelForGraph(data));
         LoggedGraph logGraph = new LoggedGraph(withData.getGraph());
 
-        MapModel mapping = assembleMapping(logGraph, target.getGraph());
+        MapManager manager = Managers.createMapManager();
+        MapModel mapping = assembleMapping(manager, logGraph, target.getGraph());
         TestUtils.debug(mapping);
 
         long before = logGraph.counter.longValue();
@@ -102,14 +106,13 @@ public class DiffInferenceTest {
 
     public void validate(OntGraphModel t) {
         TestUtils.debug(t);
-        t.namedIndividuals().forEach(x -> LOGGER.debug("{}", x));
-        int n = numberAnonymousIndividuals + numberNamedIndividuals;
-        Assert.assertEquals("Incorrect number of result individuals.", n,
-                t.namedIndividuals()
+        int expected = numberAnonymousIndividuals + numberNamedIndividuals;
+        Assert.assertEquals("Incorrect number of result individuals.", expected,
+                t.individuals()
                         .peek(x -> LOGGER.debug("{}", x))
                         .count());
         OntNDP prop = TestUtils.findOntEntity(t, OntNDP.class, "targetProperty");
-        Assert.assertEquals(n, t.statements(null, prop, null)
+        Assert.assertEquals(expected, t.statements(null, prop, null)
                 .peek(x -> LOGGER.debug("{}", x))
                 .count());
     }
@@ -144,7 +147,7 @@ public class DiffInferenceTest {
         for (int i = 1; i <= numberAnonymousIndividuals; i++) {
             c.createIndividual().addProperty(p1, "forAnon(1)#" + i).addProperty(p2, "forAnon(2)#" + i);
         }
-        Graph res = (Graph) u.getL();
+        Graph res = u.getL();
         Assert.assertEquals(numberNamedIndividuals * 4 + numberAnonymousIndividuals * 3, res.size());
         return res;
     }
@@ -161,10 +164,9 @@ public class DiffInferenceTest {
         return res;
     }
 
-    public static MapModel assembleMapping(Graph source, Graph target) {
+    public static MapModel assembleMapping(MapManager manager, Graph source, Graph target) {
         OntGraphModel src = OntModelFactory.createModel(source);
         OntGraphModel dst = OntModelFactory.createModel(target);
-        MapManager manager = Managers.createMapManager();
         LOGGER.debug("Compose the (spin) mapping.");
         OntClass sourceClass = TestUtils.findOntEntity(src, OntClass.class, "Class");
         OntClass targetClass = TestUtils.findOntEntity(dst, OntClass.class, "ClassTarget");

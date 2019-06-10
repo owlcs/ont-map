@@ -63,7 +63,7 @@ public class SelfMapTest extends AbstractMapTest {
         MapModel m = composeIfMapping(Managers.createMapManager(), s, t);
         TestUtils.debug(m);
         m.runInference(s.getGraph(), t.getGraph());
-        Assert.assertEquals(4, t.namedIndividuals().count());
+        Assert.assertEquals(4, t.individuals().count());
     }
 
     public static OntGraphModel createTargetModel() {

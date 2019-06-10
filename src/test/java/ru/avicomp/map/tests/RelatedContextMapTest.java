@@ -46,7 +46,7 @@ public class RelatedContextMapTest extends MapTestData2 {
 
     @Override
     public void validate(OntGraphModel result) {
-        Assert.assertEquals(4, result.namedIndividuals().count());
+        Assert.assertEquals(4, result.individuals().count());
 
         OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Bob");
         OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Jane");

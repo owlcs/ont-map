@@ -94,7 +94,7 @@ public class MiscMapTest {
 
         // Check results:
         TestUtils.debug(t);
-        Assert.assertEquals(1, t.namedIndividuals()
+        Assert.assertEquals(1, t.individuals()
                 .peek(i -> LOGGER.debug("New target individual: {}", i)).count());
     }
 
@@ -160,8 +160,8 @@ public class MiscMapTest {
         TestUtils.debug(map);
         map.runInference(src.getBaseGraph(), dst.getBaseGraph());
         TestUtils.debug(dst);
-        Assert.assertEquals(2, dst.individuals().count());
-        Assert.assertEquals(2, dst.namedIndividuals().peek(i -> {
+        Assert.assertEquals(TestUtils.shouldGenerateNamedIndividuals(m) ? 2 : 0, dst.namedIndividuals().count());
+        Assert.assertEquals(2, dst.individuals().peek(i -> {
             Assert.assertEquals(ns, i.getNameSpace());
             String[] names = i.getLocalName().split("-");
             Assert.assertEquals(3, names.length);

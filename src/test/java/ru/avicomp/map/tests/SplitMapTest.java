@@ -61,7 +61,7 @@ public class SplitMapTest extends MapTestData3 {
         TestUtils.debug(t);
 
         LOGGER.info("Validate.");
-        Assert.assertEquals(s.namedIndividuals().count() * 2, t.namedIndividuals().count());
+        Assert.assertEquals(s.namedIndividuals().count() * 2, t.individuals().count());
         OntClass contact = TestUtils.findOntEntity(t, OntClass.class, "Contact");
         OntClass address = TestUtils.findOntEntity(t, OntClass.class, "Address");
         OntNOP link = TestUtils.findOntEntity(t, OntNOP.class, "contact-address");

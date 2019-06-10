@@ -43,6 +43,7 @@ import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.tests.ClassPropertiesTest;
 import ru.avicomp.ontapi.OntFormat;
 import ru.avicomp.ontapi.jena.OntModelFactory;
+import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
 
@@ -87,6 +88,17 @@ public class TestUtils {
                 return String.format("TestManager[%s]", super.toString());
             }
         };
+    }
+
+    /**
+     * Answers {@code true}
+     * if the given mapping manager should generate {@code owl:NamedIndividual}s declarations.
+     *
+     * @param m {@link MapManager}, not {@code null}
+     * @return boolean
+     */
+    public static boolean shouldGenerateNamedIndividuals(MapManager m) {
+        return true;
     }
 
     /**
@@ -142,10 +154,19 @@ public class TestUtils {
      */
     public static <E extends OntEntity> E findOntEntity(OntGraphModel m, Class<E> type, String localName) {
         Comparator<String> uriComparator = uriComparator(m.getID().getURI());
-        return m.ontEntities(type)
+        return ontEntities(m, type)
                 .filter(s -> s.getLocalName().equals(localName))
                 .min((r1, r2) -> uriComparator.compare(r1.getNameSpace(), r2.getNameSpace()))
-                .orElseThrow(() -> new AssertionError("Can't find [" + type.getSimpleName() + "] <...#" + localName + ">"));
+                .orElseThrow(() -> new AssertionError(String.format("Can't find [%s] <...#%s>",
+                        OntObjectImpl.viewAsString(type), localName)));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <E extends OntEntity> Stream<E> ontEntities(OntGraphModel m, Class<E> type) {
+        if (OntIndividual.Named.class == type) {
+            return m.individuals().filter(RDFNode::isURIResource).map(x -> (E) x);
+        }
+        return m.ontEntities(type);
     }
 
     /**

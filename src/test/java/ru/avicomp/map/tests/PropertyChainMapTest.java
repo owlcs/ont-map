@@ -66,7 +66,7 @@ public class PropertyChainMapTest extends MapTestData6 {
     }
 
     void validate(OntGraphModel dst) {
-        Assert.assertEquals(3, dst.namedIndividuals().count());
+        Assert.assertEquals(3, dst.individuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
         validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
         validateIndividual(dst, SHIP_3_NAME, SHIP_3_COORDINATES);

@@ -61,7 +61,7 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     public static void validate(OntGraphModel t, boolean includeSpInResult) {
-        Assert.assertEquals(2, t.namedIndividuals().count());
+        Assert.assertEquals(2, t.individuals().count());
         OntIndividual i1 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I1");
         OntIndividual i2 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I2");
         OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "tp1");

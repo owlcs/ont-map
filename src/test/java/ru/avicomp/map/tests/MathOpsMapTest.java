@@ -69,7 +69,7 @@ public class MathOpsMapTest extends MapTestData5 {
         Assert.assertEquals(1, t.statements(null, p1, null).count());
         Assert.assertEquals(1, t.statements(null, p2, null).count());
 
-        List<OntIndividual> res = t.namedIndividuals().collect(Collectors.toList());
+        List<OntIndividual> res = t.individuals().collect(Collectors.toList());
         Assert.assertEquals(1, res.size());
         OntIndividual i = res.get(0);
         Assert.assertEquals(RES_URI, i.getURI());

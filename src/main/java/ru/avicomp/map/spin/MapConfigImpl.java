@@ -96,4 +96,10 @@ public class MapConfigImpl {
     public MapConfigImpl setGenerateNamedIndividuals(boolean b) {
         return new MapConfigImpl(functionsOptimization, queriesOptimization, b);
     }
+
+    @Override
+    public String toString() {
+        return String.format("MappingConfiguration{namedIndividuals=%s, queriesOptimization=%s, functionsOptimization=%s}",
+                namedIndividuals, queriesOptimization, functionsOptimization);
+    }
 }

@@ -180,7 +180,6 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
         // add target expression
         addProperty(SPINMAP.target, m.createExpression(mappingFunction));
 
-
         // populate the mapping with functions bodies,
         // this is need to make sure it will work correctly in any other SPIN-based system
         writeFunction(mappingFunction);
@@ -209,8 +208,10 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
         MapContextImpl context = findNamedIndividualContext().orElse(null);
 
         // delete old if it is found
-        if (context != null && !manager.getConfig().generateNamedIndividuals()) {
-            context.deleteAll();
+        if (!manager.getConfig().generateNamedIndividuals()) {
+            if (context != null) {
+                context.deleteAll();
+            }
             return;
         }
 

@@ -208,7 +208,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         String v22 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(1));
         String v23 = TestUtils.getStringValue(srcIndividuals.get(1), props.get(2));
 
-        Assert.assertEquals(srcIndividuals.size(), dst.namedIndividuals().count());
+        Assert.assertEquals(srcIndividuals.size(), dst.individuals().count());
         String ns = dst.getNsPrefixURI("target");
         List<OntIndividual.Named> dstIndividuals = srcIndividuals.stream()
                 .map(i -> ns + i.getLocalName())

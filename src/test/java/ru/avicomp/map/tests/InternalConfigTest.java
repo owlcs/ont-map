@@ -43,13 +43,12 @@ import ru.avicomp.ontapi.jena.vocabulary.OWL;
  * Created by @ssz on 10.06.2019.
  */
 @RunWith(Parameterized.class)
-public class NamedIndividualsTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NamedIndividualsTest.class);
-    private static final MapConfigImpl CONFIG = MapConfigImpl.INSTANCE.setGenerateNamedIndividuals(true);
+public class InternalConfigTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InternalConfigTest.class);
 
     private final TD data;
 
-    public NamedIndividualsTest(TD data) {
+    public InternalConfigTest(TD data) {
         this.data = data;
     }
 
@@ -59,11 +58,12 @@ public class NamedIndividualsTest {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void validateNamedIndividuals(String log, OntGraphModel m, int expected) {
+    private void validateNamedIndividuals(String log, OntGraphModel m, int expected) {
         Assert.assertEquals(expected, m.individuals().peek(x -> {
             LOGGER.debug("{} Individual {}", log, x);
             if (x.isURIResource()) {
-                Assert.assertTrue(x.hasProperty(RDF.type, OWL.NamedIndividual));
+                Assert.assertEquals(data.config.generateNamedIndividuals(),
+                        x.hasProperty(RDF.type, OWL.NamedIndividual));
             } else {
                 Assert.assertFalse(x.hasProperty(RDF.type, OWL.NamedIndividual));
             }
@@ -72,7 +72,7 @@ public class NamedIndividualsTest {
 
     @Test
     public void testGeneratingNamedIndividuals() {
-        MapManager manager = TestUtils.withConfig(CONFIG.setOptimizations(TD.WITH_OPT == data));
+        MapManager manager = TestUtils.withConfig(data.config);
 
         String dom = "http://ex.com/";
         String src_uri = dom + "src";
@@ -97,11 +97,19 @@ public class NamedIndividualsTest {
         MapContext context = map.createContext(c1, c2, manager.getFunction(SPINMAPL.self).create());
         TestUtils.debug(map);
         Model base = map.asGraphModel().getBaseModel();
-        Assert.assertTrue(base.contains(AVC.self, RDF.type, SPINMAP.TargetFunction));
+        int expected;
         Assert.assertFalse(base.containsResource(AVC.UUID));
-        Assert.assertEquals(2, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.context).toList().size());
+        Assert.assertEquals(1, base.listResourcesWithProperty(RDF.type, SPINMAPL.self).toList().size());
+        if (data.config.generateNamedIndividuals()) {
+            expected = 2;
+            Assert.assertTrue(base.contains(AVC.self, RDF.type, SPINMAP.TargetFunction));
+        } else {
+            expected = 1;
+            Assert.assertFalse(base.containsResource(AVC.self));
+        }
+        Assert.assertEquals(expected, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
+        Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
+        Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.context).toList().size());
 
         OntGraphModel dst1 = TestUtils.forSchema(dst);
         map.runInference(src.getBaseGraph(), dst1.getGraph());
@@ -115,9 +123,9 @@ public class NamedIndividualsTest {
         base = map.asGraphModel().getBaseModel();
         Assert.assertFalse(base.containsResource(AVC.self));
         Assert.assertTrue(base.contains(AVC.UUID, RDF.type, SPINMAP.TargetFunction));
-        Assert.assertEquals(2, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.context).toList().size());
+        Assert.assertEquals(expected, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
+        Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
+        Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.context).toList().size());
 
         OntGraphModel dst2 = TestUtils.forSchema(dst);
         map.runInference(src.getBaseGraph(), dst2.getGraph());
@@ -127,8 +135,19 @@ public class NamedIndividualsTest {
     }
 
     enum TD {
-        WITHOUT_OPT,
-        WITH_OPT,
+        NO_OPTIMIZATION_NO_NAMED_INDIVIDUALS(false, false),
+        NO_OPTIMIZATION_WITH_NAMED_INDIVIDUALS(false, true),
+        WITH_OPTIMIZATION_NO_NAMED_INDIVIDUALS(true, false),
+        WITH_OPTIMIZATION_WITH_NAMED_INDIVIDUALS(true, true),
+        ;
+        private final MapConfigImpl config;
+
+        TD(boolean withOptimization, boolean withNamedIndividuals) {
+            this.config = MapConfigImpl.INSTANCE
+                    .setOptimizations(withOptimization)
+                    .setGenerateNamedIndividuals(withNamedIndividuals)
+            ;
+        }
     }
 
 }
