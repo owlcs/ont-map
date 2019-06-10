@@ -49,10 +49,7 @@ import ru.avicomp.ontapi.jena.model.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -76,29 +73,30 @@ public class TestUtils {
      * Creates a manager without any optimization.
      * For debugging.
      *
+     * @param config {@link MapConfigImpl}, not {@code null}
      * @return {@link MapManager}
      * @see MapConfigImpl
      */
-    public static MapManager createMapManagerWithoutOptimization() {
+    public static MapManager withConfig(MapConfigImpl config) {
         return new MapManagerImpl(Factory.createGraphMem(),
                 Factory::createGraphMem,
                 new HashMap<>(),
-                new MapConfigImpl() {
-                    @Override
-                    public boolean optimizeQueries() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean optimizeFunctions() {
-                        return false;
-                    }
-                }) {
+                Objects.requireNonNull(config)) {
             @Override
             public String toString() {
-                return String.format("ManagerWithoutOptimization[%s]", super.toString());
+                return String.format("TestManager[%s]", super.toString());
             }
         };
+    }
+
+    /**
+     * Creates an empty model for the given schema.
+     *
+     * @param m {@link OntGraphModel}, not {@code null}
+     * @return {@link OntGraphModel}
+     */
+    public static OntGraphModel forSchema(OntGraphModel m) {
+        return OntModelFactory.createModel().setNsPrefixes(m).addImport(m);
     }
 
     public static String asString(Model m) {

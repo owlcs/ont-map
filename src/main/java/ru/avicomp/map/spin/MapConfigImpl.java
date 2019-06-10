@@ -27,7 +27,17 @@ package ru.avicomp.map.spin;
 @SuppressWarnings("WeakerAccess")
 public class MapConfigImpl {
 
-    final static MapConfigImpl INSTANCE = new MapConfigImpl();
+    public final static MapConfigImpl INSTANCE = new MapConfigImpl(true, true, true);
+
+    private final boolean namedIndividuals;
+    private final boolean queriesOptimization;
+    private final boolean functionsOptimization;
+
+    private MapConfigImpl(boolean withFuncOpt, boolean withQueryOpt, boolean withNIDeclaration) {
+        this.namedIndividuals = withNIDeclaration;
+        this.queriesOptimization = withQueryOpt;
+        this.functionsOptimization = withFuncOpt;
+    }
 
     /**
      * Answers {@code true} if a target individuals must be a {@code owl:NamedIndividuals} also.
@@ -35,7 +45,7 @@ public class MapConfigImpl {
      * @return boolean
      */
     public boolean generateNamedIndividuals() {
-        return true;
+        return namedIndividuals;
     }
 
     /**
@@ -52,7 +62,7 @@ public class MapConfigImpl {
      * @return boolean
      */
     public boolean optimizeQueries() {
-        return true;
+        return queriesOptimization;
     }
 
     /**
@@ -64,6 +74,26 @@ public class MapConfigImpl {
      * @see ru.avicomp.map.spin.vocabulary.AVC#optimize
      */
     public boolean optimizeFunctions() {
-        return true;
+        return functionsOptimization;
+    }
+
+    /**
+     * Creates a config with disabled/enabled optimization depending to the parameter.
+     *
+     * @param b boolean
+     * @return new instance
+     */
+    public MapConfigImpl setOptimizations(boolean b) {
+        return new MapConfigImpl(b, b, namedIndividuals);
+    }
+
+    /**
+     * Creates a config with disabled/enabled generation individuals depending to the parameter.
+     *
+     * @param b boolean
+     * @return new instance
+     */
+    public MapConfigImpl setGenerateNamedIndividuals(boolean b) {
+        return new MapConfigImpl(functionsOptimization, queriesOptimization, b);
     }
 }

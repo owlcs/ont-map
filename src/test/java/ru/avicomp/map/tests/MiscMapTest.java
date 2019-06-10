@@ -21,7 +21,6 @@ package ru.avicomp.map.tests;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.PrefixMapping;
-import org.apache.jena.vocabulary.RDF;
 import org.junit.Assert;
 import org.junit.Test;
 import org.semanticweb.owlapi.io.FileDocumentSource;
@@ -38,7 +37,6 @@ import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.OntFormat;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.*;
-import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.XSD;
 
 import java.io.IOException;
@@ -254,76 +252,6 @@ public class MiscMapTest {
         map.createContext(c1, c2, uuid);
         man.getInferenceEngine(map).run(m, m);
         Assert.assertEquals(2, map.asGraphModel().individuals().peek(x -> LOGGER.debug("Res:{}", x)).count());
-    }
-
-    @Test
-    public void testGeneratingNamedIndividuals() {
-        MapManager manager = TestUtils.createMapManagerWithoutOptimization();
-
-        String dom = "http://ex.com/";
-        String src_uri = dom + "src";
-        String src_ns = src_uri + "#";
-        OntGraphModel src = OntModelFactory.createModel()
-                .setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", src_ns);
-        src.setID(src_uri);
-        OntClass c1 = src.createOntClass(src_ns + "CN01");
-        c1.createIndividual(src_ns + "aN01");
-        c1.createIndividual(src_ns + "aN02");
-        c1.createIndividual();
-
-        String dst_uri = dom + "dst";
-        String dst_ns = dst_uri + "#";
-        OntGraphModel dst = OntModelFactory.createModel()
-                .setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", dst_ns);
-        dst.setID(dst_uri);
-        OntClass c2 = dst.createOntClass(dst_ns + "CN02");
-
-        MapModel map = manager.createMapModel();
-        map.asGraphModel().setID(dom + "map01");
-        MapContext context = map.createContext(c1, c2, manager.getFunction(SPINMAPL.self).create());
-        TestUtils.debug(map);
-        Model base = map.asGraphModel().getBaseModel();
-        Assert.assertTrue(base.contains(AVC.self, RDF.type, SPINMAP.TargetFunction));
-        Assert.assertFalse(base.containsResource(AVC.UUID));
-        Assert.assertEquals(2, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.context).toList().size());
-
-        OntGraphModel dst1 = OntModelFactory.createModel().setNsPrefixes(dst).addImport(dst);
-        map.runInference(src.getBaseGraph(), dst1.getGraph());
-        TestUtils.debug(dst1);
-
-        Assert.assertEquals(3, dst1.individuals().peek(x -> {
-            LOGGER.debug("1) Individual {}", x);
-            if (x.isURIResource()) {
-                Assert.assertTrue(x.hasProperty(RDF.type, OWL.NamedIndividual));
-            } else {
-                Assert.assertFalse(x.hasProperty(RDF.type, OWL.NamedIndividual));
-            }
-        }).count());
-
-        // change target function:
-        context.addClassBridge(manager.getFunction(AVC.UUID).create().build());
-        TestUtils.debug(map);
-        base = map.asGraphModel().getBaseModel();
-        Assert.assertFalse(base.containsResource(AVC.self));
-        Assert.assertTrue(base.contains(AVC.UUID, RDF.type, SPINMAP.TargetFunction));
-        Assert.assertEquals(2, base.listStatements(null, RDF.type, SPINMAP.Context).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
-        Assert.assertEquals(2, base.listResourcesWithProperty(SPINMAP.context).toList().size());
-
-        OntGraphModel dst2 = OntModelFactory.createModel().setNsPrefixes(dst).addImport(dst);
-        map.runInference(src.getBaseGraph(), dst2.getGraph());
-        TestUtils.debug(dst2);
-
-        Assert.assertEquals(3, dst2.individuals().peek(x -> {
-            LOGGER.debug("2) Individual {}", x);
-            if (x.isURIResource()) {
-                Assert.assertTrue(x.hasProperty(RDF.type, OWL.NamedIndividual));
-            } else {
-                Assert.assertFalse(x.hasProperty(RDF.type, OWL.NamedIndividual));
-            }
-        }).count());
     }
 
 }

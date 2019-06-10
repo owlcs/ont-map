@@ -57,13 +57,34 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
                              DataFactory dataFactory,
                              OntologyFactory ontologyFactory,
                              ReadWriteLock lock) {
+        this(primary, dataFactory, ontologyFactory, MapConfigImpl.INSTANCE, lock);
+    }
+
+    /**
+     * Creates a ready-to use {@link OWLMapManager} instance.
+     *
+     * @param primary         {@link Graph} to store user-defined functions and other mapping-manager-specific stuff,
+     *                        cannot be {@code null}
+     * @param dataFactory     {@link DataFactory} a facility to construct OWL-API objects, cannot be {@code null}
+     * @param ontologyFactory {@link OntologyFactory} a facility to create and load {@link OntologyModel} instances,
+     *                        cannot be {@code null}
+     * @param config          {@link MapConfigImpl} a mapping manager config settings, cannot be {@code null}
+     * @param lock            {@link ReadWriteLock} to ensure thread-safety,
+     *                        possible {@code null} for one-thread environment
+     */
+    public OWLMapManagerImpl(Graph primary,
+                             DataFactory dataFactory,
+                             OntologyFactory ontologyFactory,
+                             MapConfigImpl config,
+                             ReadWriteLock lock) {
         super(dataFactory, ontologyFactory, lock);
         this.manager = createMapManager(
                 primary
                 , () -> {
                     throw new MapJenaException.IllegalState("Direct model creation is not allowed here.");
                 }
-                , lock
+                , getLock()
+                , config
                 , m -> ontology(m.getBaseGraph()).map(OntologyModel::asGraphModel).orElse(m));
     }
 
@@ -76,17 +97,18 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
      *
      * @param primary {@link Graph} to store user-defined functions and other manager-specific stuff
      * @param factory to produce fresh {@link Graph}s instances
-     * @param lock    {@link ReadWriteLock}, not null
+     * @param lock    {@link ReadWriteLock}, not {@code null}
      * @return {@link MapManager} instance with lock inside
      */
     public static MapManagerImpl createMapManager(Graph primary, Supplier<Graph> factory, ReadWriteLock lock) {
-        return createMapManager(primary, factory, lock, UnaryOperator.identity());
+        return createMapManager(primary, factory, lock, MapConfigImpl.INSTANCE, UnaryOperator.identity());
     }
 
-    private static MapManagerImpl createMapManager(Graph library,
-                                                   Supplier<Graph> factory,
-                                                   ReadWriteLock lock,
-                                                   UnaryOperator<OntGraphModel> map) {
+    protected static MapManagerImpl createMapManager(Graph library,
+                                                     Supplier<Graph> factory,
+                                                     ReadWriteLock lock,
+                                                     MapConfigImpl config,
+                                                     UnaryOperator<OntGraphModel> map) {
         boolean noOp = !NoOpReadWriteLock.isConcurrent(lock);
         library = Graphs.asNonConcurrent(Objects.requireNonNull(library, "Null primary graph"));
         if (!noOp) {
@@ -95,7 +117,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
         return new MapManagerImpl(library
                 , factory
                 , noOp ? new HashMap<>() : new ConcurrentHashMap<>()
-                , MapConfigImpl.INSTANCE) {
+                , config) {
             @Override
             protected boolean filter(FunctionImpl f) {
                 lock.readLock().lock();

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.*;
+import ru.avicomp.map.spin.MapConfigImpl;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.OntGraphDocumentSource;
@@ -103,7 +104,7 @@ public class InfrPerfTester {
     @Test
     public void testInferenceNoOptimization() {
         OntologyManager m1 = OntManagers.createONT();
-        MapManager m2 = TestUtils.createMapManagerWithoutOptimization();
+        MapManager m2 = TestUtils.withConfig(MapConfigImpl.INSTANCE.setOptimizations(false));
         testInference(m1, m2);
     }
 
@@ -111,7 +112,7 @@ public class InfrPerfTester {
         OntGraphModel target = createTargetModel(ontologyManager);
         OntGraphModel source = createSourceModel(ontologyManager, individualsNum);
         MapModel map = composeMapping(mappingManager, source, target);
-        Graph data = (Graph) ((Union) source.getBaseGraph()).getR();
+        Graph data = ((Union) source.getBaseGraph()).getR();
 
         map.runInference(data, target.getBaseGraph());
         validate(target, individualsNum);
