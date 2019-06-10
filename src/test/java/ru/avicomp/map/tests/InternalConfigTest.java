@@ -30,6 +30,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
+import ru.avicomp.map.spin.MapConfig;
 import ru.avicomp.map.spin.MapConfigImpl;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
@@ -62,7 +63,7 @@ public class InternalConfigTest {
         Assert.assertEquals(expected, m.individuals().peek(x -> {
             LOGGER.debug("{} Individual {}", log, x);
             if (x.isURIResource()) {
-                Assert.assertEquals(data.config.generateNamedIndividuals(),
+                Assert.assertEquals(data.withNamedIndividuals,
                         x.hasProperty(RDF.type, OWL.NamedIndividual));
             } else {
                 Assert.assertFalse(x.hasProperty(RDF.type, OWL.NamedIndividual));
@@ -72,7 +73,7 @@ public class InternalConfigTest {
 
     @Test
     public void testGeneratingNamedIndividuals() {
-        MapManager manager = TestUtils.withConfig(data.config);
+        MapManager manager = TestUtils.withConfig(data.createConfig());
 
         String dom = "http://ex.com/";
         String src_uri = dom + "src";
@@ -100,7 +101,7 @@ public class InternalConfigTest {
         int expected;
         Assert.assertFalse(base.containsResource(AVC.UUID));
         Assert.assertEquals(1, base.listResourcesWithProperty(RDF.type, SPINMAPL.self).toList().size());
-        if (data.config.generateNamedIndividuals()) {
+        if (data.withNamedIndividuals) {
             expected = 2;
             Assert.assertTrue(base.contains(AVC.self, RDF.type, SPINMAP.TargetFunction));
         } else {
@@ -134,19 +135,32 @@ public class InternalConfigTest {
         validateNamedIndividuals("2)", dst2, 3);
     }
 
+    @Test
+    public void testConfigSettings() {
+        MapManager m = TestUtils.withConfig(data.createConfig());
+        MapConfig conf = TestUtils.getMappingConfiguration(m);
+        Assert.assertEquals(data.withNamedIndividuals, conf.generateNamedIndividuals());
+        Assert.assertEquals(data.withAllOptimization, conf.useAllOptimizations());
+    }
+
     enum TD {
         NO_OPTIMIZATION_NO_NAMED_INDIVIDUALS(false, false),
         NO_OPTIMIZATION_WITH_NAMED_INDIVIDUALS(false, true),
         WITH_OPTIMIZATION_NO_NAMED_INDIVIDUALS(true, false),
         WITH_OPTIMIZATION_WITH_NAMED_INDIVIDUALS(true, true),
         ;
-        private final MapConfigImpl config;
+        private final boolean withAllOptimization;
+        private final boolean withNamedIndividuals;
 
         TD(boolean withOptimization, boolean withNamedIndividuals) {
-            this.config = MapConfigImpl.INSTANCE
-                    .setOptimizations(withOptimization)
-                    .setGenerateNamedIndividuals(withNamedIndividuals)
-            ;
+            this.withAllOptimization = withOptimization;
+            this.withNamedIndividuals = withNamedIndividuals;
+        }
+
+        public MapConfigImpl createConfig() {
+            return MapConfigImpl.INSTANCE
+                    .setAllOptimizations(withAllOptimization)
+                    .setGenerateNamedIndividuals(withNamedIndividuals);
         }
     }
 

@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  * @see ru.avicomp.map.Managers
  */
 @SuppressWarnings("WeakerAccess")
-public class MapManagerImpl implements MapManager {
+public class MapManagerImpl implements MapManager, HasConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapModelImpl.class);
 
     // prefix library:
@@ -147,7 +147,8 @@ public class MapManagerImpl implements MapManager {
      *
      * @return {@link MapConfigImpl}
      */
-    public MapConfigImpl getConfig() {
+    @Override
+    public MapConfigImpl getMappingConfiguration() {
         return config;
     }
 

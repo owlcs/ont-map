@@ -104,7 +104,7 @@ public class GroupConcatTest extends AbstractMapTest {
         Assert.assertEquals(1, m.contexts().count());
         Assert.assertEquals(2, m.ontologies().count());
         Assert.assertEquals(1, m.rules().count());
-        long expected = TestUtils.shouldGenerateNamedIndividuals(manager) ? 29 : 18;
+        long expected = TestUtils.getMappingConfiguration(manager).generateNamedIndividuals() ? 29 : 18;
         Assert.assertEquals(expected, m.asGraphModel().getBaseGraph().size());
     }
 

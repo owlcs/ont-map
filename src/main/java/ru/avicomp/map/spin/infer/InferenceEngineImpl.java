@@ -91,7 +91,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected static final int INTERMEDIATE_NODES_STORE_THRESHOLD = 50_000;
 
     public InferenceEngineImpl(MapModel mapping, MapManagerImpl manager) {
-        this(mapping, manager.getTopSpinGraph(), manager.getFactory(), manager.getConfig());
+        this(mapping, manager.getTopSpinGraph(), manager.getFactory(), manager.getMappingConfiguration());
     }
 
     public InferenceEngineImpl(MapModel mapping, Graph library, MapARQFactory factory, MapConfigImpl config) {

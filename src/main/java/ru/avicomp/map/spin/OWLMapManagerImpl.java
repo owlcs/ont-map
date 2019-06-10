@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * Created by @ssz on 21.06.2018.
  */
 @SuppressWarnings({"NullableProblems", "WeakerAccess"})
-public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager {
+public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapManager, HasConfig {
     // todo: handle in serialization (see issue #10):
     private final transient MapManagerImpl manager;
     private transient Set<String> libs;
@@ -308,6 +308,11 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     @Override
     public InferenceEngine getInferenceEngine(MapModel mapping) {
         return new OWLInferenceEngineImpl(mapping);
+    }
+
+    @Override
+    public MapConfigImpl getMappingConfiguration() {
+        return manager.getMappingConfiguration();
     }
 
     public class OWLInferenceEngineImpl implements InferenceEngine {

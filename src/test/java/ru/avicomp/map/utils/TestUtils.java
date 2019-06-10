@@ -91,14 +91,13 @@ public class TestUtils {
     }
 
     /**
-     * Answers {@code true}
-     * if the given mapping manager should generate {@code owl:NamedIndividual}s declarations.
+     * Returns {@link MapConfig}.
      *
      * @param m {@link MapManager}, not {@code null}
-     * @return boolean
+     * @return {@link MapConfig}
      */
-    public static boolean shouldGenerateNamedIndividuals(MapManager m) {
-        return true;
+    public static MapConfig getMappingConfiguration(MapManager m) {
+        return ((HasConfig) m).getMappingConfiguration();
     }
 
     /**

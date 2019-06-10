@@ -25,9 +25,9 @@ package ru.avicomp.map.spin;
  * Created by @ssz on 19.11.2018.
  */
 @SuppressWarnings("WeakerAccess")
-public class MapConfigImpl {
+public class MapConfigImpl implements MapConfig {
 
-    public final static MapConfigImpl INSTANCE = new MapConfigImpl(true, true, true);
+    public final static MapConfigImpl INSTANCE = new MapConfigImpl(true, true, false);
 
     private final boolean namedIndividuals;
     private final boolean queriesOptimization;
@@ -44,8 +44,14 @@ public class MapConfigImpl {
      *
      * @return boolean
      */
+    @Override
     public boolean generateNamedIndividuals() {
         return namedIndividuals;
+    }
+
+    @Override
+    public boolean useAllOptimizations() {
+        return optimizeFunctions() && optimizeQueries();
     }
 
     /**
@@ -83,7 +89,7 @@ public class MapConfigImpl {
      * @param b boolean
      * @return new instance
      */
-    public MapConfigImpl setOptimizations(boolean b) {
+    public MapConfigImpl setAllOptimizations(boolean b) {
         return new MapConfigImpl(b, b, namedIndividuals);
     }
 

@@ -140,7 +140,7 @@ public class SaveFunctionTest {
         Model res = ModelFactory.createDefaultModel();
         m.getInferenceEngine(map2).run(src, res);
         TestUtils.debug(res);
-        long expected = TestUtils.shouldGenerateNamedIndividuals(m) ? 8 : 5;
+        long expected = TestUtils.getMappingConfiguration(m).generateNamedIndividuals() ? 8 : 5;
         Assert.assertEquals(expected, res.size());
     }
 

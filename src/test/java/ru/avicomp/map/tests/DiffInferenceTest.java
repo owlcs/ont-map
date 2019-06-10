@@ -77,7 +77,7 @@ public class DiffInferenceTest {
         Graph t = new GraphMem();
         mapping.runInference(data, t);
         TestUtils.debug(ModelFactory.createModelForGraph(t));
-        int factor = TestUtils.shouldGenerateNamedIndividuals(manager) ? 3 : 2;
+        int factor = TestUtils.getMappingConfiguration(manager).generateNamedIndividuals() ? 3 : 2;
         long expected = (numberNamedIndividuals + numberAnonymousIndividuals) * factor;
         Assert.assertEquals(expected, t.size());
     }

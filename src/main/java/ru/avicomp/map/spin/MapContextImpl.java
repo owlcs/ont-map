@@ -208,7 +208,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
         MapContextImpl context = findNamedIndividualContext().orElse(null);
 
         // delete old if it is found
-        if (!manager.getConfig().generateNamedIndividuals()) {
+        if (!manager.getMappingConfiguration().generateNamedIndividuals()) {
             if (context != null) {
                 context.deleteAll();
             }

@@ -104,7 +104,7 @@ public class InfrPerfTester {
     @Test
     public void testInferenceNoOptimization() {
         OntologyManager m1 = OntManagers.createONT();
-        MapManager m2 = TestUtils.withConfig(MapConfigImpl.INSTANCE.setOptimizations(false));
+        MapManager m2 = TestUtils.withConfig(MapConfigImpl.INSTANCE.setAllOptimizations(false));
         testInference(m1, m2);
     }
 
