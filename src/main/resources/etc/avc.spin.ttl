@@ -220,6 +220,7 @@ spif:buildString  spin:constraint  [ a              spl:Argument ;
 
 spinmap:targetResource
         avc:hidden    "This function is not allowed to be used explicitly by the API.\nAll cases when <targetResource> might be used should be described through other functions." ;
+        avc:optimize  "ru.avicomp.map.spin.functions.spinmap.targetResource" ;
         spin:private  true .
 
 spin:eval  avc:hidden  "This function is not allowed to be used explicitly by the API.\nAll cases when <eval> might be used should be described through other functions." ;

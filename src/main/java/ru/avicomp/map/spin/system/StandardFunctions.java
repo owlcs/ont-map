@@ -23,6 +23,7 @@ import org.apache.jena.sparql.pfunction.PropertyFunction;
 import org.topbraid.spin.arq.PropertyChainHelperPFunction;
 import org.topbraid.spin.arq.functions.*;
 import org.topbraid.spin.vocabulary.SPIN;
+import ru.avicomp.map.spin.functions.spin.eval;
 import ru.avicomp.map.spin.vocabulary.OWLRL;
 
 import java.util.Collections;
@@ -30,6 +31,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * A collection of standard SPIN functions and magic properties.
+ * Currently, most of them are out of use in ONT-MAP.
+ *
  * Created by @ssz on 12.06.2019.
  */
 class StandardFunctions {
@@ -38,7 +42,7 @@ class StandardFunctions {
             Collections.unmodifiableMap(new HashMap<String, Class<? extends Function>>() {
                 {
                     put(SPIN.ask.getURI(), AskFunction.class);
-                    put(SPIN.eval.getURI(), EvalFunction.class);
+                    put(SPIN.eval.getURI(), eval.class);
                     put(SPIN.evalInGraph.getURI(), EvalInGraphFunction.class);
                     put(SPIN.violatesConstraints.getURI(), ViolatesConstraintsFunction.class);
                 }

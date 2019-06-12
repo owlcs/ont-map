@@ -19,8 +19,10 @@
 package ru.avicomp.map.spin.system;
 
 import org.apache.jena.sparql.function.Function;
+import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.functions.avc.UUID;
+import ru.avicomp.map.spin.functions.spinmap.targetResource;
 import ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator;
 import ru.avicomp.map.spin.functions.spl.object;
 import ru.avicomp.map.spin.vocabulary.AVC;
@@ -39,6 +41,7 @@ class OptimizedFunctions {
     static final Map<String, Class<? extends Function>> FUNCTIONS =
             Collections.unmodifiableMap(new HashMap<String, Class<? extends Function>>() {
                 {
+                    put(SPINMAP.targetResource.getURI(), targetResource.class);
                     put(SPINMAPL.concatWithSeparator.getURI(), concatWithSeparator.class);
                     put(SPL.object.getURI(), object.class);
                     put(AVC.UUID.getURI(), UUID.class);

@@ -115,6 +115,10 @@ public class SPINLibraryMaker {
 
         // Customization:
 
+        // SPINMAP:targetResource optimization
+        SPINMAP.targetResource.inModel(m)
+                .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spinmap.targetResource.class.getName());
+
         // SPINMAPL:concatWithSeparator optimization
         SPINMAPL.concatWithSeparator.inModel(m)
                 .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator.class.getName());
