@@ -148,9 +148,9 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         // pass prefixes:
         res.getPrefixMapping().setNsPrefixes(mapping.asGraphModel());
         // add everything from the mapping:
-        g.getUnderlying().graphs().flatMap(Graphs::flat).forEach(res::addGraph);
+        g.getUnderlying().graphs().flatMap(Graphs::baseGraphs).forEach(res::addGraph);
         // to ensure that all graphs from the library (with except of avc.*) are present (just in case) :
-        Graphs.flat(library).forEach(res::addGraph);
+        Graphs.baseGraphs(library).forEach(res::addGraph);
         return new UnionModel(res, SpinModelConfig.LIB_PERSONALITY);
     }
 
@@ -206,7 +206,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @return {@code Stream} of {@link OntIndividual}s
      */
     protected Stream<OntIndividual> listIndividuals(OntGraphModel src, Model dst) {
-        if (Graphs.getBase(src.getBaseGraph()) == Graphs.getBase(dst.getGraph())) {
+        if (Graphs.isSameBase(src.getBaseGraph(), dst.getGraph())) {
             return src.individuals().collect(Collectors.toList()).stream();
         }
         return src.individuals();
@@ -229,12 +229,12 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
             return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         }
         // Otherwise the raw no-schema data is specified -> assembly source from the given parts:
-        Set<Graph> exclude = Graphs.flat(library).collect(Collectors.toSet());
+        Set<Graph> exclude = Graphs.baseGraphs(library).collect(Collectors.toSet());
         if (target != null) {
-            Graphs.flat(target).forEach(exclude::add);
+            Graphs.baseGraphs(target).forEach(exclude::add);
         }
-        List<Graph> schemas = Graphs.flat(query).filter(x -> !exclude.contains(x)).collect(Collectors.toList());
-        List<Graph> sources = Graphs.flat(source).collect(Collectors.toList());
+        List<Graph> schemas = Graphs.baseGraphs(query).filter(x -> !exclude.contains(x)).collect(Collectors.toList());
+        List<Graph> sources = Graphs.baseGraphs(source).collect(Collectors.toList());
         // the result is not distinct, since the nature of source is unknown,
         // and the distinct mode might unpredictable degrade performance and memory usage:
         UnionGraph res = new UnionGraph(sources.remove(0), null, null, false);

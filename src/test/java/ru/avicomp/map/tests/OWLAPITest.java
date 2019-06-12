@@ -42,7 +42,7 @@ import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 import ru.avicomp.ontapi.jena.model.OntNOP;
 import ru.avicomp.ontapi.jena.utils.Graphs;
-import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.utils.OntModels;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -142,11 +142,11 @@ public class OWLAPITest {
         Assert.assertEquals(3, manager.ontologies().count());
         Assert.assertEquals(1, manager.mappings().count());
 
-        Assert.assertEquals(1, Models.flat(src1.asGraphModel()).count());
-        Assert.assertEquals(1, Models.flat(dst1.asGraphModel()).count());
+        Assert.assertEquals(1, OntModels.importsClosure(src1.asGraphModel()).count());
+        Assert.assertEquals(1, OntModels.importsClosure(dst1.asGraphModel()).count());
 
-        Models.flat(m1.asGraphModel()).forEach(x -> LOGGER.debug("{}", x));
-        Assert.assertEquals(30, Models.flat(m1.asGraphModel()).count());
+        OntModels.importsClosure(m1.asGraphModel()).forEach(x -> LOGGER.debug("{}", x));
+        Assert.assertEquals(30, OntModels.importsClosure(m1.asGraphModel()).count());
         MapModel m2 = manager.mappings().findFirst().orElseThrow(AssertionError::new);
         String tree = Graphs.importsTreeAsString(m2.asGraphModel().getGraph());
         LOGGER.debug("Imports-tree: \n{}", tree);

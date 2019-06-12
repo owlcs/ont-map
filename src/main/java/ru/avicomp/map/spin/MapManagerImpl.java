@@ -43,7 +43,7 @@ import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
-import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.utils.OntModels;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -513,7 +513,8 @@ public class MapManagerImpl implements MapManager, HasConfig {
     }
 
     public Stream<OntGraphModel> listRelatedModels(OntGraphModel model) {
-        return (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model)).flatMap(Models::flat);
+        return (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
+                .flatMap(OntModels::importsClosure);
     }
 
     @Override

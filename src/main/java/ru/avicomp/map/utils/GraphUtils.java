@@ -45,7 +45,7 @@ public class GraphUtils {
      * @return boolean
      */
     public static boolean containsAll(Graph left, Graph right) {
-        Set<Graph> set = Graphs.flat(left).collect(Collectors.toSet());
+        Set<Graph> set = Graphs.baseGraphs(left).collect(Collectors.toSet());
         return containsAll(right, set);
     }
 
@@ -57,7 +57,7 @@ public class GraphUtils {
      * @return boolean
      */
     private static boolean containsAll(Graph test, Collection<Graph> in) {
-        return Graphs.flat(test).allMatch(in::contains);
+        return Graphs.baseGraphs(test).allMatch(in::contains);
     }
 
     /**
