@@ -130,9 +130,15 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
 
         // The main initialization:
         Map<String, Graph> graphMap = new HashMap<>(Resources.Loader.GRAPHS);
-        Map<String, Class<? extends Function>> functionMap = new HashMap<>(SPIFFunctions.FUNCTIONS);
+        // functions
+        Map<String, Class<? extends Function>> functionMap = new HashMap<>();
+        functionMap.putAll(StandardFunctions.FUNCTIONS);
+        functionMap.putAll(SPIFFunctions.FUNCTIONS);
         functionMap.putAll(OptimizedFunctions.FUNCTIONS);
-        Map<String, Class<? extends PropertyFunction>> propertyMap = new HashMap<>(SPIFFunctions.PROPERTY_FUNCTIONS);
+        // property functions:
+        Map<String, Class<? extends PropertyFunction>> propertyMap = new HashMap<>();
+        propertyMap.putAll(StandardFunctions.PROPERTY_FUNCTIONS);
+        propertyMap.putAll(SPIFFunctions.PROPERTY_FUNCTIONS);
         // process all extensions:
         JenaSystem.get().snapshot().stream()
                 .filter(Extension.class::isInstance).map(Extension.class::cast)
