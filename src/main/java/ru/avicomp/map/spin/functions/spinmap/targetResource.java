@@ -20,11 +20,14 @@ package ru.avicomp.map.spin.functions.spinmap;
 
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
+import org.apache.jena.query.QuerySolutionMap;
+import org.apache.jena.rdf.model.Model;
 import org.apache.jena.sparql.expr.ExprEvalException;
 import org.apache.jena.sparql.expr.NodeValue;
 import org.apache.jena.sparql.function.FunctionEnv;
 import org.topbraid.spin.arq.AbstractFunction2;
 import org.topbraid.spin.vocabulary.SPINMAP;
+import ru.avicomp.map.spin.SpinModelConfig;
 import ru.avicomp.map.spin.functions.spin.eval;
 import ru.avicomp.ontapi.jena.utils.Iter;
 
@@ -42,8 +45,8 @@ import ru.avicomp.ontapi.jena.utils.Iter;
  * @see ru.avicomp.map.spin.vocabulary.AVC#optimize
  */
 public class targetResource extends AbstractFunction2 {
-    private static final Node SPINMAP_SOURCE = SPINMAP.source.asNode();
-    private static final Node SPINMAP_TARGET = SPINMAP.target.asNode();
+    private static final String SPINMAP_SOURCE_NAME = SPINMAP.source.getLocalName();
+    private static final Node SPINMAP_TARGET_NODE = SPINMAP.target.asNode();
 
     private final eval evalFunction = new eval();
 
@@ -52,15 +55,11 @@ public class targetResource extends AbstractFunction2 {
         Node source = requireResource(arg1, "arg1");
         Node context = requireResource(arg2, "context");
         Graph g = env.getActiveGraph();
-        return Iter.findFirst(g
-                .find(context, SPINMAP_TARGET, Node.ANY)
-                .mapWith(t -> {
-                    Node[] nodes = new Node[3];
-                    nodes[0] = t.getObject();
-                    nodes[1] = SPINMAP_SOURCE;
-                    nodes[2] = source;
-                    return evalFunction.exec(nodes, env);
-                }))
+        Model m = SpinModelConfig.createSpinModel(g);
+        QuerySolutionMap map = new QuerySolutionMap();
+        map.add(SPINMAP_SOURCE_NAME, m.asRDFNode(source));
+        return Iter.findFirst(g.find(context, SPINMAP_TARGET_NODE, Node.ANY)
+                .mapWith(t -> evalFunction.exec(m.getRDFNode(t.getObject()), map, env.getDataset())))
                 .orElseThrow(() -> new ExprEvalException(String.format("No spinmap:targetResource is derived " +
                         "for source=%s and context=%s", source, context)));
     }

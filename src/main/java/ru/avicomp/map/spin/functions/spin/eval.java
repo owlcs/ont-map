@@ -22,9 +22,9 @@ import org.apache.jena.graph.Node;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetImpl;
 import org.apache.jena.sparql.expr.ExprEvalException;
 import org.apache.jena.sparql.expr.NodeValue;
@@ -35,8 +35,10 @@ import org.topbraid.spin.arq.DatasetWithDifferentDefaultModel;
 import org.topbraid.spin.arq.functions.EvalFunction;
 import org.topbraid.spin.model.SPINFactory;
 import org.topbraid.spin.util.SPINExpressions;
+import ru.avicomp.map.spin.SpinModelConfig;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Re-implementation of {@code spin:eval}.
@@ -69,16 +71,22 @@ public class eval extends AbstractFunction implements FunctionFactory {
             return NodeValue.makeNode(exprNode);
         }
 
-        Model model = ModelFactory.createModelForGraph(env.getActiveGraph());
-        Resource exprRDFNode = model.wrapAsResource(exprNode);
-        QuerySolutionMap bindings = getBindings(nodes, model);
-        Dataset ds = new DatasetWithDifferentDefaultModel(model, DatasetImpl.wrap(env.getDataset()));
+        Model model = SpinModelConfig.createSpinModel(env.getActiveGraph());
+        return exec(model.wrapAsResource(exprNode), getBindings(nodes, model), env.getDataset());
+    }
+
+    public NodeValue exec(RDFNode exprNode, QuerySolutionMap bindings, DatasetGraph dsg) {
+        if (exprNode.isLiteral()) {
+            return NodeValue.makeNode(exprNode.asNode());
+        }
+        Model model = Objects.requireNonNull(exprNode.getModel());
+        Dataset ds = new DatasetWithDifferentDefaultModel(model, DatasetImpl.wrap(dsg));
 
         // The following code is commented out
         // since ONT-MAP does not support the direct query execution.
         // No functions can accept queries. Moreover, the function <spin:eval> is marked as <spin:private>.
         /*
-        org.topbraid.spin.model.Query spin = SPINFactory.asQuery(exprRDFNode);
+        org.topbraid.spin.model.Query spin = SPINFactory.asQuery(exprNode.asResource());
         if (spin instanceof org.topbraid.spin.model.Select || spin instanceof org.topbraid.spin.model.Ask) {
             org.topbraid.spin.arq.ARQFactory factory = org.topbraid.spin.arq.ARQFactory.get();
             org.apache.jena.query.Query query = factory.createQuery(spin);
@@ -99,7 +107,7 @@ public class eval extends AbstractFunction implements FunctionFactory {
         }
         */
 
-        RDFNode expr = SPINFactory.asExpression(exprRDFNode);
+        RDFNode expr = SPINFactory.asExpression(exprNode.asResource());
         RDFNode res = SPINExpressions.evaluate((Resource) expr, ds, bindings);
         if (res != null) {
             return NodeValue.makeNode(res.asNode());
