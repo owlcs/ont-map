@@ -202,6 +202,7 @@ avc:objectWithFilter  a     spin:Function ;
         rdfs:label          "object with filter" ;
         rdfs:seeAlso        spl:object ;
         rdfs:subClassOf     spl:OntologyFunctions ;
+        avc:optimize        "ru.avicomp.map.spin.functions.avc.objectWithFilter" ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( [ sp:varName  "object" ]
                                                   ) ;

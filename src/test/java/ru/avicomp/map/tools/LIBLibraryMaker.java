@@ -222,6 +222,7 @@ public class LIBLibraryMaker {
                 .addProperty(RDF.type, SPIN.Function)
                 .addProperty(RDFS.subClassOf, SPL.OntologyFunctions)
                 .addProperty(SPIN.returnType, AVC.undefined)
+                .addProperty(AVC.optimize, ru.avicomp.map.spin.functions.avc.objectWithFilter.class.getName())
                 .addProperty(RDFS.seeAlso, SPL.object)
                 .addProperty(SPINMAP.shortLabel, "object")
                 .addProperty(RDFS.label, "object with filter")

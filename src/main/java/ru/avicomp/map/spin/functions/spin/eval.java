@@ -32,7 +32,6 @@ import org.apache.jena.sparql.function.FunctionEnv;
 import org.apache.jena.sparql.function.FunctionFactory;
 import org.topbraid.spin.arq.AbstractFunction;
 import org.topbraid.spin.arq.DatasetWithDifferentDefaultModel;
-import org.topbraid.spin.arq.functions.EvalFunction;
 import org.topbraid.spin.model.SPINFactory;
 import org.topbraid.spin.util.SPINExpressions;
 import ru.avicomp.map.spin.SpinModelConfig;
@@ -46,7 +45,7 @@ import java.util.Objects;
  * Created by @ssz on 12.06.2019.
  *
  * @see org.topbraid.spin.vocabulary.SPIN#eval
- * @see EvalFunction
+ * @see org.topbraid.spin.arq.functions.EvalFunction
  */
 public class eval extends AbstractFunction implements FunctionFactory {
 

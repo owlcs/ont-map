@@ -22,6 +22,7 @@ import org.apache.jena.sparql.function.Function;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.functions.avc.UUID;
+import ru.avicomp.map.spin.functions.avc.objectWithFilter;
 import ru.avicomp.map.spin.functions.spinmap.targetResource;
 import ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator;
 import ru.avicomp.map.spin.functions.spl.object;
@@ -44,6 +45,7 @@ class OptimizedFunctions {
                     put(SPINMAP.targetResource.getURI(), targetResource.class);
                     put(SPINMAPL.concatWithSeparator.getURI(), concatWithSeparator.class);
                     put(SPL.object.getURI(), object.class);
+                    put(AVC.objectWithFilter.getURI(), objectWithFilter.class);
                     put(AVC.UUID.getURI(), UUID.class);
                 }
             });
