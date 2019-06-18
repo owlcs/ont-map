@@ -9,13 +9,14 @@ The mapping can be serialized as a [SPIN](http://spinrdf.org/)-rules RDF file, a
 Pure SPIN, which is an RDF-superstructure over SPARQL, is a fairly complex language when it comes to mapping between ontologies, 
 and it is incompatible with OWL-centric systems like OWL-API.
 **ONT-MAP** offers a way for building mappings without any knowledge about SPIN or SPARQL, 
-just only through top-level operations and objects, which can be represented as some high-level pseudo-language.
+just only through top-level operations and objects, which can be represented as some high-level pseudo-language, 
+that is optimized for GUI developing.
 
 ## Dependencies 
- - **[ONT-API, ver 1.4.1-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
+ - **[ONT-API, ver 1.4.2-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
- - [Jena-ARQ, ver 3.10.0](https://github.com/apache/jena) transitively from ONT-API
- - [OWL-API, ver 5.1.9](https://github.com/owlcs/owlapi) transitively from ONT-API
+ - [Jena-ARQ, ver 3.12.0](https://github.com/apache/jena) transitively from ONT-API
+ - [OWL-API, ver 5.1.11](https://github.com/owlcs/owlapi) transitively from ONT-API
  
 ## License
 * Apache License Version 2.0
@@ -34,15 +35,20 @@ Some examples of common reasons to exclude/hide a spin-function:
 * In addition to the standard spin functions (from `spif`, `spinmap`, `fn` and other builtin spin vocabularies) 
 there are also ONT-MAP specific functions (such as `avc:UUID`, `avc:currentIndividual`, etc), math functions (`math:log10`, `math:atan2`) and other. 
 So, a set of functions that can be used while mapping, has been expanded from one side and narrowed with another. 
-But there is no need to to have ONT-MAP libraries for the mapping-instruction to work in Composer - all needs are already delivered in the mapping graph itself.
-* ONT-MAP is a pluggable system: a set of functions can be expanded by adding extensions. There is an example of such an extension: [ont-map-ext-factorial](https://github.com/sszuev/ont-map-ext-factorial).
-* All functions (i.e. `MapFunction`s) are supplemented with complete information about arguments and types to be used as elements of constructor in GUI, any inappropriate usage (e.g. incompatible types) causes an error.
+But there is no need to to have ONT-MAP libraries for the mapping-instruction to work in Composer - 
+all needs are already delivered in the mapping graph itself.
+* ONT-MAP is a pluggable system: a set of functions can be expanded by adding extensions. 
+There is an example of such an extension: [ont-map-ext-factorial](https://github.com/sszuev/ont-map-ext-factorial).
+* All functions (i.e. `MapFunction`s) are supplemented with the complete information about arguments and types 
+to be used as elements of constructor in GUI, any inappropriate usage (e.g. incompatible types) causes an error.
 * API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntCE.java), 
 to make contexts references [OWL Object Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntOPE.java) is used, 
 and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNAP.java) and [OWL Datatype Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNDP.java) are used.
 * The mapping inference engine creates [OWL Named Individuals](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
-Although, anonymous individuals are theoretically possible, currently they are not supported due to SPIN-API limitations related to the target functions.
-* There is also a `ru.avicomp.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, which can be used to draw class-boxes with all related properties.
+Although, anonymous individuals are theoretically possible, 
+currently they are not supported due to SPIN-API limitations related to the target functions.
+* There is also a `ru.avicomp.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, 
+which can be used to draw class-boxes with all related properties.
 * A simple mapping example with inference:
 
         // get the manager:
