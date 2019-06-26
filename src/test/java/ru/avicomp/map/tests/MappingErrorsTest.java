@@ -231,7 +231,7 @@ public class MappingErrorsTest {
             TestUtils.assertCode(j, PROPERTY_BRIDGE_WRONG_MAPPING_FUNCTION);
             Assert.assertEquals(1, j.getSuppressed().length);
             Throwable e = j.getSuppressed()[0];
-            TestUtils.assertCode((MapJenaException) e, FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
+            TestUtils.assertCode(e, FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
         Assert.assertEquals(count, m.asGraphModel().statements().count());
     }
@@ -267,7 +267,7 @@ public class MappingErrorsTest {
         } catch (MapJenaException j) {
             TestUtils.assertCode(j, MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
-            TestUtils.assertCode((MapJenaException) j.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
+            TestUtils.assertCode(j.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
         MapFunction.Call func2 = m.getFunction(SP.floor).create().addLiteral(SP.arg1, 2.3).build();
         m.createMapModel().validate(func2);
@@ -281,7 +281,7 @@ public class MappingErrorsTest {
         } catch (MapJenaException j) {
             TestUtils.assertCode(j, MAPPING_FUNCTION_VALIDATION_FAIL);
             Assert.assertEquals(1, j.getSuppressed().length);
-            TestUtils.assertCode((MapJenaException) j.getSuppressed()[0], FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
+            TestUtils.assertCode(j.getSuppressed()[0], FUNCTION_CALL_INCOMPATIBLE_NESTED_FUNCTION);
         }
         MapFunction.Call func4 = m.getFunction(SP.floor).create()
                 .addFunction(SP.arg1, m.getFunction(SP.ceil)
@@ -296,7 +296,7 @@ public class MappingErrorsTest {
             MapJenaException j2 = (MapJenaException) j.getSuppressed()[0];
             TestUtils.assertCode(j2, FUNCTION_CALL_WRONG_ARGUMENT_FUNCTION_VALUE);
             Assert.assertEquals(1, j2.getSuppressed().length);
-            TestUtils.assertCode((MapJenaException) j2.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
+            TestUtils.assertCode(j2.getSuppressed()[0], FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
         }
 
         MapFunction.Call func5 = m.getFunction(SP.floor).create()
@@ -340,7 +340,7 @@ public class MappingErrorsTest {
         OntNDP p = s.createOntEntity(OntNDP.class, "p");
 
         MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
-        MapFunction.Call toTest = m.getFunction(MATH.atan2).create().addProperty(SP.arg1, p).build();
+        MapFunction.Call toTest = m.getFunction(MATH.atan).create().addProperty(SP.arg1, p).build();
         try {
             context.validate(toTest);
             Assert.fail("Validation passed.");
@@ -375,11 +375,13 @@ public class MappingErrorsTest {
         s.setID("http://ont");
         OntClass c1 = s.createOntEntity(OntClass.class, "s");
         OntClass c2 = s.createOntEntity(OntClass.class, "t");
-        OntNOP p = s.createOntEntity(OntNOP.class, "p");
-        p.addDomain(c1);
+        OntNOP p1 = s.createObjectProperty("p1");
+        p1.addDomain(c1);
+        OntNDP p2 = s.createDataProperty("p2").addDomain(c1).addRange(XSD.xdouble);
 
         MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
-        MapFunction.Call toTest = m.getFunction(MATH.atan2).create().addProperty(SP.arg1, p).build();
+        MapFunction.Call toTest = m.getFunction(MATH.atan2).create()
+                .addProperty(SP.arg1, p1).addProperty(SP.arg2, p2).build();
         try {
             context.validate(toTest);
             Assert.fail("Validation passed.");
@@ -391,7 +393,7 @@ public class MappingErrorsTest {
         }
 
         // add punning
-        s.createOntEntity(OntNDP.class, "p");
+        s.createDataProperty("p1");
         context.validate(toTest);
     }
 

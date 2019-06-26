@@ -19,6 +19,8 @@
 package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
@@ -56,14 +58,18 @@ public class MathLibraryMaker {
         createDoubleFuncWithDoubleArg(MATH.acos.inModel(m), "acos", "arccosine", "Returns the arc cosine of the argument.", null);
         createDoubleFuncWithDoubleArg(MATH.asin.inModel(m), "asin", "arcsine", "Returns the arc sine of the argument.", null);
         createDoubleFuncWithDoubleArg(MATH.atan.inModel(m), "atan", "arctangent", "Returns the arc tangent of the argument.", null);
-        createDoubleFuncWithDoubleArg(MATH.atan2.inModel(m), "atan2", "arctangent 2",
-                "Returns the angle in radians subtended at the origin by the point on a plane with coordinates (x, y) and the positive x-axis.", null);
+
         createDoubleFuncWithDoubleArg(MATH.cos.inModel(m), "cos", "cosinus", "Returns the cosine of the argument. The argument is an angle in radians.", "Radians");
         createDoubleFuncWithDoubleArg(MATH.exp.inModel(m), "exp", "exponent", "Returns the value of e^x.", null);
         createDoubleFuncWithDoubleArg(MATH.exp10.inModel(m), "exp10", "base-ten exponent", "Returns the value of 10^x.", null);
         createDoubleFuncWithDoubleArg(MATH.log.inModel(m), "log", "natural logarithm", "Returns the natural logarithm of the argument.", null);
         createDoubleFuncWithDoubleArg(MATH.log10.inModel(m), "log10", "base-ten logarithm", "Returns the base-ten logarithm of the argument.", null);
         createDoubleFunction(MATH.pi.inModel(m), "pi", "pi", "Returns an approximation to the mathematical constant π.");
+
+        createDoubleFunction(MATH.atan2.inModel(m), "atan2", "arctangent 2",
+                "Returns the angle in radians subtended at the origin by the point on a plane with coordinates (x, y) and the positive x-axis.")
+                .addProperty(SPIN.constraint, createDoubleArg(m, SP.arg1, "the ordinate coordinate"))
+                .addProperty(SPIN.constraint, createDoubleArg(m, SP.arg2, "the abscissa coordinate"));
 
         createDoubleFuncWithDoubleArg(MATH.pow.inModel(m), "pow", "power", "Returns the result of raising the first argument to the power of the second.", null)
                 .addProperty(SPIN.constraint, m.createResource()
@@ -87,13 +93,22 @@ public class MathLibraryMaker {
                 .addProperty(SPIN.returnType, XSD.xdouble);
     }
 
-    private static Resource createDoubleFuncWithDoubleArg(Resource name, String shortLabel, String label, String comment, String argComment) {
-        Resource arg = name.getModel().createResource()
+    private static Resource createDoubleFuncWithDoubleArg(Resource name,
+                                                          String shortLabel,
+                                                          String label,
+                                                          String comment,
+                                                          String argComment) {
+        Resource arg = createDoubleArg(name.getModel(), SP.arg1, argComment);
+        return createDoubleFunction(name, shortLabel, label, comment).addProperty(SPIN.constraint, arg);
+    }
+
+    private static Resource createDoubleArg(Model m, Property predicate, String argComment) {
+        Resource arg = m.createResource()
                 .addProperty(RDF.type, SPL.Argument)
-                .addProperty(SPL.predicate, SP.arg1)
+                .addProperty(SPL.predicate, predicate)
                 .addProperty(SPL.valueType, XSD.xdouble);
         if (argComment != null) arg.addProperty(RDFS.comment, argComment);
-        return createDoubleFunction(name, shortLabel, label, comment).addProperty(SPIN.constraint, arg);
+        return arg;
     }
 
 }

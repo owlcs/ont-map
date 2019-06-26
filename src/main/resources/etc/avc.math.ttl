@@ -166,6 +166,12 @@ math:atan2  a               spin:Function ;
         rdfs:label          "arctangent 2" ;
         rdfs:subClassOf     spl:MathematicalFunctions ;
         spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "the abscissa coordinate" ;
+                              spl:predicate  sp:arg2 ;
+                              spl:valueType  xsd:double
+                            ] ;
+        spin:constraint     [ a              spl:Argument ;
+                              rdfs:comment   "the ordinate coordinate" ;
                               spl:predicate  sp:arg1 ;
                               spl:valueType  xsd:double
                             ] ;
