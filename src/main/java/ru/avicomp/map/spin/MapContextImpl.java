@@ -572,7 +572,8 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
         ExtendedIterator<Resource> expressions = Iter.concat(targetExpressions, otherExpressions)
                 .filterKeep(RDFNode::isAnon);
 
-        ExtendedIterator<RDFNode> trees = Iter.flatMap(expressions, MapModelImpl::listParents);
+        ExtendedIterator<RDFNode> trees = Iter.flatMap(expressions,
+                x -> Iter.concat(Iter.of(x), Models.listAscendingStatements(x).mapWith(Statement::getSubject)));
         Set<Resource> res = Iter.flatMap(trees, this::listContextsForExpression)
                 .filterKeep(RDFNode::isURIResource).toSet();
         return Iter.create(res).mapWith(m::asContext).filterKeep(MapContextImpl::isPublic);

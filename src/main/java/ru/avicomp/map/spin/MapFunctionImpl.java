@@ -22,6 +22,7 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.util.iterator.ExtendedIterator;
+import org.apache.jena.util.iterator.NullIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
@@ -90,13 +91,13 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
      *
      * @return ordered {@code Stream}
      */
-    public Stream<ArgImpl> argImpls() {
-        return getArguments().stream();
+    public ExtendedIterator<ArgImpl> listArgImpls() {
+        return Iter.create(getArguments());
     }
 
     @Override
     public Stream<Arg> args() {
-        return SpinModels.identityStream(argImpls());
+        return Iter.asStream(listArgImpls());
     }
 
     @Override
@@ -107,7 +108,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     }
 
     public Optional<ArgImpl> arg(String predicate) {
-        return argImpls().filter(a -> Objects.equals(a.name(), predicate)).findFirst();
+        return Iter.findFirst(listArgImpls().filterKeep(a -> Objects.equals(a.name(), predicate)));
     }
 
     @Override
@@ -188,7 +189,8 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     public abstract boolean isCustom();
 
     public boolean isPrivate() {
-        return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isPrivate();
+        return func instanceof org.topbraid.spin.model.Function
+                && ((org.topbraid.spin.model.Function) func).isPrivate();
     }
 
     public boolean isAbstract() {
@@ -204,7 +206,8 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     }
 
     protected boolean isMagicProperty() {
-        return func instanceof org.topbraid.spin.model.Function && ((org.topbraid.spin.model.Function) func).isMagicProperty();
+        return func instanceof org.topbraid.spin.model.Function
+                && ((org.topbraid.spin.model.Function) func).isMagicProperty();
     }
 
     /**
@@ -234,14 +237,14 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     @Override
     public String toString(PrefixMapping pm) {
         return String.format("%s [%s](%s)", ToString.getShortForm(pm, type()), ToString.getShortForm(pm, name()),
-                argImpls().map(a -> a.toString(pm)).collect(Collectors.joining(", ")));
+                Iter.asStream(listArgImpls()).map(a -> a.toString(pm)).collect(Collectors.joining(", ")));
     }
 
     /**
      * Answers {@code true} if this function has a SPARQL query (select) expression.
      *
      * @return boolean
-     * @see #dependencyResources()
+     * @see #listDependencyResources()
      */
     public boolean isSparqlExpression() {
         return func.hasProperty(SPIN.body);
@@ -257,31 +260,46 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
         return func.hasProperty(SPIN.symbol);
     }
 
+    @Override
+    public final Stream<MapFunction> dependencies() {
+        return Iter.asStream(listDependencies());
+    }
+
+    /**
+     * Lists all functions that this one depends on.
+     * If a function is a SPARQL-based it may depend on other functions,
+     * which in turn may also rely on some other SPARQL functions or operators or ARQ(java) based functions.
+     *
+     * @return {@link ExtendedIterator} over all nested functions
+     */
+    protected abstract ExtendedIterator<? extends MapFunctionImpl> listDependencies();
+
     /**
      * Lists all dependencies (functions, that participate within the SPARQL body).
      * Note: it is a recursive function.
      *
-     * @return <b>not</b> distinct Stream of {@link Resource IRI Resource}s,
+     * @return <b>not</b> distinct {@link ExtendedIterator} over {@link Resource URI Resource}s,
      * possible empty (if no SPARQL body or function has a java body)
      * @see #isSparqlExpression()
      */
-    protected Stream<Resource> dependencyResources() {
-        if (!isSparqlExpression()) return Stream.empty();
-        return Models.listProperties(func.getRequiredProperty(SPIN.body).getObject().asResource())
-                .filter(s -> RDF.type.equals(s.getPredicate()))
-                .map(Statement::getObject)
-                .filter(RDFNode::isURIResource)
-                .map(RDFNode::asResource)
-                .filter(s -> s.hasProperty(RDF.type, SPIN.Function) || s.hasProperty(RDF.type, SPINMAP.TargetFunction));
+    protected ExtendedIterator<Resource> listDependencyResources() {
+        if (!isSparqlExpression()) return NullIterator.instance();
+        return Models.listDescendingStatements(func.getRequiredProperty(SPIN.body).getResource())
+                .filterKeep(s -> RDF.type.equals(s.getPredicate()))
+                .mapWith(Statement::getObject)
+                .filterKeep(RDFNode::isURIResource)
+                .mapWith(RDFNode::asResource)
+                .filterKeep(s -> s.hasProperty(RDF.type, SPIN.Function)
+                        || s.hasProperty(RDF.type, SPINMAP.TargetFunction));
     }
 
     /**
      * List all super classes of this function.
      *
-     * @return {@code Stream} over {@link Resource IRI Resource}s
+     * @return {@link ExtendedIterator} over {@link Resource IRI Resource}s
      */
-    protected Stream<Resource> superClasses() {
-        return Iter.asStream(func.listProperties(RDFS.subClassOf).mapWith(Statement::getResource));
+    protected ExtendedIterator<Resource> listSuperClasses() {
+        return func.listProperties(RDFS.subClassOf).mapWith(Statement::getResource);
     }
 
     /**
@@ -597,7 +615,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
 
         @Override
         public Stream<Arg> args() {
-            return SpinModels.identityStream(sortedVisibleArgs());
+            return sortedVisibleArgs().map(Function.identity());
         }
 
         public ExtendedIterator<CallImpl> listDirectFunctionCalls() {

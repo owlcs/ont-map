@@ -179,7 +179,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Map<Node, NodeValue> factoryCache = context.get(MapARQFactory.NODE_TO_VALUE_CACHE);
         // first process all direct individuals from the source graph:
         listIndividuals(src, dst).forEach(i -> {
-            Set<OntCE> classes = ModelUtils.getClasses(i);
+            Set<OntCE> classes = i.classes(false).collect(Collectors.toSet());
             Map<String, Set<QueryWrapper>> visited;
             processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
@@ -259,7 +259,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Iterator<Node> iterator = individuals.iterator();
         while (iterator.hasNext()) {
             Resource i = target.asRDFNode(iterator.next()).asResource();
-            Set<Resource> classes = ModelUtils.getDirectClasses(i);
+            Set<Resource> classes = ModelUtils.listDirectClasses(i).toSet();
             processOne(queries, classes, processed, individuals, target, i);
             iterator.remove();
         }

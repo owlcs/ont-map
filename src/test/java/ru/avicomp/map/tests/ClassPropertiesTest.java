@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 import ru.avicomp.map.ClassPropertyMap;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
-import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.impl.conf.OntModelConfig;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.OntModels;
 
 import java.io.IOException;
 import java.util.*;
@@ -212,7 +212,7 @@ public class ClassPropertiesTest {
     private static String classProperties(OntCE ce) {
         OntGraphModel m = ce.getModel();
         return Stream.concat(Stream.of(String.format("[%s]%s",
-                ModelUtils.getOWLType(ce).getSimpleName(), m.shortForm(ce.asNode().toString()))),
+                OntModels.getOntType(ce).getSimpleName(), m.shortForm(ce.asNode().toString()))),
                 manager.getClassProperties(m)
                         .properties(ce)
                         .sorted(Comparator.comparing(Resource::getURI))
@@ -223,7 +223,7 @@ public class ClassPropertiesTest {
     private static String propertyClasses(OntPE pe) {
         OntGraphModel m = pe.getModel();
         return Stream.concat(Stream.of(String.format("[%s]%s",
-                ModelUtils.getOWLType(pe).getSimpleName(), m.shortForm(pe.asNode().toString()))),
+                OntModels.getOntType(pe).getSimpleName(), m.shortForm(pe.asNode().toString()))),
                 manager.getClassProperties(m)
                         .classes(pe)
                         .map(FrontsNode::asNode)

@@ -169,7 +169,7 @@ public class SpinModels {
      * @param model {@link Model}
      * @return <b>distinct</b> Stream of {@link Resource}s
      */
-    public static Stream<Resource> listSpinFunctions(Model model) {
+    public static Stream<Resource> spinFunctions(Model model) {
         return Iter.asStream(model.listStatements(null, RDF.type, (RDFNode) null))
                 .filter(s -> s.getSubject().isURIResource())
                 .filter(s -> s.getObject().isURIResource())
@@ -184,7 +184,7 @@ public class SpinModels {
      * @param function {@link Resource}, must be in model, not {@code null}
      * @return Stream of URIs
      */
-    public static Stream<String> listSpinArguments(Resource function) {
+    public static Stream<String> spinArguments(Resource function) {
         return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
                         .filterKeep(s -> s.getObject().isAnon())
                         .mapWith(Statement::getResource),
@@ -202,7 +202,7 @@ public class SpinModels {
      * @return the same resource, but belonged to the specified model
      */
     public static Resource printSpinFunctionBody(Model model, Resource function) {
-        listSpinArguments(function).forEach(s -> getSpinProperty(model, s));
+        spinArguments(function).forEach(s -> getSpinProperty(model, s));
         return ModelUtils.addResourceContent(model, function);
     }
 
@@ -284,16 +284,4 @@ public class SpinModels {
         return SPINMAPL.BASE_URI.equals(uri);
     }
 
-    /**
-     * Returns the stream as it is, but with more specific generic type.
-     * TODO: choose more appropriate place for this function. Move to ONT-API (Iter?)?
-     *
-     * @param st  {@link Stream}, not {@code null}
-     * @param <X> anything
-     * @return the same instance
-     */
-    @SuppressWarnings("unchecked")
-    static <X> Stream<X> identityStream(Stream<? extends X> st) {
-        return (Stream<X>) st;
-    }
 }

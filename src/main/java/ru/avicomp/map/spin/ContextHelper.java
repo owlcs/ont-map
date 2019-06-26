@@ -36,7 +36,6 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.*;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Auxiliary class, a helper to process mapping template call arguments (predicates).
@@ -128,11 +127,11 @@ public class ContextHelper {
      */
     private static void simplify(Resource mapping) {
         Model m = mapping.getModel();
-        Set<Resource> expressions = Models.listProperties(mapping)
-                .filter(s -> Objects.equals(s.getObject(), SPINMAP.equals))
-                .filter(s -> Objects.equals(s.getPredicate(), RDF.type))
-                .map(Statement::getSubject)
-                .collect(Collectors.toSet());
+        Set<Resource> expressions = Models.listDescendingStatements(mapping)
+                .filterKeep(s -> Objects.equals(s.getObject(), SPINMAP.equals)
+                        && Objects.equals(s.getPredicate(), RDF.type))
+                .mapWith(Statement::getSubject)
+                .toSet();
         expressions.forEach(expr -> {
             RDFNode arg = expr.getRequiredProperty(SP.arg1).getObject();
             Set<Statement> statements = m.listStatements(null, null, expr).toSet();
@@ -284,9 +283,9 @@ public class ContextHelper {
         Map<Property, Property> sourcePredicatesMap = getSourcePredicatesMap();
         Statement expression = getMappingRule().getRequiredProperty(expressionPredicate);
         // properties from expression, not distinct flat list, i.e. with possible repetitions
-        List<Statement> properties = Stream.concat(Stream.of(expression), Models.listProperties(expression.getObject()))
-                .filter(s -> isContextProperty(s.getObject()))
-                .collect(Collectors.toList());
+        List<Statement> properties = Iter.concat(Iter.of(expression), Models.listDescendingStatements(expression.getObject()))
+                .filterKeep(s -> isContextProperty(s.getObject()))
+                .toList();
         int variableIndex = 1;
         for (Statement s : properties) {
             Resource expr = s.getSubject();

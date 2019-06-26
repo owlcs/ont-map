@@ -21,6 +21,7 @@ package ru.avicomp.map.spin;
 import org.apache.jena.query.QueryException;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,6 @@ import ru.avicomp.ontapi.jena.vocabulary.RDF;
 import java.util.*;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A {@link MapFunction.Call} implementation that is attached to a {@link MapModelImpl model}.
@@ -131,9 +131,8 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                 .addProperty(SPIN.returnType, lib.createResource(from.type()))
                 .addProperty(RDF.type, from.isTarget() ? SPINMAP.TargetFunction : SPIN.Function);
         // inherit all super classes:
-        res.dependencies().map(x -> (MapFunctionImpl) x)
-                .flatMap(MapFunctionImpl::superClasses)
-                .forEach(x -> f.addProperty(RDFS.subClassOf, x));
+        Iter.flatMap(res.listDependencies(), MapFunctionImpl::listSuperClasses)
+                .forEachRemaining(x -> f.addProperty(RDFS.subClassOf, x));
         // process arguments:
         expr.getArguments().forEach(arg -> {
             Resource constraint = lib.createResource()
@@ -175,8 +174,8 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             }
 
             @Override
-            public Stream<MapFunction> dependencies() {
-                return Iter.asStream(ModelCallImpl.this.listAllFunctions().filterKeep(MapFunctionImpl::canHaveNested));
+            public ExtendedIterator<MapFunctionImpl> listDependencies() {
+                return ModelCallImpl.this.listAllFunctions().filterKeep(MapFunctionImpl::canHaveNested);
             }
 
             @Override

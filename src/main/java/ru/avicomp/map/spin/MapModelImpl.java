@@ -26,12 +26,9 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.JenaException;
 import org.apache.jena.util.iterator.ExtendedIterator;
-import org.apache.jena.util.iterator.NullIterator;
-import org.apache.jena.vocabulary.RDFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.vocabulary.SP;
-import org.topbraid.spin.vocabulary.SPIN;
 import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapContext;
 import ru.avicomp.map.MapFunction;
@@ -46,7 +43,6 @@ import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
 import ru.avicomp.ontapi.jena.utils.Iter;
-import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
@@ -70,20 +66,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public MapModelImpl(UnionGraph base, OntPersonality personality, MapManagerImpl manager) {
         super(base, personality);
         this.manager = manager;
-    }
-
-    /**
-     * Recursively lists all parents for the given {@link RDFNode RDF Node}.
-     * TODO: move to ONT-API ({@link Models})?
-     *
-     * @param inModel, not {@code null} must be attached to a model
-     * @return {@link ExtendedIterator} of {@link RDFNode}s
-     * @see Models#listSubjects(RDFNode)
-     */
-    public static ExtendedIterator<RDFNode> listParents(RDFNode inModel) {
-        ExtendedIterator<? extends RDFNode> direct = inModel.getModel().listResourcesWithProperty(null, inModel);
-        ExtendedIterator<RDFNode> res = Iter.flatMap(direct, s -> s.isAnon() ? listParents(s) : NullIterator.instance());
-        return Iter.concat(Iter.of(inModel), res);
     }
 
     @Override
@@ -112,7 +94,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     /**
-     * Returns a first found typed object from a statement with specified subject and predicate or throws an exception.
+     * Returns a first found typed object from a statement with the specified subject and predicate.
+     * If nothing is found, an exception is thrown.
      * TODO: it is a generic method. Move to ONT-API ({@link ru.avicomp.ontapi.jena.impl.UnionModel}?)
      *
      * @param s    {@link Resource} to be used as subject in SPO-search pattern, not {@code null}
@@ -125,7 +108,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     public <X extends RDFNode> X getRequiredObject(Resource s, Property p, Class<X> type) throws JenaException {
         return Iter.findFirst(getBaseGraph().find(s.asNode(), p.asNode(), Node.ANY)
                 .mapWith(x -> getNodeAs(x.getObject(), type)))
-                .orElseThrow(() -> new MapJenaException.IllegalState(String.format("Can't find %s from pattern [%s, %s, ANY]", type, s, p)));
+                .orElseThrow(() -> new MapJenaException.IllegalState(String.format("Can't find %s " +
+                        "from pattern [%s, %s, ANY]", type, s, p)));
     }
 
     /**
@@ -246,37 +230,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     protected Optional<OntGraphModel> findModelByClass(Resource ce) {
         return ontologies().filter(m -> m.ontObjects(OntCE.class).anyMatch(c -> Objects.equals(c, ce))).findFirst();
-    }
-
-    /**
-     * Deletes all unused anymore things,
-     * that could appeared in the base graph while constructing or removing contexts and property bridges.
-     * This includes construct templates, custom functions, {@code sp:Variable}s and {@code sp:arg} properties.
-     *
-     * @return this model
-     * @see #clearUnused()
-     */
-    @Deprecated
-    protected MapModelImpl clear() {
-        // clean unused functions, mapping templates, properties, variables, etc
-        clearUnused();
-        // re-run since RDF is disordered and some data can be omitted in the previous step due to dependencies
-        clearUnused();
-        return this;
-    }
-
-    protected void clearUnused() {
-        // delete expressions:
-        Iter.flatMap(Iter.of(SPIN.ConstructTemplate, SPIN.Function, SPINMAP.TargetFunction),
-                t -> listOntStatements(null, RDF.type, t)).mapWith(OntStatement::getSubject)
-                .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, RDF.type, s))
-                .toSet().forEach(Models::deleteAll);
-        // delete properties and variables:
-        Iter.concat(listOntStatements(null, RDFS.subPropertyOf, SP.arg).mapWith(OntStatement::getSubject)
-                        .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, s.as(Property.class))),
-                listOntStatements(null, RDF.type, SP.Variable).mapWith(OntStatement::getSubject)
-                        .filterKeep(s -> s.isLocal() && !getBaseModel().contains(null, null, s)))
-                .toSet().forEach(Models::deleteAll);
     }
 
     /**
@@ -406,7 +359,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Gets rdf-datatype from a model,
      * which can be builtin (e.g {@code xsd:int}) or custom if corresponding declaration is present in the model.
-     * TODO: move to ONT-API?
      *
      * @param uri String, not null.
      * @return Optional around {@link RDFDatatype}
@@ -418,7 +370,6 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Converts a string to RDFNode.
      * String form can be obtained using {@link RDFNode#toString()} method.
-     * TODO: move to ONT-API?
      *
      * @param value String, not {@code null}
      * @return {@link RDFNode} literal or resource (can be anonymous), not {@code null}
@@ -488,7 +439,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @param domain   {@link OntCE} "domain" candidate, not {@code null}
      * @param range    {@link OntCE} "range" candidate, not {@code null}
      * @return {@code true} if it is link property
-     * @see ModelUtils#listProperties(OntCE)
+     * @see ModelUtils#properties(OntCE)
      * @see ModelUtils#ranges(OntOPE)
      */
     public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
@@ -570,9 +521,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
                     String uri = s.getPredicate().getURI();
                     MapFunctionImpl.ArgImpl a;
                     if (f.isVararg() && !f.hasArg(uri)) {
-                        List<MapFunctionImpl.ArgImpl> varargs = f.argImpls()
-                                .filter(MapFunctionImpl.ArgImpl::isVararg)
-                                .collect(Collectors.toList());
+                        List<MapFunctionImpl.ArgImpl> varargs = f.listArgImpls()
+                                .filterKeep(MapFunctionImpl.ArgImpl::isVararg)
+                                .toList();
                         if (varargs.size() != 1)
                             throw new MapJenaException.IllegalState("Can't find vararg argument for " + f.name());
                         a = f.newArg(varargs.get(0).arg, uri);
@@ -623,12 +574,11 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             function.write(MapModelImpl.this);
             function.runtimeBody().ifPresent(x -> x.apply(MapModelImpl.this, call));
             // print sub-class-of and dependencies:
-            Stream.concat(function.superClasses(), function.dependencyResources())
-                    .map(Resource::getURI)
-                    .distinct()
-                    .map(manager::getFunction)
-                    .filter(MapFunctionImpl::isCustom)
-                    .forEach(x -> x.write(MapModelImpl.this));
+            Iter.distinct(Iter.concat(function.listSuperClasses(), function.listDependencyResources())
+                    .mapWith(Resource::getURI))
+                    .mapWith(manager::getFunction)
+                    .filterKeep(MapFunctionImpl::isCustom)
+                    .forEachRemaining(x -> x.write(MapModelImpl.this));
         }
         // recursively print all nested functions:
         call.functions().forEach(this::writeFunctionBody);

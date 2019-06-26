@@ -28,6 +28,7 @@ import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntOPE;
 import ru.avicomp.ontapi.jena.model.OntPE;
 import ru.avicomp.ontapi.jena.utils.Iter;
+import ru.avicomp.ontapi.jena.utils.OntModels;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 
 import java.util.HashSet;
@@ -73,13 +74,13 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
             return Stream.of(model.getRDFSLabel());
         }
 
-        Set<OntPE> res = ModelUtils.listProperties(ce)
+        Set<OntPE> res = ModelUtils.properties(ce)
                 .flatMap(x -> relatedProperties(x, ce))
                 .collect(Collectors.toSet());
 
         // if one of the direct properties contains in propertyChain Axiom List in the first place,
         // then that propertyChain can be added to the result list as effective property
-        ModelUtils.listPropertyChains(model)
+        ModelUtils.propertyChains(model)
                 .filter(p -> res.stream()
                         .filter(x -> x.canAs(OntOPE.class))
                         .map(x -> x.as(OntOPE.class))
@@ -144,7 +145,7 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * @return {@code Set} of {@link OntPE property expression}s
      */
     protected Set<OntPE> getSubProperties(OntPE p, OntCE domain) {
-        Class<OntPE> type = ModelUtils.getOWLType(p);
+        Class<OntPE> type = OntModels.getOntType(p);
         return OntObjectImpl.getHierarchy(p, o -> ((OntObjectImpl) o).listSubjects(RDFS.subPropertyOf, type)
                 .filterKeep(x -> isStandalone(x, domain)), false);
     }

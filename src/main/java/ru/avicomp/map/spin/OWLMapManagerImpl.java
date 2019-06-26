@@ -139,8 +139,8 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             }
 
             @Override
-            public Stream<OntGraphModel> listRelatedModels(OntGraphModel model) {
-                return super.listRelatedModels(model).map(map);
+            public Stream<OntGraphModel> relatedModels(OntGraphModel model) {
+                return super.relatedModels(model).map(map);
             }
         };
     }

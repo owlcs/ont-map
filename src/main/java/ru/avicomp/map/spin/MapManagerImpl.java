@@ -24,6 +24,7 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.shared.PrefixMapping;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.topbraid.spin.model.Argument;
@@ -43,6 +44,7 @@ import ru.avicomp.ontapi.jena.impl.UnionModel;
 import ru.avicomp.ontapi.jena.impl.conf.OntPersonality;
 import ru.avicomp.ontapi.jena.model.*;
 import ru.avicomp.ontapi.jena.utils.Graphs;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.OntModels;
 
 import java.util.*;
@@ -100,7 +102,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
         this.prefixes = Graphs.collectPrefixes(SystemLibraries.graphs().values());
         this.config = Objects.requireNonNull(conf, "Null config");
         this.arqFactory = MapARQFactory.createSPINARQFactory(SystemLibraries.functions(), SystemLibraries.properties());
-        SpinModels.listSpinFunctions(this.library).forEach(this::register);
+        SpinModels.spinFunctions(this.library).forEach(this::register);
     }
 
     /**
@@ -258,7 +260,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
      */
     @Override
     public Stream<MapFunction> functions() {
-        return SpinModels.identityStream(functions.values().stream().filter(this::filter));
+        return Iter.asStream(Iter.create(functions.values()).filterKeep(this::filter));
     }
 
     /**
@@ -435,7 +437,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
      * @throws MapJenaException unable to handle some of the listed functions
      */
     protected void registerFunctions(Model m) throws MapJenaException {
-        SpinModels.listSpinFunctions(m)
+        SpinModels.spinFunctions(m)
                 .forEach(f -> {
                     // if it is contained in the map and has the same content -> OK, continue
                     // if it is contained in the map and has different content, but it is not avc:runtime -> FAIL
@@ -494,7 +496,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
      */
     @Override
     public ClassPropertyMap getClassProperties(OntGraphModel model) {
-        Stream<OntGraphModel> models = listRelatedModels(model);
+        Stream<OntGraphModel> models = relatedModels(model);
         List<ClassPropertyMap> maps = models
                 .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(),
                         () -> new LocalClassPropertyMapImpl(m, model)))
@@ -512,7 +514,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
         };
     }
 
-    public Stream<OntGraphModel> listRelatedModels(OntGraphModel model) {
+    public Stream<OntGraphModel> relatedModels(OntGraphModel model) {
         return (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
                 .flatMap(OntModels::importsClosure);
     }
@@ -600,12 +602,12 @@ public class MapManagerImpl implements MapManager, HasConfig {
             if (!arqFactory.getFunctionRegistry().isRegistered(name())) return false;
             // registered, but either no SPARQL body, which means that it has a java ARQ body and therefore executable,
             // or it has a SPARQL body, then it is executable iff all dependency functions are executable:
-            return getDependencies().stream().allMatch(FunctionImpl::isExecutable);
+            return Iter.allMatch(listDependencies(), FunctionImpl::isExecutable);
         }
 
         @Override
-        public Stream<MapFunction> dependencies() {
-            return SpinModels.identityStream(getDependencies().stream());
+        public ExtendedIterator<FunctionImpl> listDependencies() {
+            return Iter.create(getDependencies());
         }
 
         /**
@@ -615,9 +617,9 @@ public class MapManagerImpl implements MapManager, HasConfig {
          * @return Set of {@link FunctionImpl}s, possible empty
          */
         public Set<FunctionImpl> getDependencies() {
-            return dependencies != null ? dependencies : (dependencies = dependencyResources()
-                    .map(r -> MapJenaException.notNull(functions.get(r.getURI()), "Can't find function " + r))
-                    .collect(Collectors.toSet()));
+            return dependencies == null ? dependencies = listDependencyResources()
+                    .mapWith(r -> MapJenaException.notNull(functions.get(r.getURI()), "Can't find function " + r))
+                    .toSet() : dependencies;
         }
     }
 }

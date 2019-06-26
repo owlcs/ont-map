@@ -127,7 +127,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     public void validateValue(MapFunction.Builder value) throws MapJenaException {
         MapFunctionImpl function = getFunction();
         FunctionBuilderImpl builder = (FunctionBuilderImpl) value;
-        if (builder.listCalls().anyMatch(this::equals)) {
+        if (builder.calls().anyMatch(this::equals)) {
             // Attempt to build recursion.
             throw Exceptions.FUNCTION_CALL_PUT_SELF_REF.create().addFunction(function).build();
         }
@@ -165,15 +165,15 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
      *
      * @return Stream of {@link FunctionBuilderImpl}
      */
-    public Stream<FunctionBuilderImpl> listCalls() {
-        return Stream.concat(Stream.of(this), listNestedCalls());
+    public Stream<FunctionBuilderImpl> calls() {
+        return Stream.concat(Stream.of(this), nestedCalls());
     }
 
-    protected Stream<FunctionBuilderImpl> listNestedCalls() {
+    protected Stream<FunctionBuilderImpl> nestedCalls() {
         return input.values().stream()
                 .filter(v -> v instanceof FunctionBuilderImpl)
                 .map(FunctionBuilderImpl.class::cast)
-                .flatMap(FunctionBuilderImpl::listCalls);
+                .flatMap(FunctionBuilderImpl::calls);
     }
 
     @Override

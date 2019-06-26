@@ -20,11 +20,10 @@ package ru.avicomp.map.utils;
 
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.iterator.ExtendedIterator;
-import org.apache.jena.util.iterator.WrappedIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.util.JenaUtil;
-import ru.avicomp.ontapi.jena.impl.OntObjectImpl;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -43,6 +42,7 @@ import java.util.stream.Stream;
  * <p>
  * Created by @szz on 25.12.2018.
  *
+ * @see ru.avicomp.ontapi.jena.utils.OntModels
  * @see Models
  */
 @SuppressWarnings("WeakerAccess")
@@ -84,35 +84,18 @@ public class ModelUtils {
     }
 
     /**
-     * Gets all object resources from {@code rdf:type} statement for the specified subject resource in the model.
-     * It is not recursive method: it does not consider {@code rdf:type}s of returned resources.
+     * List direct class-types,
+     * i.e. all object resources from {@code rdf:type} statement for the specified subject resource in the model.
+     * Notice that this is not recursive method: it does not consider {@code rdf:type}s of returned resources.
      *
      * @param individual {@link Resource}, individual, not {@code null}
-     * @return Set of {@link Resource}, classes
+     * @return {@link ExtendedIterator} of {@link Resource}s
      */
-    public static Set<Resource> getDirectClasses(Resource individual) {
+    public static ExtendedIterator<Resource> listDirectClasses(Resource individual) {
         return individual.listProperties(RDF.type)
                 .mapWith(Statement::getObject)
                 .filterKeep(RDFNode::isResource)
-                .mapWith(RDFNode::asResource)
-                .toSet();
-    }
-
-    /**
-     * Gets all types (classes) for the given individual, taken into account the class hierarchy.
-     *
-     * @param individual {@link OntIndividual}, not {@code null}
-     * @return Set of {@link OntCE class expressions}
-     */
-    public static Set<OntCE> getClasses(OntIndividual individual) {
-        Set<OntCE> res = new HashSet<>();
-        individual.classes().forEach(c -> collectSuperClasses(c, res));
-        return res;
-    }
-
-    private static void collectSuperClasses(OntCE ce, Set<OntCE> res) {
-        if (!res.add(ce)) return;
-        ce.superClasses().forEach(c -> collectSuperClasses(c, res));
+                .mapWith(RDFNode::asResource);
     }
 
     /**
@@ -126,7 +109,7 @@ public class ModelUtils {
      * @see ModelUtils#ranges(OntOPE)
      */
     public static Optional<OntCE> range(OntOPE p) {
-        return findRange(p, x -> listRanges(x.as(OntOPE.class)),
+        return findRange(p, x -> classRanges(x.as(OntOPE.class)),
                 OntPE::superProperties, OntOPE.class, OntCE.class, new HashSet<>());
     }
 
@@ -165,10 +148,10 @@ public class ModelUtils {
      * @param ope {@link OntOPE}, not {@code null}
      * @return Stream
      * @see #range(OntOPE)
-     * @see #listRanges(OntOPE)
+     * @see #classRanges(OntOPE)
      */
     public static Stream<OntCE> ranges(OntOPE ope) {
-        return listRanges(ope, p -> listRanges(p.as(OntOPE.class)), OntPE::superProperties,
+        return resourceRanges(ope, p -> classRanges(p.as(OntOPE.class)), OntPE::superProperties,
                 new HashSet<>()).filter(x -> x.canAs(OntCE.class)).map(x -> x.as(OntCE.class)).distinct();
     }
 
@@ -181,7 +164,7 @@ public class ModelUtils {
      * @see #range(OntNDP)
      */
     public static Stream<OntDR> ranges(OntNDP p) {
-        return listRanges(p, new HashSet<>()).filter(x -> x.canAs(OntDR.class)).map(x -> x.as(OntDR.class));
+        return resourceRanges(p, new HashSet<>()).filter(x -> x.canAs(OntDR.class)).map(x -> x.as(OntDR.class));
     }
 
     /**
@@ -193,11 +176,11 @@ public class ModelUtils {
      * @see #range(OntNAP)
      */
     public static Stream<Property> ranges(OntNAP p) {
-        return listRanges(p, new HashSet<>()).filter(RDFNode::isURIResource).map(x -> x.as(Property.class));
+        return resourceRanges(p, new HashSet<>()).filter(RDFNode::isURIResource).map(x -> x.as(Property.class));
     }
 
-    private static Stream<? extends Resource> listRanges(OntPE p, Set<Resource> seen) {
-        return listRanges(p, OntPE::ranges, OntPE::superProperties, seen);
+    private static Stream<? extends Resource> resourceRanges(OntPE p, Set<Resource> seen) {
+        return resourceRanges(p, OntPE::ranges, OntPE::superProperties, seen);
     }
 
     /**
@@ -252,22 +235,22 @@ public class ModelUtils {
      * but also from {@code rdfs:domain} axioms, if a property is inverse.
      *
      * @param p {@link OntOPE}
-     * @return Stream of {@link OntCE}s
+     * @return {@code Stream} of {@link OntCE}s
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Inverse_Object_Properties'>6.1.1 Inverse Object Properties</a>
      * @see <a href='https://www.w3.org/TR/owl2-syntax/#Inverse_Object_Properties_2'>9.2.4 Inverse Object Properties</a>
      */
-    private static Stream<OntCE> listRanges(OntOPE p) {
+    private static Stream<OntCE> classRanges(OntOPE p) {
         return Stream.concat(p.ranges(), p.inverseProperties().flatMap(OntDOP::domains));
     }
 
-    private static Stream<? extends Resource> listRanges(OntPE p,
-                                                         Function<OntPE, Stream<? extends Resource>> findRanges,
-                                                         Function<OntPE, Stream<? extends Resource>> findSuperProperties,
-                                                         Set<Resource> seen) {
+    private static Stream<? extends Resource> resourceRanges(OntPE p,
+                                                             Function<OntPE, Stream<? extends Resource>> findRanges,
+                                                             Function<OntPE, Stream<? extends Resource>> findSuperProperties,
+                                                             Set<Resource> seen) {
         if (!seen.add(p)) return Stream.empty();
         Stream<? extends Resource> res = findRanges.apply(p);
         return Stream.concat(res, findSuperProperties.apply(p)
-                .flatMap(x -> listRanges(x.as(OntPE.class), findRanges, findSuperProperties, seen)));
+                .flatMap(x -> resourceRanges(x.as(OntPE.class), findRanges, findSuperProperties, seen)));
     }
 
     /**
@@ -281,11 +264,11 @@ public class ModelUtils {
      * </ul>
      *
      * @param ce {@link OntCE}, not {@code null}
-     * @return <b>distinct</b> Stream of {@link OntPE properties}
+     * @return <b>distinct</b> {@code Stream} of {@link OntPE properties}
      * @see OntCE#properties()
-     * @see #listRanges(OntOPE)
+     * @see #classRanges(OntOPE)
      */
-    public static Stream<OntPE> listProperties(OntCE ce) {
+    public static Stream<OntPE> properties(OntCE ce) {
         // direct domains
         Stream<OntPE> domains = ce.properties();
         // indirect domains (ranges for inverseOf object properties):
@@ -301,21 +284,6 @@ public class ModelUtils {
     }
 
     /**
-     * Gets ont-object class type.
-     *
-     * @param object instance of {@link O}
-     * @param <O>    any subtype of {@link OntObject}
-     * @return {@link Class} of {@link O}
-     */
-    @SuppressWarnings("unchecked")
-    public static <O extends OntObject> Class<O> getOWLType(O object) {
-        if (object instanceof OntObjectImpl) {
-            return (Class<O>) ((OntObjectImpl) object).getActualClass();
-        }
-        return (Class<O>) OntObjectImpl.findActualClass(object);
-    }
-
-    /**
      * Returns a set consisting of a given class and all its superclasses.
      * Similar to {@code rdfs:subClassOf*}.
      *
@@ -323,7 +291,7 @@ public class ModelUtils {
      * @return an {@link ExtendedIterator} of class resources
      */
     public static ExtendedIterator<Resource> listSuperClasses(Resource clazz) {
-        return WrappedIterator.create(JenaUtil.getAllSuperClassesStar(clazz).iterator());
+        return Iter.create(() -> JenaUtil.getAllSuperClassesStar(clazz).iterator());
     }
 
     /**
@@ -413,16 +381,26 @@ public class ModelUtils {
     }
 
     /**
-     * Lists all {@code owl:propertyChainAxiom} object properties.
+     * Answers a {@code Stream} over all {@code owl:propertyChainAxiom} object properties.
      *
      * @param m {@link OntGraphModel}
-     * @return Stream of {@link OntOPE}s
+     * @return {@code Stream} of {@link OntOPE}s
      */
-    public static Stream<OntOPE> listPropertyChains(OntGraphModel m) {
-        return m.statements(null, OWL.propertyChainAxiom, null)
-                .map(OntStatement::getSubject)
-                .filter(s -> s.canAs(OntOPE.class))
-                .map(s -> s.as(OntOPE.class));
+    public static Stream<OntOPE> propertyChains(OntGraphModel m) {
+        return Iter.asStream(listPropertyChains(m));
+    }
+
+    /**
+     * Answers an {@code ExtendedIterator} over all {@code owl:propertyChainAxiom} object properties.
+     *
+     * @param m {@link OntGraphModel}
+     * @return {@link ExtendedIterator} of {@link OntOPE}s
+     */
+    public static ExtendedIterator<OntOPE> listPropertyChains(OntGraphModel m) {
+        return m.listStatements(null, OWL.propertyChainAxiom, (RDFNode) null)
+                .mapWith(Statement::getSubject)
+                .filterKeep(s -> s.canAs(OntOPE.class))
+                .mapWith(s -> s.as(OntOPE.class));
     }
 
     /**
@@ -437,6 +415,8 @@ public class ModelUtils {
         return superProperty.propertyChains()
                 .map(OntList::first)
                 .filter(Optional::isPresent)
-                .map(Optional::get).anyMatch(p -> Objects.equals(p, candidate));
+                .map(Optional::get)
+                .anyMatch(p -> Objects.equals(p, candidate));
     }
+
 }
