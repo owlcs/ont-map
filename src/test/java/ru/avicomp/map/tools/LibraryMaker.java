@@ -22,7 +22,6 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.shared.PrefixMapping;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.spin.SPINLibrary;
 import ru.avicomp.map.spin.SpinModelConfig;
@@ -52,9 +51,8 @@ abstract class LibraryMaker {
     static OntGraphModel createModel(Graph graph) {
         OntPersonality p = PersonalityBuilder.from(OntModelConfig.ONT_PERSONALITY_LAX)
                 .addPersonality(SpinModelConfig.LIB_PERSONALITY).build();
-        OntGraphModel res = OntModelFactory.createModel(graph, p);
-        PrefixMapping pm = PrefixMapping.Factory.create().setNsPrefix("avc", AVC.NS);
-        AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), SPINLibrary.prefixes()).addPrefixes(pm);
+        OntGraphModel res = OntModelFactory.createModel(graph, p).setNsPrefix("avc", AVC.NS);
+        AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), SPINLibrary.prefixes());
         return res;
     }
 
