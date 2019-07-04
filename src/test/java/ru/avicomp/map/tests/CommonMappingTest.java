@@ -26,6 +26,7 @@ import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.*;
+import ru.avicomp.map.tests.maps.*;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.model.OntObject;

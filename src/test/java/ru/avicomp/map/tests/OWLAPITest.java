@@ -34,6 +34,7 @@ import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapModel;
 import ru.avicomp.map.OWLMapManager;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.tests.maps.PropertyChainMapTest;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.OntologyModel;
 import ru.avicomp.ontapi.jena.UnionGraph;

@@ -22,7 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapManager;
-import ru.avicomp.map.tests.*;
+import ru.avicomp.map.tests.LoadMapTestData;
+import ru.avicomp.map.tests.maps.*;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 
 import java.io.IOException;

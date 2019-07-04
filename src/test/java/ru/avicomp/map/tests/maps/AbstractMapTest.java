@@ -1,7 +1,7 @@
 /*
  * This file is part of the ONT MAP.
  * The contents of this file are subject to the Apache License, Version 2.0.
- * Copyright (c) 2018, Avicomp Services, AO
+ * Copyright (c) 2019, Avicomp Services, AO
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.tests;
+package ru.avicomp.map.tests.maps;
 
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 /**
  * Created by @szuev on 14.04.2018.
  */
+@SuppressWarnings("WeakerAccess")
 public abstract class AbstractMapTest {
 
     private static MapManager manager;
@@ -57,20 +58,19 @@ public abstract class AbstractMapTest {
 
     public abstract OntGraphModel assembleTarget();
 
-    MapManager manager() {
+    public MapManager manager() {
         return manager == null ? manager = createManager() : manager;
     }
 
-    MapModel assembleMapping() {
+    public MapModel assembleMapping() {
         return assembleMapping(manager());
     }
 
-    MapModel assembleMapping(MapManager manager) {
+    public MapModel assembleMapping(MapManager manager) {
         return assembleMapping(manager, assembleSource(), assembleTarget());
     }
 
-
-    static String getNameSpace(Class clazz) {
+    public static String getNameSpace(Class clazz) {
         return String.format("http://example.com/%s", clazz.getSimpleName());
     }
 
@@ -82,7 +82,7 @@ public abstract class AbstractMapTest {
         return getNameSpace(getClass());
     }
 
-    OntGraphModel createDataModel(String name) {
+    public OntGraphModel createDataModel(String name) {
         OntGraphModel res = OntModelFactory.createModel();
         res.setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(getDataNameSpace() + "/" + name);
@@ -91,14 +91,14 @@ public abstract class AbstractMapTest {
         return res;
     }
 
-    MapModel createMappingModel(MapManager manager, String description) {
+    public MapModel createMappingModel(MapManager manager, String description) {
         MapModel res = manager.createMapModel();
         // TopBraid Composer (gui, not spin) has difficulties with anonymous ontologies:
         res.asGraphModel().setID(getMapNameSpace() + "/map").addComment(description, null);
         return res;
     }
 
-    static void commonValidate(OntGraphModel m) {
+    public static void commonValidate(OntGraphModel m) {
         // check there is no any garbage in the model:
         List<OntObject> undeclaredIndividuals = TestUtils.plainAssertions(m)
                 .map(OntStatement::getSubject)
@@ -107,7 +107,7 @@ public abstract class AbstractMapTest {
         Assert.assertEquals("Model has unattached assertions: " + undeclaredIndividuals, 0, undeclaredIndividuals.size());
     }
 
-    static String toMessage(PrefixMapping pm, MapFunction... functions) {
+    public static String toMessage(PrefixMapping pm, MapFunction... functions) {
         return Arrays.stream(functions).map(MapFunction::name).map(pm::shortForm).collect(Collectors.joining(", "));
     }
 }

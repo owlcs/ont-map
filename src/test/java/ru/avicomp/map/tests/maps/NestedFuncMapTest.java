@@ -1,7 +1,7 @@
 /*
  * This file is part of the ONT MAP.
  * The contents of this file are subject to the Apache License, Version 2.0.
- * Copyright (c) 2018, Avicomp Services, AO
+ * Copyright (c) 2019, Avicomp Services, AO
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.tests;
+package ru.avicomp.map.tests.maps;
 
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
@@ -144,10 +144,10 @@ public class NestedFuncMapTest extends MapTestData1 {
         validateAfterInference(src, dst);
     }
 
-    MapModel createMapping(MapManager manager,
-                           OntGraphModel src,
-                           OntGraphModel dst,
-                           Supplier<MapFunction.Call> targetFunctionMaker) {
+    public MapModel createMapping(MapManager manager,
+                                  OntGraphModel src,
+                                  OntGraphModel dst,
+                                  Supplier<MapFunction.Call> targetFunctionMaker) {
         OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
         OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
         List<OntNDP> props = src.dataProperties().sorted(Comparator.comparing(Resource::getURI))
@@ -192,7 +192,7 @@ public class NestedFuncMapTest extends MapTestData1 {
         return res;
     }
 
-    void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
+    public void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
         OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
         List<OntNDP> props = src.dataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());

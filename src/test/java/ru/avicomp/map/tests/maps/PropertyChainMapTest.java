@@ -1,7 +1,7 @@
 /*
  * This file is part of the ONT MAP.
  * The contents of this file are subject to the Apache License, Version 2.0.
- * Copyright (c) 2018, Avicomp Services, AO
+ * Copyright (c) 2019, Avicomp Services, AO
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.tests;
+package ru.avicomp.map.tests.maps;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -65,7 +65,7 @@ public class PropertyChainMapTest extends MapTestData6 {
         validate(dst);
     }
 
-    void validate(OntGraphModel dst) {
+    public void validate(OntGraphModel dst) {
         Assert.assertEquals(3, dst.individuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
         validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
@@ -163,8 +163,7 @@ public class PropertyChainMapTest extends MapTestData6 {
         return m;
     }
 
-
-    static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
+    public static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
         OntNOP OASUU = TestUtils.findOntEntity(m, OntNOP.class, "OASUU");
         OntNDP DEUUU = TestUtils.findOntEntity(m, OntNDP.class, "DEUUU");
         OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_D00001");

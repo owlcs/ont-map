@@ -1,7 +1,7 @@
 /*
  * This file is part of the ONT MAP.
  * The contents of this file are subject to the Apache License, Version 2.0.
- * Copyright (c) 2018, Avicomp Services, AO
+ * Copyright (c) 2019, Avicomp Services, AO
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package ru.avicomp.map.tests;
+package ru.avicomp.map.tests.maps;
 
 import org.apache.jena.rdf.model.Statement;
 import org.junit.Assert;

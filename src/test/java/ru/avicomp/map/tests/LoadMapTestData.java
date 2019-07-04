@@ -32,6 +32,7 @@ import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.*;
 import ru.avicomp.map.spin.QueryHelper;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.tests.maps.AbstractMapTest;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntClass;
