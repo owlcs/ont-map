@@ -19,6 +19,7 @@
 package ru.avicomp.map.spin;
 
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDFS;
 import org.topbraid.spin.vocabulary.SP;
 import org.topbraid.spin.vocabulary.SPIN;
@@ -162,36 +163,44 @@ public class SpinModels {
     }
 
     /**
-     * Lists all spin-api functions.
+     * Lists all spin-api functions from the given model.
      * All functions must be named.
-     * Auxiliary method.
      *
-     * @param model {@link Model}
-     * @return <b>distinct</b> Stream of {@link Resource}s
+     * @param model {@link Model}, not {@code null}
+     * @return <b>distinct</b> {@code Stream} of {@link Resource}s
      */
     public static Stream<Resource> spinFunctions(Model model) {
-        return Iter.asStream(model.listStatements(null, RDF.type, (RDFNode) null))
-                .filter(s -> s.getSubject().isURIResource())
-                .filter(s -> s.getObject().isURIResource())
-                .filter(s -> FUNCTION_TYPES.contains(s.getObject().asResource()))
-                .map(Statement::getSubject)
-                .distinct();
+        return Iter.asStream(listSpinFunctions(model)).distinct();
     }
 
     /**
-     * Retrieves and lists all spin-api arguments as a stream.
+     * Lists all spin-api functions from the given model.
+     * The returned iterator is distinct iff the given graph is distinct.
+     *
+     * @param model {@link Model}, not {@code null}
+     * @return {@code ExtendedIterator} over all function-resources
+     */
+    public static ExtendedIterator<Resource> listSpinFunctions(Model model) {
+        return model.listStatements(null, RDF.type, (RDFNode) null)
+                .filterKeep(s -> s.getSubject().isURIResource()
+                        && s.getObject().isURIResource() && FUNCTION_TYPES.contains(s.getResource()))
+                .mapWith(Statement::getSubject);
+    }
+
+    /**
+     * Returns a {@link ExtendedIterator} over all spin-api arguments
+     * {@link SPL#predicate spl:predicate}s for the specified function.
      *
      * @param function {@link Resource}, must be in model, not {@code null}
-     * @return Stream of URIs
+     * @return {@code ExtendedIterator} of URIs
      */
-    public static Stream<String> spinArguments(Resource function) {
-        return Iter.asStream(Iter.flatMap(function.listProperties(SPIN.constraint)
+    public static ExtendedIterator<String> listSpinPredicateURIs(Resource function) {
+        return Iter.flatMap(function.listProperties(SPIN.constraint)
                         .filterKeep(s -> s.getObject().isAnon())
                         .mapWith(Statement::getResource),
                 c -> c.listProperties(SPL.predicate)
                         .filterKeep(s -> s.getObject().isURIResource())
-                        .mapWith(Statement::getResource)
-                        .mapWith(Resource::getURI)));
+                        .mapWith(s -> s.getResource().getURI()));
     }
 
     /**
@@ -202,7 +211,7 @@ public class SpinModels {
      * @return the same resource, but belonged to the specified model
      */
     public static Resource printSpinFunctionBody(Model model, Resource function) {
-        spinArguments(function).forEach(s -> getSpinProperty(model, s));
+        listSpinPredicateURIs(function).forEachRemaining(u -> getSpinProperty(model, u));
         return ModelUtils.addResourceContent(model, function);
     }
 

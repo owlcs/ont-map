@@ -22,7 +22,9 @@ import org.apache.jena.enhanced.UnsupportedPolymorphismException;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.ModelGraphInterface;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.slf4j.Logger;
@@ -220,7 +222,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
 
     @Override
     public void addGraph(Graph g) {
-        registerFunctions(ModelFactory.createModelForGraph(Objects.requireNonNull(g, "Null graph.")));
+        registerFunctions(Objects.requireNonNull(g, "Null graph."));
     }
 
     /**
@@ -407,7 +409,7 @@ public class MapManagerImpl implements MapManager, HasConfig {
             return (MapModelImpl) m;
         }
         // register functions and add to the primary manager graph:
-        registerFunctions(m.getBaseModel());
+        registerFunctions(m.getBaseGraph());
         // reassembly given model:
         return reassemble(m, personality);
     }
@@ -433,12 +435,12 @@ public class MapManagerImpl implements MapManager, HasConfig {
     /**
      * Registers all functions listed from the given model.
      *
-     * @param m {@link Model}, not {@code null}
+     * @param g {@link Graph}, not {@code null}
      * @throws MapJenaException unable to handle some of the listed functions
      */
-    protected void registerFunctions(Model m) throws MapJenaException {
-        SpinModels.spinFunctions(m)
-                .forEach(f -> {
+    protected void registerFunctions(Graph g) throws MapJenaException {
+        SpinModels.listSpinFunctions(SpinModelConfig.createSpinModel(g))
+                .forEachRemaining(f -> {
                     // if it is contained in the map and has the same content -> OK, continue
                     // if it is contained in the map and has different content, but it is not avc:runtime -> FAIL
                     // if it is contained in the map and has different content, but it is avc:runtime -> OK, re-register
