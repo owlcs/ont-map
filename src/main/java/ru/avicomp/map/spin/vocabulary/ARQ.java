@@ -26,7 +26,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  * The namespace is deprecated, but it is used by spin-family (see {@code file://resources/etc/functions-afn.ttl}),
  * so we can either put up with it, or create our own library with the same functions but with minor customization changes.
  * The second way is easier.
- * Customization is delegated to AVC library (see file://resources/etc/avc.spin.ttl, ontology http://avc.ru/spin).
+ * Customization is delegated to AVC library (see file://resources/etc/avc.spin.ttl, ontology https://github.com/avicomp/spin).
  * Created by @szuev on 11.06.2018.
  *
  * @see org.apache.jena.sparql.ARQConstants#ARQFunctionLibraryURI

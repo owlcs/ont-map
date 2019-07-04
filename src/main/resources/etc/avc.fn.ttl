@@ -7,13 +7,13 @@
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
-@prefix avc:   <http://avc.ru/spin#> .
+@prefix avc:   <https://github.com/avicomp/spin#> .
 
-<http://avc.ru/fn>  a    owl:Ontology ;
+<https://github.com/avicomp/fn>  a    owl:Ontology ;
         rdfs:comment     "XQuery, XPath, and XSLT Functions and Operators.\nAn addition to the <http://topbraid.org/functions-fn> library." ;
         rdfs:seeAlso     <http://topbraid.org/functions-fn> , <http://www.w3.org/2005/xpath-functions/> ;
-        owl:imports      <http://avc.ru/spin> ;
-        owl:versionIRI   <http://avc.ru/fn#1.0> ;
+        owl:imports      <https://github.com/avicomp/spin> ;
+        owl:versionIRI   <https://github.com/avicomp/fn#1.0> ;
         owl:versionInfo  "version 1.0" .
 
 fn:format-number  a         spin:Function ;

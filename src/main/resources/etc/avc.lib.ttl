@@ -7,13 +7,13 @@
 @prefix spinmapl: <http://topbraid.org/spin/spinmapl#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
-@prefix avc:   <http://avc.ru/spin#> .
+@prefix avc:   <https://github.com/avicomp/spin#> .
 @prefix afn:   <http://jena.hpl.hp.com/ARQ/function#> .
 
-<http://avc.ru/lib>  a   owl:Ontology ;
+<https://github.com/avicomp/lib>  a   owl:Ontology ;
         rdfs:comment     "An additional library of functions that can be expressed through SPARQL or the other functions from a standard spin-library.\nIt is assumed that this ontology will not be included to the \"owl:import\" statement of mappings, produces by the API.\nInstead, any of the functions below will be printed directly to the graph of mapping, which use that function, and therefore the library can be considered just as templates collection." ;
-        owl:imports      <http://avc.ru/spin> ;
-        owl:versionIRI   <http://avc.ru/lib#1.0> ;
+        owl:imports      <https://github.com/avicomp/spin> ;
+        owl:versionIRI   <https://github.com/avicomp/lib#1.0> ;
         owl:versionInfo  "version 1.0" .
 
 avc:UUID  a                 spinmap:TargetFunction ;

@@ -10,9 +10,9 @@
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 @prefix spif:  <http://spinrdf.org/spif#> .
-@prefix avc:   <http://avc.ru/spin#> .
+@prefix avc:   <https://github.com/avicomp/spin#> .
 
-<http://avc.ru/spin>  a  owl:Ontology ;
+<https://github.com/avicomp/spin>  a  owl:Ontology ;
         rdfs:comment     "A library that contains basic definitions required by ONT-MAP API.\nAlso it is an addition to the standard spin-family in order to customize functions behaviour." ;
         owl:imports      <http://topbraid.org/spin/spinmapl> ;
         owl:versionIRI   avc:1.0 ;
