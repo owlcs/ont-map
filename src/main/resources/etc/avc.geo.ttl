@@ -1,0 +1,75 @@
+@prefix uom:   <http://www.opengis.net/def/uom/OGC/1.0/> .
+@prefix geosparql: <http://www.opengis.net/ont/geosparql#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix spin:  <http://spinrdf.org/spin#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix spatial: <http://jena.apache.org/function/spatial#> .
+@prefix ags:   <https://github.com/avicomp/geosparql#> .
+@prefix sp:    <http://spinrdf.org/sp#> .
+@prefix spl:   <http://spinrdf.org/spl#> .
+@prefix avc:   <https://github.com/avicomp/spin#> .
+
+<https://github.com/avicomp/geosparql>
+        a            owl:Ontology ;
+        owl:imports  <http://www.opengis.net/ont/geosparql> , <https://github.com/avicomp/spin> .
+
+geosparql:wktLiteral  a  rdfs:Datatype .
+
+_:b0    a                     rdfs:Datatype ;
+        owl:onDatatype        xsd:double ;
+        owl:withRestrictions  ( [ xsd:minLength  "0"^^xsd:double ]
+                              ) .
+
+uom:meter  a                 rdfs:Datatype ;
+        owl:equivalentClass  _:b0 .
+
+uom:metre  a                 rdfs:Datatype ;
+        owl:equivalentClass  uom:meter .
+
+<urn:ogc:def:uom:EPSG::9001>
+        a                    rdfs:Datatype ;
+        owl:equivalentClass  uom:meter .
+
+uom:kilometer  a             rdfs:Datatype ;
+        owl:equivalentClass  _:b0 .
+
+uom:kilometre  a             rdfs:Datatype ;
+        owl:equivalentClass  uom:kilometer .
+
+<urn:ogc:def:uom:EPSG::9036>
+        a                    rdfs:Datatype ;
+        owl:equivalentClass  uom:kilometer .
+
+spatial:distance  a      spin:Function ;
+        rdfs:comment     "Distance between two Geometry Literals in distance units. Chooses distance measure based on SRS type. Great Circle distance for Geographic SRS and Euclidean otherwise." ;
+        rdfs:subClassOf  ags:GeoSPARQLFunctions ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg3 ;
+                           spl:valueType  rdfs:Datatype ;
+                           avc:oneOf      ( uom:kilometer uom:kilometre <urn:ogc:def:uom:EPSG::9036> uom:meter uom:metre <urn:ogc:def:uom:EPSG::9001> )
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  geosparql:wktLiteral
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg1 ;
+                           spl:valueType  geosparql:wktLiteral
+                         ] ;
+        spin:returnType  xsd:double .
+
+spatial:convertLatLon
+        a                spin:Function ;
+        rdfs:comment     "Converts Lat and Lon double values into WKT string of a Point with WGS84 SRS." ;
+        rdfs:subClassOf  ags:GeoSPARQLFunctions ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           spl:predicate  sp:arg1 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:returnType  geosparql:wktLiteral .

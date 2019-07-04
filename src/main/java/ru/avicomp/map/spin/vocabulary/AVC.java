@@ -192,13 +192,22 @@ public class AVC {
     /**
      * A predicate to customise {@code spin:constraint} arguments for functions from the standard spin-family.
      * Sometimes these constraints contain wrong or insufficient information.
+     * @see org.topbraid.spin.vocabulary.SPIN#constraint
      */
     public static final Property constraint = property("constraint");
 
     /**
      * A predicate to customise function return type, sometimes it is wrong in the standard spin library.
+     * @see org.topbraid.spin.vocabulary.SPIN#returnType
      */
     public static final Property returnType = property("returnType");
+
+    /**
+     * A predicate to be used for function arguments ({@code spin:constraint}).
+     * The object in SPO with this predicate must be a []-list with any values (RDF-nodes).
+     * This is an indicator that function call for the argument can accept only one of the values from that list.
+     */
+    public static final Property oneOf = property("oneOf");
 
     // an universal filtering mapping template name.
     public static Resource Mapping(String filters, String sources) {
