@@ -20,6 +20,7 @@ package ru.avicomp.map.spin.geos.vocabulary;
 
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.map.spin.geos.GeoSInitExtension;
 
 /**
  * The vocabulary which describes Jena GeoSPARQL spin-functions.
@@ -28,7 +29,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  */
 public class GEO {
     public static final String PREFIX = "ags";
-    public static final String BASE_URI = "https://github.com/avicomp/geosparql";
+    public static final String BASE_URI = GeoSInitExtension.AVC_GEO_URI;
     public static final String NS = BASE_URI + "#";
 
     public static Resource GeoSPARQLFunctions = resource("GeoSPARQLFunctions");

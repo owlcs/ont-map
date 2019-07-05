@@ -71,6 +71,20 @@ public class TestUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
     /**
+     * Answers {@code true} if GeoSPARQL support is present in system.
+     *
+     * @return boolean
+     */
+    public static boolean withGeoSparql() {
+        try {
+            Class.forName("ru.avicomp.map.spin.geos.GeoSInitExtension");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    /**
      * Creates a manager without any optimization.
      * For debugging.
      *

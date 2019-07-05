@@ -33,6 +33,7 @@ import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapManager;
 import ru.avicomp.map.spin.MapFunctionImpl;
+import ru.avicomp.map.utils.TestUtils;
 
 import java.util.Comparator;
 import java.util.List;
@@ -76,7 +77,7 @@ public class FunctionsTest {
      * @see ru.avicomp.map.spin.MapFunctionImpl#isInheritedOfClass(Resource)
      */
     enum FuncTypeFilter {
-        ALL(186, f -> true),
+        ALL(TestUtils.withGeoSparql() ? 188 : 186, f -> true),
         BOOLEAN_TYPE(35, FunctionFilter.BOOLEAN),
         BOOLEAN_CLASS(24, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions)),
         DATE(13, FunctionFilter.DATE),

@@ -17,3 +17,4 @@
 #
 
 ru.avicomp.map.spin.system.SystemLibraries
+ru.avicomp.map.spin.geos.GeoSInitExtension
