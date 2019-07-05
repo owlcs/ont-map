@@ -210,8 +210,13 @@ public class ValidationHelper {
 
         @Override
         void testValue() {
+            String v = String.valueOf(this.value);
+            if (argument.oneOf().contains(v)) {
+                // then ok
+                return;
+            }
             Resource type = getRDFType();
-            RDFNode value = model.toNode(String.valueOf(this.value));
+            RDFNode value = model.toNode(v);
             Exceptions.Builder error = error(FUNCTION_CALL_WRONG_ARGUMENT_STRING_VALUE);
             // anything:
             if (AVC.undefined.equals(type)) {
@@ -365,7 +370,7 @@ public class ValidationHelper {
         protected final Object value;
         protected final MapModelImpl model;
         protected final ContextHelper context;
-        private final MapFunction.Arg argument;
+        protected final MapFunction.Arg argument;
 
         private Arg(MapFunction.Arg argument,
                     Object value,

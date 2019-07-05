@@ -42,6 +42,13 @@ uom:kilometre  a             rdfs:Datatype ;
         a                    rdfs:Datatype ;
         owl:equivalentClass  uom:kilometer .
 
+ags:GeoSPARQLFunctions
+        a                spin:Function ;
+        rdfs:comment     "A collection of GeoSPARQL functions." ;
+        rdfs:label       "GeoSPARQL Functions" ;
+        rdfs:subClassOf  spl:MathematicalFunctions ;
+        spin:abstract    true .
+
 spatial:distance  a      spin:Function ;
         rdfs:comment     "Distance between two Geometry Literals in distance units. Chooses distance measure based on SRS type. Great Circle distance for Geographic SRS and Euclidean otherwise." ;
         rdfs:subClassOf  ags:GeoSPARQLFunctions ;

@@ -167,6 +167,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
      * @return if there is {@code _:this rdfs:subClassOf _:superClass} statement
      */
     public boolean isInheritedOfClass(Resource superClass) {
+        // todo: take into consideration class hierarchy
         return func.hasProperty(RDFS.subClassOf, superClass);
     }
 
@@ -427,6 +428,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
         private Boolean optional;
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
         private Optional<RDFNode> defaultValue;
+        private Set<String> oneOf;
 
         protected ArgImpl(org.topbraid.spin.model.Argument arg, String name) {
             this.arg = Objects.requireNonNull(arg, "Null " + arg.getClass().getName());
@@ -489,6 +491,23 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
             if (optional != null) return optional;
             return optional = Iter.findFirst(listStatements(SPL.optional)
                     .filterKeep(x -> Models.TRUE.equals(x.getObject()))).isPresent();
+        }
+
+        @Override
+        public Set<String> oneOf() {
+            if (oneOf != null) return oneOf;
+            Optional<RDFList> list = findOneOfList();
+            if (!list.isPresent()) {
+                return oneOf = Collections.emptySet();
+            }
+            return oneOf = Iter.asStream(list.get().iterator().mapWith(MapFunctionImpl.this::getAsString))
+                    .collect(Iter.toUnmodifiableSet());
+        }
+
+        public Optional<RDFList> findOneOfList() {
+            return Iter.findFirst(listStatements(AVC.oneOf)
+                    .filterKeep(x -> x.getObject().canAs(RDFList.class))
+                    .mapWith(x -> x.getObject().as(RDFList.class)));
         }
 
         /**

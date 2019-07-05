@@ -30,6 +30,7 @@ import ru.avicomp.map.spin.geos.vocabulary.SPATIAL;
 import ru.avicomp.map.spin.geos.vocabulary.UOM;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 /**
@@ -63,6 +64,13 @@ public class GeoLibraryMaker {
         OntDT m1 = m.createDatatype(UOM.meter.getURI()).addEquivalentClass(positiveDouble);
         OntDT m2 = m.createDatatype(UOM.metre.getURI()).addEquivalentClass(m1);
         OntDT m3 = m.createDatatype(UOM.URN.metre.getURI()).addEquivalentClass(m1);
+
+        GEO.GeoSPARQLFunctions.inModel(m)
+                .addProperty(RDF.type, SPIN.Function)
+                .addProperty(RDFS.subClassOf, SPL.MathematicalFunctions)
+                .addProperty(SPIN.abstract_, Models.TRUE)
+                .addProperty(RDFS.label, "GeoSPARQL Functions")
+                .addProperty(RDFS.comment, "A collection of GeoSPARQL functions.");
 
         SPATIAL.convertLatLon.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)

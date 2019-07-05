@@ -28,6 +28,7 @@ import ru.avicomp.ontapi.jena.utils.BuiltIn;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -173,7 +174,7 @@ public interface MapFunction extends Description {
     }
 
     /**
-     * Answers iff this function contains an argument given by its name (predicate).
+     * Answers {@code true} iff this function contains an argument given by its name (predicate).
      *
      * @param predicate String, not null
      * @return {@code true} if argument is present
@@ -203,10 +204,24 @@ public interface MapFunction extends Description {
 
         /**
          * Gets a default value as string.
+         * If it is not {@code null}, this value will be selected as a function parameter
+         * if nothing else has been specified.
+         * Most functions do not support this possibility and the method returns {@code null}.
          *
          * @return String (iri or literal) or {@code null}
          */
         String defaultValue();
+
+        /**
+         * Answers a {@code Set} of predefined values.
+         * If it is not empty, the argument value must be from this {@code Set};
+         * any other value will cause an error.
+         * Most functions do not support this possibility and the method returns an empty {@code Set}.
+         *
+         * @return a {@code Set} of predefined values, for most functions it's empty.
+         * @see ru.avicomp.map.spin.vocabulary.AVC#oneOf
+         */
+        Set<String> oneOf();
 
         /**
          * Answers whether the argument must have an assigned value on the function call.
@@ -427,6 +442,17 @@ public interface MapFunction extends Description {
         Call build() throws MapJenaException;
 
         /**
+         * Adds the given value as a future function call argument parameter.
+         *
+         * @param predicate, that corresponds {@link Arg#name()}, not {@code null}
+         * @param value      String, not {@code null}
+         * @return this builder
+         */
+        default Builder add(Property predicate, String value) {
+            return add(predicate.getURI(), value);
+        }
+
+        /**
          * Adds the given class expression into this builder.
          * This method is just for simplification code.
          *
@@ -435,7 +461,7 @@ public interface MapFunction extends Description {
          * @return this builder
          */
         default Builder addClass(Property predicate, OntCE ce) {
-            return add(predicate.getURI(), ce.asNode().toString());
+            return add(predicate, ce.asNode().toString());
         }
 
         /**
@@ -450,7 +476,7 @@ public interface MapFunction extends Description {
          * @return this builder
          */
         default <P extends OntPE & Property> Builder addProperty(Property predicate, P property) {
-            return add(predicate.getURI(), property.getURI());
+            return add(predicate, property.getURI());
         }
 
         /**
@@ -478,7 +504,7 @@ public interface MapFunction extends Description {
          * @return this builder
          */
         default Builder addLiteral(Property predicate, Literal literal) {
-            return add(predicate.getURI(), literal.asNode().toString(false));
+            return add(predicate, literal.asNode().toString(false));
         }
 
         /**

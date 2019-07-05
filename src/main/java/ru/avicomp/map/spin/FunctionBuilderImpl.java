@@ -25,10 +25,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static ru.avicomp.map.spin.Exceptions.*;
@@ -92,9 +89,9 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
         MapFunctionImpl function = getFunction();
         MapFunctionImpl.ArgImpl arg = function.getArg(predicate);
         if (!arg.isAssignable()) {
-            throw Exceptions.FUNCTION_CALL_PUT_NOT_ASSIGNABLE_ARG.create().addArg(arg).build();
+            throw FUNCTION_CALL_PUT_NOT_ASSIGNABLE_ARG.create().addArg(arg).build();
         }
-        checkValue(value);
+        checkValue(arg, value);
         if (arg.isVararg()) {
             int index = nextIndex();
             arg = function.newArg(arg.arg, SP.getArgProperty(index).getURI());
@@ -104,41 +101,47 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
     }
 
     /**
+     * @param arg argument
      * @param value either String or {@link FunctionBuilderImpl}, not {@code null}
      * @throws MapJenaException validation is fail
      */
-    public void checkValue(Object value) throws MapJenaException {
+    public void checkValue(MapFunctionImpl.ArgImpl arg, Object value) throws MapJenaException {
         if (value instanceof FunctionBuilderImpl) {
-            validateValue((MapFunction.Builder) value);
+            validateValue(arg, (MapFunction.Builder) value);
             return;
         }
         if (value instanceof String) {
-            validateValue((String) value);
+            validateValue(arg, (String) value);
             return;
         }
         throw new MapJenaException.IllegalArgument("Incompatible argument value: " + value + ".");
     }
 
     @SuppressWarnings("unused")
-    public void validateValue(String value) throws MapJenaException {
-        // right now nothing here
+    public void validateValue(MapFunctionImpl.ArgImpl arg, String value) throws MapJenaException {
+        Set<String> oneOf = arg.oneOf();
+        if (!oneOf.isEmpty() && !oneOf.contains(value)) {
+            throw FUNCTION_CALL_PUT_MUST_BE_ONE_OF.create()
+                    .addArg(arg)
+                    .add(Exceptions.Key.ARG_VALUE, value).build();
+        }
     }
 
-    public void validateValue(MapFunction.Builder value) throws MapJenaException {
+    public void validateValue(MapFunctionImpl.ArgImpl arg, MapFunction.Builder value) throws MapJenaException {
         MapFunctionImpl function = getFunction();
         FunctionBuilderImpl builder = (FunctionBuilderImpl) value;
         if (builder.calls().anyMatch(this::equals)) {
             // Attempt to build recursion.
-            throw Exceptions.FUNCTION_CALL_PUT_SELF_REF.create().addFunction(function).build();
+            throw FUNCTION_CALL_PUT_SELF_REF.create().addArg(arg).addFunction(function).build();
         }
         MapFunctionImpl nested = builder.getFunction();
         if (!function.canHaveNested()) {
-            throw Exceptions.FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED.create()
+            throw FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED.create()
                     .addFunction(function)
-                    .add(Exceptions.Key.ARG_VALUE, nested.name()).build();
+                    .add(Key.ARG_VALUE, nested.name()).build();
         }
         if (!nested.canBeNested()) {
-            throw Exceptions.FUNCTION_CALL_PUT_CANNOT_BE_NESTED.create()
+            throw FUNCTION_CALL_PUT_CANNOT_BE_NESTED.create()
                     .addFunction(nested)
                     .add(Exceptions.Key.ARG_VALUE, function.name())
                     .build();

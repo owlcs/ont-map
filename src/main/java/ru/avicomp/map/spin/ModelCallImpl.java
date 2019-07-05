@@ -148,6 +148,7 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             if (arg.isOptional()) {
                 constraint.addProperty(SPL.optional, Models.TRUE);
             }
+            // todo: support AVC#oneOf
         });
         f.addProperty(SPIN.body, new ARQ2SPIN(lib).createQuery(query, null));
         manager.register(f);
