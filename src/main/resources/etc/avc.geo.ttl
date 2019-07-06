@@ -6,7 +6,6 @@
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix spatial: <http://jena.apache.org/function/spatial#> .
-@prefix ags:   <https://github.com/avicomp/geosparql#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
 @prefix avc:   <https://github.com/avicomp/spin#> .
@@ -18,14 +17,14 @@
 
 geosparql:wktLiteral  a  rdfs:Datatype .
 
-ags:Units  a                 rdfs:Datatype ;
+avc:Units  a                 rdfs:Datatype ;
         rdfs:comment         "Represents all OGC Unit of Measure datatypes" ;
         rdfs:seeAlso         <http://www.opengis.net/def/uom/OGC/1.0/#> ;
         owl:equivalentClass  [ a            rdfs:Datatype ;
                                owl:unionOf  ( uom:millimeter uom:grad uom:kilometre <urn:ogc:def:uom:EPSG::9093> uom:minute uom:millimetre <urn:ogc:def:uom:EPSG::9102> <urn:ogc:def:uom:EPSG::9003> uom:centimeter <urn:ogc:def:uom:EPSG::9104> uom:microRadian uom:centimetre uom:second uom:foot uom:yard uom:surveyFootUS uom:radian <urn:ogc:def:uom:EPSG::9096> <urn:ogc:def:uom:EPSG::9030> <urn:ogc:def:uom:EPSG::1025> uom:inch <urn:ogc:def:uom:EPSG::1033> <urn:ogc:def:uom:EPSG::9103> uom:metre uom:statuteMile <urn:ogc:def:uom:EPSG::9105> <urn:ogc:def:uom:EPSG::9036> <urn:ogc:def:uom:EPSG::9002> <urn:ogc:def:uom:EPSG::9101> uom:meter uom:nauticalMile <urn:ogc:def:uom:EPSG::9109> uom:mile uom:degree uom:kilometer )
                              ] .
 
-ags:GeoSPARQLFunctions
+avc:GeoSPARQLFunctions
         a                spin:Function ;
         rdfs:comment     "A collection of GeoSPARQL functions." ;
         rdfs:label       "GeoSPARQL Functions" ;
@@ -34,13 +33,13 @@ ags:GeoSPARQLFunctions
 
 spatial:distance  a      spin:Function ;
         rdfs:comment     "Distance between two Geometry Literals in distance units. Chooses distance measure based on SRS type. Great Circle distance for Geographic SRS and Euclidean otherwise." ;
-        rdfs:subClassOf  ags:GeoSPARQLFunctions ;
+        rdfs:subClassOf  avc:GeoSPARQLFunctions ;
         spin:constraint  [ a                 spl:Argument ;
                            rdfs:comment      "Unit of measures, by default it is meter." ;
                            spl:defaultValue  uom:meter ;
                            spl:predicate     sp:arg3 ;
                            spl:valueType     rdfs:Datatype ;
-                           avc:oneOf         ags:Units
+                           avc:oneOf         avc:Units
                          ] ;
         spin:constraint  [ a              spl:Argument ;
                            spl:predicate  sp:arg2 ;
@@ -55,7 +54,7 @@ spatial:distance  a      spin:Function ;
 spatial:convertLatLon
         a                spin:Function ;
         rdfs:comment     "Converts Lat and Lon double values into WKT string of a Point with WGS84 SRS." ;
-        rdfs:subClassOf  ags:GeoSPARQLFunctions ;
+        rdfs:subClassOf  avc:GeoSPARQLFunctions ;
         spin:constraint  [ a              spl:Argument ;
                            rdfs:comment   "The longitude." ;
                            spl:predicate  sp:arg2 ;

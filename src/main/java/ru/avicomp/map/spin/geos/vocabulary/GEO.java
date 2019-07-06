@@ -21,23 +21,22 @@ package ru.avicomp.map.spin.geos.vocabulary;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.map.spin.geos.GeoSInitExtension;
+import ru.avicomp.map.spin.vocabulary.AVC;
 
 /**
- * The vocabulary which describes Jena GeoSPARQL spin-functions.
+ * The vocabulary that describes several additional things that are needed for GeoSPARQL support.
+ * This schema uses the same prefix namespace {@link AVC#NS} and {@code avc}.
  * <p>
  * Created by @ssz on 04.07.2019.
  */
 public class GEO {
-    public static final String PREFIX = "ags";
-    public static final String BASE_URI = GeoSInitExtension.AVC_GEO_URI;
+    public static final String BASE_URI = AVC.BASE_URI;
+    public static final String LIB_URI = GeoSInitExtension.AVC_GEO_URI;
     public static final String NS = BASE_URI + "#";
 
-    public static String getURI() {
-        return NS;
-    }
-
     /**
-     * Common supertype for all spatial filter functions.
+     * A common supertype for all spatial filter functions, that is {@code rdfs:subClassOf}
+     * {@link org.topbraid.spin.vocabulary.SPL#MathematicalFunctions spl:MathematicalFunctions}.
      */
     public static Resource GeoSPARQLFunctions = resource("GeoSPARQLFunctions");
 

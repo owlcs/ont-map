@@ -49,11 +49,10 @@ public class GeoLibraryMaker {
     public static void main(String... args) {
         OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
         m.setNsPrefix(GEOSPARQL.PREFIX, GEOSPARQL.NS)
-                .setNsPrefix(GEO.PREFIX, GEO.NS)
                 .setNsPrefix(SPATIAL.PREFIX, SPATIAL.NS)
                 .setNsPrefix(UOM.PREFIX, UOM.NS);
 
-        OntID id = m.setID(GEO.BASE_URI);
+        OntID id = m.setID(GEO.LIB_URI);
 
         id.addImport(AVC.BASE_URI);
         id.addImport(GEOSPARQL.BASE_URI);
