@@ -33,6 +33,8 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.ontapi.jena.model.OntDR;
+import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
@@ -353,6 +355,34 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
     }
 
     /**
+     * Returns a []-list from the object ({@code RDFNode}).
+     * The given node can be represent the []-list itself or
+     * it can be named or anonymous ontology resource that refers to a []-list.
+     * In last case the model, to which the object is attached,
+     * must have {@link ru.avicomp.ontapi.jena.impl.conf.OntPersonality} inside.
+     *
+     * @param object {@link RDFNode} within a model, not {@code null}
+     * @return {@link RDFList} or {@code null}
+     */
+    protected static RDFList getList(RDFNode object) {
+        if (object.canAs(RDFList.class)) {
+            return object.as(RDFList.class);
+        }
+        if (object.canAs(OntDT.class)) {
+            return object.as(OntDT.class).equivalentClasses()
+                    .filter(x -> x.canAs(OntDR.ComponentsDR.class))
+                    .map(MapFunctionImpl::getList)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (object.canAs(OntDR.ComponentsDR.class)) {
+            return object.as(OntDR.ComponentsDR.class).getList().as(RDFList.class);
+        }
+        return null;
+    }
+
+    /**
      * Writes the function (its body) to the given graph.
      *
      * @param graph {@link MapModelImpl}
@@ -504,10 +534,15 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
                     .collect(Iter.toUnmodifiableSet());
         }
 
+        /**
+         * Finds []-list that is attached on the {@link AVC#oneOf avc:oneOf} predicate.
+         *
+         * @return {@code Optional}
+         */
         public Optional<RDFList> findOneOfList() {
             return Iter.findFirst(listStatements(AVC.oneOf)
-                    .filterKeep(x -> x.getObject().canAs(RDFList.class))
-                    .mapWith(x -> x.getObject().as(RDFList.class)));
+                    .mapWith(x -> getList(x.getObject()))
+                    .filterDrop(Objects::isNull));
         }
 
         /**

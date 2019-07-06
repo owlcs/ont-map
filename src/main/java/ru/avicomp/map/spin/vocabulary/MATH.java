@@ -37,6 +37,10 @@ public class MATH {
     public static final String URI = BASE_URI + "/";
     public static final String NS = BASE_URI + "#";
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource acos = resource("acos");
     public static Resource asin = resource("asin");
     public static Resource atan = resource("atan");

@@ -35,6 +35,10 @@ public class OWLRL {
     public static final String NS = "http://topbraid.org/spin/owlrl#";
     public static final Resource propertyChainHelper = resource("propertyChainHelper");
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

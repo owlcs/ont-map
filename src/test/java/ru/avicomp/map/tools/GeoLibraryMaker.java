@@ -29,8 +29,12 @@ import ru.avicomp.map.spin.geos.vocabulary.GEOSPARQL;
 import ru.avicomp.map.spin.geos.vocabulary.SPATIAL;
 import ru.avicomp.map.spin.geos.vocabulary.UOM;
 import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.ontapi.jena.model.*;
+import ru.avicomp.ontapi.jena.model.OntDR;
+import ru.avicomp.ontapi.jena.model.OntDT;
+import ru.avicomp.ontapi.jena.model.OntGraphModel;
+import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.utils.Models;
+import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
 
 /**
@@ -53,17 +57,15 @@ public class GeoLibraryMaker {
 
         id.addImport(AVC.BASE_URI);
         id.addImport(GEOSPARQL.BASE_URI);
+        id.addComment("A library that described GeoSPARQL SPIN-functions.");
 
         m.createDatatype(GEOSPARQL.wktLiteral.getURI());
-        OntDT xdouble = m.getDatatype(XSD.xdouble);
-        OntDR positiveDouble = m.createRestrictionDataRange(xdouble,
-                m.createFacetRestriction(OntFR.MinLength.class, xdouble.createLiteral(0)));
-        OntDT km1 = m.createDatatype(UOM.kilometer.getURI()).addEquivalentClass(positiveDouble);
-        OntDT km2 = m.createDatatype(UOM.kilometre.getURI()).addEquivalentClass(km1);
-        OntDT km3 = m.createDatatype(UOM.URN.kilometer.getURI()).addEquivalentClass(km1);
-        OntDT m1 = m.createDatatype(UOM.meter.getURI()).addEquivalentClass(positiveDouble);
-        OntDT m2 = m.createDatatype(UOM.metre.getURI()).addEquivalentClass(m1);
-        OntDT m3 = m.createDatatype(UOM.URN.metre.getURI()).addEquivalentClass(m1);
+
+        OntDT units = m.createDatatype(GEO.Units.getURI());
+        units.addComment("Represents all OGC Unit of Measure datatypes");
+        units.addAnnotation(m.getAnnotationProperty(RDFS.seeAlso), m.createResource(UOM.getURI() + "#"));
+        units.addEquivalentClass(m.createResource(RDFS.Datatype)
+                .addProperty(OWL.unionOf, m.createList(UOM.getAllUOMs().iterator())).as(OntDR.class));
 
         GEO.GeoSPARQLFunctions.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)
@@ -78,10 +80,12 @@ public class GeoLibraryMaker {
                 .addProperty(SPIN.returnType, GEOSPARQL.wktLiteral)
                 .addProperty(RDFS.comment, "Converts Lat and Lon double values into WKT string of a Point with WGS84 SRS.")
                 .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The latitude.")
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg1)
                         .addProperty(SPL.valueType, XSD.xdouble))
                 .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The longitude.")
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg2)
                         .addProperty(SPL.valueType, XSD.xdouble));
@@ -107,7 +111,7 @@ public class GeoLibraryMaker {
                         .addProperty(SPL.valueType, RDFS.Datatype)
                         .addProperty(SPL.defaultValue, UOM.meter)
                         .addProperty(RDFS.comment, "Unit of measures, by default it is meter.")
-                        .addProperty(AVC.oneOf, m.createList(km1, km2, km3, m1, m2, m3)));
+                        .addProperty(AVC.oneOf, units));
 
         m.write(System.out, "ttl");
 

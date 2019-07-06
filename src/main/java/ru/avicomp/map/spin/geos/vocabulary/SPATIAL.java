@@ -29,6 +29,10 @@ public class SPATIAL {
     public static final String BASE_URI = "http://jena.apache.org/function/spatial";
     public static final String NS = BASE_URI + "#";
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static final Resource distance = resource("distance");
     public static final Resource convertLatLon = resource("convertLatLon");
 

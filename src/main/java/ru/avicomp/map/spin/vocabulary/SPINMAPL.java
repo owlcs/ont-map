@@ -53,6 +53,10 @@ public class SPINMAPL {
     public static final Property predicate = property("predicate");
     public static final Property targetNamespace = property("targetNamespace");
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

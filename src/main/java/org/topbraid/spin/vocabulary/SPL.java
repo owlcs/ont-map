@@ -73,6 +73,10 @@ public class SPL {
     public static final Property predicate = property("predicate");
     public static final Property valueType = property("valueType");
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

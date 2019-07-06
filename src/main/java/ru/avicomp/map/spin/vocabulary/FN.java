@@ -36,6 +36,10 @@ public class FN {
     public static final String URI = BASE_URI + "/";
     public static final String NS = BASE_URI + "#";
 
+    public static String getURI() {
+        return NS;
+    }
+
     // from Composer's functions-fn.ttl
     public static final Resource round = resource("round");
     // from avc.fn.ttl

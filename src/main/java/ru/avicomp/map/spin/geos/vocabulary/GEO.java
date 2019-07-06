@@ -32,7 +32,19 @@ public class GEO {
     public static final String BASE_URI = GeoSInitExtension.AVC_GEO_URI;
     public static final String NS = BASE_URI + "#";
 
+    public static String getURI() {
+        return NS;
+    }
+
+    /**
+     * Common supertype for all spatial filter functions.
+     */
     public static Resource GeoSPARQLFunctions = resource("GeoSPARQLFunctions");
+
+    /**
+     * A common abstract data type that combines all utins from {@link UOM} vocabulary.
+     */
+    public static Resource Units = resource("Units");
 
     protected static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);

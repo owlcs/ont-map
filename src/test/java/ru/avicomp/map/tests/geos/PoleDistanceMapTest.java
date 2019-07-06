@@ -18,21 +18,12 @@
 
 package ru.avicomp.map.tests.geos;
 
-import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.Managers;
-import ru.avicomp.map.MapFunction;
-import ru.avicomp.map.MapManager;
 import ru.avicomp.map.MapModel;
-import ru.avicomp.map.spin.geos.vocabulary.SPATIAL;
-import ru.avicomp.map.spin.geos.vocabulary.UOM;
-import ru.avicomp.map.spin.vocabulary.AVC;
-import ru.avicomp.map.spin.vocabulary.SPIF;
 import ru.avicomp.map.utils.TestUtils;
 import ru.avicomp.ontapi.jena.OntModelFactory;
 import ru.avicomp.ontapi.jena.model.OntClass;
@@ -40,8 +31,6 @@ import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.model.OntGraphModel;
 import ru.avicomp.ontapi.jena.model.OntNDP;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -51,20 +40,20 @@ import java.util.function.Supplier;
 @SuppressWarnings("WeakerAccess")
 public class PoleDistanceMapTest {
 
-    private static final String CITY_NAME = "City";
-    private static final String POLE_NAME = "ToPole";
-    private static final String LATITUDE_NAME = "Latitude";
-    private static final String LONGITUDE_NAME = "Longitude";
+    static final String CITY_NAME = "City";
+    static final String POLE_NAME = "ToPole";
+    static final String LATITUDE_NAME = "Latitude";
+    static final String LONGITUDE_NAME = "Longitude";
 
-    private final D testData;
+    private final DistanceMappings testData;
 
-    public PoleDistanceMapTest(D testData) {
+    public PoleDistanceMapTest(DistanceMappings testData) {
         this.testData = testData;
     }
 
     @Parameterized.Parameters(name = "{0}")
-    public static D[] getTestData() {
-        return D.values();
+    public static DistanceMappings[] getTestData() {
+        return DistanceMappings.values();
     }
 
     @Test
@@ -137,124 +126,4 @@ public class PoleDistanceMapTest {
         return res;
     }
 
-    enum D {
-        DISTANCE_IN_KMS {
-            @Override
-            String getDistanceDataPropertyLocalName() {
-                return "DistanceInKm";
-            }
-
-            @Override
-            MapModel assembleMapping(MapManager manager,
-                                     OntClass city, OntNDP lat, OntNDP lon,
-                                     OntClass pole, OntNDP dis,
-                                     MapFunction.Call target,
-                                     MapFunction.Call north) {
-                MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
-                MapFunction distance = manager.getFunction(SPATIAL.distance);
-                MapFunction localName = manager.getFunction(SPIF.localName);
-
-                MapFunction.Call thisIndividual = manager.getFunction(AVC.currentIndividual).create().build();
-                return manager.createMapModel()
-                        .createContext(city, pole, target)
-                        .addPropertyBridge(distance.create()
-                                .addFunction(SP.arg1, convertLatLon.create()
-                                        .addProperty(SP.arg1, lat).addProperty(SP.arg2, lon))
-                                .addFunction(SP.arg2, north)
-                                .add(SP.arg3, UOM.URN.kilometer.getURI()), dis)
-                        .getContext()
-                        .addPropertyBridge(localName.create()
-                                .addFunction(SP.arg1, thisIndividual), RDFS.label)
-                        .getModel();
-
-            }
-
-            @Override
-            Map<String, Integer> expectedValues() {
-                Map<String, Integer> res = new HashMap<>();
-                res.put("M1", 4363);
-                res.put("M2", 3384);
-                res.put("B1", 8478);
-                res.put("K1", 7654);
-                return res;
-            }
-        },
-        DISTANCE_IN_DEFAULT_METERS {
-            @Override
-            String getDistanceDataPropertyLocalName() {
-                return "DistanceInM";
-            }
-
-            @Override
-            MapModel assembleMapping(MapManager manager,
-                                     OntClass city, OntNDP lat, OntNDP lon,
-                                     OntClass pole, OntNDP dis,
-                                     MapFunction.Call target,
-                                     MapFunction.Call north) {
-                MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
-                MapFunction distance = manager.getFunction(SPATIAL.distance);
-                MapFunction localName = manager.getFunction(SPIF.localName);
-
-                MapFunction.Call thisIndividual = manager.getFunction(AVC.currentIndividual).create().build();
-                return manager.createMapModel()
-                        .createContext(city, pole, target)
-                        .addPropertyBridge(distance.create()
-                                .addFunction(SP.arg1, convertLatLon.create()
-                                        .addProperty(SP.arg1, lat).addProperty(SP.arg2, lon))
-                                .addFunction(SP.arg2, north), dis)
-                        .getContext()
-                        .addPropertyBridge(localName.create()
-                                .addFunction(SP.arg1, thisIndividual), RDFS.label)
-                        .getModel();
-
-            }
-
-            @Override
-            Map<String, Integer> expectedValues() {
-                Map<String, Integer> res = new HashMap<>();
-                res.put("M1", 4363758);
-                res.put("M2", 3384036);
-                res.put("B1", 8478624);
-                res.put("K1", 7654607);
-                return res;
-            }
-        },
-
-        ;
-
-        abstract String getDistanceDataPropertyLocalName();
-
-        abstract Map<String, Integer> expectedValues();
-
-        abstract MapModel assembleMapping(MapManager manager,
-                                          OntClass city, OntNDP lat, OntNDP lon,
-                                          OntClass pole, OntNDP dis,
-                                          MapFunction.Call target,
-                                          MapFunction.Call north);
-
-        OntGraphModel target(Supplier<OntGraphModel> factory) {
-            return createTarget(factory, getDistanceDataPropertyLocalName());
-        }
-
-        MapModel mapping(OntGraphModel source, OntGraphModel target, MapManager manager) {
-            MapFunction.Call north = manager.getFunction(SPATIAL.convertLatLon).create()
-                    .addLiteral(SP.arg1, 90d).addLiteral(SP.arg2, 0d).build();
-            MapFunction.Call uuid = manager.getFunction(AVC.UUID).create().build();
-
-            OntClass city = TestUtils.findOntEntity(source, OntClass.class, CITY_NAME);
-            OntClass pole = TestUtils.findOntEntity(target, OntClass.class, POLE_NAME);
-            OntNDP lat = TestUtils.findOntEntity(source, OntNDP.class, LATITUDE_NAME);
-            OntNDP lon = TestUtils.findOntEntity(source, OntNDP.class, LONGITUDE_NAME);
-            OntNDP dis = TestUtils.findOntEntity(target, OntNDP.class, getDistanceDataPropertyLocalName());
-
-            return assembleMapping(manager, city, lat, lon, pole, dis, uuid, north);
-        }
-
-        void validate(OntGraphModel m) {
-            OntNDP dis = TestUtils.findOntEntity(m, OntNDP.class, getDistanceDataPropertyLocalName());
-            expectedValues().forEach((k, v) -> m.listResourcesWithProperty(RDFS.label, k)
-                    .mapWith(x -> m.getRequiredProperty(x, dis).getLiteral().getInt())
-                    .forEachRemaining(i -> Assert.assertEquals(v, i)));
-        }
-    }
 }

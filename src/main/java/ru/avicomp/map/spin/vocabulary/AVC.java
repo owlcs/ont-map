@@ -38,7 +38,6 @@ public class AVC {
     public static final String BASE_URI = Resources.AVC_SPIN.getURI();
     public static final String LIB_URI = Resources.AVC_LIB.getURI();
     public static final String NS = BASE_URI + "#";
-
     public static final String DEFAULT_PREDICATE_SUFFIX = "DefaultValue";
 
     /**
@@ -48,12 +47,14 @@ public class AVC {
      * @see #currentIndividual
      */
     public static final Resource MagicFunctions = resource("MagicFunctions");
+
     /**
      * A function-class to indicate that spin-function uses SPARQL aggregate operators.
      *
      * @see #groupConcat
      */
     public static final Resource AggregateFunctions = resource("AggregateFunctions");
+
     /**
      * A class-indicator for functions that are intended to manage property mapping (construct template) calls.
      * Such a function accepts a {@link Property} that belongs to a context containing a property mapping,
@@ -204,10 +205,17 @@ public class AVC {
 
     /**
      * A predicate to be used for function arguments ({@code spin:constraint}).
-     * The object in SPO with this predicate must be a []-list with any values (RDF-nodes).
+     * The object in SPO with this predicate must be a []-list with any values (RDF-nodes) or
+     * a composite {@link ru.avicomp.ontapi.jena.model.OntObject Ontology Object} with a reference to a []-list,
+     * for example a {@link ru.avicomp.ontapi.jena.model.OntDT Ontology Datatype}
+     * that is equivalent to a {@link ru.avicomp.ontapi.jena.model.OntDR.UnionOf Data Range Union}.
      * This is an indicator that function call for the argument can accept only one of the values from that list.
      */
     public static final Property oneOf = property("oneOf");
+
+    public static String getURI() {
+        return NS;
+    }
 
     // an universal filtering mapping template name.
     public static Resource Mapping(String filters, String sources) {

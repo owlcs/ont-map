@@ -20,14 +20,24 @@ package ru.avicomp.map.spin.geos.vocabulary;
 
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import ru.avicomp.ontapi.jena.utils.Iter;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Units of Measure (Open Geospatial Consortium)
  */
+@SuppressWarnings("WeakerAccess")
 public class UOM {
     public static final String PREFIX = "uom";
     public static final String BASE_URI = "http://www.opengis.net/def/uom/OGC/1.0";
     public static final String NS = BASE_URI + "/";
+
+    public static String getURI() {
+        return NS;
+    }
 
     // angular
     public static final Resource radian = resource("radian");
@@ -60,6 +70,30 @@ public class UOM {
         return ResourceFactory.createResource(NS + local);
     }
 
+    public static Set<Resource> getAngularUOMs() {
+        return Stream.of(radian, microRadian, degree, minute, second, grad).collect(Iter.toUnmodifiableSet());
+    }
+
+    public static Set<Resource> getSILinearUOMs() {
+        return Stream.of(meter, metre, kilometer, kilometre, centimeter, centimetre, millimeter, millimetre)
+                .collect(Iter.toUnmodifiableSet());
+    }
+
+    public static Set<Resource> getNonSILinearUOMs() {
+        return Stream.of(mile, statuteMile, yard, foot, inch, nauticalMile, surveyFootUS)
+                .collect(Iter.toUnmodifiableSet());
+    }
+
+    public static Set<Resource> getAllUOMs() {
+        Set<Resource> res = new HashSet<>();
+        res.addAll(getAngularUOMs());
+        res.addAll(getSILinearUOMs());
+        res.addAll(getNonSILinearUOMs());
+        res.addAll(URN.getAngularUOMs());
+        res.addAll(URN.getLinearUOMs());
+        return res;
+    }
+
     /**
      * @see <a href='https://sis.apache.org/apidocs/org/apache/sis/measure/Units.html'>org.apache.sis.measure.Units</a>
      */
@@ -87,6 +121,15 @@ public class UOM {
 
         protected static Resource resource(int local) {
             return ResourceFactory.createResource(NS + local);
+        }
+
+        public static Set<Resource> getAngularUOMs() {
+            return Stream.of(radian, microRadian, degree, minute, second, grad).collect(Iter.toUnmodifiableSet());
+        }
+
+        public static Set<Resource> getLinearUOMs() {
+            return Stream.of(meter, kilometer, centimeter, millimeter, statuteMile, foot, yard, nauticalMile, surveyFootUS)
+                    .collect(Iter.toUnmodifiableSet());
         }
     }
 }

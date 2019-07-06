@@ -12,35 +12,18 @@
 @prefix avc:   <https://github.com/avicomp/spin#> .
 
 <https://github.com/avicomp/geosparql>
-        a            owl:Ontology ;
-        owl:imports  <http://www.opengis.net/ont/geosparql> , <https://github.com/avicomp/spin> .
+        a             owl:Ontology ;
+        rdfs:comment  "A library that described GeoSPARQL SPIN-functions." ;
+        owl:imports   <http://www.opengis.net/ont/geosparql> , <https://github.com/avicomp/spin> .
 
 geosparql:wktLiteral  a  rdfs:Datatype .
 
-_:b0    a                     rdfs:Datatype ;
-        owl:onDatatype        xsd:double ;
-        owl:withRestrictions  ( [ xsd:minLength  "0"^^xsd:double ]
-                              ) .
-
-uom:meter  a                 rdfs:Datatype ;
-        owl:equivalentClass  _:b0 .
-
-uom:metre  a                 rdfs:Datatype ;
-        owl:equivalentClass  uom:meter .
-
-<urn:ogc:def:uom:EPSG::9001>
-        a                    rdfs:Datatype ;
-        owl:equivalentClass  uom:meter .
-
-uom:kilometer  a             rdfs:Datatype ;
-        owl:equivalentClass  _:b0 .
-
-uom:kilometre  a             rdfs:Datatype ;
-        owl:equivalentClass  uom:kilometer .
-
-<urn:ogc:def:uom:EPSG::9036>
-        a                    rdfs:Datatype ;
-        owl:equivalentClass  uom:kilometer .
+ags:Units  a                 rdfs:Datatype ;
+        rdfs:comment         "Represents all OGC Unit of Measure datatypes" ;
+        rdfs:seeAlso         <http://www.opengis.net/def/uom/OGC/1.0/#> ;
+        owl:equivalentClass  [ a            rdfs:Datatype ;
+                               owl:unionOf  ( uom:millimeter uom:grad uom:kilometre <urn:ogc:def:uom:EPSG::9093> uom:minute uom:millimetre <urn:ogc:def:uom:EPSG::9102> <urn:ogc:def:uom:EPSG::9003> uom:centimeter <urn:ogc:def:uom:EPSG::9104> uom:microRadian uom:centimetre uom:second uom:foot uom:yard uom:surveyFootUS uom:radian <urn:ogc:def:uom:EPSG::9096> <urn:ogc:def:uom:EPSG::9030> <urn:ogc:def:uom:EPSG::1025> uom:inch <urn:ogc:def:uom:EPSG::1033> <urn:ogc:def:uom:EPSG::9103> uom:metre uom:statuteMile <urn:ogc:def:uom:EPSG::9105> <urn:ogc:def:uom:EPSG::9036> <urn:ogc:def:uom:EPSG::9002> <urn:ogc:def:uom:EPSG::9101> uom:meter uom:nauticalMile <urn:ogc:def:uom:EPSG::9109> uom:mile uom:degree uom:kilometer )
+                             ] .
 
 ags:GeoSPARQLFunctions
         a                spin:Function ;
@@ -52,12 +35,12 @@ ags:GeoSPARQLFunctions
 spatial:distance  a      spin:Function ;
         rdfs:comment     "Distance between two Geometry Literals in distance units. Chooses distance measure based on SRS type. Great Circle distance for Geographic SRS and Euclidean otherwise." ;
         rdfs:subClassOf  ags:GeoSPARQLFunctions ;
-        spin:constraint  [ a              spl:Argument ;
-                           spl:predicate  sp:arg3 ;
-                           spl:valueType  rdfs:Datatype ;
-                           spl:defaultValue  uom:meter ;
+        spin:constraint  [ a                 spl:Argument ;
                            rdfs:comment      "Unit of measures, by default it is meter." ;
-                           avc:oneOf      ( uom:kilometer uom:kilometre <urn:ogc:def:uom:EPSG::9036> uom:meter uom:metre <urn:ogc:def:uom:EPSG::9001> )
+                           spl:defaultValue  uom:meter ;
+                           spl:predicate     sp:arg3 ;
+                           spl:valueType     rdfs:Datatype ;
+                           avc:oneOf         ags:Units
                          ] ;
         spin:constraint  [ a              spl:Argument ;
                            spl:predicate  sp:arg2 ;
@@ -74,10 +57,12 @@ spatial:convertLatLon
         rdfs:comment     "Converts Lat and Lon double values into WKT string of a Point with WGS84 SRS." ;
         rdfs:subClassOf  ags:GeoSPARQLFunctions ;
         spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The longitude." ;
                            spl:predicate  sp:arg2 ;
                            spl:valueType  xsd:double
                          ] ;
         spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The latitude." ;
                            spl:predicate  sp:arg1 ;
                            spl:valueType  xsd:double
                          ] ;

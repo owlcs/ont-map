@@ -111,6 +111,10 @@ public class SPIN {
     public final static Property violationSource = property("violationSource");
     public final static Property violationValue = property("violationValue");
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

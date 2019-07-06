@@ -29,6 +29,10 @@ public class GEOSPARQL {
     public static final String BASE_URI = "http://www.opengis.net/ont/geosparql";
     public static final String NS = BASE_URI + "#";
 
+    public static String getURI() {
+        return NS;
+    }
+
     public static Resource wktLiteral = resource("wktLiteral");
     public static Resource gmlLiteral = resource("gmlLiteral");
 
