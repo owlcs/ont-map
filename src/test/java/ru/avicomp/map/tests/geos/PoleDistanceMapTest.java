@@ -22,6 +22,8 @@ import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.topbraid.spin.vocabulary.SP;
 import ru.avicomp.map.Managers;
 import ru.avicomp.map.MapFunction;
@@ -45,6 +47,7 @@ import java.util.function.Supplier;
 /**
  * Created by @ssz on 05.07.2019.
  */
+@RunWith(Parameterized.class)
 @SuppressWarnings("WeakerAccess")
 public class PoleDistanceMapTest {
 
@@ -52,60 +55,27 @@ public class PoleDistanceMapTest {
     private static final String POLE_NAME = "ToPole";
     private static final String LATITUDE_NAME = "Latitude";
     private static final String LONGITUDE_NAME = "Longitude";
-    private static final String DISTANCE_NAME = "Km";
+
+    private final D testData;
+
+    public PoleDistanceMapTest(D testData) {
+        this.testData = testData;
+    }
+
+    @Parameterized.Parameters(name = "{0}")
+    public static D[] getTestData() {
+        return D.values();
+    }
 
     @Test
     public void testInference() {
         OntGraphModel src = createSource(OntModelFactory::createModel);
-        OntGraphModel dst = createTarget(OntModelFactory::createModel);
-        MapModel map = createMapping(src, dst, Managers.createMapManager());
+        OntGraphModel dst = testData.target(OntModelFactory::createModel);
+        MapModel map = testData.mapping(src, dst, Managers.createMapManager());
+        TestUtils.debug(map);
         map.runInference(src.getGraph(), dst.getGraph());
         TestUtils.debug(dst);
-        validate(dst);
-    }
-
-    public static void validate(OntGraphModel m) {
-        Map<String, Integer> expected = new HashMap<>();
-        expected.put("M1", 4363);
-        expected.put("M2", 3384);
-        expected.put("B1", 8478);
-        expected.put("K1", 7654);
-
-        OntNDP dis = TestUtils.findOntEntity(m, OntNDP.class, DISTANCE_NAME);
-        expected.forEach((k, v) -> m.listResourcesWithProperty(RDFS.label, k)
-                .mapWith(x -> m.getRequiredProperty(x, dis).getLiteral().getInt())
-                .forEachRemaining(i -> Assert.assertEquals(v, i)));
-    }
-
-    public static MapModel createMapping(OntGraphModel source, OntGraphModel target, MapManager manager) {
-        MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
-        MapFunction distance = manager.getFunction(SPATIAL.distance);
-        MapFunction localName = manager.getFunction(SPIF.localName);
-
-        MapFunction.Call north = convertLatLon.create()
-                .addLiteral(SP.arg1, 90d).addLiteral(SP.arg2, 0d).build();
-        MapFunction.Call thisIndividual = manager.getFunction(AVC.currentIndividual).create().build();
-        MapFunction.Call uuid = manager.getFunction(AVC.UUID).create().build();
-
-        OntClass city = TestUtils.findOntEntity(source, OntClass.class, CITY_NAME);
-        OntClass pole = TestUtils.findOntEntity(target, OntClass.class, POLE_NAME);
-        OntNDP lat = TestUtils.findOntEntity(source, OntNDP.class, LATITUDE_NAME);
-        OntNDP lon = TestUtils.findOntEntity(source, OntNDP.class, LONGITUDE_NAME);
-        OntNDP dis = TestUtils.findOntEntity(target, OntNDP.class, DISTANCE_NAME);
-
-        MapModel res = manager.createMapModel();
-        res.createContext(city, pole, uuid)
-                .addPropertyBridge(distance.create()
-                        .addFunction(SP.arg1, convertLatLon.create()
-                                .addProperty(SP.arg1, lat).addProperty(SP.arg2, lon))
-                        .addFunction(SP.arg2, north)
-                        .add(SP.arg3, UOM.URN.kilometer.getURI()), dis)
-                .getContext()
-                .addPropertyBridge(localName.create()
-                        .addFunction(SP.arg1, thisIndividual), RDFS.label);
-
-        TestUtils.debug(res);
-        return res;
+        testData.validate(dst);
     }
 
     public static OntGraphModel createSource(Supplier<OntGraphModel> factory) {
@@ -145,12 +115,12 @@ public class PoleDistanceMapTest {
         return res;
     }
 
-    public static OntGraphModel createTarget(Supplier<OntGraphModel> factory) {
+    public static OntGraphModel createTarget(Supplier<OntGraphModel> factory, String dataPropertyLocalName) {
         String uri = "http://geo.target.test";
         String ns = uri + "#";
         OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", ns);
         res.setID(uri);
-        res.createDataProperty(ns + DISTANCE_NAME)
+        res.createDataProperty(ns + dataPropertyLocalName)
                 .addDomain(res.createOntClass(ns + POLE_NAME)).addRange(XSD.xdouble);
         return res;
     }
@@ -165,5 +135,126 @@ public class PoleDistanceMapTest {
         res.createDataProperty(ns + LATITUDE_NAME).addDomain(point).addRange(XSD.xdouble);
         res.createDataProperty(ns + LONGITUDE_NAME).addDomain(point).addRange(XSD.xdouble);
         return res;
+    }
+
+    enum D {
+        DISTANCE_IN_KMS {
+            @Override
+            String getDistanceDataPropertyLocalName() {
+                return "DistanceInKm";
+            }
+
+            @Override
+            MapModel assembleMapping(MapManager manager,
+                                     OntClass city, OntNDP lat, OntNDP lon,
+                                     OntClass pole, OntNDP dis,
+                                     MapFunction.Call target,
+                                     MapFunction.Call north) {
+                MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
+                MapFunction distance = manager.getFunction(SPATIAL.distance);
+                MapFunction localName = manager.getFunction(SPIF.localName);
+
+                MapFunction.Call thisIndividual = manager.getFunction(AVC.currentIndividual).create().build();
+                return manager.createMapModel()
+                        .createContext(city, pole, target)
+                        .addPropertyBridge(distance.create()
+                                .addFunction(SP.arg1, convertLatLon.create()
+                                        .addProperty(SP.arg1, lat).addProperty(SP.arg2, lon))
+                                .addFunction(SP.arg2, north)
+                                .add(SP.arg3, UOM.URN.kilometer.getURI()), dis)
+                        .getContext()
+                        .addPropertyBridge(localName.create()
+                                .addFunction(SP.arg1, thisIndividual), RDFS.label)
+                        .getModel();
+
+            }
+
+            @Override
+            Map<String, Integer> expectedValues() {
+                Map<String, Integer> res = new HashMap<>();
+                res.put("M1", 4363);
+                res.put("M2", 3384);
+                res.put("B1", 8478);
+                res.put("K1", 7654);
+                return res;
+            }
+        },
+        DISTANCE_IN_DEFAULT_METERS {
+            @Override
+            String getDistanceDataPropertyLocalName() {
+                return "DistanceInM";
+            }
+
+            @Override
+            MapModel assembleMapping(MapManager manager,
+                                     OntClass city, OntNDP lat, OntNDP lon,
+                                     OntClass pole, OntNDP dis,
+                                     MapFunction.Call target,
+                                     MapFunction.Call north) {
+                MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
+                MapFunction distance = manager.getFunction(SPATIAL.distance);
+                MapFunction localName = manager.getFunction(SPIF.localName);
+
+                MapFunction.Call thisIndividual = manager.getFunction(AVC.currentIndividual).create().build();
+                return manager.createMapModel()
+                        .createContext(city, pole, target)
+                        .addPropertyBridge(distance.create()
+                                .addFunction(SP.arg1, convertLatLon.create()
+                                        .addProperty(SP.arg1, lat).addProperty(SP.arg2, lon))
+                                .addFunction(SP.arg2, north), dis)
+                        .getContext()
+                        .addPropertyBridge(localName.create()
+                                .addFunction(SP.arg1, thisIndividual), RDFS.label)
+                        .getModel();
+
+            }
+
+            @Override
+            Map<String, Integer> expectedValues() {
+                Map<String, Integer> res = new HashMap<>();
+                res.put("M1", 4363758);
+                res.put("M2", 3384036);
+                res.put("B1", 8478624);
+                res.put("K1", 7654607);
+                return res;
+            }
+        },
+
+        ;
+
+        abstract String getDistanceDataPropertyLocalName();
+
+        abstract Map<String, Integer> expectedValues();
+
+        abstract MapModel assembleMapping(MapManager manager,
+                                          OntClass city, OntNDP lat, OntNDP lon,
+                                          OntClass pole, OntNDP dis,
+                                          MapFunction.Call target,
+                                          MapFunction.Call north);
+
+        OntGraphModel target(Supplier<OntGraphModel> factory) {
+            return createTarget(factory, getDistanceDataPropertyLocalName());
+        }
+
+        MapModel mapping(OntGraphModel source, OntGraphModel target, MapManager manager) {
+            MapFunction.Call north = manager.getFunction(SPATIAL.convertLatLon).create()
+                    .addLiteral(SP.arg1, 90d).addLiteral(SP.arg2, 0d).build();
+            MapFunction.Call uuid = manager.getFunction(AVC.UUID).create().build();
+
+            OntClass city = TestUtils.findOntEntity(source, OntClass.class, CITY_NAME);
+            OntClass pole = TestUtils.findOntEntity(target, OntClass.class, POLE_NAME);
+            OntNDP lat = TestUtils.findOntEntity(source, OntNDP.class, LATITUDE_NAME);
+            OntNDP lon = TestUtils.findOntEntity(source, OntNDP.class, LONGITUDE_NAME);
+            OntNDP dis = TestUtils.findOntEntity(target, OntNDP.class, getDistanceDataPropertyLocalName());
+
+            return assembleMapping(manager, city, lat, lon, pole, dis, uuid, north);
+        }
+
+        void validate(OntGraphModel m) {
+            OntNDP dis = TestUtils.findOntEntity(m, OntNDP.class, getDistanceDataPropertyLocalName());
+            expectedValues().forEach((k, v) -> m.listResourcesWithProperty(RDFS.label, k)
+                    .mapWith(x -> m.getRequiredProperty(x, dis).getLiteral().getInt())
+                    .forEachRemaining(i -> Assert.assertEquals(v, i)));
+        }
     }
 }

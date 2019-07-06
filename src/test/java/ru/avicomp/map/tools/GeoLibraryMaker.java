@@ -105,6 +105,8 @@ public class GeoLibraryMaker {
                         .addProperty(RDF.type, SPL.Argument)
                         .addProperty(SPL.predicate, SP.arg3)
                         .addProperty(SPL.valueType, RDFS.Datatype)
+                        .addProperty(SPL.defaultValue, UOM.meter)
+                        .addProperty(RDFS.comment, "Unit of measures, by default it is meter.")
                         .addProperty(AVC.oneOf, m.createList(km1, km2, km3, m1, m2, m3)));
 
         m.write(System.out, "ttl");

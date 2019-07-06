@@ -55,6 +55,8 @@ spatial:distance  a      spin:Function ;
         spin:constraint  [ a              spl:Argument ;
                            spl:predicate  sp:arg3 ;
                            spl:valueType  rdfs:Datatype ;
+                           spl:defaultValue  uom:meter ;
+                           rdfs:comment      "Unit of measures, by default it is meter." ;
                            avc:oneOf      ( uom:kilometer uom:kilometre <urn:ogc:def:uom:EPSG::9036> uom:meter uom:metre <urn:ogc:def:uom:EPSG::9001> )
                          ] ;
         spin:constraint  [ a              spl:Argument ;

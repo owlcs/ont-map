@@ -89,7 +89,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
         MapFunctionImpl function = getFunction();
         MapFunctionImpl.ArgImpl arg = function.getArg(predicate);
         if (!arg.isAssignable()) {
-            throw FUNCTION_CALL_PUT_NOT_ASSIGNABLE_ARG.create().addArg(arg).build();
+            throw FUNCTION_CALL_ILLEGAL_ARG_NOT_ASSIGNABLE.create().addArg(arg).build();
         }
         checkValue(arg, value);
         if (arg.isVararg()) {
@@ -111,37 +111,26 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             return;
         }
         if (value instanceof String) {
-            validateValue(arg, (String) value);
             return;
         }
         throw new MapJenaException.IllegalArgument("Incompatible argument value: " + value + ".");
-    }
-
-    @SuppressWarnings("unused")
-    public void validateValue(MapFunctionImpl.ArgImpl arg, String value) throws MapJenaException {
-        Set<String> oneOf = arg.oneOf();
-        if (!oneOf.isEmpty() && !oneOf.contains(value)) {
-            throw FUNCTION_CALL_PUT_MUST_BE_ONE_OF.create()
-                    .addArg(arg)
-                    .add(Exceptions.Key.ARG_VALUE, value).build();
-        }
     }
 
     public void validateValue(MapFunctionImpl.ArgImpl arg, MapFunction.Builder value) throws MapJenaException {
         MapFunctionImpl function = getFunction();
         FunctionBuilderImpl builder = (FunctionBuilderImpl) value;
         if (builder.calls().anyMatch(this::equals)) {
-            // Attempt to build recursion.
-            throw FUNCTION_CALL_PUT_SELF_REF.create().addArg(arg).addFunction(function).build();
+            // Attempt to build recursion
+            throw FUNCTION_CALL_ILLEGAL_ARG_SELF_REF.create().addArg(arg).addFunction(function).build();
         }
         MapFunctionImpl nested = builder.getFunction();
         if (!function.canHaveNested()) {
-            throw FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED.create()
+            throw FUNCTION_CALL_ILLEGAL_ARG_CANNOT_HAVE_NESTED.create()
                     .addFunction(function)
                     .add(Key.ARG_VALUE, nested.name()).build();
         }
         if (!nested.canBeNested()) {
-            throw FUNCTION_CALL_PUT_CANNOT_BE_NESTED.create()
+            throw FUNCTION_CALL_ILLEGAL_ARG_CANNOT_BE_NESTED.create()
                     .addFunction(nested)
                     .add(Exceptions.Key.ARG_VALUE, function.name())
                     .build();
@@ -207,7 +196,7 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
             function.arg(SPINMAP.source.getURI()).ifPresent(a -> map.put(a, SPINMAP.sourceVariable.getURI()));
         }
         // check all required arguments are assigned
-        validateAndSetDefaults(map, error);
+        processArgValues(map, error);
         Throwable[] suppressed = error.getSuppressed();
         if (suppressed.length == 0) {
             return new MapFunctionImpl.CallImpl(function, map);
@@ -224,8 +213,8 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
      * @param map   {@code Map} with argument values
      * @param error {@link Exceptions.SpinMapException} error-holder tp report
      */
-    protected void validateAndSetDefaults(Map<MapFunctionImpl.ArgImpl, Object> map,
-                                          Exceptions.SpinMapException error) {
+    protected void processArgValues(Map<MapFunctionImpl.ArgImpl, Object> map,
+                                    Exceptions.SpinMapException error) {
         List<MapFunctionImpl.ArgImpl> listArgs = function.getArguments();
         for (int i = 0; i < listArgs.size(); i++) {
             MapFunctionImpl.ArgImpl arg = listArgs.get(i);
@@ -235,20 +224,35 @@ public class FunctionBuilderImpl implements MapFunction.Builder {
                     continue;
                 throw new MapJenaException.IllegalState("Vararg is not in last place");
             }
+            // has value assigned:
             if (map.containsKey(arg)) {
-                // already assigned as expected
-                // but prev is optional without default value ?
+                // check if the prev is optional but without any value assigned:
                 MapFunctionImpl.ArgImpl prev;
                 if (i != 0 && !map.containsKey(prev = listArgs.get(i - 1))) {
                     if (prev.isOptional()) {
                         error.addSuppressed(FUNCTION_CALL_BUILD_MISSED_OPTIONAL_ARG.create().addArg(prev).build());
                     }
                 }
+                // process avc:oneOf
+                Set<String> opts = arg.oneOf();
+                if (opts.isEmpty()) {
+                    continue;
+                }
+                Object v = map.get(arg);
+                if (v instanceof String && opts.contains(v)) {
+                    continue;
+                }
+                error.addSuppressed(FUNCTION_CALL_BUILD_MUST_BE_ONE_OF.create()
+                        .addArg(arg)
+                        .add(Key.ARG_VALUE, String.valueOf(v))
+                        .build());
                 continue;
             }
+            // no value assigned:
             String def = arg.defaultValue();
             if (def != null) {
                 map.put(arg, def);
+                continue;
             }
             if (arg.isOptional()) {
                 continue;

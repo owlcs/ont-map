@@ -31,6 +31,7 @@ import org.topbraid.spin.vocabulary.SPINMAP;
 import org.topbraid.spin.vocabulary.SPL;
 import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
+import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.ontapi.jena.utils.Iter;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
@@ -148,7 +149,12 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
             if (arg.isOptional()) {
                 constraint.addProperty(SPL.optional, Models.TRUE);
             }
-            // todo: support AVC#oneOf
+            // AVC#oneOf
+            Set<String> oneOf = arg.oneOf();
+            if (!oneOf.isEmpty()) {
+                RDFList list = model.createList(oneOf.stream().map(model::toNode).iterator());
+                constraint.addProperty(AVC.oneOf, list);
+            }
         });
         f.addProperty(SPIN.body, new ARQ2SPIN(lib).createQuery(query, null));
         manager.register(f);
@@ -364,6 +370,11 @@ public class ModelCallImpl extends MapFunctionImpl.CallImpl {
                     .map(MapFunctionImpl.ArgImpl::defaultValueNode)
                     .filter(Optional::isPresent).map(Optional::get)
                     .findFirst();
+        }
+
+        public Set<String> oneOf() {
+            return argList.stream().map(MapFunctionImpl.ArgImpl::oneOf)
+                    .flatMap(Collection::stream).collect(Iter.toUnmodifiableSet());
         }
 
         /**

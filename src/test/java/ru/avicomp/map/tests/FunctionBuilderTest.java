@@ -113,7 +113,7 @@ public class FunctionBuilderTest {
                     .addFunction(SP.arg2, manager.getFunction(SPINMAPL.buildURI1).create());
             Assert.fail("Possible to add target function as nested");
         } catch (MapJenaException j) {
-            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_PUT_CANNOT_BE_NESTED);
+            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_ILLEGAL_ARG_CANNOT_BE_NESTED);
         }
     }
 
@@ -126,7 +126,7 @@ public class FunctionBuilderTest {
                     .add(SP.arg2.getURI(), "val");
             Assert.fail("Possible to a nested function to property function");
         } catch (MapJenaException j) {
-            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_PUT_CANNOT_HAVE_NESTED);
+            TestUtils.assertCode(j, Exceptions.FUNCTION_CALL_ILLEGAL_ARG_CANNOT_HAVE_NESTED);
         }
     }
 
