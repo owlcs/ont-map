@@ -33,6 +33,7 @@ import ru.avicomp.map.MapFunction;
 import ru.avicomp.map.MapJenaException;
 import ru.avicomp.map.spin.vocabulary.AVC;
 import ru.avicomp.map.spin.vocabulary.SPINMAPL;
+import ru.avicomp.map.utils.ModelUtils;
 import ru.avicomp.ontapi.jena.model.OntDR;
 import ru.avicomp.ontapi.jena.model.OntDT;
 import ru.avicomp.ontapi.jena.utils.Iter;
@@ -169,8 +170,8 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
      * @return if there is {@code _:this rdfs:subClassOf _:superClass} statement
      */
     public boolean isInheritedOfClass(Resource superClass) {
-        // todo: take into consideration class hierarchy
-        return func.hasProperty(RDFS.subClassOf, superClass);
+        Objects.requireNonNull(superClass);
+        return Iter.findFirst(ModelUtils.listSuperClasses(asResource()).filterKeep(superClass::equals)).isPresent();
     }
 
     /**

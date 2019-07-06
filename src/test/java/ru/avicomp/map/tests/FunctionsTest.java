@@ -81,7 +81,7 @@ public class FunctionsTest {
         BOOLEAN_TYPE(35, FunctionFilter.BOOLEAN),
         BOOLEAN_CLASS(24, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions)),
         DATE(13, FunctionFilter.DATE),
-        MATH(33, FunctionFilter.MATH),
+        MATH(TestUtils.withGeoSparql() ? 35 : 33, FunctionFilter.MATH),
         MISC(26, FunctionFilter.MISC),
         URI(5, FunctionFilter.URI),
         ONTOLOGY(14, FunctionFilter.ONTOLOGY),
