@@ -36,6 +36,9 @@ public class SPATIAL {
     public static final Resource distance = resource("distance");
     public static final Resource convertLatLon = resource("convertLatLon");
 
+    public static final Resource azimuth = resource("azimuth");
+    public static final Resource azimuthDeg = resource("azimuthDeg");
+
     protected static Resource resource(String local) {
         return ResourceFactory.createResource(NS + local);
     }

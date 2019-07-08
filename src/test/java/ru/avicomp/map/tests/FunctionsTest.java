@@ -77,11 +77,11 @@ public class FunctionsTest {
      * @see ru.avicomp.map.spin.MapFunctionImpl#isInheritedOfClass(Resource)
      */
     enum FuncTypeFilter {
-        ALL(TestUtils.withGeoSparql() ? 188 : 186, f -> true),
+        ALL(186, f -> true, TestUtils.withGeoSparql()),
         BOOLEAN_TYPE(35, FunctionFilter.BOOLEAN),
         BOOLEAN_CLASS(24, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPL.BooleanFunctions)),
         DATE(13, FunctionFilter.DATE),
-        MATH(TestUtils.withGeoSparql() ? 35 : 33, FunctionFilter.MATH),
+        MATH(33, FunctionFilter.MATH, TestUtils.withGeoSparql()),
         MISC(26, FunctionFilter.MISC),
         URI(5, FunctionFilter.URI),
         ONTOLOGY(14, FunctionFilter.ONTOLOGY),
@@ -91,12 +91,18 @@ public class FunctionsTest {
         TARGET_TYPE(10, FunctionFilter.TARGET),
         TARGET_CLASS(TARGET_TYPE.count, f -> ((MapFunctionImpl) f).isInheritedOfClass(SPINMAP.TargetFunctions));
 
+        private static final int GEO_SPARQL_FUNCTIONS = 4;
+
         // TODO: this count number will change during the development process
         private final int count;
         private final Predicate<MapFunction> filter;
 
         FuncTypeFilter(int count, Predicate<MapFunction> filter) {
-            this.count = count;
+            this(count, filter, false);
+        }
+
+        FuncTypeFilter(int count, Predicate<MapFunction> filter, boolean geoSparql) {
+            this.count = geoSparql ? count + GEO_SPARQL_FUNCTIONS : count;
             this.filter = filter;
         }
 

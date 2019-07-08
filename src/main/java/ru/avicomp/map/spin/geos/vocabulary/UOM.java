@@ -22,9 +22,9 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import ru.avicomp.ontapi.jena.utils.Iter;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Units of Measure (Open Geospatial Consortium)
@@ -71,17 +71,15 @@ public class UOM {
     }
 
     public static Set<Resource> getAngularUOMs() {
-        return Stream.of(radian, microRadian, degree, minute, second, grad).collect(Iter.toUnmodifiableSet());
+        return setOf(radian, microRadian, degree, minute, second, grad);
     }
 
     public static Set<Resource> getSILinearUOMs() {
-        return Stream.of(meter, metre, kilometer, kilometre, centimeter, centimetre, millimeter, millimetre)
-                .collect(Iter.toUnmodifiableSet());
+        return setOf(meter, metre, kilometer, kilometre, centimeter, centimetre, millimeter, millimetre);
     }
 
     public static Set<Resource> getNonSILinearUOMs() {
-        return Stream.of(mile, statuteMile, yard, foot, inch, nauticalMile, surveyFootUS)
-                .collect(Iter.toUnmodifiableSet());
+        return setOf(mile, statuteMile, yard, foot, inch, nauticalMile, surveyFootUS);
     }
 
     public static Set<Resource> getAllUOMs() {
@@ -92,6 +90,11 @@ public class UOM {
         res.addAll(URN.getAngularUOMs());
         res.addAll(URN.getLinearUOMs());
         return res;
+    }
+
+    @SafeVarargs
+    private static <X> Set<X> setOf(X... resources) {
+        return Arrays.stream(resources).collect(Iter.toUnmodifiableSet());
     }
 
     /**
@@ -124,12 +127,11 @@ public class UOM {
         }
 
         public static Set<Resource> getAngularUOMs() {
-            return Stream.of(radian, microRadian, degree, minute, second, grad).collect(Iter.toUnmodifiableSet());
+            return setOf(radian, microRadian, degree, minute, second, grad);
         }
 
         public static Set<Resource> getLinearUOMs() {
-            return Stream.of(meter, kilometer, centimeter, millimeter, statuteMile, foot, yard, nauticalMile, surveyFootUS)
-                    .collect(Iter.toUnmodifiableSet());
+            return setOf(meter, metre, kilometer, centimeter, millimeter, statuteMile, foot, yard, nauticalMile, surveyFootUS);
         }
     }
 }

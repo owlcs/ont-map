@@ -19,6 +19,7 @@
 package ru.avicomp.map.tools;
 
 import org.apache.jena.graph.Factory;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.XSD;
 import org.topbraid.spin.vocabulary.SP;
@@ -36,6 +37,9 @@ import ru.avicomp.ontapi.jena.model.OntID;
 import ru.avicomp.ontapi.jena.utils.Models;
 import ru.avicomp.ontapi.jena.vocabulary.OWL;
 import ru.avicomp.ontapi.jena.vocabulary.RDF;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Library maker for GeoSPARQL support.
@@ -112,8 +116,38 @@ public class GeoLibraryMaker {
                         .addProperty(RDFS.comment, "Unit of measures, by default it is meter.")
                         .addProperty(AVC.oneOf, units));
 
-        m.write(System.out, "ttl");
+        Map<Resource, String> azimuthFunctions = new HashMap<>();
+        azimuthFunctions.put(SPATIAL.azimuth,
+                "Forward azimuth clockwise from North between two Lat/Lon Points in 0 to 2π radians.");
+        azimuthFunctions.put(SPATIAL.azimuthDeg,
+                "Forward azimuth clockwise from North between two Lat/Lon Points in 0 to 360 degrees.");
+        azimuthFunctions.forEach((f, c) -> f.inModel(m)
+                .addProperty(RDF.type, SPIN.Function)
+                .addProperty(RDFS.subClassOf, GEO.GeoSPARQLFunctions)
+                .addProperty(SPIN.returnType, XSD.xdouble)
+                .addProperty(RDFS.comment, c)
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The first point latitude.")
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg1)
+                        .addProperty(SPL.valueType, XSD.xdouble))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The first point longitude.")
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg2)
+                        .addProperty(SPL.valueType, XSD.xdouble))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The second point latitude.")
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg3)
+                        .addProperty(SPL.valueType, XSD.xdouble))
+                .addProperty(SPIN.constraint, m.createResource()
+                        .addProperty(RDFS.comment, "The second point longitude.")
+                        .addProperty(RDF.type, SPL.Argument)
+                        .addProperty(SPL.predicate, SP.arg4)
+                        .addProperty(SPL.valueType, XSD.xdouble)));
 
+        m.write(System.out, "ttl");
     }
 
 }

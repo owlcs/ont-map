@@ -42,6 +42,7 @@ public class PoleDistanceMapTest {
 
     static final String CITY_NAME = "City";
     static final String POLE_NAME = "ToPole";
+    static final String POINT_NAME = "GeoPoint";
     static final String LATITUDE_NAME = "Latitude";
     static final String LONGITUDE_NAME = "Longitude";
 
@@ -75,7 +76,7 @@ public class PoleDistanceMapTest {
         res.setID(uri);
         res.addImport(base);
 
-        OntClass point = TestUtils.findOntEntity(res, OntClass.class, "GeoPoint");
+        OntClass point = TestUtils.findOntEntity(res, OntClass.class, POINT_NAME);
         OntNDP lat = TestUtils.findOntEntity(res, OntNDP.class, LATITUDE_NAME);
         OntNDP lon = TestUtils.findOntEntity(res, OntNDP.class, LONGITUDE_NAME);
         OntClass city = res.createOntClass(ns + "City").addSuperClass(point);
@@ -105,12 +106,16 @@ public class PoleDistanceMapTest {
     }
 
     public static OntGraphModel createTarget(Supplier<OntGraphModel> factory, String dataPropertyLocalName) {
+        return createTarget(factory, POLE_NAME, dataPropertyLocalName);
+    }
+
+    public static OntGraphModel createTarget(Supplier<OntGraphModel> factory, String classLocalName, String dataPropertyLocalName) {
         String uri = "http://geo.target.test";
         String ns = uri + "#";
         OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", ns);
         res.setID(uri);
         res.createDataProperty(ns + dataPropertyLocalName)
-                .addDomain(res.createOntClass(ns + POLE_NAME)).addRange(XSD.xdouble);
+                .addDomain(res.createOntClass(ns + classLocalName)).addRange(XSD.xdouble);
         return res;
     }
 
@@ -119,7 +124,7 @@ public class PoleDistanceMapTest {
         String ns = uri + "#";
         OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(uri);
-        OntClass point = res.createOntClass(ns + "GeoPoint");
+        OntClass point = res.createOntClass(ns + POINT_NAME);
         res.getDatatype(XSD.xdouble);
         res.createDataProperty(ns + LATITUDE_NAME).addDomain(point).addRange(XSD.xdouble);
         res.createDataProperty(ns + LONGITUDE_NAME).addDomain(point).addRange(XSD.xdouble);

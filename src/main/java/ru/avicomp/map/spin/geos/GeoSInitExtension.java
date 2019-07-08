@@ -18,6 +18,8 @@
 
 package ru.avicomp.map.spin.geos;
 
+import org.apache.jena.geosparql.spatial.filter_functions.AzimuthDegreesFF;
+import org.apache.jena.geosparql.spatial.filter_functions.AzimuthFF;
 import org.apache.jena.geosparql.spatial.filter_functions.ConvertLatLonFF;
 import org.apache.jena.geosparql.spatial.filter_functions.DistanceFF;
 import org.apache.jena.graph.Factory;
@@ -78,6 +80,9 @@ public class GeoSInitExtension implements Extension {
             {
                 put(SPATIAL.convertLatLon.getURI(), ConvertLatLonFF.class);
                 put(SPATIAL.distance.getURI(), DistanceFF.class);
+
+                put(SPATIAL.azimuth.getURI(), AzimuthFF.class);
+                put(SPATIAL.azimuthDeg.getURI(), AzimuthDegreesFF.class);
             }
         });
     }

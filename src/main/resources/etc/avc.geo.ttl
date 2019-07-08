@@ -21,7 +21,7 @@ avc:Units  a                 rdfs:Datatype ;
         rdfs:comment         "Represents all OGC Unit of Measure datatypes" ;
         rdfs:seeAlso         <http://www.opengis.net/def/uom/OGC/1.0/#> ;
         owl:equivalentClass  [ a            rdfs:Datatype ;
-                               owl:unionOf  ( uom:millimeter uom:grad uom:kilometre <urn:ogc:def:uom:EPSG::9093> uom:minute uom:millimetre <urn:ogc:def:uom:EPSG::9102> <urn:ogc:def:uom:EPSG::9003> uom:centimeter <urn:ogc:def:uom:EPSG::9104> uom:microRadian uom:centimetre uom:second uom:foot uom:yard uom:surveyFootUS uom:radian <urn:ogc:def:uom:EPSG::9096> <urn:ogc:def:uom:EPSG::9030> <urn:ogc:def:uom:EPSG::1025> uom:inch <urn:ogc:def:uom:EPSG::1033> <urn:ogc:def:uom:EPSG::9103> uom:metre uom:statuteMile <urn:ogc:def:uom:EPSG::9105> <urn:ogc:def:uom:EPSG::9036> <urn:ogc:def:uom:EPSG::9002> <urn:ogc:def:uom:EPSG::9101> uom:meter uom:nauticalMile <urn:ogc:def:uom:EPSG::9109> uom:mile uom:degree uom:kilometer )
+                               owl:unionOf  ( uom:millimeter uom:grad uom:kilometre <urn:ogc:def:uom:EPSG::9093> uom:minute uom:millimetre <urn:ogc:def:uom:EPSG::9102> <urn:ogc:def:uom:EPSG::9003> uom:centimeter <urn:ogc:def:uom:EPSG::9104> <urn:ogc:def:uom:EPSG::9001> uom:microRadian uom:centimetre uom:second uom:foot uom:yard uom:surveyFootUS uom:radian <urn:ogc:def:uom:EPSG::9096> <urn:ogc:def:uom:EPSG::9030> <urn:ogc:def:uom:EPSG::1025> uom:inch <urn:ogc:def:uom:EPSG::1033> <urn:ogc:def:uom:EPSG::9103> uom:metre uom:statuteMile <urn:ogc:def:uom:EPSG::9105> <urn:ogc:def:uom:EPSG::9036> <urn:ogc:def:uom:EPSG::9002> <urn:ogc:def:uom:EPSG::9101> uom:meter uom:nauticalMile <urn:ogc:def:uom:EPSG::9109> uom:mile uom:degree uom:kilometer )
                              ] .
 
 avc:GeoSPARQLFunctions
@@ -66,3 +66,54 @@ spatial:convertLatLon
                            spl:valueType  xsd:double
                          ] ;
         spin:returnType  geosparql:wktLiteral .
+
+spatial:azimuth  a       spin:Function ;
+        rdfs:comment     "Forward azimuth clockwise from North between two Lat/Lon Points in 0 to 2π radians." ;
+        rdfs:subClassOf  avc:GeoSPARQLFunctions ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The second point longitude." ;
+                           spl:predicate  sp:arg4 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The second point latitude." ;
+                           spl:predicate  sp:arg3 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The first point longitude." ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The first point latitude." ;
+                           spl:predicate  sp:arg1 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:returnType  xsd:double .
+
+
+spatial:azimuthDeg  a    spin:Function ;
+        rdfs:comment     "Forward azimuth clockwise from North between two Lat/Lon Points in 0 to 360 degrees." ;
+        rdfs:subClassOf  avc:GeoSPARQLFunctions ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The second point longitude." ;
+                           spl:predicate  sp:arg4 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The second point latitude." ;
+                           spl:predicate  sp:arg3 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The first point longitude." ;
+                           spl:predicate  sp:arg2 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:constraint  [ a              spl:Argument ;
+                           rdfs:comment   "The first point latitude." ;
+                           spl:predicate  sp:arg1 ;
+                           spl:valueType  xsd:double
+                         ] ;
+        spin:returnType  xsd:double .
