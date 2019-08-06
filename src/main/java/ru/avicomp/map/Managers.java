@@ -126,10 +126,10 @@ public class Managers {
      * @see #createMapManager(Graph) see the note about the graph-parameter
      */
     public static OWLMapManager createOWLMapManager(Graph primary, ReadWriteLock lock) {
-        OntologyFactory.Builder builder = new OntologyBuilderImpl();
-        OntologyFactory.Loader loader = new OntologyLoaderImpl(builder, new OWLFactoryWrapper(builder));
-        OntologyFactory ontologyFactory = new OntologyFactoryImpl(builder, loader);
+        OntologyFactory.Builder builder = OntManagers.DEFAULT_PROFILE.createOntologyBuilder();
+        OntologyFactory ontologyFactory = OntManagers.DEFAULT_PROFILE.createOntologyFactory(builder);
         DataFactory dataFactory = OntManagers.DEFAULT_PROFILE.dataFactory();
+
         OWLMapManagerImpl res = new OWLMapManagerImpl(primary, dataFactory, ontologyFactory, lock);
         res.getOntologyStorers().set(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
         res.getOntologyParsers().set(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
