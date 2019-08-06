@@ -40,6 +40,7 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * A GeoSparql initializer.
@@ -70,8 +71,8 @@ public class GeoSInitExtension implements Extension {
     }
 
     @Override
-    public Map<String, Graph> graphs() {
-        return Collections.singletonMap(AVC_GEO_URI, loadGraph());
+    public Map<String, Supplier<Graph>> graphs() {
+        return Collections.singletonMap(AVC_GEO_URI, GeoSInitExtension::loadGraph);
     }
 
     @Override

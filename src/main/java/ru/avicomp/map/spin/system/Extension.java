@@ -26,6 +26,7 @@ import org.apache.jena.sys.JenaSubsystemLifecycle;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * An ONT-AMP API extension.
@@ -45,21 +46,23 @@ import java.util.Map;
 public interface Extension extends JenaSubsystemLifecycle {
 
     /**
-     * Returns library graphs as a {@code Map}, where key is a graph name (ontology iri).
+     * Returns library graph loaders as a {@code Map},
+     * where key is a graph name (i.e. an ontology IRI), and value is a facility to load it.
      * Each of the graphs should contain a spin-description of the functions,
      * which can be either ARQ-based (and must be provided separately by the {@link #functions()} method)
-     * or SPARQL-based (i.e. must include {@link org.topbraid.spin.vocabulary.SPIN#body spin:body} in the description.
+     * or SPARQL-based (i.e. must include {@link org.topbraid.spin.vocabulary.SPIN#body spin:body}
+     * in their RDF description.
      *
-     * @return Map
+     * @return {@code Map} of name-loader pairs
      */
-    Map<String, Graph> graphs();
+    Map<String, Supplier<Graph>> graphs();
 
     /**
      * Returns a {@code Map} of {@link Function}s, provided by this module.
      * Each of the functions from the {@code Map} must have a spin-description in a graph
      * provided by the {@link #graphs()} method.
      *
-     * @return Map
+     * @return {@code Map} of uri-class pairs
      */
     Map<String, Class<? extends Function>> functions();
 
@@ -69,7 +72,7 @@ public interface Extension extends JenaSubsystemLifecycle {
      * Each of the property-functions from the {@code Map} must have a spin-description in a graph
      * provided by the {@link #graphs()} method.
      *
-     * @return Map
+     * @return {@code Map} of uri-class pairs
      */
     default Map<String, Class<? extends PropertyFunction>> properties() {
         return Collections.emptyMap();

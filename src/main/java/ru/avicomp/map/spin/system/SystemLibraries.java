@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.avicomp.map.utils.ReadOnlyGraph;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,18 +49,19 @@ import java.util.stream.Stream;
 public class SystemLibraries implements JenaSubsystemLifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemLibraries.class);
 
-    private static volatile Map<String, Graph> graphs;
     private static volatile Map<String, Class<? extends Function>> functions;
     private static volatile Map<String, Class<? extends PropertyFunction>> properties;
+    private static volatile Map<String, Supplier<Graph>> loaders;
+    private static volatile Map<String, Graph> graphs;
 
     /**
-     * Returns all library models from the system resources.
-     * Singleton.
-     *
-     * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology IRIs as keys
+     * Initializes the Jena System.
+     * By default, initialization happens by using {@code ServiceLoader.load} to
+     * find {@link JenaSubsystemLifecycle} objects.
+     * ONT-MAP also uses this mechanism, but every its module must implement {@link Extension} interface.
      */
-    public static Map<String, Graph> graphs() {
-        return get(() -> graphs);
+    public static void init() {
+        JenaSystem.init();
     }
 
     /**
@@ -69,7 +71,12 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
      * @return Unmodifiable Map with uri as a key and {@link Function}-impl class java body as a value
      */
     public static Map<String, Class<? extends Function>> functions() {
-        return get(() -> functions);
+        if (functions != null) return functions;
+        init();
+        if (functions == null) {
+            throw new IllegalStateException("Initialization problem: can't get functions.");
+        }
+        return functions;
     }
 
     /**
@@ -80,7 +87,35 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
      * @return Unmodifiable Map with uri as a key and {@link PropertyFunction}-impl class java body as a value
      */
     public static Map<String, Class<? extends PropertyFunction>> properties() {
-        return get(() -> properties);
+        if (properties != null) return properties;
+        init();
+        if (properties == null) {
+            throw new IllegalStateException("Initialization problem: can't get properties.");
+        }
+        return properties;
+    }
+
+    /**
+     * Returns all library models from the system resources.
+     * Singleton (by class instance).
+     *
+     * @return Unmodifiable Map with {@link ReadOnlyGraph unmodifiable graph}s as values and ontology IRIs as keys
+     */
+    public static Map<String, Graph> graphs() {
+        if (graphs != null) return graphs;
+        if (loaders == null) {
+            init();
+            if (loaders == null) {
+                throw new IllegalStateException("Initialization problem: can't get graph loaders.");
+            }
+        }
+        synchronized (SystemLibraries.class) {
+            if (graphs != null) return graphs;
+            Map<String, Graph> res = new HashMap<>();
+            LOGGER.debug("Load all system graphs (libraries).");
+            loaders.forEach((k, v) -> res.put(k, v.get()));
+            return graphs = Collections.unmodifiableMap(res);
+        }
     }
 
     /**
@@ -93,21 +128,6 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
         return graphs().entrySet().stream()
                 .filter(e -> spin == Resources.SPIN_FAMILY.contains(e.getKey()))
                 .map(Map.Entry::getValue);
-    }
-
-    private static <R> R get(Supplier<R> val) {
-        R res = val.get();
-        if (res == null) {
-            init();
-        }
-        if ((res = val.get()) == null) {
-            throw new IllegalStateException("Can't init.");
-        }
-        return res;
-    }
-
-    public static void init() {
-        JenaSystem.init();
     }
 
     @Override
@@ -128,9 +148,13 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
             mapper.addAltEntry(r.uri, r.path.replaceFirst("^/", ""));
         }
 
-        // The main initialization:
-        Map<String, Graph> graphMap = new HashMap<>(Resources.Loader.GRAPHS);
-        // functions
+        // The main initialization.
+        // graphs:
+        Map<String, Supplier<Graph>> graphMap = new HashMap<>();
+        Arrays.stream(Resources.values())
+                .forEach(v -> graphMap.put(v.getURI(), () -> Resources.Loader.GRAPHS.get(v.getURI())));
+
+        // functions:
         Map<String, Class<? extends Function>> functionMap = new HashMap<>();
         functionMap.putAll(StandardFunctions.FUNCTIONS);
         functionMap.putAll(SPIFFunctions.FUNCTIONS);
@@ -143,12 +167,12 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
         JenaSystem.get().snapshot().stream()
                 .filter(Extension.class::isInstance).map(Extension.class::cast)
                 .forEach(ext -> {
-                    LOGGER.debug("Load {}", ext);
-                    Map<String, Graph> eg = ext.graphs();
+                    LOGGER.debug("Load extension '{}'", ext);
+                    Map<String, Supplier<Graph>> eg = ext.graphs();
                     Map<String, Class<? extends Function>> ef = ext.functions();
                     Map<String, Class<? extends PropertyFunction>> epf = ext.properties();
                     if (eg != null) {
-                        eg.forEach((k, v) -> graphMap.put(k, ReadOnlyGraph.wrap(v)));
+                        eg.forEach((k, v) -> graphMap.put(k, () -> ReadOnlyGraph.wrap(v.get())));
                     }
                     if (ef != null) functionMap.putAll(ef);
                     if (epf != null) propertyMap.putAll(epf);
@@ -157,7 +181,7 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
                 graphMap.size(), functionMap.size(), propertyMap.size());
         functions = Collections.unmodifiableMap(functionMap);
         properties = Collections.unmodifiableMap(propertyMap);
-        graphs = Collections.unmodifiableMap(graphMap);
+        loaders = Collections.unmodifiableMap(graphMap);
     }
 
     @Override
@@ -165,6 +189,7 @@ public class SystemLibraries implements JenaSubsystemLifecycle {
         LOGGER.debug("[STOP]");
         // reset all caches:
         graphs = null;
+        loaders = null;
         functions = null;
         properties = null;
     }
