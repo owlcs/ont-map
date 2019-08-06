@@ -13,10 +13,10 @@ just only through top-level operations and objects, which can be represented as 
 that is optimized for GUI developing.
 
 ## Dependencies 
- - **[ONT-API, ver 1.4.2-SNAPSHOT](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
+ - **[ONT-API](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
- - [Jena-ARQ, ver 3.12.0](https://github.com/apache/jena) transitively from ONT-API
- - [OWL-API, ver 5.1.11](https://github.com/owlcs/owlapi) transitively from ONT-API
+ - [Jena-ARQ, ver 3.x](https://github.com/apache/jena) transitively from ONT-API
+ - [OWL-API, ver 5.1.x](https://github.com/owlcs/owlapi) transitively from ONT-API
  
 ## License
 * Apache License Version 2.0
