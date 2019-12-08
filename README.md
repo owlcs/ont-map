@@ -13,7 +13,7 @@ just only through top-level operations and objects, which can be represented as 
 that is optimized for GUI developing.
 
 ## Dependencies 
- - **[ONT-API](https://github.com/avicomp/ont-api)** the OWL-API implementation on top of Jena
+ - **[ONT-API](https://github.com/owlcs/ont-api)** the OWL-API implementation on top of Jena
  - **[Topbraid SHACL, ver 1.0.1](https://github.com/TopQuadrant/shacl)** the last public version that supports SPIN
  - [Jena-ARQ, ver 3.x](https://github.com/apache/jena) transitively from ONT-API
  - [OWL-API, ver 5.1.x](https://github.com/owlcs/owlapi) transitively from ONT-API
@@ -22,7 +22,7 @@ that is optimized for GUI developing.
 * Apache License Version 2.0
 
 ### Notes, propositions and examples
-* _ru.avicomp.map.Managers_ is the main class to access to the system.
+* _com.github.owlcs.map.Managers_ is the main class to access to the system.
 * An important element of the system is the _ru.avicom.map.MapFunction_ interface, which wraps a SPIN function and is used to map and filter ontology data. It supports varargs and its call can contain an unlimited number of nested calls thus representing a function-chain, and therefore seriously extends functionality. 
 * The API provides access only to those spin functions which acceptable with OWL2 model in mapping terms, all other are hidden or rejected. 
 Some examples of common reasons to exclude/hide a spin-function:
@@ -41,10 +41,10 @@ all needs are already delivered in the mapping graph itself.
 There is an example of such an extension: [ont-map-ext-factorial](https://github.com/sszuev/ont-map-ext-factorial).
 * All functions (i.e. `MapFunction`s) are supplemented with the complete information about arguments and types 
 to be used as elements of constructor in GUI, any inappropriate usage (e.g. incompatible types) causes an error.
-* API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntCE.java), 
-to make contexts references [OWL Object Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntOPE.java) is used, 
-and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNAP.java) and [OWL Datatype Property](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntNDP.java) are used.
-* The mapping inference engine creates [OWL Named Individuals](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
+* API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntCE.java), 
+to make contexts references [OWL Object Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntOPE.java) is used, 
+and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntNAP.java) and [OWL Datatype Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntNDP.java) are used.
+* The mapping inference engine creates [OWL Named Individuals](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntIndividual.java). 
 Although, anonymous individuals are theoretically possible, 
 currently they are not supported due to SPIN-API limitations related to the target functions.
 * There is also a `com.github.owlcs.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, 
@@ -71,7 +71,7 @@ which can be used to draw class-boxes with all related properties.
         // run spin-inference:
         manager.getInferenceEngine(mapping).run(source, target);
         
-* A runnable example can be found on ONT-API wiki: https://github.com/avicomp/ont-api/wiki/Examples#ex9        
+* A runnable example can be found on ONT-API wiki: https://github.com/owlcs/ont-api/wiki/Examples#ex9        
         
 * Printing all supported functions:
 
