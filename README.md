@@ -47,7 +47,7 @@ and to map data (make a property bridge in Diagram) [OWL Annotation Property](ht
 * The mapping inference engine creates [OWL Named Individuals](https://github.com/avicomp/ont-api/blob/master/src/main/java/ru/avicomp/ontapi/jena/model/OntIndividual.java). 
 Although, anonymous individuals are theoretically possible, 
 currently they are not supported due to SPIN-API limitations related to the target functions.
-* There is also a `ru.avicomp.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, 
+* There is also a `com.github.owlcs.map.ClassPropertyMap`, that is responsible to provide class-properties hierarchical relations, 
 which can be used to draw class-boxes with all related properties.
 * A simple mapping example with inference:
 

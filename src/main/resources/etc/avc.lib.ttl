@@ -21,7 +21,7 @@ avc:UUID  a                 spinmap:TargetFunction ;
         rdfs:label          "MD5 UUID" ;
         rdfs:seeAlso        <https://www.w3.org/TR/sparql11-query/#func-uuid> , sp:UUID ;
         rdfs:subClassOf     spinmap:TargetFunctions ;
-        avc:optimize        "ru.avicomp.map.spin.functions.avc.UUID" ;
+        avc:optimize        "com.github.owlcs.map.spin.functions.avc.UUID" ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( [ a        sp:iri ;
                                                       sp:arg1  [ sp:varName  "uri" ]
@@ -99,7 +99,7 @@ avc:groupConcat  a          spin:Function ;
         rdfs:comment        "An aggregate function to concatenate values from assertions with the same individual and property using specified separator.\nNotice: string natural sort order is used." ;
         rdfs:label          "Group concat" ;
         rdfs:subClassOf     avc:AggregateFunctions ;
-        avc:runtime         "ru.avicomp.map.spin.AdjustGroupConcatImpl" ;
+        avc:runtime         "com.github.owlcs.map.spin.AdjustGroupConcatImpl" ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( [ a              sp:GroupConcat ;
                                                       sp:distinct    true ;
@@ -202,7 +202,7 @@ avc:objectWithFilter  a     spin:Function ;
         rdfs:label          "object with filter" ;
         rdfs:seeAlso        spl:object ;
         rdfs:subClassOf     spl:OntologyFunctions ;
-        avc:optimize        "ru.avicomp.map.spin.functions.avc.objectWithFilter" ;
+        avc:optimize        "com.github.owlcs.map.spin.functions.avc.objectWithFilter" ;
         spin:body           [ a                   sp:Select ;
                               sp:resultVariables  ( [ sp:varName  "object" ]
                                                   ) ;

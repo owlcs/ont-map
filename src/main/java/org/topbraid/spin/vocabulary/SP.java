@@ -18,12 +18,12 @@
 
 package org.topbraid.spin.vocabulary;
 
+import com.github.owlcs.map.spin.SpinModelConfig;
+import com.github.owlcs.map.spin.system.Resources;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.jena.vocabulary.RDF;
 import org.topbraid.spin.model.Element;
-import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.system.Resources;
 
 /**
  * A modified copy-paste from a org.topbraid.spin.vocabulary.SP.

@@ -18,12 +18,12 @@
 
 package org.topbraid.spin.vocabulary;
 
+import com.github.owlcs.map.spin.SpinModelConfig;
+import com.github.owlcs.map.spin.system.Resources;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import ru.avicomp.map.spin.SpinModelConfig;
-import ru.avicomp.map.spin.system.Resources;
 
 /**
  * Vocabulary of the SPIN Modeling Vocabulary.

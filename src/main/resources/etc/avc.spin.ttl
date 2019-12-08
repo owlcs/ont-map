@@ -58,7 +58,7 @@ avc:PropertyFunctions  a  spin:Function ;
 fn:abs  avc:hidden  "Duplicates the function sp:abs." .
 
 spinmapl:concatWithSeparator
-        avc:optimize  "ru.avicomp.map.spin.functions.spinmapl.concatWithSeparator" .
+        avc:optimize  "com.github.owlcs.map.spin.functions.spinmapl.concatWithSeparator" .
 
 spl:object  avc:constraint  [ spl:optional   true ;
                               spl:predicate  sp:arg2
@@ -66,7 +66,7 @@ spl:object  avc:constraint  [ spl:optional   true ;
         avc:constraint  [ spl:optional   true ;
                           spl:predicate  sp:arg1
                         ] ;
-        avc:optimize    "ru.avicomp.map.spin.functions.spl.object" .
+        avc:optimize    "com.github.owlcs.map.spin.functions.spl.object" .
 
 sp:abs  rdfs:seeAlso    <https://www.w3.org/TR/xpath-functions-31/#func-abs> ;
         avc:constraint  [ spl:predicate  sp:arg1 ;
@@ -220,17 +220,17 @@ spif:buildString  spin:constraint  [ a              spl:Argument ;
 
 spinmap:targetResource
         avc:hidden    "This function is not allowed to be used explicitly by the API.\nAll cases when <targetResource> might be used should be described through other functions." ;
-        avc:optimize  "ru.avicomp.map.spin.functions.spinmap.targetResource" ;
+        avc:optimize  "com.github.owlcs.map.spin.functions.spinmap.targetResource" ;
         spin:private  true .
 
 spin:eval  avc:hidden  "This function is not allowed to be used explicitly by the API.\nAll cases when <eval> might be used should be described through other functions." ;
         spin:private  true .
 
 spinmapl:relatedSubjectContext
-        avc:hidden  "Instead of explicit calling this function, please use ru.avicomp.map.Context#createRelatedContext(...) methods." .
+        avc:hidden  "Instead of explicit calling this function, please use com.github.owlcs.map.Context#createRelatedContext(...) methods." .
 
 spinmapl:relatedObjectContext
-        avc:hidden  "Instead of explicit calling this function, please use ru.avicomp.map.Context#createRelatedContext(...) methods." .
+        avc:hidden  "Instead of explicit calling this function, please use com.github.owlcs.map.Context#createRelatedContext(...) methods." .
 
 spl:primaryKeyURIStart
         avc:hidden  "Primary-key functionality is excluded since it is not compatible with ONT-MAP logic" .
