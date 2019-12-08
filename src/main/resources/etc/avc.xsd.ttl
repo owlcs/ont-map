@@ -6,13 +6,13 @@
 @prefix spinmap: <http://spinrdf.org/spinmap#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
-@prefix avc:   <https://github.com/avicomp/spin#> .
+@prefix avc:   <https://github.com/owlcs/map/spin#> .
 
-<https://github.com/avicomp/xsd>  a   owl:Ontology ;
+<https://github.com/owlcs/map/xsd>  a   owl:Ontology ;
         rdfs:comment     "A collection of XSD-cast functions.\nAn addition to the <http://topbraid.org/spinmapl> library." ;
         rdfs:seeAlso     xsd: ;
-        owl:imports      <https://github.com/avicomp/spin> ;
-        owl:versionIRI   <https://github.com/avicomp/xsd#1.0> ;
+        owl:imports      <https://github.com/owlcs/map/spin> ;
+        owl:versionIRI   <https://github.com/owlcs/map/xsd#1.0> ;
         owl:versionInfo  "version 1.0" .
 
 xsd:int  a                  spin:Function ;

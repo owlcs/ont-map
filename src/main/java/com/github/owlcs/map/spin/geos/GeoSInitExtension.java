@@ -50,7 +50,7 @@ import java.util.function.Supplier;
 public class GeoSInitExtension implements Extension {
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoSInitExtension.class);
 
-    public static final String AVC_GEO_URI = "https://github.com/avicomp/geosparql";
+    public static final String AVC_GEO_URI = "https://github.com/owlcs/map/geosparql";
     private static final String AVC_GEO_PATH = "/etc/avc.geo.ttl";
 
     @SuppressWarnings("WeakerAccess")

@@ -8,12 +8,12 @@
 @prefix spatial: <http://jena.apache.org/function/spatial#> .
 @prefix sp:    <http://spinrdf.org/sp#> .
 @prefix spl:   <http://spinrdf.org/spl#> .
-@prefix avc:   <https://github.com/avicomp/spin#> .
+@prefix avc:   <https://github.com/owlcs/map/spin#> .
 
-<https://github.com/avicomp/geosparql>
+<https://github.com/owlcs/map/geosparql>
         a             owl:Ontology ;
         rdfs:comment  "A library that described GeoSPARQL SPIN-functions." ;
-        owl:imports   <http://www.opengis.net/ont/geosparql> , <https://github.com/avicomp/spin> .
+        owl:imports   <http://www.opengis.net/ont/geosparql> , <https://github.com/owlcs/map/spin> .
 
 geosparql:wktLiteral  a  rdfs:Datatype .
 

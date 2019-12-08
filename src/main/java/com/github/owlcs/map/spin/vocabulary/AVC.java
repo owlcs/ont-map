@@ -28,7 +28,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
 
 /**
  * The vocabulary that describes
- * <a href='https://github.com/avicomp/spin'>/etc/avc.spin.ttl</a> and <a href='https://github.com/avicomp/lib'>/etc/avc.lib.ttl</a> libraries,
+ * <a href='https://github.com/owlcs/map/spin'>/etc/avc.spin.ttl</a> and <a href='https://github.com/owlcs/map/lib'>/etc/avc.lib.ttl</a> libraries,
  * which are complementary to the spin-family libraries,
  * in order to customize the behavior of the spin function and
  * to provide some advanced functionality needed for mapping OWL2 ontologies.

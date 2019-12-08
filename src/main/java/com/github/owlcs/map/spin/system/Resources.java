@@ -38,11 +38,11 @@ import java.util.stream.Collectors;
  * Created by @ssz on 19.12.2018.
  */
 public enum Resources {
-    AVC_SPIN("/etc/avc.spin.ttl", "https://github.com/avicomp/spin", false),
-    AVC_LIB("/etc/avc.lib.ttl", "https://github.com/avicomp/lib", false),
-    AVC_MATH("/etc/avc.math.ttl", "https://github.com/avicomp/math", false),
-    AVC_FN("/etc/avc.fn.ttl", "https://github.com/avicomp/fn", false),
-    AVC_XSD("/etc/avc.xsd.ttl", "https://github.com/avicomp/xsd", false),
+    AVC_SPIN("/etc/avc.spin.ttl", "https://github.com/owlcs/map/spin", false),
+    AVC_LIB("/etc/avc.lib.ttl", "https://github.com/owlcs/map/lib", false),
+    AVC_MATH("/etc/avc.math.ttl", "https://github.com/owlcs/map/math", false),
+    AVC_FN("/etc/avc.fn.ttl", "https://github.com/owlcs/map/fn", false),
+    AVC_XSD("/etc/avc.xsd.ttl", "https://github.com/owlcs/map/xsd", false),
     SP("/etc/sp.ttl", "http://spinrdf.org/sp"),
     SPIN("/etc/spin.ttl", "http://spinrdf.org/spin"),
     SPL("/etc/spl.spin.ttl", "http://spinrdf.org/spl"),
