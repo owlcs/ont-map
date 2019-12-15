@@ -23,7 +23,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.owlcs.map.ClassPropertyMap;
 import com.github.owlcs.ontapi.jena.UnionGraph;
-import com.github.owlcs.ontapi.jena.model.OntCE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.GraphListener;
 import org.apache.jena.graph.Triple;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("WeakerAccess")
 public class ClassPropertyMapListener extends BaseGraphListener {
 
-    protected final LoadingCache<OntCE, Set<Property>> properties;
+    protected final LoadingCache<OntClass, Set<Property>> properties;
 
     public ClassPropertyMapListener(ClassPropertyMap noCache) {
         this.properties = buildCache(key -> noCache.properties(key).collect(Collectors.toSet()));
@@ -57,7 +57,6 @@ public class ClassPropertyMapListener extends BaseGraphListener {
      * @param <K>    any key type
      * @param <V>    any value type
      * @return {@link LoadingCache}
-     * @see com.github.owlcs.ontapi.internal.CacheDataFactory
      */
     static <K, V> LoadingCache<K, V> buildCache(CacheLoader<K, V> loader) {
         return Caffeine.newBuilder()
@@ -91,7 +90,7 @@ public class ClassPropertyMapListener extends BaseGraphListener {
         invalidate();
     }
 
-    protected Set<Property> getProperties(OntCE ce) {
+    protected Set<Property> getProperties(OntClass ce) {
         return Objects.requireNonNull(properties.get(Objects.requireNonNull(ce, "Null class")), "Null property set for " + ce);
     }
 

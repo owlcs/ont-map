@@ -35,20 +35,21 @@ public interface ClassPropertyMap {
     /**
      * Lists all properties by a class.
      *
-     * @param ce {@link OntCE} with a model inside
+     * @param ce {@link OntClass} with a model inside
      * @return <b>distinct</b> Stream of {@link Property properties}
      */
-    Stream<Property> properties(OntCE ce);
+    Stream<Property> properties(OntClass ce);
 
     /**
      * Lists all classes by a property.
-     * A reverse operation to the {@link #properties(OntCE)}.
+     * A reverse operation to the {@link #properties(OntClass)}.
      *
-     * @param pe {@link OntPE} - an property, which in OWL2 can be either {@link OntNDP}, {@link OntNAP} or {@link OntOPE}
-     * @return <b>distinct</b> Stream of {@link OntCE class-expressions}
+     * @param pe {@link OntProperty} - an property, which in OWL2 can be either {@link OntDataProperty},
+     *           {@link OntAnnotationProperty} or {@link OntObjectProperty}
+     * @return <b>distinct</b> Stream of {@link OntClass class-expressions}
      */
-    default Stream<OntCE> classes(OntPE pe) {
-        return pe.getModel().ontObjects(OntCE.class)
+    default Stream<OntClass> classes(OntProperty pe) {
+        return pe.getModel().ontObjects(OntClass.class)
                 .filter(c -> properties(c).anyMatch(p -> Objects.equals(p, pe.asProperty())))
                 .distinct();
     }

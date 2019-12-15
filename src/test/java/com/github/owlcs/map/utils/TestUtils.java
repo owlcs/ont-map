@@ -117,10 +117,10 @@ public class TestUtils {
     /**
      * Creates an empty model for the given schema.
      *
-     * @param m {@link OntGraphModel}, not {@code null}
-     * @return {@link OntGraphModel}
+     * @param m {@link OntModel}, not {@code null}
+     * @return {@link OntModel}
      */
-    public static OntGraphModel forSchema(OntGraphModel m) {
+    public static OntModel forSchema(OntModel m) {
         return OntModelFactory.createModel().setNsPrefixes(m).addImport(m);
     }
 
@@ -159,13 +159,13 @@ public class TestUtils {
      * Priority for entities with the namespace matching ontology iri.
      * TODO: move to ONT-API Models ?
      *
-     * @param m         {@link OntGraphModel} for search in
+     * @param m         {@link OntModel} for search in
      * @param type      Class
      * @param localName String local name, not null
      * @param <E>       subclass of {@link OntEntity}
      * @return OntEntity
      */
-    public static <E extends OntEntity> E findOntEntity(OntGraphModel m, Class<E> type, String localName) {
+    public static <E extends OntEntity> E findOntEntity(OntModel m, Class<E> type, String localName) {
         Comparator<String> uriComparator = uriComparator(m.getID().getURI());
         return ontEntities(m, type)
                 .filter(s -> s.getLocalName().equals(localName))
@@ -175,7 +175,7 @@ public class TestUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <E extends OntEntity> Stream<E> ontEntities(OntGraphModel m, Class<E> type) {
+    public static <E extends OntEntity> Stream<E> ontEntities(OntModel m, Class<E> type) {
         if (OntIndividual.Named.class == type) {
             return m.individuals().filter(RDFNode::isURIResource).map(x -> (E) x);
         }
@@ -194,29 +194,29 @@ public class TestUtils {
         return res.reversed().thenComparing(String::compareTo);
     }
 
-    public static String getStringValue(OntIndividual i, OntNDP p) {
+    public static String getStringValue(OntIndividual i, OntDataProperty p) {
         return getLiteralValue(i, p, Literal::getString);
     }
 
-    public static boolean getBooleanValue(OntIndividual i, OntNDP p) {
+    public static boolean getBooleanValue(OntIndividual i, OntDataProperty p) {
         return getLiteralValue(i, p, Literal::getBoolean);
     }
 
-    public static double getDoubleValue(OntIndividual i, OntNDP p) {
+    public static double getDoubleValue(OntIndividual i, OntDataProperty p) {
         return getLiteralValue(i, p, Literal::getDouble);
     }
 
-    public static <V> V getLiteralValue(OntIndividual i, OntNDP p, Function<Literal, V> map) {
+    public static <V> V getLiteralValue(OntIndividual i, OntDataProperty p, Function<Literal, V> map) {
         return i.statement(p).map(Statement::getObject).map(RDFNode::asLiteral).map(map).orElseThrow(AssertionError::new);
     }
 
-    public static Stream<OntStatement> plainAssertions(OntGraphModel m) {
-        return m.ontObjects(OntPE.class).filter(RDFNode::isURIResource)
+    public static Stream<OntStatement> plainAssertions(OntModel m) {
+        return m.ontObjects(OntProperty.class).filter(RDFNode::isURIResource)
                 .map(p -> p.as(Property.class))
                 .flatMap(p -> m.statements(null, p, null));
     }
 
-    public static OntGraphModel load(String file, Lang format) throws IOException {
+    public static OntModel load(String file, Lang format) throws IOException {
         Graph g = Factory.createGraphMem();
         try (InputStream in = ClassPropertiesTest.class.getResourceAsStream(file)) {
             RDFDataMgr.read(g, in, null, format);
@@ -235,8 +235,8 @@ public class TestUtils {
         return r.isURIResource() ? pm.shortForm(r.asResource().getURI()) : r.isAnon() ? r.asResource().getId().toString() : r.toString();
     }
 
-    public static OntGraphModel createMapModel(String uri) {
-        OntGraphModel res = OntModelFactory.createModel(Factory.createGraphMem(), SpinModelConfig.ONT_LIB_PERSONALITY);
+    public static OntModel createMapModel(String uri) {
+        OntModel res = OntModelFactory.createModel(Factory.createGraphMem(), SpinModelConfig.ONT_LIB_PERSONALITY);
         res.setNsPrefixes(SPIN_MAP_PREFIXES);
         res.setID(uri).addImport(SPINMAPL.BASE_URI);
         return res;

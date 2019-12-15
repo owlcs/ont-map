@@ -19,7 +19,7 @@
 package com.github.owlcs.map;
 
 import com.github.owlcs.ontapi.OntologyManager;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.graph.Graph;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -61,13 +61,13 @@ public interface OWLMapManager extends OntologyManager, MapManager {
      * Instead, it only registers in the manager all custom functions defined in that model
      * and returns a {@link MapModel mapping} interface.
      *
-     * @param model {@link OntGraphModel}
+     * @param model {@link OntModel}
      * @return {@link MapModel}
      * @throws MapJenaException if the given model cannot be casted to the mapping interface.
-     * @see MapManager#isMapModel(OntGraphModel)
+     * @see MapManager#isMapModel(OntModel)
      */
     @Override
-    MapModel asMapModel(OntGraphModel model) throws MapJenaException;
+    MapModel asMapModel(OntModel model) throws MapJenaException;
 
     /**
      * Lists all mapping models from the manager.

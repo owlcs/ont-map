@@ -18,15 +18,15 @@
 
 package com.github.owlcs.map;
 
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntOPE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
 import org.apache.jena.rdf.model.Property;
 
 import java.util.stream.Stream;
 
 /**
  * A class expressions mapping (class bridge), that is a primary component of a {@link MapModel mapping model}.
- * In GUI it can be represented as an arrow between source and target {@link OntCE class expression}s.
+ * In GUI it can be represented as an arrow between source and target {@link OntClass class expression}s.
  * <p>
  * Created by @szuev on 14.04.2018.
  */
@@ -35,16 +35,16 @@ public interface MapContext extends MapResource {
     /**
      * Returns a source class expression.
      *
-     * @return {@link OntCE}
+     * @return {@link OntClass}
      */
-    OntCE getSource();
+    OntClass getSource();
 
     /**
      * Returns a target class expression.
      *
-     * @return {@link OntCE}
+     * @return {@link OntClass}
      */
-    OntCE getTarget();
+    OntClass getTarget();
 
     /**
      * Answers a context' expression in the form of function-call object.
@@ -76,13 +76,15 @@ public interface MapContext extends MapResource {
      * Adds a properties bridge.
      * Source properties are specified by mapping and filter function calls, the target goes explicitly.
      * All input properties must be an OWL2 entities with possible to assign data on individual:
-     * {@link com.github.owlcs.ontapi.jena.model.OntNAP named annotation property} and
-     * {@link com.github.owlcs.ontapi.jena.model.OntNDP datatype property},
-     * while {@link com.github.owlcs.ontapi.jena.model.OntNOP object property} is used to bind contexts together, not to inference data.
+     * {@link com.github.owlcs.ontapi.jena.model.OntAnnotationProperty} and
+     * {@link com.github.owlcs.ontapi.jena.model.OntDataProperty},
+     * while {@link com.github.owlcs.ontapi.jena.model.OntObjectProperty.Named}
+     * is used to bind contexts together, not to inference data.
      *
      * @param filterFunctionCall  {@link MapFunction.Call} function-call to filter data
      * @param mappingFunctionCall {@link MapFunction.Call} function-call to map data
-     * @param target              property, either {@link com.github.owlcs.ontapi.jena.model.OntNAP} or {@link com.github.owlcs.ontapi.jena.model.OntNDP}
+     * @param target              property, either {@link com.github.owlcs.ontapi.jena.model.OntAnnotationProperty}
+     *                            or {@link com.github.owlcs.ontapi.jena.model.OntDataProperty}
      * @return {@link PropertyBridge} a container with all input settings.
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
      */
@@ -109,14 +111,14 @@ public interface MapContext extends MapResource {
     /**
      * Creates a context with the same target class expression and with source linked to the source of this context.
      * Classes can be linked to each other through object property range and domain axioms,
-     * see description for {@link #createRelatedContext(OntCE, OntOPE)}.
+     * see description for {@link #createRelatedContext(OntClass, OntObjectProperty)}.
      * Throws an exception in the case the link (object property) does not exist or it can not be uniquely determined.
      *
-     * @param source {@link OntCE} source for the new context, the target is the same as in this context.
+     * @param source {@link OntClass} source for the new context, the target is the same as in this context.
      * @return <b>new</b> context
      * @throws MapJenaException unable to make reference context
      */
-    MapContext createRelatedContext(OntCE source) throws MapJenaException;
+    MapContext createRelatedContext(OntClass source) throws MapJenaException;
 
     /**
      * Creates a context associated with this one through the specified object property expression.
@@ -129,12 +131,12 @@ public interface MapContext extends MapResource {
      * otherwise with "related object context" rule.
      * If {@code C1} and {@code C2} are not linked to each other, an exception are expected.
      *
-     * @param source {@link OntCE} class expression, source for result context
-     * @param link   {@link OntOPE} object property expression, a link between {@code source} and {@link #getSource()}
+     * @param source {@link OntClass} class expression, source for result context
+     * @param link   {@link OntObjectProperty} object property expression, a link between {@code source} and {@link #getSource()}
      * @return <b>new</b> context with specified class as source and {@link #getTarget()} as target.
      * @throws MapJenaException unable to make reference context
      */
-    MapContext createRelatedContext(OntCE source, OntOPE link) throws MapJenaException;
+    MapContext createRelatedContext(OntClass source, OntObjectProperty link) throws MapJenaException;
 
     /**
      * Binds this context and the specified with a link-property.
@@ -142,11 +144,11 @@ public interface MapContext extends MapResource {
      * the result individuals will be bound in an object property assertion.
      *
      * @param other {@link MapContext} other context
-     * @param link  {@link OntOPE}, link property
+     * @param link  {@link OntObjectProperty}, link property
      * @return {@link PropertyBridge} which connects this context and the specified
      * @throws MapJenaException if something goes wrong or input parameters are not correct
      */
-    PropertyBridge attachContext(MapContext other, OntOPE link) throws MapJenaException;
+    PropertyBridge attachContext(MapContext other, OntObjectProperty link) throws MapJenaException;
 
     /**
      * Lists all contexts that depend on this somehow.
@@ -204,7 +206,8 @@ public interface MapContext extends MapResource {
      * This is commonly used method, while its overloaded companion is used less frequently to build specific ontology mappings.
      *
      * @param func   {@link MapFunction.Call}, expression
-     * @param target property, either {@link com.github.owlcs.ontapi.jena.model.OntNAP} or {@link com.github.owlcs.ontapi.jena.model.OntNDP}
+     * @param target property, either {@link com.github.owlcs.ontapi.jena.model.OntAnnotationProperty}
+     *               or {@link com.github.owlcs.ontapi.jena.model.OntDataProperty}
      * @return {@link PropertyBridge} a container with all input settings
      * @throws MapJenaException if something goes wrong (e.g. incompatible function or property specified)
      * @see #addPropertyBridge(MapFunction.Call, MapFunction.Call, Property)

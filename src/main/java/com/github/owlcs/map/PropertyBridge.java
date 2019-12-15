@@ -26,9 +26,9 @@ import java.util.stream.Stream;
  * A representation of a property mapping.
  * It is a component of {@link MapContext context} and
  * a connection (property bridge) between source and target properties, which, in OWL2,
- * can be either {@link com.github.owlcs.ontapi.jena.model.OntNAP annotation property}
+ * can be either {@link com.github.owlcs.ontapi.jena.model.OntAnnotationProperty}
  * ({@code rdf:type} equals to{@code owl:AnnotationProperty})
- * or {@link com.github.owlcs.ontapi.jena.model.OntNDP data property}
+ * or {@link com.github.owlcs.ontapi.jena.model.OntDataProperty}
  * ({@code rdf:type} equals to {@code owl:DatatypeProperty}),
  * since only those properties can have a literal property assertion for an individual.
  * <p>

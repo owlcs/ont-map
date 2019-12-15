@@ -23,9 +23,9 @@ import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntDT;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,8 +59,8 @@ public class PoleDistanceMapTest {
 
     @Test
     public void testInference() {
-        OntGraphModel src = createSource(OntModelFactory::createModel);
-        OntGraphModel dst = testData.target(OntModelFactory::createModel);
+        OntModel src = createSource(OntModelFactory::createModel);
+        OntModel dst = testData.target(OntModelFactory::createModel);
         MapModel map = testData.mapping(src, dst, Managers.createMapManager());
         TestUtils.debug(map);
         map.runInference(src.getGraph(), dst.getGraph());
@@ -68,19 +68,19 @@ public class PoleDistanceMapTest {
         testData.validate(dst);
     }
 
-    public static OntGraphModel createSource(Supplier<OntGraphModel> factory) {
+    public static OntModel createSource(Supplier<OntModel> factory) {
         String uri = "http://geo.source.test";
         String ns = uri + "#";
-        OntGraphModel base = createBase(factory);
-        OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", ns);
+        OntModel base = createBase(factory);
+        OntModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", ns);
         res.setID(uri);
         res.addImport(base);
 
-        OntClass point = TestUtils.findOntEntity(res, OntClass.class, POINT_NAME);
-        OntNDP lat = TestUtils.findOntEntity(res, OntNDP.class, LATITUDE_NAME);
-        OntNDP lon = TestUtils.findOntEntity(res, OntNDP.class, LONGITUDE_NAME);
+        OntClass point = TestUtils.findOntEntity(res, OntClass.Named.class, POINT_NAME);
+        OntDataProperty lat = TestUtils.findOntEntity(res, OntDataProperty.class, LATITUDE_NAME);
+        OntDataProperty lon = TestUtils.findOntEntity(res, OntDataProperty.class, LONGITUDE_NAME);
         OntClass city = res.createOntClass(ns + "City").addSuperClass(point);
-        OntDT xdouble = res.getDatatype(XSD.xdouble);
+        OntDataRange.Named xdouble = res.getDatatype(XSD.xdouble);
 
         // coords M1:  55,45,21 n.lat. 37,37,04 e.lon.
         city.createIndividual(ns + "M1")
@@ -105,24 +105,24 @@ public class PoleDistanceMapTest {
         return res;
     }
 
-    public static OntGraphModel createTarget(Supplier<OntGraphModel> factory, String dataPropertyLocalName) {
+    public static OntModel createTarget(Supplier<OntModel> factory, String dataPropertyLocalName) {
         return createTarget(factory, POLE_NAME, dataPropertyLocalName);
     }
 
-    public static OntGraphModel createTarget(Supplier<OntGraphModel> factory, String classLocalName, String dataPropertyLocalName) {
+    public static OntModel createTarget(Supplier<OntModel> factory, String classLocalName, String dataPropertyLocalName) {
         String uri = "http://geo.target.test";
         String ns = uri + "#";
-        OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", ns);
+        OntModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", ns);
         res.setID(uri);
         res.createDataProperty(ns + dataPropertyLocalName)
                 .addDomain(res.createOntClass(ns + classLocalName)).addRange(XSD.xdouble);
         return res;
     }
 
-    public static OntGraphModel createBase(Supplier<OntGraphModel> factory) {
+    public static OntModel createBase(Supplier<OntModel> factory) {
         String uri = "http://geo.base.test";
         String ns = uri + "#";
-        OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(uri);
         OntClass point = res.createOntClass(ns + POINT_NAME);
         res.getDatatype(XSD.xdouble);

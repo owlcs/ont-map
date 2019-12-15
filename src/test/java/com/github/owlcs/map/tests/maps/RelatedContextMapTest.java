@@ -21,9 +21,9 @@ package com.github.owlcs.map.tests.maps;
 import com.github.owlcs.map.*;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
 import com.github.owlcs.ontapi.jena.model.OntIndividual;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Statement;
@@ -45,7 +45,7 @@ public class RelatedContextMapTest extends MapTestData2 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RelatedContextMapTest.class);
 
     @Override
-    public void validate(OntGraphModel result) {
+    public void validate(OntModel result) {
         Assert.assertEquals(4, result.individuals().count());
 
         OntIndividual.Named iBob = TestUtils.findOntEntity(result, OntIndividual.Named.class, "Bob");
@@ -74,14 +74,14 @@ public class RelatedContextMapTest extends MapTestData2 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         PrefixMapping pm = manager.prefixes();
         String targetNS = dst.getID().getURI() + "#";
-        OntClass person = TestUtils.findOntEntity(src, OntClass.class, "Person");
-        OntClass contact = TestUtils.findOntEntity(src, OntClass.class, "Contact");
-        OntClass user = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        OntNDP contactAddress = TestUtils.findOntEntity(src, OntNDP.class, "address");
-        OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
+        OntClass person = TestUtils.findOntEntity(src, OntClass.Named.class, "Person");
+        OntClass contact = TestUtils.findOntEntity(src, OntClass.Named.class, "Contact");
+        OntClass user = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
+        OntDataProperty contactAddress = TestUtils.findOntEntity(src, OntDataProperty.class, "address");
+        OntDataProperty userAddress = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-address");
 
         MapModel res = createMappingModel(manager,
                 "Used functions: spinmapl:relatedSubjectContext, spinmapl:changeNamespace, spinmap:equals");

@@ -47,9 +47,9 @@ public class MathGeoMapTest extends AbstractMapTest {
     public void testRunInference() {
         double[][] data = new double[][]{{2.2, -30.233535}, {3, 4}};
 
-        OntGraphModel src = createSourceModel(data);
+        OntModel src = createSourceModel(data);
         TestUtils.debug(src);
-        OntGraphModel dst = createTargetModel();
+        OntModel dst = createTargetModel();
         MapModel map = createMapping(Managers.createMapManager(), src, dst);
         TestUtils.debug(map);
         map.rules().map(MapResource::getMapping).forEach(x -> LOGGER.debug("Function: {}", x));
@@ -59,10 +59,10 @@ public class MathGeoMapTest extends AbstractMapTest {
         validate(dst, data);
     }
 
-    public static void validate(OntGraphModel dst, double[][] data) {
+    public static void validate(OntModel dst, double[][] data) {
         TestUtils.debug(dst);
         // validate:
-        OntNDP r = TestUtils.findOntEntity(dst, OntNDP.class, "r");
+        OntDataProperty r = TestUtils.findOntEntity(dst, OntDataProperty.class, "r");
 
         List<Double> expected = Arrays.stream(data)
                 .mapToDouble(s -> Math.pow(s[0], 2) + Math.pow(s[1], 2)).map(Math::sqrt).boxed()
@@ -78,18 +78,18 @@ public class MathGeoMapTest extends AbstractMapTest {
         }
     }
 
-    public static OntGraphModel createSourceModel(double[][] data) {
+    public static OntModel createSourceModel(double[][] data) {
         LOGGER.debug("Create source.");
         String uri = "http://geo-src.avc.ru";
         String ns = uri + "#";
-        OntGraphModel res = OntModelFactory.createModel()
+        OntModel res = OntModelFactory.createModel()
                 .setNsPrefixes(OntModelFactory.STANDARD)
                 .setNsPrefix("coords", ns);
         res.setID(uri);
-        OntClass c = res.createOntEntity(OntClass.class, ns + "Coordinates");
-        OntDT dt = res.getOntEntity(OntDT.class, XSD.xdouble);
-        OntNDP x = res.createOntEntity(OntNDP.class, ns + "x");
-        OntNDP y = res.createOntEntity(OntNDP.class, ns + "y");
+        OntClass c = res.createOntClass(ns + "Coordinates");
+        OntDataRange.Named dt = res.getDatatype(XSD.xdouble);
+        OntDataProperty x = res.createOntEntity(OntDataProperty.class, ns + "x");
+        OntDataProperty y = res.createOntEntity(OntDataProperty.class, ns + "y");
         x.addDomain(c);
         y.addDomain(c);
         x.addRange(dt);
@@ -103,28 +103,28 @@ public class MathGeoMapTest extends AbstractMapTest {
         return res;
     }
 
-    public static OntGraphModel createTargetModel() {
+    public static OntModel createTargetModel() {
         LOGGER.debug("Create target");
         String uri = "http://geo-dst.avc.ru";
         String ns = uri + "#";
-        OntGraphModel res = OntModelFactory.createModel()
+        OntModel res = OntModelFactory.createModel()
                 .setNsPrefixes(OntModelFactory.STANDARD)
                 .setNsPrefix("coords", ns);
         res.setID(uri);
-        OntClass c = res.createOntEntity(OntClass.class, ns + "Coordinates");
-        OntDT dt = res.getOntEntity(OntDT.class, XSD.xdouble);
-        OntNDP r = res.createOntEntity(OntNDP.class, ns + "r");
+        OntClass c = res.createOntClass(ns + "Coordinates");
+        OntDataRange dt = res.getDatatype(XSD.xdouble);
+        OntDataProperty r = res.createOntEntity(OntDataProperty.class, ns + "r");
         r.addDomain(c);
         r.addRange(dt);
         return res;
     }
 
-    public static MapModel createMapping(MapManager m, OntGraphModel src, OntGraphModel dst) {
-        OntClass s = TestUtils.findOntEntity(src, OntClass.class, "Coordinates");
-        OntClass t = TestUtils.findOntEntity(dst, OntClass.class, "Coordinates");
-        OntNDP x = TestUtils.findOntEntity(src, OntNDP.class, "x");
-        OntNDP y = TestUtils.findOntEntity(src, OntNDP.class, "y");
-        OntNDP r = TestUtils.findOntEntity(dst, OntNDP.class, "r");
+    public static MapModel createMapping(MapManager m, OntModel src, OntModel dst) {
+        OntClass s = TestUtils.findOntEntity(src, OntClass.Named.class, "Coordinates");
+        OntClass t = TestUtils.findOntEntity(dst, OntClass.Named.class, "Coordinates");
+        OntDataProperty x = TestUtils.findOntEntity(src, OntDataProperty.class, "x");
+        OntDataProperty y = TestUtils.findOntEntity(src, OntDataProperty.class, "y");
+        OntDataProperty r = TestUtils.findOntEntity(dst, OntDataProperty.class, "r");
 
         MapFunction self = m.getFunction(m.prefixes().expandPrefix("spinmapl:self"));
         MapFunction pow = m.getFunction(m.prefixes().expandPrefix("math:pow"));
@@ -150,17 +150,17 @@ public class MathGeoMapTest extends AbstractMapTest {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         return createMapping(manager, src, dst);
     }
 
     @Override
-    public OntGraphModel assembleSource() {
+    public OntModel assembleSource() {
         return createSourceModel(new double[][]{{1.2, 34}, {23, 54545}, {121312.23, -34}});
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
+    public OntModel assembleTarget() {
         return createTargetModel();
     }
 }

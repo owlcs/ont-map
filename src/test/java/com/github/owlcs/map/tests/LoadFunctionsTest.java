@@ -24,7 +24,7 @@ import com.github.owlcs.map.MapManager;
 import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.spin.QueryHelper;
 import com.github.owlcs.map.utils.TestUtils;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
 import org.apache.jena.atlas.iterator.Iter;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -63,7 +63,7 @@ public class LoadFunctionsTest {
         long g2 = Iter.count(PropertyFunctionRegistry.get().keys());
         Assert.assertEquals(0, manager.getGraph().size());
 
-        OntGraphModel m1 = makeSingleFunctionModel();
+        OntModel m1 = makeSingleFunctionModel();
         TestUtils.debug(m1);
 
         MapModel m2 = manager.asMapModel(m1);
@@ -103,7 +103,7 @@ public class LoadFunctionsTest {
 
         data.validateMapping(m);
 
-        OntGraphModel res = data.assembleTarget();
+        OntModel res = data.assembleTarget();
         m.runInference(m.asGraphModel().getGraph(), res.getGraph());
         data.validateResult(res);
     }
@@ -132,18 +132,18 @@ public class LoadFunctionsTest {
         final String uri = "http://test.com/some-function2";
         LoadMapTestData data = new LoadMapTestData(uri, suffix);
         MapModel map = data.assembleMapping(manager, null, null);
-        OntGraphModel res = data.assembleTarget();
+        OntModel res = data.assembleTarget();
         map.runInference(map.asGraphModel().getGraph(), res.getGraph());
         data.validateResult(res);
     }
 
-    private static OntGraphModel makeSingleFunctionModel() {
+    private static OntModel makeSingleFunctionModel() {
         String q = "SELECT (xsd:string(?untyped) AS ?result)\n" +
                 "WHERE {\n" +
                 "    BIND (CONCAT(xsd:string(?arg1), ?separator, xsd:string(?arg2), ?separator, xsd:string(?arg3)) AS ?untyped) .\n" +
                 "}";
         String uri = "http://test.func.com";
-        OntGraphModel m = TestUtils.createMapModel(uri);
+        OntModel m = TestUtils.createMapModel(uri);
 
         m.createResource(uri + "#concatWithSeparator_3")
                 .addProperty(RDF.type, SPIN.Function)

@@ -19,9 +19,9 @@
 package com.github.owlcs.map;
 
 import com.github.owlcs.map.spin.vocabulary.AVC;
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntPE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntNamedProperty;
 import com.github.owlcs.ontapi.jena.utils.BuiltIn;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
@@ -388,7 +388,7 @@ public interface MapFunction extends Description {
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
          * To list all built-in datatypes the method {@link BuiltIn.Vocabulary#datatypes()} can be used.
-         * To list all model datatypes the expression {@link OntGraphModel#datatypes()}
+         * To list all model datatypes the expression {@link OntModel#datatypes()}
          *
          * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param value     String, value, not {@code null}
@@ -458,10 +458,10 @@ public interface MapFunction extends Description {
          * This method is just for simplification code.
          *
          * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
-         * @param ce        {@link OntCE}, not {@code null}
+         * @param ce        {@link OntClass}, not {@code null}
          * @return this builder
          */
-        default Builder addClass(Property predicate, OntCE ce) {
+        default Builder addClass(Property predicate, OntClass ce) {
             return add(predicate, ce.asNode().toString());
         }
 
@@ -470,13 +470,13 @@ public interface MapFunction extends Description {
          * This method is just for simplification code.
          *
          * @param predicate {@link Property}, that corresponds {@link Arg#name()}, not {@code null}
-         * @param property  {@link com.github.owlcs.ontapi.jena.model.OntNDP},
-         *                  {@link com.github.owlcs.ontapi.jena.model.OntNAP} or
-         *                  {@link com.github.owlcs.ontapi.jena.model.OntNOP}, not {@code null}
+         * @param property  {@link com.github.owlcs.ontapi.jena.model.OntDataProperty},
+         *                  {@link com.github.owlcs.ontapi.jena.model.OntAnnotationProperty} or
+         *                  {@link com.github.owlcs.ontapi.jena.model.OntObjectProperty.Named}, not {@code null}
          * @param <P>       a property subclass
          * @return this builder
          */
-        default <P extends OntPE & Property> Builder addProperty(Property predicate, P property) {
+        default <P extends OntNamedProperty<?>> Builder addProperty(Property predicate, P property) {
             return add(predicate, property.getURI());
         }
 

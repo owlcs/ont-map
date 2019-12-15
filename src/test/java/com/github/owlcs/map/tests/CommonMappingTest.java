@@ -129,7 +129,7 @@ public class CommonMappingTest {
         info("Root statements:");
         m.rules().map(MapResource::asResource)
                 .map(s -> s.as(OntObject.class))
-                .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asGraphModel(), r.getRoot())));
+                .forEach(r -> LOGGER.debug("{} :: {}", r, TestUtils.toString(m.asGraphModel(), r.getMainStatement())));
 
         Assert.assertEquals(data.contexts, m.contexts().count());
         Assert.assertEquals(data.properties, m.contexts().flatMap(MapContext::properties).count());

@@ -24,9 +24,9 @@ import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.spin.vocabulary.MATH;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
 import com.github.owlcs.ontapi.jena.model.OntIndividual;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
 import org.junit.Assert;
@@ -48,9 +48,9 @@ public class MathOpsMapTest extends MapTestData5 {
 
     @Test
     public void testInference() {
-        OntGraphModel s = assembleSource();
+        OntModel s = assembleSource();
         TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
+        OntModel t = assembleTarget();
         TestUtils.debug(t);
 
         MapManager man = manager();
@@ -63,9 +63,9 @@ public class MathOpsMapTest extends MapTestData5 {
         TestUtils.debug(t);
 
         // validate:
-        OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty1");
-        OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty2");
-        OntNDP p3 = TestUtils.findOntEntity(t, OntNDP.class, "dstDataProperty3");
+        OntDataProperty p1 = TestUtils.findOntEntity(t, OntDataProperty.class, "dstDataProperty1");
+        OntDataProperty p2 = TestUtils.findOntEntity(t, OntDataProperty.class, "dstDataProperty2");
+        OntDataProperty p3 = TestUtils.findOntEntity(t, OntDataProperty.class, "dstDataProperty3");
         Assert.assertEquals(1, t.statements(null, p1, null).count());
         Assert.assertEquals(1, t.statements(null, p2, null).count());
 
@@ -83,7 +83,7 @@ public class MathOpsMapTest extends MapTestData5 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         PrefixMapping pm = manager.prefixes();
 
         MapFunction iri = manager.getFunction(AVC.IRI);
@@ -101,13 +101,13 @@ public class MathOpsMapTest extends MapTestData5 {
         MapModel res = createMappingModel(manager, "Used functions: " +
                 toMessage(pm, iri, mul, ln, exp, sub, p, e, abs, round, formatNumber));
 
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
-        OntNDP srcProp1 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty1");
-        OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty2");
-        OntNDP dstProp1 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty1");
-        OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty2");
-        OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "SrcClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "DstClass1");
+        OntDataProperty srcProp1 = TestUtils.findOntEntity(src, OntDataProperty.class, "srcDataProperty1");
+        OntDataProperty srcProp2 = TestUtils.findOntEntity(src, OntDataProperty.class, "srcDataProperty2");
+        OntDataProperty dstProp1 = TestUtils.findOntEntity(dst, OntDataProperty.class, "dstDataProperty1");
+        OntDataProperty dstProp2 = TestUtils.findOntEntity(dst, OntDataProperty.class, "dstDataProperty2");
+        OntDataProperty dstProp3 = TestUtils.findOntEntity(dst, OntDataProperty.class, "dstDataProperty3");
 
         MapContext c = res.createContext(srcClass, dstClass, iri.create().addLiteral(SP.arg1, RES_URI).build());
         // e * exp($val) ::: src-prop1(=1) => dst-prop1 ::: 2.72 * exp(1) = e^2 = 7.39
@@ -134,7 +134,7 @@ public class MathOpsMapTest extends MapTestData5 {
     public void testDeletePropertyBridge() {
         MapModel m = assembleMapping();
         m.rules().flatMap(MapResource::functions).distinct().forEach(f -> LOGGER.debug("{}", f));
-        OntNDP prop = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "dstDataProperty2");
+        OntDataProperty prop = TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "dstDataProperty2");
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         PropertyBridge p = c.properties().filter(x -> prop.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new);
         c.deletePropertyBridge(p);

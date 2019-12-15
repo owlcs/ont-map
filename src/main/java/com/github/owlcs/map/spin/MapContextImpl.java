@@ -26,8 +26,8 @@ import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.ModelUtils;
 import com.github.owlcs.ontapi.jena.impl.OntObjectImpl;
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntOPE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
@@ -88,7 +88,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
     }
 
     /**
-     * Returns the target (RDFS) class resource, which may not be {@link OntCE}
+     * Returns the target (RDFS) class resource, which may not be {@link OntClass}
      * in the special case of {@code owl:NamedIndividual} mapping.
      *
      * @return {@link Resource} for predicate {@code spinmap:targetClass}
@@ -99,23 +99,23 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
     }
 
     @Override
-    public OntCE getSource() throws JenaException {
-        return getModel().getRequiredObject(this, SPINMAP.sourceClass, OntCE.class);
+    public OntClass getSource() throws JenaException {
+        return getModel().getRequiredObject(this, SPINMAP.sourceClass, OntClass.class);
     }
 
     @Override
-    public OntCE getTarget() throws JenaException {
-        return getModel().getRequiredObject(this, SPINMAP.targetClass, OntCE.class);
+    public OntClass getTarget() throws JenaException {
+        return getModel().getRequiredObject(this, SPINMAP.targetClass, OntClass.class);
     }
 
     /**
      * Lists all classes for which this context is built.
      *
-     * @return {@link ExtendedIterator} of {@link OntCE}s
+     * @return {@link ExtendedIterator} of {@link OntClass}s
      */
-    public ExtendedIterator<OntCE> listClasses() {
+    public ExtendedIterator<OntClass> listClasses() {
         return Iter.of(SPINMAP.sourceClass, SPINMAP.targetClass)
-                .mapWith(x -> getModel().getObject(this, x, OntCE.class))
+                .mapWith(x -> getModel().getObject(this, x, OntClass.class))
                 .filterDrop(Objects::isNull);
     }
 
@@ -126,7 +126,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
      * @return boolean
      */
     public boolean isPublic() {
-        return getTargetClass().canAs(OntCE.class) && getSourceClass().canAs(OntCE.class);
+        return getTargetClass().canAs(OntClass.class) && getSourceClass().canAs(OntClass.class);
     }
 
     @Override
@@ -461,9 +461,9 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
     }
 
     @Override
-    public MapContextImpl createRelatedContext(OntCE src2) throws MapJenaException {
-        OntCE src1 = getSource();
-        Set<OntOPE> res = getModel().getLinkProperties(src1, src2);
+    public MapContextImpl createRelatedContext(OntClass src2) throws MapJenaException {
+        OntClass src1 = getSource();
+        Set<OntObjectProperty> res = getModel().getLinkProperties(src1, src2);
         if (res.isEmpty()) {
             throw error(Exceptions.CONTEXT_RELATED_CONTEXT_SOURCES_CLASS_NOT_LINKED).add(Exceptions.Key.CLASS, src2).build();
         }
@@ -476,7 +476,7 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
     }
 
     @Override
-    public MapContextImpl createRelatedContext(OntCE source, OntOPE link) throws MapJenaException {
+    public MapContextImpl createRelatedContext(OntClass source, OntObjectProperty link) throws MapJenaException {
         MapModelImpl m = getModel();
         MapFunction.Builder builder;
         Property property = link.asProperty();
@@ -494,13 +494,13 @@ public class MapContextImpl extends OntObjectImpl implements MapContext, ToStrin
     }
 
     @Override
-    public PropertyBridgeImpl attachContext(MapContext other, OntOPE link) throws MapJenaException {
+    public PropertyBridgeImpl attachContext(MapContext other, OntObjectProperty link) throws MapJenaException {
         if (this.equals(other)) {
             throw error(Exceptions.CONTEXT_ATTACHED_CONTEXT_SELF_CALL).build();
         }
         MapModelImpl m = getModel();
-        OntCE target = other.getTarget();
-        OntCE source = other.getSource();
+        OntClass target = other.getTarget();
+        OntClass source = other.getSource();
         if (!getSource().equals(source)) {
             throw error(Exceptions.CONTEXT_ATTACHED_CONTEXT_DIFFERENT_SOURCES).addContext(other).build();
         }

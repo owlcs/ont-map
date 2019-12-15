@@ -125,13 +125,13 @@ public class ValidationHelper {
     }
 
     /**
-     * Answers {@code true} if the given rdf-node represents a {@link OntDT OWL Datatype}.
+     * Answers {@code true} if the given rdf-node represents a {@link OntDataRange OWL Datatype}.
      *
      * @param node {@link RDFNode} to test, not {@code null}
      * @return boolean
      */
     public static boolean isDT(RDFNode node) {
-        return AVC.numeric.equals(node) || node.canAs(OntDT.class);
+        return AVC.numeric.equals(node) || node.canAs(OntDataRange.class);
     }
 
     /**
@@ -236,11 +236,11 @@ public class ValidationHelper {
                 return;
             }
             if (RDFS.Datatype.equals(type)) {
-                if (value.canAs(OntDR.class)) return;
+                if (value.canAs(OntDataRange.class)) return;
                 throw error.build();
             }
             if (RDFS.Class.equals(type)) {
-                if (value.canAs(OntCE.class)) return;
+                if (value.canAs(OntClass.class)) return;
                 throw error.build();
             }
             if (SPINMAP.Context.equals(type)) {
@@ -257,13 +257,13 @@ public class ValidationHelper {
                     //noinspection SuspiciousMethodCalls
                     if (BuiltIn.get().reservedProperties().contains(value))
                         return;
-                    if (value.canAs(OntPE.class))
+                    if (value.canAs(OntProperty.class))
                         return;
                 }
                 throw error(Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_NONEXISTENT_PROPERTY).build();
             }
-            if (isDT(type) && value.canAs(OntPE.class)) {
-                if (!value.canAs(OntNDP.class) && !value.canAs(OntNAP.class)) {
+            if (isDT(type) && value.canAs(OntProperty.class)) {
+                if (!value.canAs(OntDataProperty.class) && !value.canAs(OntAnnotationProperty.class)) {
                     // object property can't assert literals
                     throw error(Exceptions.FUNCTION_CALL_WRONG_ARGUMENT_OBJECT_PROPERTY).build();
                 }
@@ -278,10 +278,10 @@ public class ValidationHelper {
                     return; // : any datatype can be accepted
                 }
                 Set<Resource> ranges = Collections.emptySet();
-                if (value.canAs(OntNDP.class)) { // datatype property
-                    ranges = ModelUtils.ranges(value.as(OntNDP.class)).collect(Collectors.toSet());
-                } else if (value.canAs(OntNAP.class)) { // annotation property
-                    ranges = ModelUtils.ranges(value.as(OntNAP.class)).collect(Collectors.toSet());
+                if (value.canAs(OntDataProperty.class)) { // datatype property
+                    ranges = ModelUtils.ranges(value.as(OntDataProperty.class)).collect(Collectors.toSet());
+                } else if (value.canAs(OntAnnotationProperty.class)) { // annotation property
+                    ranges = ModelUtils.ranges(value.as(OntAnnotationProperty.class)).collect(Collectors.toSet());
                 }
                 if (ranges.isEmpty()) { // can't determine range, then can be passed everything
                     return;

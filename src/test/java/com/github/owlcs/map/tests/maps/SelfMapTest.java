@@ -28,7 +28,7 @@ import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,8 +48,8 @@ public class SelfMapTest extends AbstractMapTest {
     @Ignore
     public void runInfr() {
         long n = 12;
-        OntGraphModel s = createSourceModel(n);
-        OntGraphModel t = createTargetModel();
+        OntModel s = createSourceModel(n);
+        OntModel t = createTargetModel();
         MapModel m = composeSimplestMapping(Managers.createMapManager(), s, t);
         TestUtils.debug(m);
         m.runInference(s.getGraph(), t.getGraph());
@@ -58,38 +58,38 @@ public class SelfMapTest extends AbstractMapTest {
 
     @Test
     public void testFilterMappingInference() {
-        OntGraphModel s = createSourceModel(12);
-        OntGraphModel t = createTargetModel();
+        OntModel s = createSourceModel(12);
+        OntModel t = createTargetModel();
         MapModel m = composeIfMapping(Managers.createMapManager(), s, t);
         TestUtils.debug(m);
         m.runInference(s.getGraph(), t.getGraph());
         Assert.assertEquals(4, t.individuals().count());
     }
 
-    public static OntGraphModel createTargetModel() {
+    public static OntModel createTargetModel() {
         LOGGER.debug("Create the target model.");
         String uri = "http://target.avicomp.ru";
         String ns = uri + "#";
-        OntGraphModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(uri);
-        res.createOntEntity(OntClass.class, ns + "ClassTarget");
+        res.createOntEntity(OntClass.Named.class, ns + "ClassTarget");
         return res;
     }
 
-    public static OntGraphModel createSourceModel(long num) {
+    public static OntModel createSourceModel(long num) {
         LOGGER.debug("Create the source model with {} individuals", num);
         String uri = "http://source.avicomp.ru";
         String ns = uri + "#";
-        OntGraphModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(uri);
-        OntClass clazz = res.createOntEntity(OntClass.class, ns + "ClassSource");
+        OntClass clazz = res.createOntEntity(OntClass.Named.class, ns + "ClassSource");
         for (long i = 1; i < num + 1; i++) {
             clazz.createIndividual(ns + "Individual-" + i);
         }
         return res;
     }
 
-    public static MapModel composeSimplestMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
+    public static MapModel composeSimplestMapping(MapManager manager, OntModel source, OntModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
         OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
         OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
@@ -99,7 +99,7 @@ public class SelfMapTest extends AbstractMapTest {
         return res;
     }
 
-    public static MapModel composeIfMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
+    public static MapModel composeIfMapping(MapManager manager, OntModel source, OntModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
         OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
         OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
@@ -121,17 +121,17 @@ public class SelfMapTest extends AbstractMapTest {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         return composeIfMapping(manager, src, dst);
     }
 
     @Override
-    public OntGraphModel assembleSource() {
+    public OntModel assembleSource() {
         return createSourceModel(12);
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
+    public OntModel assembleTarget() {
         return createTargetModel();
     }
 }

@@ -61,22 +61,22 @@ public class MiscMapTest {
     @Test
     public void testInferenceOnSimpleMappingWithUUIDAndSubClasses() {
         // Assembly source:
-        OntGraphModel s = OntModelFactory.createModel();
+        OntModel s = OntModelFactory.createModel();
         s.setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("source");
-        OntClass A = s.createOntEntity(OntClass.class, "A");
-        OntClass B = s.createOntEntity(OntClass.class, "B").addSuperClass(A);
-        OntNDP p1 = s.createOntEntity(OntNDP.class, "d1").addDomain(A);
-        OntNDP p2 = s.createOntEntity(OntNDP.class, "d2").addDomain(B);
+        OntClass A = s.createOntClass("A");
+        OntClass B = s.createOntClass("B").addSuperClass(A);
+        OntDataProperty p1 = s.createOntEntity(OntDataProperty.class, "d1").addDomain(A);
+        OntDataProperty p2 = s.createOntEntity(OntDataProperty.class, "d2").addDomain(B);
         B.createIndividual("I").addProperty(p1, "v1").addProperty(p2, "v2");
         TestUtils.debug(s);
 
         // Assembly target:
-        OntGraphModel t = OntModelFactory.createModel();
+        OntModel t = OntModelFactory.createModel();
         t.setNsPrefixes(OntModelFactory.STANDARD);
         t.setID("target");
-        OntClass C = t.createOntEntity(OntClass.class, "C");
-        OntNDP p = t.createOntEntity(OntNDP.class, "p");
+        OntClass C = t.createOntClass("C");
+        OntDataProperty p = t.createOntEntity(OntDataProperty.class, "p");
         p.addDomain(C);
         TestUtils.debug(t);
 
@@ -105,15 +105,15 @@ public class MiscMapTest {
     @Test
     public void testInferenceOnNestedFuncMappingWithAlternativeTargetFunction() {
         NestedFuncMapTest t = new NestedFuncMapTest();
-        OntGraphModel src = t.assembleSource();
+        OntModel src = t.assembleSource();
         TestUtils.debug(src);
 
-        OntGraphModel dst = t.assembleTarget();
+        OntModel dst = t.assembleTarget();
         TestUtils.debug(dst);
 
         MapManager manager = t.manager();
         PrefixMapping pm = manager.prefixes();
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
         MapModel mapping = t.createMapping(manager, src, dst, () ->
                 manager.getFunction(AVC.IRI).create()
                         .addFunction(SP.arg1, manager.getFunction(SPINMAPL.concatWithSeparator).create()
@@ -135,18 +135,18 @@ public class MiscMapTest {
 
     @Test
     public void testInferenceOnMappingWithVarargBuildStringFunction() {
-        OntGraphModel src = new SplitMapTest().assembleSource();
-        OntGraphModel dst = new ConditionalMapTest().assembleTarget();
+        OntModel src = new SplitMapTest().assembleSource();
+        OntModel dst = new ConditionalMapTest().assembleTarget();
         TestUtils.debug(src);
         TestUtils.debug(dst);
         Assert.assertEquals(0, dst.individuals().count());
 
-        OntClass srcPerson = TestUtils.findOntEntity(src, OntClass.class, "Person");
-        OntNDP firstName = TestUtils.findOntEntity(src, OntNDP.class, "first-name");
-        OntNDP secondName = TestUtils.findOntEntity(src, OntNDP.class, "second-name");
-        OntNDP middleName = TestUtils.findOntEntity(src, OntNDP.class, "middle-name");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        OntNDP dstName = TestUtils.findOntEntity(dst, OntNDP.class, "user-name");
+        OntClass srcPerson = TestUtils.findOntEntity(src, OntClass.Named.class, "Person");
+        OntDataProperty firstName = TestUtils.findOntEntity(src, OntDataProperty.class, "first-name");
+        OntDataProperty secondName = TestUtils.findOntEntity(src, OntDataProperty.class, "second-name");
+        OntDataProperty middleName = TestUtils.findOntEntity(src, OntDataProperty.class, "middle-name");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
+        OntDataProperty dstName = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-name");
 
         String ns = "http://ex.com#";
         MapManager m = Managers.createMapManager();
@@ -177,22 +177,22 @@ public class MiscMapTest {
 
     @Test
     public void testInferenceWhenTargetPropertyIsArgument() {
-        OntGraphModel src = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel src = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         src.setID("http://src");
 
-        OntClass c1 = src.createOntEntity(OntClass.class, "C1");
+        OntClass c1 = src.createOntClass("C1");
         c1.createIndividual("I1");
-        src.createOntEntity(OntNDP.class, "P1");
+        src.createOntEntity(OntDataProperty.class, "P1");
 
-        OntGraphModel dst = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel dst = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         dst.setID("http://dst");
-        OntClass c2 = dst.createOntEntity(OntClass.class, "C2");
-        OntNAP p2 = dst.createOntEntity(OntNAP.class, "P2");
+        OntClass c2 = dst.createOntClass("C2");
+        OntAnnotationProperty p2 = dst.createAnnotationProperty("P2");
         p2.addDomain(c2);
-        p2.addRange(XSD.xstring.inModel(src).as(OntDT.class));
-        OntNAP p1 = dst.createOntEntity(OntNAP.class, "P1");
+        p2.addRange(src.getDatatype(XSD.xstring));
+        OntAnnotationProperty p1 = dst.createAnnotationProperty("P1");
         p1.addDomain(c2);
-        p1.addRange(XSD.xstring.inModel(src).as(OntDT.class));
+        p1.addRange(src.getDatatype(XSD.xstring));
 
 
         MapManager man = Managers.createMapManager();
@@ -219,7 +219,7 @@ public class MiscMapTest {
         UUIDMapTest d = new UUIDMapTest();
         MapModel map = d.assembleMapping();
         List<Path> imports = new ArrayList<>();
-        for (OntGraphModel m : map.ontologies().collect(Collectors.toList())) {
+        for (OntModel m : map.ontologies().collect(Collectors.toList())) {
             imports.add(saveAsTempTurtle(null, m));
         }
         Path mapSrc = saveAsTempTurtle("mapping", map.asGraphModel());
@@ -230,7 +230,7 @@ public class MiscMapTest {
         for (Path p : imports) {
             manager.loadOntologyFromOntologyDocument(new FileDocumentSource(p.toFile(), ttl));
         }
-        OntGraphModel model = manager.loadOntologyFromOntologyDocument(new FileDocumentSource(mapSrc.toFile(), ttl))
+        OntModel model = manager.loadOntologyFromOntologyDocument(new FileDocumentSource(mapSrc.toFile(), ttl))
                 .asGraphModel();
         TestUtils.debug(model);
         Assert.assertEquals(map.asGraphModel().size(), model.size());
@@ -245,7 +245,7 @@ public class MiscMapTest {
 
     @Test
     public void testInferenceWhenSourceAndTargetGraphsMatch() {
-        OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         m.setID("http://src");
         OntClass c1 = m.createOntClass("C1");
         c1.createIndividual("I1");

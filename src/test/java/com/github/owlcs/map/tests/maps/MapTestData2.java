@@ -52,9 +52,9 @@ abstract class MapTestData2 extends AbstractMapTest {
     @Test
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
+        OntModel s = assembleSource();
         TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
+        OntModel t = assembleTarget();
         TestUtils.debug(t);
         MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
@@ -69,31 +69,31 @@ abstract class MapTestData2 extends AbstractMapTest {
         commonValidate(t);
     }
 
-    public abstract void validate(OntGraphModel result);
+    public abstract void validate(OntModel result);
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("contacts");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("contacts");
         String schemaNS = m.getID().getURI() + "#";
         String dataNS = m.getID().getURI() + "/data#";
         m.setNsPrefix("data", dataNS);
 
-        OntNDP firstName = m.createOntEntity(OntNDP.class, schemaNS + "firstName");
-        OntNDP secondName = m.createOntEntity(OntNDP.class, schemaNS + "secondName");
-        OntNDP age = m.createOntEntity(OntNDP.class, schemaNS + "age");
-        OntNDP address = m.createOntEntity(OntNDP.class, schemaNS + "address");
-        OntDT email = m.createOntEntity(OntDT.class, schemaNS + "email");
-        OntDT phone = m.createOntEntity(OntDT.class, schemaNS + "phone");
-        OntDT skype = m.createOntEntity(OntDT.class, schemaNS + "skype");
-        OntNDP contactInfo = m.createOntEntity(OntNDP.class, schemaNS + "info");
-        OntClass contact = m.createOntEntity(OntClass.class, schemaNS + "Contact");
-        OntClass person = m.createOntEntity(OntClass.class, schemaNS + "Person");
-        OntNOP hasContact = m.createOntEntity(OntNOP.class, schemaNS + "contact");
+        OntDataProperty firstName = m.createDataProperty(schemaNS + "firstName");
+        OntDataProperty secondName = m.createDataProperty(schemaNS + "secondName");
+        OntDataProperty age = m.createDataProperty(schemaNS + "age");
+        OntDataProperty address = m.createDataProperty(schemaNS + "address");
+        OntDataRange.Named email = m.createDatatype(schemaNS + "email");
+        OntDataRange.Named phone = m.createDatatype(schemaNS + "phone");
+        OntDataRange.Named skype = m.createDatatype(schemaNS + "skype");
+        OntDataProperty contactInfo = m.createOntEntity(OntDataProperty.class, schemaNS + "info");
+        OntClass contact = m.createOntClass(schemaNS + "Contact");
+        OntClass person = m.createOntClass(schemaNS + "Person");
+        OntObjectProperty.Named hasContact = m.createObjectProperty(schemaNS + "contact");
 
         firstName.addDomain(person);
         secondName.addDomain(person);
         age.addDomain(person);
-        age.addRange(m.getOntEntity(OntDT.class, XSD.xint));
+        age.addRange(m.getDatatype(XSD.xint));
 
         // link between classes
         hasContact.addDomain(person);
@@ -141,13 +141,13 @@ abstract class MapTestData2 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("users");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("users");
         String ns = m.getID().getURI() + "#";
-        OntClass user = m.createOntEntity(OntClass.class, ns + "User");
-        OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
+        OntClass user = m.createOntClass(ns + "User");
+        OntDataRange string = m.getDatatype(XSD.xstring);
         Stream.of("user-name", "user-age", "user-address", "email", "phone", "skype").forEach(s -> {
-            OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
+            OntDataProperty p = m.createOntEntity(OntDataProperty.class, ns + s);
             p.addRange(string);
             p.addDomain(user);
         });

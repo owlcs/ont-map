@@ -28,9 +28,9 @@ import com.github.owlcs.ontapi.Ontology;
 import com.github.owlcs.ontapi.OntologyManager;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntDT;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.XSD;
 import org.apache.jena.graph.Graph;
@@ -109,8 +109,8 @@ public class InfrPerfTester {
     }
 
     public void testInference(OntologyManager ontologyManager, MapManager mappingManager) {
-        OntGraphModel target = createTargetModel(ontologyManager);
-        OntGraphModel source = createSourceModel(ontologyManager, individualsNum);
+        OntModel target = createTargetModel(ontologyManager);
+        OntModel source = createSourceModel(ontologyManager, individualsNum);
         MapModel map = composeMapping(mappingManager, source, target);
         Graph data = ((Union) source.getBaseGraph()).getR();
 
@@ -118,7 +118,7 @@ public class InfrPerfTester {
         validate(target, individualsNum);
     }
 
-    public static void validate(OntGraphModel target, long c) {
+    public static void validate(OntModel target, long c) {
         Assert.assertEquals(c, target.individuals()
                 .peek(i -> Assert.assertEquals(1, i.positiveAssertions()
                         .map(Statement::getObject)
@@ -136,12 +136,12 @@ public class InfrPerfTester {
     }
 
 
-    public static MapModel composeMapping(MapManager manager, OntGraphModel source, OntGraphModel target) {
+    public static MapModel composeMapping(MapManager manager, OntModel source, OntModel target) {
         LOGGER.debug("Compose the (spin) mapping.");
         OntClass sourceClass = source.classes().findFirst().orElseThrow(AssertionError::new);
         OntClass targetClass = target.classes().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> sourceProperties = source.dataProperties().collect(Collectors.toList());
-        OntNDP targetProperty = target.dataProperties().findFirst().orElse(null);
+        List<OntDataProperty> sourceProperties = source.dataProperties().collect(Collectors.toList());
+        OntDataProperty targetProperty = target.dataProperties().findFirst().orElse(null);
         MapModel res = manager.createMapModel();
 
         MapFunction.Builder self = manager.getFunction(SPINMAPL.self).create();
@@ -155,14 +155,14 @@ public class InfrPerfTester {
         return res;
     }
 
-    public static OntGraphModel createTargetModel(OntologyManager manager) {
+    public static OntModel createTargetModel(OntologyManager manager) {
         LOGGER.debug("Create the target model.");
         String uri = "http://target.avicomp.ru";
         String ns = uri + "#";
-        OntGraphModel res = manager.createGraphModel(uri).setNsPrefixes(OntModelFactory.STANDARD);
-        OntClass clazz = res.createOntEntity(OntClass.class, ns + "ClassTarget");
-        OntNDP prop = res.createOntEntity(OntNDP.class, ns + "targetProperty");
-        prop.addRange(res.getOntEntity(OntDT.class, XSD.xstring));
+        OntModel res = manager.createGraphModel(uri).setNsPrefixes(OntModelFactory.STANDARD);
+        OntClass clazz = res.createOntClass(ns + "ClassTarget");
+        OntDataProperty prop = res.createOntEntity(OntDataProperty.class, ns + "targetProperty");
+        prop.addRange(res.getDatatype(XSD.xstring));
         prop.addDomain(clazz);
         Ontology o = manager.getOntology(IRI.create(uri));
         Assert.assertNotNull("Can't find ontology " + uri, o);
@@ -170,7 +170,7 @@ public class InfrPerfTester {
         return res;
     }
 
-    public static OntGraphModel createSourceModel(OntologyManager manager, long num) {
+    public static OntModel createSourceModel(OntologyManager manager, long num) {
         LOGGER.debug("Create the source model with {} individuals", num);
         String uri = "http://source.avicomp.ru";
         String ns = uri + "#";
@@ -178,17 +178,17 @@ public class InfrPerfTester {
         GraphMem data = new GraphMem();
         OntGraphDocumentSource source = OntGraphDocumentSource.wrap(new Union(schema, data));
         long numberOfOntologies = manager.ontologies().count();
-        OntGraphModel res;
+        OntModel res;
         try {
             res = manager.loadOntologyFromOntologyDocument(source).asGraphModel();
         } catch (OWLOntologyCreationException e) {
             throw new AssertionError(e);
         }
         res.setID(uri).getModel().setNsPrefixes(OntModelFactory.STANDARD);
-        OntClass clazz = res.createOntEntity(OntClass.class, ns + "ClassSource");
-        OntDT xsdString = res.getOntEntity(OntDT.class, XSD.xstring);
-        OntNDP prop1 = res.createOntEntity(OntNDP.class, ns + "sourceProperty1").addRange(xsdString).addDomain(clazz);
-        OntNDP prop2 = res.createOntEntity(OntNDP.class, ns + "sourceProperty2").addRange(xsdString).addDomain(clazz);
+        OntClass clazz = res.createOntClass(ns + "ClassSource");
+        OntDataRange xsdString = res.getDatatype(XSD.xstring);
+        OntDataProperty prop1 = res.createOntEntity(OntDataProperty.class, ns + "sourceProperty1").addRange(xsdString).addDomain(clazz);
+        OntDataProperty prop2 = res.createOntEntity(OntDataProperty.class, ns + "sourceProperty2").addRange(xsdString).addDomain(clazz);
 
         Model m = ModelFactory.createModelForGraph(data);
         for (long i = 1; i < num + 1; i++) {

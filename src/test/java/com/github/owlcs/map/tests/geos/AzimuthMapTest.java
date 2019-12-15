@@ -56,20 +56,20 @@ public class AzimuthMapTest {
 
     @Test
     public void testInference() {
-        OntGraphModel src = createSource(OntModelFactory::createModel);
+        OntModel src = createSource(OntModelFactory::createModel);
 
 
-        OntGraphModel dst = PoleDistanceMapTest.createTarget(OntModelFactory::createModel, "PointX", "AzimuthX");
+        OntModel dst = PoleDistanceMapTest.createTarget(OntModelFactory::createModel, "PointX", "AzimuthX");
         MapManager manager = Managers.createMapManager();
 
         MapFunction.Call self = manager.getFunction(SPINMAPL.self).create().build();
         MapFunction azimuth = manager.getFunction(data.getFunction());
 
-        OntClass pointSrc = TestUtils.findOntEntity(src, OntClass.class, PoleDistanceMapTest.POINT_NAME);
+        OntClass pointSrc = TestUtils.findOntEntity(src, OntClass.Named.class, PoleDistanceMapTest.POINT_NAME);
         OntClass pointDst = dst.classes().findFirst().orElseThrow(AssertionError::new);
-        OntNDP lat = TestUtils.findOntEntity(src, OntNDP.class, PoleDistanceMapTest.LATITUDE_NAME);
-        OntNDP lon = TestUtils.findOntEntity(src, OntNDP.class, PoleDistanceMapTest.LONGITUDE_NAME);
-        OntNDP angle = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntDataProperty lat = TestUtils.findOntEntity(src, OntDataProperty.class, PoleDistanceMapTest.LATITUDE_NAME);
+        OntDataProperty lon = TestUtils.findOntEntity(src, OntDataProperty.class, PoleDistanceMapTest.LONGITUDE_NAME);
+        OntDataProperty angle = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapModel m = manager.createMapModel().createContext(pointSrc, pointDst, self)
                 .addPropertyBridge(azimuth.create()
@@ -92,18 +92,18 @@ public class AzimuthMapTest {
         Assert.assertEquals(data.value(Azimuth.WEST), x2, 0.0001);
     }
 
-    private static OntGraphModel createSource(Supplier<OntGraphModel> factory) {
+    private static OntModel createSource(Supplier<OntModel> factory) {
         String uri = "http://geo.source.test";
         String ns = uri + "#";
-        OntGraphModel base = PoleDistanceMapTest.createBase(factory);
-        OntGraphModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", ns);
+        OntModel base = PoleDistanceMapTest.createBase(factory);
+        OntModel res = factory.get().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", ns);
         res.setID(uri);
         res.addImport(base);
 
-        OntClass point = TestUtils.findOntEntity(res, OntClass.class, PoleDistanceMapTest.POINT_NAME);
-        OntNDP lat = TestUtils.findOntEntity(res, OntNDP.class, PoleDistanceMapTest.LATITUDE_NAME);
-        OntNDP lon = TestUtils.findOntEntity(res, OntNDP.class, PoleDistanceMapTest.LONGITUDE_NAME);
-        OntDT xdouble = res.getDatatype(XSD.xdouble);
+        OntClass point = TestUtils.findOntEntity(res, OntClass.Named.class, PoleDistanceMapTest.POINT_NAME);
+        OntDataProperty lat = TestUtils.findOntEntity(res, OntDataProperty.class, PoleDistanceMapTest.LATITUDE_NAME);
+        OntDataProperty lon = TestUtils.findOntEntity(res, OntDataProperty.class, PoleDistanceMapTest.LONGITUDE_NAME);
+        OntDataRange.Named xdouble = res.getDatatype(XSD.xdouble);
 
         // coords P1:  60 n.lat. 0 e.lon.
         point.createIndividual(ns + "P1")

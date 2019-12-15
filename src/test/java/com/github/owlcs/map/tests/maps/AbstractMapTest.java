@@ -24,7 +24,7 @@ import com.github.owlcs.map.MapManager;
 import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntObject;
 import com.github.owlcs.ontapi.jena.model.OntStatement;
 import org.apache.jena.shared.PrefixMapping;
@@ -52,11 +52,11 @@ public abstract class AbstractMapTest {
         return Managers.createMapManager();
     }
 
-    public abstract MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst);
+    public abstract MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst);
 
-    public abstract OntGraphModel assembleSource();
+    public abstract OntModel assembleSource();
 
-    public abstract OntGraphModel assembleTarget();
+    public abstract OntModel assembleTarget();
 
     public MapManager manager() {
         return manager == null ? manager = createManager() : manager;
@@ -82,8 +82,8 @@ public abstract class AbstractMapTest {
         return getNameSpace(getClass());
     }
 
-    public OntGraphModel createDataModel(String name) {
-        OntGraphModel res = OntModelFactory.createModel();
+    public OntModel createDataModel(String name) {
+        OntModel res = OntModelFactory.createModel();
         res.setNsPrefixes(OntModelFactory.STANDARD);
         res.setID(getDataNameSpace() + "/" + name);
         String ns = res.getID().getURI() + "#";
@@ -98,7 +98,7 @@ public abstract class AbstractMapTest {
         return res;
     }
 
-    public static void commonValidate(OntGraphModel m) {
+    public static void commonValidate(OntModel m) {
         // check there is no any garbage in the model:
         List<OntObject> undeclaredIndividuals = TestUtils.plainAssertions(m)
                 .map(OntStatement::getSubject)

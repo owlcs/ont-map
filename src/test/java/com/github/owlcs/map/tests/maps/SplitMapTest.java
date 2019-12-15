@@ -47,9 +47,9 @@ public class SplitMapTest extends MapTestData3 {
     @Test
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
+        OntModel s = assembleSource();
         TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
+        OntModel t = assembleTarget();
         TestUtils.debug(t);
         MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
@@ -62,12 +62,12 @@ public class SplitMapTest extends MapTestData3 {
 
         LOGGER.info("Validate.");
         Assert.assertEquals(s.namedIndividuals().count() * 2, t.individuals().count());
-        OntClass contact = TestUtils.findOntEntity(t, OntClass.class, "Contact");
-        OntClass address = TestUtils.findOntEntity(t, OntClass.class, "Address");
-        OntNOP link = TestUtils.findOntEntity(t, OntNOP.class, "contact-address");
+        OntClass contact = TestUtils.findOntEntity(t, OntClass.Named.class, "Contact");
+        OntClass address = TestUtils.findOntEntity(t, OntClass.Named.class, "Address");
+        OntObjectProperty link = TestUtils.findOntEntity(t, OntObjectProperty.Named.class, "contact-address");
         contact.individuals().forEach(p -> {
             List<OntStatement> assertions = p.positiveAssertions()
-                    .filter(s1 -> s1.getPredicate().canAs(OntNOP.class))
+                    .filter(s1 -> s1.getPredicate().canAs(OntObjectProperty.class))
                     .collect(Collectors.toList());
             Assert.assertEquals(1, assertions.size());
             Assert.assertEquals(link, assertions.get(0).getPredicate());
@@ -92,15 +92,15 @@ public class SplitMapTest extends MapTestData3 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntNDP firstName = TestUtils.findOntEntity(src, OntNDP.class, "first-name");
-        OntNDP secondName = TestUtils.findOntEntity(src, OntNDP.class, "second-name");
-        OntNDP middleName = TestUtils.findOntEntity(src, OntNDP.class, "middle-name");
-        OntNDP address = TestUtils.findOntEntity(src, OntNDP.class, "address");
-        OntClass srcPerson = TestUtils.findOntEntity(src, OntClass.class, "Person");
-        OntClass dstContact = TestUtils.findOntEntity(dst, OntClass.class, "Contact");
-        OntClass dstAddress = TestUtils.findOntEntity(dst, OntClass.class, "Address");
-        OntNDP dstName = TestUtils.findOntEntity(dst, OntNDP.class, "full-name");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntDataProperty firstName = TestUtils.findOntEntity(src, OntDataProperty.class, "first-name");
+        OntDataProperty secondName = TestUtils.findOntEntity(src, OntDataProperty.class, "second-name");
+        OntDataProperty middleName = TestUtils.findOntEntity(src, OntDataProperty.class, "middle-name");
+        OntDataProperty address = TestUtils.findOntEntity(src, OntDataProperty.class, "address");
+        OntClass srcPerson = TestUtils.findOntEntity(src, OntClass.Named.class, "Person");
+        OntClass dstContact = TestUtils.findOntEntity(dst, OntClass.Named.class, "Contact");
+        OntClass dstAddress = TestUtils.findOntEntity(dst, OntClass.Named.class, "Address");
+        OntDataProperty dstName = TestUtils.findOntEntity(dst, OntDataProperty.class, "full-name");
         String dstNS = dst.getNsURIPrefix(dst.getID().getURI() + "#");
 
         MapFunction buildURI1 = manager.getFunction(SPINMAPL.buildURI1.getURI());

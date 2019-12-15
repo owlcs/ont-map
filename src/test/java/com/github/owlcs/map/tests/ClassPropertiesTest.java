@@ -59,7 +59,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testPizza() throws Exception {
-        OntGraphModel m = TestUtils.load("/pizza.ttl", Lang.TURTLE);
+        OntModel m = TestUtils.load("/pizza.ttl", Lang.TURTLE);
         m.setNsPrefix("pizza", m.getID().getURI() + "#");
         m.removeNsPrefix("");
         doPrint(m);
@@ -79,7 +79,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testFoaf() throws Exception {
-        OntGraphModel m = TestUtils.load("/foaf.rdf", Lang.RDFXML);
+        OntModel m = TestUtils.load("/foaf.rdf", Lang.RDFXML);
         m.setNsPrefix("foaf", "http://xmlns.com/foaf/0.1/");
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
@@ -94,9 +94,9 @@ public class ClassPropertiesTest {
 
     @Test
     public void testGoodrelations() throws Exception {
-        OntGraphModel m = TestUtils.load("/goodrelations.rdf", Lang.RDFXML);
+        OntModel m = TestUtils.load("/goodrelations.rdf", Lang.RDFXML);
         m.setNsPrefix("schema", "http://schema.org/");
-        OntClass c = m.getOntEntity(OntClass.class, m.expandPrefix("gr:QuantitativeValue"));
+        OntClass c = m.getOntClass(m.expandPrefix("gr:QuantitativeValue"));
         Assert.assertNotNull(c);
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
@@ -115,7 +115,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testISWC() throws Exception {
-        OntGraphModel m = TestUtils.load("/iswc.ttl", Lang.TURTLE);
+        OntModel m = TestUtils.load("/iswc.ttl", Lang.TURTLE);
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("vocab:organizations", 10);
@@ -129,7 +129,7 @@ public class ClassPropertiesTest {
 
     @Test
     public void testExTest() throws Exception {
-        OntGraphModel m = TestUtils.load("/ex-sup-test.ttl", Lang.TURTLE);
+        OntModel m = TestUtils.load("/ex-sup-test.ttl", Lang.TURTLE);
         doPrint(m);
         Map<String, Integer> expected = new LinkedHashMap<>();
         expected.put("ex:CCPAS_000011", 11);
@@ -144,19 +144,19 @@ public class ClassPropertiesTest {
     public void testCustom() {
         String uri = "http://ex.com";
         String ns = uri + "#";
-        OntGraphModel m = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX);
+        OntModel m = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX);
         m.setID(uri);
         m.setNsPrefix("e", ns);
         m.setNsPrefixes(OntModelFactory.STANDARD);
 
-        OntNOP o1 = m.createOntEntity(OntNOP.class, ns + "o1");
-        OntClass c1 = m.createOntEntity(OntClass.class, ns + "C1");
-        m.createOntEntity(OntNDP.class, ns + "d1").addDomain(c1);
-        m.createOntEntity(OntNDP.class, ns + "d2").addDomain(c1);
-        OntClass c2 = m.createOntEntity(OntClass.class, ns + "C2");
-        OntCE ce1 = m.createIntersectionOf(Arrays.asList(c1, m.createObjectAllValuesFrom(o1, c2)));
+        OntObjectProperty.Named o1 = m.createOntEntity(OntObjectProperty.Named.class, ns + "o1");
+        OntClass c1 = m.createOntClass(ns + "C1");
+        m.createOntEntity(OntDataProperty.class, ns + "d1").addDomain(c1);
+        m.createOntEntity(OntDataProperty.class, ns + "d2").addDomain(c1);
+        OntClass c2 = m.createOntClass(ns + "C2");
+        OntClass ce1 = m.createObjectIntersectionOf(Arrays.asList(c1, m.createObjectAllValuesFrom(o1, c2)));
 
-        OntClass c3 = m.createOntEntity(OntClass.class, ns + "C3");
+        OntClass c3 = m.createOntClass(ns + "C3");
         c3.addEquivalentClass(ce1);
 
         TestUtils.debug(m);
@@ -171,46 +171,46 @@ public class ClassPropertiesTest {
 
     @Test
     public void testModifying() throws IOException {
-        OntGraphModel sub = TestUtils.load("/pizza.ttl", Lang.TURTLE);
-        OntGraphModel top = OntModelFactory.createModel();
+        OntModel sub = TestUtils.load("/pizza.ttl", Lang.TURTLE);
+        OntModel top = OntModelFactory.createModel();
         top.setID("http://test.x");
         top.addImport(sub);
 
-        OntClass clazz = top.getOntEntity(OntClass.class, sub.expandPrefix(":Siciliana"));
+        OntClass clazz = top.getOntClass(sub.expandPrefix(":Siciliana"));
         ClassPropertyMap map = manager.getClassProperties(top);
         Assert.assertEquals(5, map.properties(clazz).count());
 
-        OntObject p1 = top.createOntEntity(OntNDP.class, "http://dp1").addDomain(clazz);
+        OntObject p1 = top.createOntEntity(OntDataProperty.class, "http://dp1").addDomain(clazz);
         Assert.assertEquals(6, map.properties(clazz).count());
 
         top.removeOntObject(p1);
         Assert.assertEquals(5, map.properties(clazz).count());
 
-        OntObject p2 = sub.createOntEntity(OntNDP.class, "http://dp2").addDomain(clazz);
+        OntObject p2 = sub.createOntEntity(OntDataProperty.class, "http://dp2").addDomain(clazz);
         Assert.assertEquals(6, map.properties(clazz).count());
 
         sub.removeOntObject(p2);
         Assert.assertEquals(5, map.properties(clazz).count());
     }
 
-    private static void validateClasses(OntGraphModel m, Map<String, Integer> expected) {
+    private static void validateClasses(OntModel m, Map<String, Integer> expected) {
         ClassPropertyMap map = manager.getClassProperties(m);
         expected.forEach((c, v) -> {
-            OntClass clazz = m.getOntEntity(OntClass.class, m.expandPrefix(c));
+            OntClass clazz = m.getOntClass(m.expandPrefix(c));
             Assert.assertNotNull("Can't find class " + c, clazz);
             Assert.assertEquals("Wrong properties count for " + c, v.longValue(), map.properties(clazz).count());
         });
     }
 
-    private static void doPrint(OntGraphModel m) {
+    private static void doPrint(OntModel m) {
         TestUtils.debug(m);
-        m.ontObjects(OntCE.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
+        m.ontObjects(OntClass.class).map(ClassPropertiesTest::classProperties).forEach(x -> LOGGER.debug("{}", x));
         LOGGER.debug("=============");
-        m.ontObjects(OntPE.class).map(ClassPropertiesTest::propertyClasses).forEach(x -> LOGGER.debug("{}", x));
+        m.ontObjects(OntProperty.class).map(ClassPropertiesTest::propertyClasses).forEach(x -> LOGGER.debug("{}", x));
     }
 
-    private static String classProperties(OntCE ce) {
-        OntGraphModel m = ce.getModel();
+    private static String classProperties(OntClass ce) {
+        OntModel m = ce.getModel();
         return Stream.concat(Stream.of(String.format("[%s]%s",
                 OntModels.getOntType(ce).getSimpleName(), m.shortForm(ce.asNode().toString()))),
                 manager.getClassProperties(m)
@@ -220,8 +220,8 @@ public class ClassPropertiesTest {
                 .collect(Collectors.joining("\n\t"));
     }
 
-    private static String propertyClasses(OntPE pe) {
-        OntGraphModel m = pe.getModel();
+    private static String propertyClasses(OntProperty pe) {
+        OntModel m = pe.getModel();
         return Stream.concat(Stream.of(String.format("[%s]%s",
                 OntModels.getOntType(pe).getSimpleName(), m.shortForm(pe.asNode().toString()))),
                 manager.getClassProperties(m)
@@ -235,15 +235,15 @@ public class ClassPropertiesTest {
 
     @Test
     public void testWithSubProperties() {
-        OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         m.setID("http://test-class-properties-with-subPropertyOf");
         OntClass c = m.createOntClass("C");
-        OntNDP d1 = m.createDataProperty("d1");
-        OntNDP d2 = m.createDataProperty("d2");
-        OntNOP o1 = m.createObjectProperty("o1");
-        OntNOP o2 = m.createObjectProperty("o2");
-        OntNOP o3 = m.createObjectProperty("o3");
-        OntNOP o4 = m.createObjectProperty("o4");
+        OntDataProperty d1 = m.createDataProperty("d1");
+        OntDataProperty d2 = m.createDataProperty("d2");
+        OntObjectProperty.Named o1 = m.createObjectProperty("o1");
+        OntObjectProperty.Named o2 = m.createObjectProperty("o2");
+        OntObjectProperty.Named o3 = m.createObjectProperty("o3");
+        OntObjectProperty.Named o4 = m.createObjectProperty("o4");
 
         d1.addDomain(c).addRange(m.getDatatype(XSD.xstring));
         o1.addDomain(c);

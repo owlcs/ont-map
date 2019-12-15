@@ -27,18 +27,18 @@ import org.apache.jena.vocabulary.XSD;
 abstract class MapTestData3 extends AbstractMapTest {
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("people");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("people");
         String ns = m.getID().getURI() + "#";
-        OntClass person = m.createOntEntity(OntClass.class, ns + "Person");
-        OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
-        OntDT xsdBoolean = m.getOntEntity(OntDT.class, XSD.xboolean);
+        OntClass person = m.createOntClass(ns + "Person");
+        OntDataRange.Named xsdString = m.getDatatype(XSD.xstring);
+        OntDataRange.Named xsdBoolean = m.getDatatype(XSD.xboolean);
 
-        OntNDP address = createDataProperty(m, "address", person, xsdString);
-        OntNDP firstName = createDataProperty(m, "first-name", person, xsdString);
-        OntNDP secondName = createDataProperty(m, "second-name", person, xsdString);
-        OntNDP middleName = createDataProperty(m, "middle-name", person, xsdString);
-        OntNDP gender = createDataProperty(m, "gender", person, xsdBoolean);
+        OntDataProperty address = createDataProperty(m, "address", person, xsdString);
+        OntDataProperty firstName = createDataProperty(m, "first-name", person, xsdString);
+        OntDataProperty secondName = createDataProperty(m, "second-name", person, xsdString);
+        OntDataProperty middleName = createDataProperty(m, "middle-name", person, xsdString);
+        OntDataProperty gender = createDataProperty(m, "gender", person, xsdBoolean);
 
         // data:
         person.createIndividual(ns + "Person-1")
@@ -57,8 +57,8 @@ abstract class MapTestData3 extends AbstractMapTest {
         return m;
     }
 
-    private static OntNDP createDataProperty(OntGraphModel m, String name, OntClass domain, OntDT range) {
-        OntNDP res = m.createOntEntity(OntNDP.class, m.getID().getURI() + "#" + name);
+    private static OntDataProperty createDataProperty(OntModel m, String name, OntClass domain, OntDataRange range) {
+        OntDataProperty res = m.createOntEntity(OntDataProperty.class, m.getID().getURI() + "#" + name);
         res.addDomain(domain);
         if (range != null)
             res.addRange(range);
@@ -66,14 +66,14 @@ abstract class MapTestData3 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("contacts");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("contacts");
         String ns = m.getID().getURI() + "#";
-        OntClass contact = m.createOntEntity(OntClass.class, ns + "Contact");
-        OntClass address = m.createOntEntity(OntClass.class, ns + "Address");
-        OntNDP fullName = createDataProperty(m, "full-name", contact, null);
+        OntClass contact = m.createOntClass(ns + "Contact");
+        OntClass address = m.createOntClass(ns + "Address");
+        OntDataProperty fullName = createDataProperty(m, "full-name", contact, null);
 
-        OntNOP hasAddress = m.createOntEntity(OntNOP.class, ns + "contact-address");
+        OntObjectProperty hasAddress = m.createObjectProperty(ns + "contact-address");
         hasAddress.addRange(address);
         hasAddress.addDomain(contact);
 

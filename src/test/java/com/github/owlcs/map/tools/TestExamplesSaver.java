@@ -22,7 +22,7 @@ import com.github.owlcs.map.Managers;
 import com.github.owlcs.map.MapManager;
 import com.github.owlcs.map.tests.LoadMapTestData;
 import com.github.owlcs.map.tests.maps.*;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,9 +70,9 @@ public class TestExamplesSaver {
         );
 
         for (AbstractMapTest mapTest : mapTests) {
-            OntGraphModel src = mapTest.assembleSource();
-            OntGraphModel dst = mapTest.assembleTarget();
-            OntGraphModel map = mapTest.assembleMapping(manager, src, dst).asGraphModel();
+            OntModel src = mapTest.assembleSource();
+            OntModel dst = mapTest.assembleTarget();
+            OntModel map = mapTest.assembleMapping(manager, src, dst).asGraphModel();
 
             String mappingFile;
             if (map.getID().isAnon()) {
@@ -93,7 +93,7 @@ public class TestExamplesSaver {
         }
     }
 
-    private static void saveTurtle(Path file, OntGraphModel m) throws IOException {
+    private static void saveTurtle(Path file, OntModel m) throws IOException {
         LOGGER.info("Save ontology <{}> to file <{}>", m.getID().getURI(), file);
         try (Writer out = Files.newBufferedWriter(file)) {
             m.write(out, "ttl");

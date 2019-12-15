@@ -27,8 +27,8 @@ import com.github.owlcs.map.spin.vocabulary.ARQ;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.ontapi.jena.UnionGraph;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
 import com.github.owlcs.ontapi.jena.model.OntID;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
@@ -59,7 +59,7 @@ import org.topbraid.spin.vocabulary.SPL;
 public class LIBLibraryMaker {
 
     public static void main(String... args) {
-        OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
+        OntModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.LIB_URI);
         id.setVersionIRI(id.getURI() + "#1.0");
         id.addComment("An additional library of functions that can be expressed through SPARQL " +

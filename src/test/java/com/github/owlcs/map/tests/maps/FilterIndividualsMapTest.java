@@ -22,8 +22,8 @@ import com.github.owlcs.map.*;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.rdf.model.Statement;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,8 +42,8 @@ public class FilterIndividualsMapTest extends MapTestData2 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterIndividualsMapTest.class);
 
     @Override
-    public void validate(OntGraphModel result) {
-        OntNDP age = TestUtils.findOntEntity(result, OntNDP.class, "user-age");
+    public void validate(OntModel result) {
+        OntDataProperty age = TestUtils.findOntEntity(result, OntDataProperty.class, "user-age");
         Assert.assertEquals(2,
                 result.individuals().peek(i -> {
                     List<Statement> assertions = i.positiveAssertions().collect(Collectors.toList());
@@ -56,11 +56,11 @@ public class FilterIndividualsMapTest extends MapTestData2 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass person = TestUtils.findOntEntity(src, OntClass.class, "Person");
-        OntClass user = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        OntNDP srcAge = TestUtils.findOntEntity(src, OntNDP.class, "age");
-        OntNDP dstAge = TestUtils.findOntEntity(dst, OntNDP.class, "user-age");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass person = TestUtils.findOntEntity(src, OntClass.Named.class, "Person");
+        OntClass user = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
+        OntDataProperty srcAge = TestUtils.findOntEntity(src, OntDataProperty.class, "age");
+        OntDataProperty dstAge = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-age");
 
         MapModel res = createMappingModel(manager, "Used functions: avc:UUID, spinmap:equals, sp:gt, sp:lt, sp:and");
 
@@ -92,7 +92,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
         Assert.assertEquals(2, m.rules().count());
         MapContext c = m.contexts().findFirst().orElseThrow(AssertionError::new);
         Assert.assertEquals("avc:UUID()", c.getMapping().toString());
-        String srcAge = m.asGraphModel().shortForm(TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "age").getURI());
+        String srcAge = m.asGraphModel().shortForm(TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "age").getURI());
         String contextFilterFunction = String.format("sp:and(?arg1=sp:gt(?arg1=%s, ?arg2=\"%s\"^^xsd:int), " +
                         "?arg2=sp:lt(?arg1=%s, ?arg2=\"%s\"^^xsd:int))",
                 srcAge, 25, srcAge, 100);
@@ -100,7 +100,7 @@ public class FilterIndividualsMapTest extends MapTestData2 {
 
         PropertyBridge p = c.properties().findFirst().orElseThrow(AssertionError::new);
 
-        Assert.assertEquals(TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "user-age"), p.getTarget());
+        Assert.assertEquals(TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "user-age"), p.getTarget());
 
         Assert.assertEquals(String.format("spinmap:equals(%s)", srcAge), p.getMapping().toString());
         Assert.assertNull(p.getFilter());

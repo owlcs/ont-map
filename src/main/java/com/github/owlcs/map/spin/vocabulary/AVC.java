@@ -210,8 +210,8 @@ public class AVC {
      * A predicate to be used for function arguments ({@code spin:constraint}).
      * The object in SPO with this predicate must be a []-list with any values (RDF-nodes) or
      * a composite {@link com.github.owlcs.ontapi.jena.model.OntObject Ontology Object} with a reference to a []-list,
-     * for example a {@link com.github.owlcs.ontapi.jena.model.OntDT Ontology Datatype}
-     * that is equivalent to a {@link com.github.owlcs.ontapi.jena.model.OntDR.UnionOf Data Range Union}.
+     * for example a {@link com.github.owlcs.ontapi.jena.model.OntDataRange.Named Ontology Datatype}
+     * that is equivalent to a {@link com.github.owlcs.ontapi.jena.model.OntDataRange.UnionOf Data Range Union}.
      * This is an indicator that function call for the argument can accept only one of the values from that list.
      */
     public static final Property oneOf = property("oneOf");

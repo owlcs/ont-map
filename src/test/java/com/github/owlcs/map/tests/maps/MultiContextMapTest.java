@@ -46,8 +46,8 @@ public class MultiContextMapTest extends MapTestData6 {
     @Test
     public void testInferenceOnce() {
         LOGGER.info("Assembly models.");
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
+        OntModel src = assembleSource();
+        OntModel dst = assembleTarget();
         //TestUtils.debug(src);
 
         MapManager manager = manager();
@@ -61,7 +61,7 @@ public class MultiContextMapTest extends MapTestData6 {
         validate(dst);
     }
 
-    private void validate(OntGraphModel dst) {
+    private void validate(OntModel dst) {
         LOGGER.info("Validate.");
         Assert.assertEquals(3, dst.individuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
@@ -79,16 +79,16 @@ public class MultiContextMapTest extends MapTestData6 {
         }
     }
 
-    private static void validateIndividual(OntGraphModel m, String name, double[] coordinates) {
+    private static void validateIndividual(OntModel m, String name, double[] coordinates) {
         String s = "res-" + name.toLowerCase().replace(" ", "-");
         LOGGER.debug("Validate '{}'", s);
         OntIndividual.Named i = TestUtils.findOntEntity(m, OntIndividual.Named.class, s);
         List<OntStatement> assertions = i.positiveAssertions().collect(Collectors.toList());
         Assert.assertEquals("<" + m.shortForm(i.getURI()) + ">: wrong assertion number", 4, assertions.size());
-        OntNDP nameProp = TestUtils.findOntEntity(m, OntNDP.class, "name");
-        OntNDP latitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "latitude");
-        OntNDP longitudeProp = TestUtils.findOntEntity(m, OntNDP.class, "longitude");
-        OntNDP messageProp = TestUtils.findOntEntity(m, OntNDP.class, "message");
+        OntDataProperty nameProp = TestUtils.findOntEntity(m, OntDataProperty.class, "name");
+        OntDataProperty latitudeProp = TestUtils.findOntEntity(m, OntDataProperty.class, "latitude");
+        OntDataProperty longitudeProp = TestUtils.findOntEntity(m, OntDataProperty.class, "longitude");
+        OntDataProperty messageProp = TestUtils.findOntEntity(m, OntDataProperty.class, "message");
         Assert.assertEquals(name, TestUtils.getStringValue(i, nameProp));
         Assert.assertEquals(String.valueOf(coordinates[0]), TestUtils.getStringValue(i, latitudeProp));
         Assert.assertEquals(String.valueOf(coordinates[1]), TestUtils.getStringValue(i, longitudeProp));
@@ -97,25 +97,25 @@ public class MultiContextMapTest extends MapTestData6 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_D00001");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_D00001");
         // Name
-        OntClass CDSPR_000011 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_000011");
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
+        OntClass CDSPR_000011 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_000011");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000011");
         // Latitude
-        OntClass CDSPR_000005 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_000005");
-        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
+        OntClass CDSPR_000005 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_000005");
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000005");
         // Longitude
-        OntClass CDSPR_000006 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_000006");
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000006");
+        OntClass CDSPR_000006 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_000006");
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000006");
 
-        OntNOP OAHUU = TestUtils.findOntEntity(src, OntNOP.class, "OAHUU");
-        OntNDP DEUUU = TestUtils.findOntEntity(src, OntNDP.class, "DEUUU");
-        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.class, "Res");
-        OntNDP nameProp = TestUtils.findOntEntity(dst, OntNDP.class, "name");
-        OntNDP latitudeProp = TestUtils.findOntEntity(dst, OntNDP.class, "latitude");
-        OntNDP longitudeProp = TestUtils.findOntEntity(dst, OntNDP.class, "longitude");
-        OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+        OntObjectProperty OAHUU = TestUtils.findOntEntity(src, OntObjectProperty.Named.class, "OAHUU");
+        OntDataProperty DEUUU = TestUtils.findOntEntity(src, OntDataProperty.class, "DEUUU");
+        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "Res");
+        OntDataProperty nameProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "name");
+        OntDataProperty latitudeProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "latitude");
+        OntDataProperty longitudeProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "longitude");
+        OntDataProperty messageProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "message");
 
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
         MapFunction self = manager.getFunction(SPINMAPL.self);
@@ -144,26 +144,26 @@ public class MultiContextMapTest extends MapTestData6 {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = super.assembleSource();
+    public OntModel assembleSource() {
+        OntModel m = super.assembleSource();
         addDataIndividual(m, SHIP_1_NAME, SHIP_1_COORDINATES);
         addDataIndividual(m, SHIP_2_NAME, SHIP_2_COORDINATES);
         addDataIndividual(m, SHIP_3_NAME, SHIP_3_COORDINATES);
         return m;
     }
 
-    private static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
-        OntNOP OAGUU = TestUtils.findOntEntity(m, OntNOP.class, "OAGUU"); // CDSPR_D00001 -> CDSPR_0000**
-        OntNOP OAHUU = TestUtils.findOntEntity(m, OntNOP.class, "OAHUU"); // CDSPR_0000** -> CCPAS_0000**
-        OntNDP DEUUU = TestUtils.findOntEntity(m, OntNDP.class, "DEUUU"); // data
-        OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_D00001");
+    private static void addDataIndividual(OntModel m, String shipName, double[] coordinates) {
+        OntObjectProperty.Named OAGUU = TestUtils.findOntEntity(m, OntObjectProperty.Named.class, "OAGUU"); // CDSPR_D00001 -> CDSPR_0000**
+        OntObjectProperty.Named OAHUU = TestUtils.findOntEntity(m, OntObjectProperty.Named.class, "OAHUU"); // CDSPR_0000** -> CCPAS_0000**
+        OntDataProperty DEUUU = TestUtils.findOntEntity(m, OntDataProperty.class, "DEUUU"); // data
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.Named.class, "CDSPR_D00001");
 
-        OntClass CDSPR_000005 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_000005"); // Latitude
-        OntClass CCPAS_000005 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000005");
-        OntClass CDSPR_000006 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_000006"); // Longitude
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000006");
-        OntClass CDSPR_000011 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_000011"); // Name
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000011");
+        OntClass CDSPR_000005 = TestUtils.findOntEntity(m, OntClass.Named.class, "CDSPR_000005"); // Latitude
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000005");
+        OntClass CDSPR_000006 = TestUtils.findOntEntity(m, OntClass.Named.class, "CDSPR_000006"); // Longitude
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000006");
+        OntClass CDSPR_000011 = TestUtils.findOntEntity(m, OntClass.Named.class, "CDSPR_000011"); // Name
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000011");
 
         OntIndividual res = CDSPR_D00001.createIndividual(m.expandPrefix("data:" + shipName.toLowerCase().replace(" ", "-")));
 
@@ -186,9 +186,9 @@ public class MultiContextMapTest extends MapTestData6 {
         int propertiesNum = 4;
         assertContext(m, contextsNum, propertiesNum);
 
-        OntClass Res = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "Res");
-        OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "CDSPR_000011");
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "CCPAS_000011");
+        OntClass Res = TestUtils.findOntEntity(m.asGraphModel(), OntClass.Named.class, "Res");
+        OntClass CDSPR_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.Named.class, "CDSPR_000011");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(m.asGraphModel(), OntClass.Named.class, "CCPAS_000011");
         MapContext Res_2Res = find(m, Res, Res);
         MapContext CDSPR_000011_2Res = find(m, CDSPR_000011, Res);
         MapContext CCPAS_000011_2Res = find(m, CCPAS_000011, Res);

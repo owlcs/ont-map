@@ -25,7 +25,7 @@ import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.UnionGraph;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
 import com.github.owlcs.ontapi.jena.vocabulary.XSD;
@@ -50,7 +50,7 @@ public class PrefixesTest {
 
     @Test
     public void testMiscAutoPrefixFunctionality() {
-        OntGraphModel m = OntModelFactory.createModel();
+        OntModel m = OntModelFactory.createModel();
         AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), Managers.createMapManager().prefixes());
         m.getID().addImport(SPINMAPL.BASE_URI);
         LOGGER.debug("\n{}", TestUtils.asString(m));
@@ -123,7 +123,7 @@ public class PrefixesTest {
                 .setNsPrefix(owl_p, owl_ns)
                 .setNsPrefix(rdfs_p, rdfs_ns)
                 .lock();
-        OntGraphModel m = OntModelFactory.createModel()
+        OntModel m = OntModelFactory.createModel()
                 .setNsPrefix(x_p, x_ns)
                 .setNsPrefix(y_p, y_ns);
         AutoPrefixListener.addAutoPrefixListener((UnionGraph) m.getGraph(), lib);

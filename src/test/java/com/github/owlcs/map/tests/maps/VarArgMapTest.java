@@ -25,7 +25,10 @@ import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
-import com.github.owlcs.ontapi.jena.model.*;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntIndividual;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.vocabulary.XSD;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,8 +44,8 @@ public class VarArgMapTest extends AbstractMapTest {
 
     @Test
     public void testInference() {
-        OntGraphModel s = assembleSource();
-        OntGraphModel t = assembleTarget();
+        OntModel s = assembleSource();
+        OntModel t = assembleTarget();
 
         MapManager man = manager();
         MapModel m = assembleMapping(man, s, t);
@@ -56,19 +59,19 @@ public class VarArgMapTest extends AbstractMapTest {
         validate(t);
     }
 
-    public void validate(OntGraphModel t) {
+    public void validate(OntModel t) {
         validate(t, true);
     }
 
-    public static void validate(OntGraphModel t, boolean includeSpInResult) {
+    public static void validate(OntModel t, boolean includeSpInResult) {
         Assert.assertEquals(2, t.individuals().count());
         OntIndividual i1 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I1");
         OntIndividual i2 = TestUtils.findOntEntity(t, OntIndividual.Named.class, "I2");
-        OntNDP p1 = TestUtils.findOntEntity(t, OntNDP.class, "tp1");
+        OntDataProperty p1 = TestUtils.findOntEntity(t, OntDataProperty.class, "tp1");
         Assert.assertEquals("a+b,c[g,h,i,m]", TestUtils.getStringValue(i1, p1));
         Assert.assertEquals("d+e,f[j,k,l,n]", TestUtils.getStringValue(i2, p1));
         if (includeSpInResult) {
-            OntNDP p2 = TestUtils.findOntEntity(t, OntNDP.class, "tp2");
+            OntDataProperty p2 = TestUtils.findOntEntity(t, OntDataProperty.class, "tp2");
             Assert.assertFalse(TestUtils.getBooleanValue(i1, p2));
             Assert.assertTrue(TestUtils.getBooleanValue(i2, p2));
         } else {
@@ -79,24 +82,24 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         MapFunction changeNamespace = manager.getFunction(SPINMAPL.changeNamespace);
         MapFunction concat = manager.getFunction(SP.resource("concat"));
         MapFunction notIn = manager.getFunction(SP.resource("notIn"));
 
         MapModel res = createMappingModel(manager, "Used functions: " + toMessage(manager.prefixes(), changeNamespace, concat, notIn));
 
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "C1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TC1");
-        OntNDP srcProp1 = TestUtils.findOntEntity(src, OntNDP.class, "p1");
-        OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "p2");
-        OntNDP srcProp3 = TestUtils.findOntEntity(src, OntNDP.class, "p3");
-        OntNDP srcProp4 = TestUtils.findOntEntity(src, OntNDP.class, "p4");
-        OntNDP srcProp5 = TestUtils.findOntEntity(src, OntNDP.class, "p5");
-        OntNDP srcProp6 = TestUtils.findOntEntity(src, OntNDP.class, "p6");
-        OntNDP srcProp7 = TestUtils.findOntEntity(src, OntNDP.class, "p7");
-        OntNDP dstProp1 = TestUtils.findOntEntity(dst, OntNDP.class, "tp1");
-        OntNDP dstProp2 = TestUtils.findOntEntity(dst, OntNDP.class, "tp2");
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "C1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TC1");
+        OntDataProperty srcProp1 = TestUtils.findOntEntity(src, OntDataProperty.class, "p1");
+        OntDataProperty srcProp2 = TestUtils.findOntEntity(src, OntDataProperty.class, "p2");
+        OntDataProperty srcProp3 = TestUtils.findOntEntity(src, OntDataProperty.class, "p3");
+        OntDataProperty srcProp4 = TestUtils.findOntEntity(src, OntDataProperty.class, "p4");
+        OntDataProperty srcProp5 = TestUtils.findOntEntity(src, OntDataProperty.class, "p5");
+        OntDataProperty srcProp6 = TestUtils.findOntEntity(src, OntDataProperty.class, "p6");
+        OntDataProperty srcProp7 = TestUtils.findOntEntity(src, OntDataProperty.class, "p7");
+        OntDataProperty dstProp1 = TestUtils.findOntEntity(dst, OntDataProperty.class, "tp1");
+        OntDataProperty dstProp2 = TestUtils.findOntEntity(dst, OntDataProperty.class, "tp2");
 
         MapContext c = res.createContext(srcClass, dstClass, changeNamespace.create()
                 .addLiteral(SPINMAPL.targetNamespace, "urn://x#")
@@ -128,17 +131,17 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("source");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
-        OntClass class1 = m.createOntEntity(OntClass.class, ns + "C1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "p1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "p2");
-        OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "p3");
-        OntNDP prop4 = m.createOntEntity(OntNDP.class, ns + "p4");
-        OntNDP prop5 = m.createOntEntity(OntNDP.class, ns + "p5");
-        OntNDP prop6 = m.createOntEntity(OntNDP.class, ns + "p6");
-        OntNDP prop7 = m.createOntEntity(OntNDP.class, ns + "p7");
+        OntClass class1 = m.createOntClass(ns + "C1");
+        OntDataProperty prop1 = m.createOntEntity(OntDataProperty.class, ns + "p1");
+        OntDataProperty prop2 = m.createOntEntity(OntDataProperty.class, ns + "p2");
+        OntDataProperty prop3 = m.createOntEntity(OntDataProperty.class, ns + "p3");
+        OntDataProperty prop4 = m.createOntEntity(OntDataProperty.class, ns + "p4");
+        OntDataProperty prop5 = m.createOntEntity(OntDataProperty.class, ns + "p5");
+        OntDataProperty prop6 = m.createOntEntity(OntDataProperty.class, ns + "p6");
+        OntDataProperty prop7 = m.createOntEntity(OntDataProperty.class, ns + "p7");
         m.dataProperties().forEach(p -> p.addDomain(class1));
 
         OntIndividual.Named individual1 = class1.createIndividual(ns + "I1");
@@ -162,16 +165,16 @@ public class VarArgMapTest extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("target");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("target");
         String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + "TC1");
-        OntNDP p1 = m.createOntEntity(OntNDP.class, ns + "tp1");
+        OntClass clazz = m.createOntClass(ns + "TC1");
+        OntDataProperty p1 = m.createOntEntity(OntDataProperty.class, ns + "tp1");
         p1.addDomain(clazz);
-        p1.addRange(m.getOntEntity(OntDT.class, XSD.xstring));
-        OntNDP p2 = m.createOntEntity(OntNDP.class, ns + "tp2");
+        p1.addRange(m.getDatatype(XSD.xstring));
+        OntDataProperty p2 = m.createOntEntity(OntDataProperty.class, ns + "tp2");
         p2.addDomain(clazz);
-        p2.addRange(m.getOntEntity(OntDT.class, XSD.xboolean));
+        p2.addRange(m.getDatatype(XSD.xboolean));
         return m;
     }
 }

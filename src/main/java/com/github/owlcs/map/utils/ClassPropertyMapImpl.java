@@ -20,10 +20,10 @@ package com.github.owlcs.map.utils;
 
 import com.github.owlcs.map.ClassPropertyMap;
 import com.github.owlcs.ontapi.jena.impl.OntObjectImpl;
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntOPE;
-import com.github.owlcs.ontapi.jena.model.OntPE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
+import com.github.owlcs.ontapi.jena.model.OntProperty;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.utils.OntModels;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
@@ -52,29 +52,29 @@ import java.util.stream.Stream;
 public class ClassPropertyMapImpl implements ClassPropertyMap {
 
     @Override
-    public Stream<Property> properties(OntCE ce) {
-        return collect(ce, new HashSet<>()).map(OntPE::asProperty);
+    public Stream<Property> properties(OntClass ce) {
+        return collect(ce, new HashSet<>()).map(OntProperty::asProperty);
     }
 
     /**
      * Recursively collects all property expression that assumed to be belonged to the specified class.
      *
-     * @param ce   {@link OntCE}, not {@code null}
+     * @param ce   {@link OntClass}, not {@code null}
      * @param seen a {@code Set} to control recursion
-     * @return <b>distinct</b> {@code Stream} of {@link OntPE property expression}s
+     * @return <b>distinct</b> {@code Stream} of {@link OntProperty property expression}s
      */
-    public Stream<OntPE> collect(OntCE ce, Set<OntCE> seen) {
+    public Stream<OntProperty> collect(OntClass ce, Set<OntClass> seen) {
         if (!seen.add(Objects.requireNonNull(ce, "Null ce"))) {
             return Stream.empty();
         }
-        OntGraphModel model = ce.getModel();
+        OntModel model = ce.getModel();
         if (OWL.Thing.equals(ce)) {
             // in Topbraid Composer owl:Thing implicitly has rdfs:label,
             // which is inherited by all other named class expressions
             return Stream.of(model.getRDFSLabel());
         }
 
-        Set<OntPE> res = ModelUtils.properties(ce)
+        Set<OntProperty> res = ModelUtils.properties(ce)
                 .flatMap(x -> relatedProperties(x, ce))
                 .collect(Collectors.toSet());
 
@@ -82,12 +82,12 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
         // then that propertyChain can be added to the result list as effective property
         ModelUtils.propertyChains(model)
                 .filter(p -> res.stream()
-                        .filter(x -> x.canAs(OntOPE.class))
-                        .map(x -> x.as(OntOPE.class))
+                        .filter(x -> x.canAs(OntObjectProperty.class))
+                        .map(x -> x.as(OntObjectProperty.class))
                         .anyMatch(x -> ModelUtils.isHeadOfPropertyChain(p, x)))
                 .forEach(res::add);
 
-        Stream<OntPE> fromSuperClasses = relatedClasses(ce).flatMap(c -> collect(c, seen));
+        Stream<OntProperty> fromSuperClasses = relatedClasses(ce).flatMap(c -> collect(c, seen));
         return Stream.concat(fromSuperClasses, res.stream()).distinct();
     }
 
@@ -96,22 +96,22 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * that relate with the given class in several relations which were found empirically using Topbraid.
      * These relations includes {@code rdfs:subClassOf}, {@code owl:equivalentClass} axioms and some others.
      *
-     * @param ce {@link OntCE}, not {@code null}
-     * @return <b>distinct</b> {@code Stream} of {@link OntCE class expression}s
+     * @param ce {@link OntClass}, not {@code null}
+     * @return <b>distinct</b> {@code Stream} of {@link OntClass class expression}s
      */
-    protected Stream<OntCE> relatedClasses(OntCE ce) {
-        OntGraphModel model = ce.getModel();
-        Stream<OntCE> superClasses = ce.isAnon() ? ce.superClasses() :
+    protected Stream<OntClass> relatedClasses(OntClass ce) {
+        OntModel model = ce.getModel();
+        Stream<OntClass> superClasses = ce.isAnon() ? ce.superClasses() :
                 Stream.concat(ce.superClasses(), Stream.of(model.getOWLThing()));
 
-        Stream<OntCE> intersectionRestriction = ce instanceof OntCE.IntersectionOf ?
-                ((OntCE.IntersectionOf) ce).getList().members().filter(c -> c instanceof OntCE.RestrictionCE)
+        Stream<OntClass> intersectionRestriction = ce instanceof OntClass.IntersectionOf ?
+                ((OntClass.IntersectionOf) ce).getList().members().filter(c -> c instanceof OntClass.RestrictionCE)
                 : Stream.empty();
-        Stream<OntCE> equivalentIntersections = ce.equivalentClasses().filter(OntCE.IntersectionOf.class::isInstance);
+        Stream<OntClass> equivalentIntersections = ce.equivalentClasses().filter(OntClass.IntersectionOf.class::isInstance);
 
-        Stream<OntCE> unionClasses = model.ontObjects(OntCE.UnionOf.class)
+        Stream<OntClass> unionClasses = model.ontObjects(OntClass.UnionOf.class)
                 .filter(c -> c.getList().members().anyMatch(x -> Objects.equals(x, ce)))
-                .map(OntCE.class::cast);
+                .map(OntClass.class::cast);
 
         return Stream.of(superClasses, equivalentIntersections, intersectionRestriction, unionClasses)
                 .flatMap(Function.identity())
@@ -125,12 +125,12 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * with except the class given as second parameter.
      * The input property is also included into the stream.
      *
-     * @param p      {@link OntPE}, property to analyse, not {@code null}
-     * @param domain {@link OntCE}, an allowed domain, not {@code null}
-     * @return <b>distinct</b> {@code Stream} of {@link OntPE property expression}s
+     * @param p      {@link OntProperty}, property to analyse, not {@code null}
+     * @param domain {@link OntClass}, an allowed domain, not {@code null}
+     * @return <b>distinct</b> {@code Stream} of {@link OntProperty property expression}s
      */
-    protected Stream<OntPE> relatedProperties(OntPE p, OntCE domain) {
-        Set<OntPE> res = getSubProperties(p, domain);
+    protected Stream<OntProperty> relatedProperties(OntProperty p, OntClass domain) {
+        Set<OntProperty> res = getSubProperties(p, domain);
         res.add(p);
         return res.stream();
     }
@@ -140,12 +140,12 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * The term 'standalone' here means that each property does not belong to any other class
      * with except the class given as second parameter.
      *
-     * @param p      {@link OntPE}, property to analyse, not {@code null}
-     * @param domain {@link OntCE}, an allowed domain, not {@code null}
-     * @return {@code Set} of {@link OntPE property expression}s
+     * @param p      {@link OntProperty}, property to analyse, not {@code null}
+     * @param domain {@link OntClass}, an allowed domain, not {@code null}
+     * @return {@code Set} of {@link OntProperty property expression}s
      */
-    protected Set<OntPE> getSubProperties(OntPE p, OntCE domain) {
-        Class<OntPE> type = OntModels.getOntType(p);
+    protected Set<OntProperty> getSubProperties(OntProperty p, OntClass domain) {
+        Class<OntProperty> type = OntModels.getOntType(p);
         return OntObjectImpl.getHierarchy(p, o -> ((OntObjectImpl) o).listSubjects(RDFS.subPropertyOf, type)
                 .filterKeep(x -> isStandalone(x, domain)), false);
     }
@@ -154,11 +154,11 @@ public class ClassPropertyMapImpl implements ClassPropertyMap {
      * Answers {@code true} if the given property is standalone,
      * which means it has no {@code rdfs:domain}s with only one exclusion that is given as second parameter.
      *
-     * @param p      {@link OntPE}, property to test, not {@code null}
-     * @param except {@link OntCE}, an allowed domain, not {@code null}
+     * @param p      {@link OntProperty}, property to test, not {@code null}
+     * @param except {@link OntClass}, an allowed domain, not {@code null}
      * @return boolean
      */
-    protected boolean isStandalone(OntPE p, Resource except) {
+    protected boolean isStandalone(OntProperty p, Resource except) {
         return !Iter.findFirst(p.listProperties(RDFS.domain).filterDrop(s -> except.equals(s.getObject()))).isPresent();
     }
 }

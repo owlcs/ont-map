@@ -20,9 +20,9 @@ package com.github.owlcs.map.tests.maps;
 
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntDT;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.vocabulary.XSD;
 
@@ -43,8 +43,8 @@ abstract class MapTestData6 extends AbstractMapTest {
     static final double[] SHIP_3_COORDINATES = new double[]{46.34542, 28.674692};
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m;
+    public OntModel assembleSource() {
+        OntModel m;
         try {
             m = TestUtils.load("/ex-sup-test.ttl", Lang.TURTLE);
         } catch (IOException e) {
@@ -57,13 +57,13 @@ abstract class MapTestData6 extends AbstractMapTest {
 
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("result");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("result");
         String ns = m.getID().getURI() + "#";
-        OntClass res = m.createOntEntity(OntClass.class, ns + "Res");
-        OntDT string = m.getOntEntity(OntDT.class, XSD.xstring);
+        OntClass res = m.createOntClass(ns + "Res");
+        OntDataRange.Named string = m.getDatatype(XSD.xstring);
         Stream.of("name", "latitude", "longitude", "message").forEach(s -> {
-            OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
+            OntDataProperty p = m.createOntEntity(OntDataProperty.class, ns + s);
             p.addRange(string);
             p.addDomain(res);
         });

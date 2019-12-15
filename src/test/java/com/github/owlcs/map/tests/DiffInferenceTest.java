@@ -27,9 +27,9 @@ import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntDT;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.XSD;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
@@ -63,7 +63,7 @@ public class DiffInferenceTest {
     public void testInferenceRawData() {
         Graph schema = assembleSrcSchema();
         Graph data = assembleSrcData(schema);
-        OntGraphModel target = assembleTargetModel();
+        OntModel target = assembleTargetModel();
 
         MapManager manager = Managers.createMapManager();
         MapModel mapping = assembleMapping(manager, schema, target.getGraph());
@@ -86,9 +86,9 @@ public class DiffInferenceTest {
     public void testInferenceWithSchema() {
         Graph schema = assembleSrcSchema();
         Graph data = assembleSrcData(schema);
-        OntGraphModel target = assembleTargetModel();
+        OntModel target = assembleTargetModel();
 
-        OntGraphModel withData = OntModelFactory.createModel(schema);
+        OntModel withData = OntModelFactory.createModel(schema);
         withData.add(ModelFactory.createModelForGraph(data));
         LoggedGraph logGraph = new LoggedGraph(withData.getGraph());
 
@@ -104,14 +104,14 @@ public class DiffInferenceTest {
         validate(target);
     }
 
-    public void validate(OntGraphModel t) {
+    public void validate(OntModel t) {
         TestUtils.debug(t);
         int expected = numberAnonymousIndividuals + numberNamedIndividuals;
         Assert.assertEquals("Incorrect number of result individuals.", expected,
                 t.individuals()
                         .peek(x -> LOGGER.debug("{}", x))
                         .count());
-        OntNDP prop = TestUtils.findOntEntity(t, OntNDP.class, "targetProperty");
+        OntDataProperty prop = TestUtils.findOntEntity(t, OntDataProperty.class, "targetProperty");
         Assert.assertEquals(expected, t.statements(null, prop, null)
                 .peek(x -> LOGGER.debug("{}", x))
                 .count());
@@ -120,14 +120,14 @@ public class DiffInferenceTest {
     public static Graph assembleSrcSchema() {
         String uri = "http://xxx";
         String ns = uri + "#";
-        OntGraphModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("x", ns);
+        OntModel m = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("x", ns);
         m.setID(uri);
-        OntClass c = m.createOntEntity(OntClass.class, ns + "Class");
-        OntNDP p1 = m.createOntEntity(OntNDP.class, ns + "Property-1");
-        OntDT xs = XSD.xstring.inModel(m).as(OntDT.class);
+        OntClass c = m.createOntClass(ns + "Class");
+        OntDataProperty p1 = m.createOntEntity(OntDataProperty.class, ns + "Property-1");
+        OntDataRange xs = m.getDatatype(XSD.xstring);
         p1.addDomain(c);
         p1.addRange(xs);
-        OntNDP p2 = m.createOntEntity(OntNDP.class, ns + "Property-2");
+        OntDataProperty p2 = m.createOntEntity(OntDataProperty.class, ns + "Property-2");
         p2.addDomain(c);
         p2.addRange(xs);
         Assert.assertEquals(8, m.size());
@@ -136,11 +136,11 @@ public class DiffInferenceTest {
 
     public static Graph assembleSrcData(Graph schema) {
         Union u = new Union(new GraphMem(), schema);
-        OntGraphModel m = OntModelFactory.createModel(u);
+        OntModel m = OntModelFactory.createModel(u);
         String ns = m.getNsPrefixURI("x");
-        OntClass c = TestUtils.findOntEntity(m, OntClass.class, "Class");
-        OntNDP p1 = TestUtils.findOntEntity(m, OntNDP.class, "Property-1");
-        OntNDP p2 = TestUtils.findOntEntity(m, OntNDP.class, "Property-2");
+        OntClass c = TestUtils.findOntEntity(m, OntClass.Named.class, "Class");
+        OntDataProperty p1 = TestUtils.findOntEntity(m, OntDataProperty.class, "Property-1");
+        OntDataProperty p2 = TestUtils.findOntEntity(m, OntDataProperty.class, "Property-2");
         for (int i = 1; i <= numberNamedIndividuals; i++) {
             c.createIndividual(ns + "i" + i).addProperty(p1, "forNamed(1)#" + i).addProperty(p2, "forNamed(2)#" + i);
         }
@@ -152,26 +152,26 @@ public class DiffInferenceTest {
         return res;
     }
 
-    public static OntGraphModel assembleTargetModel() {
+    public static OntModel assembleTargetModel() {
         LOGGER.debug("Create the target model.");
         String uri = "http://target.avicomp.ru";
         String ns = uri + "#";
-        OntGraphModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD).setID(uri).getModel();
-        OntClass clazz = res.createOntEntity(OntClass.class, ns + "ClassTarget");
-        OntNDP prop = res.createOntEntity(OntNDP.class, ns + "targetProperty");
-        prop.addRange(res.getOntEntity(OntDT.class, XSD.xstring));
+        OntModel res = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD).setID(uri).getModel();
+        OntClass clazz = res.createOntClass(ns + "ClassTarget");
+        OntDataProperty prop = res.createOntEntity(OntDataProperty.class, ns + "targetProperty");
+        prop.addRange(res.getDatatype(XSD.xstring));
         prop.addDomain(clazz);
         return res;
     }
 
     public static MapModel assembleMapping(MapManager manager, Graph source, Graph target) {
-        OntGraphModel src = OntModelFactory.createModel(source);
-        OntGraphModel dst = OntModelFactory.createModel(target);
+        OntModel src = OntModelFactory.createModel(source);
+        OntModel dst = OntModelFactory.createModel(target);
         LOGGER.debug("Compose the (spin) mapping.");
-        OntClass sourceClass = TestUtils.findOntEntity(src, OntClass.class, "Class");
-        OntClass targetClass = TestUtils.findOntEntity(dst, OntClass.class, "ClassTarget");
-        List<OntNDP> sourceProperties = src.dataProperties().collect(Collectors.toList());
-        OntNDP targetProperty = dst.dataProperties().findFirst().orElse(null);
+        OntClass sourceClass = TestUtils.findOntEntity(src, OntClass.Named.class, "Class");
+        OntClass targetClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "ClassTarget");
+        List<OntDataProperty> sourceProperties = src.dataProperties().collect(Collectors.toList());
+        OntDataProperty targetProperty = dst.dataProperties().findFirst().orElse(null);
         MapModel res = manager.createMapModel();
 
         MapFunction.Builder self = manager.getFunction(AVC.UUID).create();//manager.getFunction(AVC.UUID).create();

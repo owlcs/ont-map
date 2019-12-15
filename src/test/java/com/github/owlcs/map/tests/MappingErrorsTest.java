@@ -30,7 +30,10 @@ import com.github.owlcs.map.tests.maps.MathOpsMapTest;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.impl.conf.OntModelConfig;
-import com.github.owlcs.ontapi.jena.model.*;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.vocabulary.XSD;
@@ -57,12 +60,12 @@ public class MappingErrorsTest {
     @Test
     public void testWrongContextFilterFunction() {
         AbstractMapTest test = new BuildURIMapTest();
-        OntGraphModel s = test.assembleSource();
-        OntGraphModel t = test.assembleTarget();
-        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.class, "SourceClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty2");
-        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.class, "TargetClass1");
+        OntModel s = test.assembleSource();
+        OntModel t = test.assembleTarget();
+        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.Named.class, "SourceClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty sp2 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty2");
+        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.Named.class, "TargetClass1");
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
@@ -90,10 +93,10 @@ public class MappingErrorsTest {
     public void testWrongContextMappingFunction() {
         String uri = "ex://test";
         String ns = uri + "#";
-        OntGraphModel m = OntModelFactory.createModel();
+        OntModel m = OntModelFactory.createModel();
         m.setID(uri);
-        OntClass src = m.createOntEntity(OntClass.class, ns + "src");
-        OntClass dst = m.createOntEntity(OntClass.class, ns + "dst");
+        OntClass src = m.createOntClass(ns + "src");
+        OntClass dst = m.createOntClass(ns + "dst");
         MapModel map = manager.createMapModel();
         MapContext c = map.createContext(src, dst);
         Assert.assertNotNull(c);
@@ -112,12 +115,12 @@ public class MappingErrorsTest {
     @Test
     public void testWrongPropertyBridgeMappingFunction() {
         AbstractMapTest test = new BuildURIMapTest();
-        OntGraphModel s = test.assembleSource();
-        OntGraphModel t = test.assembleTarget();
-        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.class, "SourceClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty1");
-        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.class, "TargetClass1");
-        OntNDP tp1 = TestUtils.findOntEntity(t, OntNDP.class, "targetDataProperty2");
+        OntModel s = test.assembleSource();
+        OntModel t = test.assembleTarget();
+        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.Named.class, "SourceClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty1");
+        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.Named.class, "TargetClass1");
+        OntDataProperty tp1 = TestUtils.findOntEntity(t, OntDataProperty.class, "targetDataProperty2");
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
@@ -143,13 +146,13 @@ public class MappingErrorsTest {
     public void testWrongPropertyBridgeFilterFunction() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
-        OntGraphModel s = test.assembleSource();
-        OntGraphModel t = test.assembleTarget();
-        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.class, "SourceClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty2");
-        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.class, "TargetClass1");
-        OntNDP tp1 = TestUtils.findOntEntity(t, OntNDP.class, "targetDataProperty2");
+        OntModel s = test.assembleSource();
+        OntModel t = test.assembleTarget();
+        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.Named.class, "SourceClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty sp2 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty2");
+        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.Named.class, "TargetClass1");
+        OntDataProperty tp1 = TestUtils.findOntEntity(t, OntDataProperty.class, "targetDataProperty2");
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
@@ -175,12 +178,12 @@ public class MappingErrorsTest {
     public void testWrongPropertyBridgeTargetProperty() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
-        OntGraphModel s = test.assembleSource();
-        OntGraphModel t = test.assembleTarget();
-        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.class, "SourceClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty2");
-        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.class, "TargetClass1");
+        OntModel s = test.assembleSource();
+        OntModel t = test.assembleTarget();
+        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.Named.class, "SourceClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty sp2 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty2");
+        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.Named.class, "TargetClass1");
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
@@ -205,13 +208,13 @@ public class MappingErrorsTest {
     public void testWrongFunctionArgumentValue() {
         PrefixMapping pm = manager.prefixes();
         AbstractMapTest test = new BuildURIMapTest();
-        OntGraphModel s = test.assembleSource();
-        OntGraphModel t = test.assembleTarget();
-        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.class, "SourceClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(s, OntNDP.class, "sourceDataProperty2");
-        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.class, "TargetClass1");
-        OntNDP tp1 = TestUtils.findOntEntity(t, OntNDP.class, "targetDataProperty2");
+        OntModel s = test.assembleSource();
+        OntModel t = test.assembleTarget();
+        OntClass sc1 = TestUtils.findOntEntity(s, OntClass.Named.class, "SourceClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty sp2 = TestUtils.findOntEntity(s, OntDataProperty.class, "sourceDataProperty2");
+        OntClass tc1 = TestUtils.findOntEntity(t, OntClass.Named.class, "TargetClass1");
+        OntDataProperty tp1 = TestUtils.findOntEntity(t, OntDataProperty.class, "targetDataProperty2");
         MapModel m = test.createMappingModel(manager, "Test improper mappings");
         MapContext c = m.createContext(sc1, tc1);
         Assert.assertEquals(1, m.contexts().count());
@@ -240,13 +243,13 @@ public class MappingErrorsTest {
     @Test(expected = Exceptions.SpinMapException.class)
     public void testInferenceFail() {
         AbstractMapTest tc = new MathOpsMapTest();
-        OntGraphModel src = tc.assembleSource();
-        OntGraphModel dst = tc.assembleTarget();
+        OntModel src = tc.assembleSource();
+        OntModel dst = tc.assembleTarget();
 
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SrcClass1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "DstClass1");
-        OntNDP srcProp2 = TestUtils.findOntEntity(src, OntNDP.class, "srcDataProperty2");
-        OntNDP dstProp3 = TestUtils.findOntEntity(dst, OntNDP.class, "dstDataProperty3");
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "SrcClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "DstClass1");
+        OntDataProperty srcProp2 = TestUtils.findOntEntity(src, OntDataProperty.class, "srcDataProperty2");
+        OntDataProperty dstProp3 = TestUtils.findOntEntity(dst, OntDataProperty.class, "dstDataProperty3");
 
         MapModel map = tc.createMappingModel(manager, "Wrong fn:format-number picture");
         MapContext c = map.createContext(srcClass, dstClass, manager.getFunction(SPINMAPL.self).create().build());
@@ -309,11 +312,11 @@ public class MappingErrorsTest {
     @Test
     public void testContextValidatePropertyFunction() {
         MapManager m = Managers.createMapManager();
-        OntGraphModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("http://ont");
-        OntClass c1 = s.createOntEntity(OntClass.class, "s");
-        OntClass c2 = s.createOntEntity(OntClass.class, "t");
-        OntNDP p = s.createOntEntity(OntNDP.class, "p");
+        OntClass c1 = s.createOntClass("s");
+        OntClass c2 = s.createOntClass("t");
+        OntDataProperty p = s.createOntEntity(OntDataProperty.class, "p");
         MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
         MapFunction.Call toTest = m.getFunction(AVC.asIRI).create().addProperty(SP.arg1, p).build();
         try {
@@ -334,11 +337,11 @@ public class MappingErrorsTest {
     @Test
     public void testContextValidatePropertyRange() {
         MapManager m = Managers.createMapManager();
-        OntGraphModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
+        OntModel s = OntModelFactory.createModel().setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("http://ont");
-        OntClass c1 = s.createOntEntity(OntClass.class, "s");
-        OntClass c2 = s.createOntEntity(OntClass.class, "t");
-        OntNDP p = s.createOntEntity(OntNDP.class, "p");
+        OntClass c1 = s.createOntClass("s");
+        OntClass c2 = s.createOntClass("t");
+        OntDataProperty p = s.createOntEntity(OntDataProperty.class, "p");
 
         MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
         MapFunction.Call toTest = m.getFunction(MATH.atan).create().addProperty(SP.arg1, p).build();
@@ -356,7 +359,7 @@ public class MappingErrorsTest {
         context.validate(toTest);
 
         // add range:
-        p.addRange(s.getOntEntity(OntDT.class, XSD.xstring));
+        p.addRange(s.getDatatype(XSD.xstring));
         try {
             context.validate(toTest);
             Assert.fail("Validation passed.");
@@ -371,14 +374,14 @@ public class MappingErrorsTest {
     @Test
     public void testContextValidateObjectProperty() {
         MapManager m = Managers.createMapManager();
-        OntGraphModel s = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX)
+        OntModel s = OntModelFactory.createModel(Factory.createGraphMem(), OntModelConfig.ONT_PERSONALITY_LAX)
                 .setNsPrefixes(OntModelFactory.STANDARD);
         s.setID("http://ont");
-        OntClass c1 = s.createOntEntity(OntClass.class, "s");
-        OntClass c2 = s.createOntEntity(OntClass.class, "t");
-        OntNOP p1 = s.createObjectProperty("p1");
+        OntClass c1 = s.createOntClass("s");
+        OntClass c2 = s.createOntClass("t");
+        OntObjectProperty.Named p1 = s.createObjectProperty("p1");
         p1.addDomain(c1);
-        OntNDP p2 = s.createDataProperty("p2").addDomain(c1).addRange(XSD.xdouble);
+        OntDataProperty p2 = s.createDataProperty("p2").addDomain(c1).addRange(XSD.xdouble);
 
         MapContext context = m.createMapModel().createContext(c1, c2, m.getFunction(SPINMAPL.self).create());
         MapFunction.Call toTest = m.getFunction(MATH.atan2).create()

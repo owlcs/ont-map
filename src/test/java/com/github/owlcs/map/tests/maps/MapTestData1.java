@@ -23,9 +23,9 @@ import com.github.owlcs.map.MapManager;
 import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
 import com.github.owlcs.ontapi.jena.model.OntIndividual;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,8 +43,8 @@ abstract class MapTestData1 extends AbstractMapTest {
 
     @Test
     public void testDeleteContext() {
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
+        OntModel src = assembleSource();
+        OntModel dst = assembleTarget();
         MapManager manager = manager();
         MapModel mapping = assembleMapping(manager, src, dst);
         Assert.assertEquals(2, mapping.ontologies().count());
@@ -59,18 +59,18 @@ abstract class MapTestData1 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("source");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
 
-        OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty2");
-        OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty3");
+        OntClass class1 = m.createOntClass(ns + "SourceClass1");
+        OntDataProperty prop1 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty1");
+        OntDataProperty prop2 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty2");
+        OntDataProperty prop3 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty3");
         prop1.addDomain(class1);
         prop2.addDomain(class1);
         prop3.addDomain(class1);
-        OntClass class2 = m.createOntEntity(OntClass.class, ns + "SubClass1").addSuperClass(class1);
+        OntClass class2 = m.createOntClass(ns + "SubClass1").addSuperClass(class1);
 
         // individuals:
         OntIndividual individual1 = class2.createIndividual(ns + "a");
@@ -92,11 +92,11 @@ abstract class MapTestData1 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("target");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("target");
         String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
-        m.createOntEntity(OntNDP.class, ns + "targetDataProperty2").addDomain(clazz);
+        OntClass clazz = m.createOntClass(ns + "TargetClass1");
+        m.createOntEntity(OntDataProperty.class, ns + "targetDataProperty2").addDomain(clazz);
         return m;
     }
 

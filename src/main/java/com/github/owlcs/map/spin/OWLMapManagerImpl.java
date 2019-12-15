@@ -22,7 +22,7 @@ import com.github.owlcs.map.*;
 import com.github.owlcs.map.spin.system.SystemLibraries;
 import com.github.owlcs.ontapi.*;
 import com.github.owlcs.ontapi.jena.impl.OntGraphModelImpl;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Graphs;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.shared.PrefixMapping;
@@ -90,7 +90,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
 
     /**
      * Creates a concurrent version of {@link MapManagerImpl}.
-     * Since only {@link MapManager#asMapModel(OntGraphModel)} can change the state of manager
+     * Since only {@link MapManager#asMapModel(OntModel)} can change the state of manager
      * (if specified model has custom functions inside),
      * and only {@link MapManager#functions()} returns that state (a list of functions),
      * this two methods must be synchronized.
@@ -108,7 +108,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
                                                      Supplier<Graph> factory,
                                                      ReadWriteLock lock,
                                                      MapConfigImpl config,
-                                                     UnaryOperator<OntGraphModel> map) {
+                                                     UnaryOperator<OntModel> map) {
         boolean noOp = !NoOpReadWriteLock.isConcurrent(lock);
         library = Graphs.asNonConcurrent(Objects.requireNonNull(library, "Null primary graph"));
         if (!noOp) {
@@ -129,7 +129,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             }
 
             @Override
-            public MapModelImpl asMapModel(OntGraphModel m) throws MapJenaException {
+            public MapModelImpl asMapModel(OntModel m) throws MapJenaException {
                 lock.writeLock().lock();
                 try {
                     return super.asMapModel(m);
@@ -139,7 +139,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
             }
 
             @Override
-            public Stream<OntGraphModel> relatedModels(OntGraphModel model) {
+            public Stream<OntModel> relatedModels(OntModel model) {
                 return super.relatedModels(model).map(map);
             }
         };
@@ -155,7 +155,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     public void ontologyCreated(OWLOntology ont) {
         lock.writeLock().lock();
         try {
-            OntGraphModel g = ((Ontology) ont).asGraphModel();
+            OntModel g = ((Ontology) ont).asGraphModel();
             if (manager.isMapModel(g)) {
                 // register custom functions
                 manager.asMapModel(g);
@@ -233,7 +233,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     }
 
     @Override
-    public MapModel asMapModel(OntGraphModel m) throws MapJenaException {
+    public MapModel asMapModel(OntModel m) throws MapJenaException {
         lock.readLock().lock();
         try {
             if (contains(m)) {
@@ -257,16 +257,16 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
      * Answers iff the model is present inside manager.
      * The check is performed by comparing the base graphs not ontology ids.
      *
-     * @param m {@link OntGraphModel} to test
+     * @param m {@link OntModel} to test
      * @return boolean
      * @see OntologyManager#contains(OWLOntology)
      */
-    public boolean contains(OntGraphModel m) {
+    public boolean contains(OntModel m) {
         return ontology(m.getGraph()).isPresent();
     }
 
     @Override
-    public boolean isMapModel(OntGraphModel m) {
+    public boolean isMapModel(OntModel m) {
         lock.readLock().lock();
         try {
             return manager.isMapModel(m);
@@ -296,7 +296,7 @@ public class OWLMapManagerImpl extends OntologyManagerImpl implements OWLMapMana
     }
 
     @Override
-    public ClassPropertyMap getClassProperties(OntGraphModel model) {
+    public ClassPropertyMap getClassProperties(OntModel model) {
         lock.readLock().lock();
         try {
             return manager.getClassProperties(model);

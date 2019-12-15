@@ -25,7 +25,7 @@ import com.github.owlcs.map.MapModel;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntStatement;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import org.apache.jena.vocabulary.RDF;
@@ -44,9 +44,9 @@ public class UUIDMapTest extends MapTestData1 {
     @Test
     @Override
     public void testInference() {
-        OntGraphModel src = assembleSource();
+        OntModel src = assembleSource();
         TestUtils.debug(src);
-        OntGraphModel dst = assembleTarget();
+        OntModel dst = assembleTarget();
         TestUtils.debug(dst);
 
         OntClass dstClass = dst.classes().findFirst().orElseThrow(AssertionError::new);
@@ -65,9 +65,9 @@ public class UUIDMapTest extends MapTestData1 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
 
         MapFunction func = manager.getFunction(AVC.UUID.getURI());
         MapFunction.Call targetFunction = func.create().build();
@@ -81,7 +81,7 @@ public class UUIDMapTest extends MapTestData1 {
         Assert.assertEquals(srcClass, c.getSource());
         Assert.assertEquals(dstClass, c.getTarget());
         // validate the graph has function body (svc:UUID) inside:
-        List<OntStatement> statements = ((OntGraphModel) res).statements(AVC.UUID, RDF.type, SPINMAP.TargetFunction)
+        List<OntStatement> statements = ((OntModel) res).statements(AVC.UUID, RDF.type, SPINMAP.TargetFunction)
                 .filter(OntStatement::isLocal)
                 .collect(Collectors.toList());
         Assert.assertEquals(1, statements.size());

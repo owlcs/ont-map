@@ -25,7 +25,7 @@ import com.github.owlcs.map.tests.maps.AbstractMapTest;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntStatement;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
 import org.apache.jena.graph.Triple;
@@ -80,7 +80,7 @@ public class LoadMapTestData extends AbstractMapTest {
         Assert.assertEquals(functionIRI, p.getMapping().getFunction().name());
     }
 
-    void validateResult(OntGraphModel res) {
+    void validateResult(OntModel res) {
         res.getGraph().find(Triple.ANY).forEachRemaining(t -> LOGGER.debug("TRIPLE: {}", t));
         Assert.assertEquals(1, res.size());
         OntStatement s = res.statements().findFirst().orElseThrow(AssertionError::new);
@@ -90,11 +90,11 @@ public class LoadMapTestData extends AbstractMapTest {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         String q = "SELECT (CONCAT(?arg1, \"" + val + "\"))\n" +
                 "WHERE {\n" +
                 "}";
-        OntGraphModel m = TestUtils.createMapModel(ontologyIRI);
+        OntModel m = TestUtils.createMapModel(ontologyIRI);
         Resource function = m.createResource(functionIRI)
                 .addProperty(RDF.type, SPIN.Function)
                 .addProperty(SPIN.returnType, XSD.xstring)
@@ -105,7 +105,7 @@ public class LoadMapTestData extends AbstractMapTest {
                         .addProperty(SPL.valueType, XSD.xstring))
                 .addProperty(SPIN.body, QueryHelper.parseQuery(q, m));
 
-        OntClass clazz = m.createOntEntity(OntClass.class, classIRI);
+        OntClass clazz = m.createOntClass(classIRI);
         Resource context = m.createResource(contextIRI, SPINMAP.Context)
                 .addProperty(SPINMAP.sourceClass, clazz)
                 .addProperty(SPINMAP.targetClass, clazz)
@@ -126,12 +126,12 @@ public class LoadMapTestData extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
+    public OntModel assembleSource() {
         return OntModelFactory.createModel();
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
+    public OntModel assembleTarget() {
         return OntModelFactory.createModel();
     }
 }

@@ -72,9 +72,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public Stream<OntGraphModel> ontologies() {
-        Stream<OntGraphModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
-        Stream<OntGraphModel> imports = super.imports(SpinModelConfig.ONT_PERSONALITY)
+    public Stream<OntModel> ontologies() {
+        Stream<OntModel> res = hasOntEntities() ? Stream.of(this) : Stream.empty();
+        Stream<OntModel> imports = super.imports(SpinModelConfig.ONT_PERSONALITY)
                 .filter(m -> !SpinModels.isTopSpinURI(m.getID().getURI()));
         return Stream.concat(res, imports);
     }
@@ -135,7 +135,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return Iter.asStream(listContexts());
     }
 
-    public ExtendedIterator<OntCE> listContextClasses() {
+    public ExtendedIterator<OntClass> listContextClasses() {
         return Iter.distinct(Iter.flatMap(listContexts(), MapContextImpl::listClasses));
     }
 
@@ -166,7 +166,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public MapContextImpl createContext(OntCE source, OntCE target) {
+    public MapContextImpl createContext(OntClass source, OntClass target) {
         return Iter.findFirst(listContexts()
                 .filterKeep(s -> Objects.equals(s.getSource(), source) && Objects.equals(s.getTarget(), target))
                 .mapWith(MapContextImpl.class::cast))
@@ -196,7 +196,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         c.deleteAll();
         // remove unused imports (both owl:import declarations and underling graphs)
         Set<OntID> used = listContextClasses().mapWith(this::getOntologyID).toSet();
-        Set<OntGraphModel> unused = ontologies()
+        Set<OntModel> unused = ontologies()
                 .filter(o -> !used.contains(o.getID()))
                 .filter(o -> !Objects.equals(o, this))
                 .collect(Collectors.toSet());
@@ -210,7 +210,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     }
 
     @Override
-    public MapModelImpl removeImport(OntGraphModel m) {
+    public MapModelImpl removeImport(OntModel m) {
         super.removeImport(m);
         // detach ClassPropertiesMap Listener to let GC clean any cached data, it is just in case
         UnionGraph.OntEventManager events = ((UnionGraph) m.getGraph()).getEventManager();
@@ -221,13 +221,13 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         return this;
     }
 
-    private OntID getOntologyID(OntCE ce) {
-        return findModelByClass(ce).map(OntGraphModel::getID)
+    private OntID getOntologyID(OntClass ce) {
+        return findModelByClass(ce).map(OntModel::getID)
                 .orElseThrow(() -> new OntJenaException.IllegalState("Can't find ontology for " + ce));
     }
 
-    protected Optional<OntGraphModel> findModelByClass(Resource ce) {
-        return ontologies().filter(m -> m.ontObjects(OntCE.class).anyMatch(c -> Objects.equals(c, ce))).findFirst();
+    protected Optional<OntModel> findModelByClass(Resource ce) {
+        return ontologies().filter(m -> m.ontObjects(OntClass.class).anyMatch(c -> Objects.equals(c, ce))).findFirst();
     }
 
     /**
@@ -236,12 +236,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * In case {@link MapConfigImpl#generateNamedIndividuals()}{@code == true}
      * an additional hidden contexts to generate {@code owl:NamedIndividuals} is created.
      *
-     * @param source {@link OntCE}
-     * @param target {@link OntCE}
+     * @param source {@link OntClass}
+     * @param target {@link OntClass}
      * @return {@link Resource}
      * @throws MapJenaException something goes wrong
      */
-    public Resource makeContext(OntCE source, OntCE target) throws MapJenaException {
+    public Resource makeContext(OntClass source, OntClass target) throws MapJenaException {
         // ensue all related models are imported:
         Stream.of(MapJenaException.notNull(source, "Null source CE"),
                 MapJenaException.notNull(target, "Null target CE"))
@@ -292,9 +292,9 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
 
     @Override
     public MapModelImpl bindContexts(MapContext left, MapContext right) {
-        OntCE leftClass = left.getTarget();
-        OntCE rightClass = right.getTarget();
-        Set<OntOPE> res = getLinkProperties(leftClass, rightClass);
+        OntClass leftClass = left.getTarget();
+        OntClass rightClass = right.getTarget();
+        Set<OntObjectProperty> res = getLinkProperties(leftClass, rightClass);
         if (res.isEmpty()) {
             throw error(Exceptions.MAPPING_ATTACHED_CONTEXT_TARGET_CLASS_NOT_LINKED)
                     .addContext(left).addContext(right).build();
@@ -305,7 +305,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
             res.forEach(p -> err.addProperty(p.asProperty()));
             throw err.build();
         }
-        OntOPE p = res.iterator().next();
+        OntObjectProperty p = res.iterator().next();
         if (isLinkProperty(p, leftClass, rightClass)) {
             left.attachContext(right, p);
         } else {
@@ -327,10 +327,10 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Lists ontological properties for the given OWL class.
      *
-     * @param ce {@link OntCE}
+     * @param ce {@link OntClass}
      * @return Stream of {@link Property properties}
      */
-    public Stream<Property> properties(OntCE ce) {
+    public Stream<Property> properties(OntClass ce) {
         return getManager().getClassProperties(this).properties(ce);
     }
 
@@ -362,7 +362,7 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * @return Optional around {@link RDFDatatype}
      */
     public Optional<RDFDatatype> datatype(String uri) {
-        return Optional.ofNullable(getOntEntity(OntDT.class, uri)).map(OntDT::toRDFDatatype);
+        return Optional.ofNullable(getOntEntity(OntDataRange.Named.class, uri)).map(OntDataRange.Named::toRDFDatatype);
     }
 
     /**
@@ -419,12 +419,12 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
     /**
      * Returns a Set of all linked properties.
      *
-     * @param left  {@link OntCE}
-     * @param right {@link OntCE}
-     * @return Set of {@link OntOPE}s
+     * @param left  {@link OntClass}
+     * @param right {@link OntClass}
+     * @return Set of {@link OntObjectProperty}s
      */
-    public Set<OntOPE> getLinkProperties(OntCE left, OntCE right) {
-        return ontObjects(OntOPE.class)
+    public Set<OntObjectProperty> getLinkProperties(OntClass left, OntClass right) {
+        return ontObjects(OntObjectProperty.class)
                 .filter(p -> isLinkProperty(p, left, right) || isLinkProperty(p, right, left))
                 .collect(Collectors.toSet());
     }
@@ -433,14 +433,14 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
      * Answers {@code true}
      * if the specified property links classes together through domain/range or restriction relationships.
      *
-     * @param property {@link OntOPE} property to test, not {@code null}
-     * @param domain   {@link OntCE} "domain" candidate, not {@code null}
-     * @param range    {@link OntCE} "range" candidate, not {@code null}
+     * @param property {@link OntObjectProperty} property to test, not {@code null}
+     * @param domain   {@link OntClass} "domain" candidate, not {@code null}
+     * @param range    {@link OntClass} "range" candidate, not {@code null}
      * @return {@code true} if it is link property
-     * @see ModelUtils#properties(OntCE)
-     * @see ModelUtils#ranges(OntOPE)
+     * @see ModelUtils#properties(OntClass)
+     * @see ModelUtils#ranges(OntObjectProperty)
      */
-    public boolean isLinkProperty(OntOPE property, OntCE domain, OntCE range) {
+    public boolean isLinkProperty(OntObjectProperty property, OntClass domain, OntClass range) {
         Property p = property.asProperty();
         if (properties(domain).noneMatch(p::equals)) return false;
         // range
@@ -448,8 +448,8 @@ public class MapModelImpl extends OntGraphModelImpl implements MapModel {
         // object some/all values from or cardinality restriction
         return statements(null, OWL.onProperty, property)
                 .map(OntStatement::getSubject)
-                .filter(s -> s.canAs(OntCE.ComponentRestrictionCE.class))
-                .map(s -> s.as(OntCE.ComponentRestrictionCE.class).getValue())
+                .filter(s -> s.canAs(OntClass.ComponentRestrictionCE.class))
+                .map(s -> s.as(OntClass.ComponentRestrictionCE.class).getValue())
                 .filter(RDFNode::isResource)
                 .anyMatch(range::equals);
     }

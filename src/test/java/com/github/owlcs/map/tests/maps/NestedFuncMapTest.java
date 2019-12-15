@@ -21,7 +21,10 @@ package com.github.owlcs.map.tests.maps;
 import com.github.owlcs.map.*;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
-import com.github.owlcs.ontapi.jena.model.*;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntIndividual;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.shared.PrefixMapping;
@@ -45,8 +48,8 @@ public class NestedFuncMapTest extends MapTestData1 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NestedFuncMapTest.class);
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
         return createMapping(manager, src, dst, () -> manager.getFunction(SPINMAPL.changeNamespace.getURI())
                 .create()
                 .add(SPINMAPL.targetNamespace.getURI(),
@@ -58,12 +61,12 @@ public class NestedFuncMapTest extends MapTestData1 {
     @Test
     public void testValidateMapping() {
         MapModel m = assembleMapping();
-        OntClass sc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "SourceClass1");
-        OntClass tc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.class, "TargetClass1");
-        OntNDP sp1 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty1");
-        OntNDP sp2 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty2");
-        OntNDP sp3 = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "sourceDataProperty3");
-        OntNDP tp = TestUtils.findOntEntity(m.asGraphModel(), OntNDP.class, "targetDataProperty2");
+        OntClass sc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.Named.class, "SourceClass1");
+        OntClass tc = TestUtils.findOntEntity(m.asGraphModel(), OntClass.Named.class, "TargetClass1");
+        OntDataProperty sp1 = TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty sp2 = TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "sourceDataProperty2");
+        OntDataProperty sp3 = TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "sourceDataProperty3");
+        OntDataProperty tp = TestUtils.findOntEntity(m.asGraphModel(), OntDataProperty.class, "targetDataProperty2");
 
         Assert.assertEquals(2, m.rules().count());
         MapContext context = m.contexts().findFirst().orElseThrow(AssertionError::new);
@@ -98,8 +101,8 @@ public class NestedFuncMapTest extends MapTestData1 {
     public void testChangeTargetFunction() {
         MapModel m = assembleMapping();
         MapManager manager = m.getManager();
-        OntCE sc = m.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new);
-        OntCE tc = m.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new);
+        OntClass sc = m.contexts().map(MapContext::getSource).findFirst().orElseThrow(AssertionError::new);
+        OntClass tc = m.contexts().map(MapContext::getTarget).findFirst().orElseThrow(AssertionError::new);
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
         MapFunction.Call targetFunction = composeURI.create().addLiteral(SPINMAPL.template, tc.getNameSpace() + "{?1}").build();
         m.createContext(sc, tc, targetFunction);
@@ -111,8 +114,8 @@ public class NestedFuncMapTest extends MapTestData1 {
         Assert.assertEquals(composeURI, funcs.get(0));
         Assert.assertEquals(2, m.rules().flatMap(MapResource::functions).count());
 
-        OntGraphModel src = m.ontologies().filter(o -> o.classes().anyMatch(sc::equals)).findFirst().orElseThrow(AssertionError::new);
-        OntGraphModel dst = m.ontologies().filter(o -> o.classes().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
+        OntModel src = m.ontologies().filter(o -> o.classes().anyMatch(sc::equals)).findFirst().orElseThrow(AssertionError::new);
+        OntModel dst = m.ontologies().filter(o -> o.classes().anyMatch(tc::equals)).findFirst().orElseThrow(AssertionError::new);
 
         LOGGER.info("Run inference.");
         manager.getInferenceEngine(m).run(src, dst);
@@ -126,10 +129,10 @@ public class NestedFuncMapTest extends MapTestData1 {
     @Test
     @Override
     public void testInference() {
-        OntGraphModel src = assembleSource();
+        OntModel src = assembleSource();
         TestUtils.debug(src);
 
-        OntGraphModel dst = assembleTarget();
+        OntModel dst = assembleTarget();
         TestUtils.debug(dst);
 
         MapManager manager = manager();
@@ -145,15 +148,15 @@ public class NestedFuncMapTest extends MapTestData1 {
     }
 
     public MapModel createMapping(MapManager manager,
-                                  OntGraphModel src,
-                                  OntGraphModel dst,
+                                  OntModel src,
+                                  OntModel dst,
                                   Supplier<MapFunction.Call> targetFunctionMaker) {
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        List<OntNDP> props = src.dataProperties().sorted(Comparator.comparing(Resource::getURI))
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
+        List<OntDataProperty> props = src.dataProperties().sorted(Comparator.comparing(Resource::getURI))
                 .collect(Collectors.toList());
         Assert.assertEquals(3, props.size());
-        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntDataProperty dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
 
         MapFunction.Call targetFunction = targetFunctionMaker.get();
 
@@ -192,9 +195,9 @@ public class NestedFuncMapTest extends MapTestData1 {
         return res;
     }
 
-    public void validateAfterInference(OntGraphModel src, OntGraphModel dst) {
-        OntNDP dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
-        List<OntNDP> props = src.dataProperties()
+    public void validateAfterInference(OntModel src, OntModel dst) {
+        OntDataProperty dstProp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
+        List<OntDataProperty> props = src.dataProperties()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());
         List<OntIndividual.Named> srcIndividuals = src.namedIndividuals()
                 .sorted(Comparator.comparing(Resource::getURI)).collect(Collectors.toList());

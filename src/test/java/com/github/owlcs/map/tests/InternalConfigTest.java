@@ -28,7 +28,7 @@ import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.vocabulary.RDF;
@@ -59,7 +59,7 @@ public class InternalConfigTest {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void validateNamedIndividuals(String log, OntGraphModel m, int expected) {
+    private void validateNamedIndividuals(String log, OntModel m, int expected) {
         Assert.assertEquals(expected, m.individuals().peek(x -> {
             LOGGER.debug("{} Individual {}", log, x);
             if (x.isURIResource()) {
@@ -78,7 +78,7 @@ public class InternalConfigTest {
         String dom = "http://ex.com/";
         String src_uri = dom + "src";
         String src_ns = src_uri + "#";
-        OntGraphModel src = OntModelFactory.createModel()
+        OntModel src = OntModelFactory.createModel()
                 .setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("src", src_ns);
         src.setID(src_uri);
         OntClass c1 = src.createOntClass(src_ns + "CN01");
@@ -88,7 +88,7 @@ public class InternalConfigTest {
 
         String dst_uri = dom + "dst";
         String dst_ns = dst_uri + "#";
-        OntGraphModel dst = OntModelFactory.createModel()
+        OntModel dst = OntModelFactory.createModel()
                 .setNsPrefixes(OntModelFactory.STANDARD).setNsPrefix("dst", dst_ns);
         dst.setID(dst_uri);
         OntClass c2 = dst.createOntClass(dst_ns + "CN02");
@@ -112,7 +112,7 @@ public class InternalConfigTest {
         Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
         Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.context).toList().size());
 
-        OntGraphModel dst1 = TestUtils.forSchema(dst);
+        OntModel dst1 = TestUtils.forSchema(dst);
         map.runInference(src.getBaseGraph(), dst1.getGraph());
         TestUtils.debug(dst1);
 
@@ -128,7 +128,7 @@ public class InternalConfigTest {
         Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.rule).toList().size());
         Assert.assertEquals(expected, base.listResourcesWithProperty(SPINMAP.context).toList().size());
 
-        OntGraphModel dst2 = TestUtils.forSchema(dst);
+        OntModel dst2 = TestUtils.forSchema(dst);
         map.runInference(src.getBaseGraph(), dst2.getGraph());
         TestUtils.debug(dst2);
 

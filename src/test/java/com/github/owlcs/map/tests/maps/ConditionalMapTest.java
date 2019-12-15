@@ -46,9 +46,9 @@ public class ConditionalMapTest extends MapTestData2 {
     @Override
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel s = assembleSource();
+        OntModel s = assembleSource();
         TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
+        OntModel t = assembleTarget();
         TestUtils.debug(t);
         MapManager manager = manager();
         MapModel m = assembleMapping(manager, s, t);
@@ -67,13 +67,13 @@ public class ConditionalMapTest extends MapTestData2 {
     }
 
     @Override
-    public void validate(OntGraphModel result) {
+    public void validate(OntModel result) {
         List<OntIndividual> individuals = result.individuals().collect(Collectors.toList());
         Assert.assertEquals(4, individuals.size());
 
-        OntNDP email = TestUtils.findOntEntity(result, OntNDP.class, "email");
-        OntNDP phone = TestUtils.findOntEntity(result, OntNDP.class, "phone");
-        OntNDP skype = TestUtils.findOntEntity(result, OntNDP.class, "skype");
+        OntDataProperty email = TestUtils.findOntEntity(result, OntDataProperty.class, "email");
+        OntDataProperty phone = TestUtils.findOntEntity(result, OntDataProperty.class, "phone");
+        OntDataProperty skype = TestUtils.findOntEntity(result, OntDataProperty.class, "skype");
 
         // Jane has only email as string
         OntIndividual.Named iJane = TestUtils.findOntEntity(result, OntIndividual.Named.class, "res-jane-contacts");
@@ -119,15 +119,15 @@ public class ConditionalMapTest extends MapTestData2 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "Contact");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        Map<OntDT, OntNDP> propsMap = src.datatypes()
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "Contact");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
+        Map<OntDataRange.Named, OntDataProperty> propsMap = src.datatypes()
                 .map(Resource::getLocalName)
                 .collect(Collectors.toMap(
-                        s -> TestUtils.findOntEntity(src, OntDT.class, s),
-                        s -> TestUtils.findOntEntity(dst, OntNDP.class, s)));
-        OntNDP sourceProperty = TestUtils.findOntEntity(src, OntNDP.class, "info");
+                        s -> TestUtils.findOntEntity(src, OntDataRange.Named.class, s),
+                        s -> TestUtils.findOntEntity(dst, OntDataProperty.class, s)));
+        OntDataProperty sourceProperty = TestUtils.findOntEntity(src, OntDataProperty.class, "info");
 
         MapFunction.Call targetFunctionCall = manager.getFunction(SPINMAPL.composeURI.getURI())
                 .create()
@@ -155,18 +155,18 @@ public class ConditionalMapTest extends MapTestData2 {
     @Test
     public void testValidateMapping() {
         MapModel map = assembleMapping();
-        OntGraphModel m = map.asGraphModel();
+        OntModel m = map.asGraphModel();
 
-        OntClass sC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("contacts:Contact")));
-        OntClass tC = notNull(m.getOntEntity(OntClass.class, m.expandPrefix("users:User")));
-        OntDT sDT1 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:skype")));
-        OntDT sDT2 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:phone")));
-        OntDT sDT3 = notNull(m.getOntEntity(OntDT.class, m.expandPrefix("contacts:email")));
-        OntNDP sp1 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("contacts:info")));
-        OntNDP tp1 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:skype")));
-        OntNDP tp2 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:phone")));
-        OntNDP tp3 = notNull(m.getOntEntity(OntNDP.class, m.expandPrefix("users:email")));
-        OntDT dt = notNull(map.asGraphModel().getOntEntity(OntDT.class, XSD.xstring));
+        OntClass sC = notNull(m.getOntClass(m.expandPrefix("contacts:Contact")));
+        OntClass tC = notNull(m.getOntClass(m.expandPrefix("users:User")));
+        OntDataRange sDT1 = notNull(m.getDatatype(m.expandPrefix("contacts:skype")));
+        OntDataRange sDT2 = notNull(m.getDatatype(m.expandPrefix("contacts:phone")));
+        OntDataRange sDT3 = notNull(m.getDatatype(m.expandPrefix("contacts:email")));
+        OntDataProperty sp1 = notNull(m.getOntEntity(OntDataProperty.class, m.expandPrefix("contacts:info")));
+        OntDataProperty tp1 = notNull(m.getOntEntity(OntDataProperty.class, m.expandPrefix("users:skype")));
+        OntDataProperty tp2 = notNull(m.getOntEntity(OntDataProperty.class, m.expandPrefix("users:phone")));
+        OntDataProperty tp3 = notNull(m.getOntEntity(OntDataProperty.class, m.expandPrefix("users:email")));
+        OntDataRange dt = notNull(map.asGraphModel().getDatatype(XSD.xstring));
 
         Assert.assertEquals(4, map.rules().count());
         MapContext context = map.contexts().findFirst().orElseThrow(AssertionError::new);

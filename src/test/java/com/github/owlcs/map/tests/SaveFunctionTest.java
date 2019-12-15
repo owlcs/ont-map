@@ -25,9 +25,9 @@ import com.github.owlcs.map.tests.maps.*;
 import com.github.owlcs.map.utils.GraphUtils;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
-import com.github.owlcs.ontapi.jena.model.OntNOP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -56,8 +56,8 @@ public class SaveFunctionTest {
         MapManager m = Managers.createMapManager();
         long count = m.functions().count();
 
-        OntGraphModel src = MathGeoMapTest.createSourceModel(data);
-        OntGraphModel dst1 = MathGeoMapTest.createTargetModel();
+        OntModel src = MathGeoMapTest.createSourceModel(data);
+        OntModel dst1 = MathGeoMapTest.createTargetModel();
         MapModel map1 = MathGeoMapTest.createMapping(m, src, dst1);
         TestUtils.debug(map1);
 
@@ -82,12 +82,12 @@ public class SaveFunctionTest {
         assertFunctionDependencies(func, m);
 
         LOGGER.info("Create new mapping using function <{}> and run inference.", name);
-        OntGraphModel dst2 = MathGeoMapTest.createTargetModel();
-        OntClass s = TestUtils.findOntEntity(src, OntClass.class, "Coordinates");
-        OntClass t = TestUtils.findOntEntity(dst2, OntClass.class, "Coordinates");
-        OntNDP x = TestUtils.findOntEntity(src, OntNDP.class, "x");
-        OntNDP y = TestUtils.findOntEntity(src, OntNDP.class, "y");
-        OntNDP r = TestUtils.findOntEntity(dst2, OntNDP.class, "r");
+        OntModel dst2 = MathGeoMapTest.createTargetModel();
+        OntClass s = TestUtils.findOntEntity(src, OntClass.Named.class, "Coordinates");
+        OntClass t = TestUtils.findOntEntity(dst2, OntClass.Named.class, "Coordinates");
+        OntDataProperty x = TestUtils.findOntEntity(src, OntDataProperty.class, "x");
+        OntDataProperty y = TestUtils.findOntEntity(src, OntDataProperty.class, "y");
+        OntDataProperty r = TestUtils.findOntEntity(dst2, OntDataProperty.class, "r");
 
         MapModel map2 = m.createMapModel();
         map2.asGraphModel().setID(map1.name())
@@ -104,8 +104,8 @@ public class SaveFunctionTest {
         MapManager m = Managers.createMapManager();
         long count = m.functions().count();
         NestedFuncMapTest data = new NestedFuncMapTest();
-        OntGraphModel src = data.assembleSource();
-        OntGraphModel dst = data.assembleTarget();
+        OntModel src = data.assembleSource();
+        OntModel dst = data.assembleTarget();
         MapModel map1 = data.assembleMapping(m, src, dst);
         TestUtils.debug(map1);
 
@@ -128,10 +128,10 @@ public class SaveFunctionTest {
         assertFunctionDependencies(target, m);
         assertFunctionDependencies(property, m);
 
-        OntClass s = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
-        OntClass t = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        List<OntNDP> sp = src.dataProperties().collect(Collectors.toList());
-        OntNDP tp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
+        OntClass s = TestUtils.findOntEntity(src, OntClass.Named.class, "SourceClass1");
+        OntClass t = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
+        List<OntDataProperty> sp = src.dataProperties().collect(Collectors.toList());
+        OntDataProperty tp = dst.dataProperties().findFirst().orElseThrow(AssertionError::new);
         MapModel map2 = m.createMapModel(ns + "test");
         map2.createContext(s, t, target.create().addClass(SP.arg1, t).build())
                 .addPropertyBridge(property.create().addProperty(SP.arg1, sp.get(0))
@@ -149,14 +149,14 @@ public class SaveFunctionTest {
     public void testPropertyChainMapping() {
         MapManager m = Managers.createMapManager();
         PropertyChainMapTest data = new PropertyChainMapTest();
-        OntGraphModel src = data.assembleSource();
-        OntGraphModel dst = data.assembleTarget();
+        OntModel src = data.assembleSource();
+        OntModel dst = data.assembleTarget();
         MapModel map1 = data.assembleMapping(m, src, dst);
         TestUtils.debug(map1);
 
         String ns = "http://xxx#";
-        OntNDP name = TestUtils.findOntEntity(dst, OntNDP.class, "name");
-        OntNDP message = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+        OntDataProperty name = TestUtils.findOntEntity(dst, OntDataProperty.class, "name");
+        OntDataProperty message = TestUtils.findOntEntity(dst, OntDataProperty.class, "message");
         MapContext c = map1.contexts().findFirst().orElseThrow(AssertionError::new);
         MapFunction target = c.getMapping().getFunction();
         MapFunction deriveName = c.properties().filter(s -> name.equals(s.getTarget()))
@@ -174,17 +174,17 @@ public class SaveFunctionTest {
         assertFunctionDependencies(deriveName, m);
 
         LOGGER.info("Create new mapping using functions <{}> and <{}>. Then run inference.", deriveName, deriveMessage);
-        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_D00001");
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
-        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000006");
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_D00001");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000011");
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000005");
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000006");
         MapFunction.Call OASUU = m.getFunction(AVC.asIRI).create().addProperty(SP.arg1,
-                TestUtils.findOntEntity(src, OntNOP.class, "OASUU")).build();
-        OntNDP DEUUU = TestUtils.findOntEntity(src, OntNDP.class, "DEUUU");
+                TestUtils.findOntEntity(src, OntObjectProperty.Named.class, "OASUU")).build();
+        OntDataProperty DEUUU = TestUtils.findOntEntity(src, OntDataProperty.class, "DEUUU");
 
-        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.class, "Res");
-        OntNDP nameProp = TestUtils.findOntEntity(dst, OntNDP.class, "name");
-        OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "Res");
+        OntDataProperty nameProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "name");
+        OntDataProperty messageProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "message");
 
         MapModel map2 = m.createMapModel()
                 .createContext(CDSPR_D00001, resClass, target.create()
@@ -210,8 +210,8 @@ public class SaveFunctionTest {
     public void testFilterIndividualsMapping() {
         MapManager m = Managers.createMapManager();
         FilterIndividualsMapTest data = new FilterIndividualsMapTest();
-        OntGraphModel src = data.assembleSource();
-        OntGraphModel dst = data.assembleTarget();
+        OntModel src = data.assembleSource();
+        OntModel dst = data.assembleTarget();
         MapModel map1 = data.assembleMapping(m, src, dst);
         TestUtils.debug(map1);
 
@@ -227,10 +227,10 @@ public class SaveFunctionTest {
         assertFunctionDependencies(isAdult, m);
 
         LOGGER.info("Create new mapping using filter function <{}> and run inference.", isAdult);
-        OntClass person = TestUtils.findOntEntity(src, OntClass.class, "Person");
-        OntClass user = TestUtils.findOntEntity(dst, OntClass.class, "User");
-        OntNDP srcAge = TestUtils.findOntEntity(src, OntNDP.class, "age");
-        OntNDP dstAge = TestUtils.findOntEntity(dst, OntNDP.class, "user-age");
+        OntClass person = TestUtils.findOntEntity(src, OntClass.Named.class, "Person");
+        OntClass user = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
+        OntDataProperty srcAge = TestUtils.findOntEntity(src, OntDataProperty.class, "age");
+        OntDataProperty dstAge = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-age");
         MapModel map2 = m.createMapModel()
                 .createContext(person, user)
                 .addClassBridge(isAdult.create().addProperty(SP.arg1, srcAge).build(), c.getMapping())
@@ -246,13 +246,13 @@ public class SaveFunctionTest {
         MapManager m1 = Managers.createMapManager();
         long count = m1.functions().count();
         VarArgMapTest data = new VarArgMapTest();
-        OntGraphModel src = data.assembleSource();
-        OntGraphModel dst = data.assembleTarget();
+        OntModel src = data.assembleSource();
+        OntModel dst = data.assembleTarget();
         MapModel map1 = data.assembleMapping(m1, src, dst);
         TestUtils.debug(map1);
 
         MapContext c = map1.contexts().findFirst().orElseThrow(AssertionError::new);
-        OntNDP tp1 = TestUtils.findOntEntity(dst, OntNDP.class, "tp1");
+        OntDataProperty tp1 = TestUtils.findOntEntity(dst, OntDataProperty.class, "tp1");
         MapFunction.Call call = c.properties()
                 .filter(x -> tp1.equals(x.getTarget())).findFirst().orElseThrow(AssertionError::new).getMapping();
         String funcName = "http://zzz#formatString";
@@ -272,15 +272,15 @@ public class SaveFunctionTest {
         Assert.assertEquals(count + 1, m2.functions().count());
 
         LOGGER.info("Assemble new mapping using property mapping function <{}> and run inference.", formatString);
-        OntClass sc = TestUtils.findOntEntity(src, OntClass.class, "C1");
-        OntClass tc = TestUtils.findOntEntity(dst, OntClass.class, "TC1");
-        OntNDP p1 = TestUtils.findOntEntity(src, OntNDP.class, "p1");
-        OntNDP p2 = TestUtils.findOntEntity(src, OntNDP.class, "p2");
-        OntNDP p3 = TestUtils.findOntEntity(src, OntNDP.class, "p3");
-        OntNDP p4 = TestUtils.findOntEntity(src, OntNDP.class, "p4");
-        OntNDP p5 = TestUtils.findOntEntity(src, OntNDP.class, "p5");
-        OntNDP p6 = TestUtils.findOntEntity(src, OntNDP.class, "p6");
-        OntNDP p7 = TestUtils.findOntEntity(src, OntNDP.class, "p7");
+        OntClass sc = TestUtils.findOntEntity(src, OntClass.Named.class, "C1");
+        OntClass tc = TestUtils.findOntEntity(dst, OntClass.Named.class, "TC1");
+        OntDataProperty p1 = TestUtils.findOntEntity(src, OntDataProperty.class, "p1");
+        OntDataProperty p2 = TestUtils.findOntEntity(src, OntDataProperty.class, "p2");
+        OntDataProperty p3 = TestUtils.findOntEntity(src, OntDataProperty.class, "p3");
+        OntDataProperty p4 = TestUtils.findOntEntity(src, OntDataProperty.class, "p4");
+        OntDataProperty p5 = TestUtils.findOntEntity(src, OntDataProperty.class, "p5");
+        OntDataProperty p6 = TestUtils.findOntEntity(src, OntDataProperty.class, "p6");
+        OntDataProperty p7 = TestUtils.findOntEntity(src, OntDataProperty.class, "p7");
 
         MapModel map2 = m2.createMapModel()
                 .createContext(sc, tc, m2.getFunction(SPINMAPL.changeNamespace).create()

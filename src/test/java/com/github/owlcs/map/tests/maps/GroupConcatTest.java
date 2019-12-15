@@ -37,12 +37,12 @@ import java.util.stream.Collectors;
 public class GroupConcatTest extends AbstractMapTest {
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
         MapModel res = createMappingModel(manager, "Used functions: spinmapl:composeURI, avc:groupConcat, avc:asIRI, avc:currentIndividual");
-        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.class, "SourceClass1");
-        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.class, "TargetClass1");
-        OntNDP srcProp = TestUtils.findOntEntity(src, OntNDP.class, "sourceDataProperty1");
-        OntNDP dstProp = TestUtils.findOntEntity(dst, OntNDP.class, "targetDataProperty1");
+        OntClass srcClass = TestUtils.findOntEntity(src, OntClass.Named.class, "SourceClass1");
+        OntClass dstClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "TargetClass1");
+        OntDataProperty srcProp = TestUtils.findOntEntity(src, OntDataProperty.class, "sourceDataProperty1");
+        OntDataProperty dstProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "targetDataProperty1");
         MapContext context = res.createContext(srcClass, dstClass,
                 manager.getFunction(SPINMAPL.composeURI.getURI()).create()
                         .addLiteral(SPINMAPL.template, "http://{?1}").build());
@@ -62,9 +62,9 @@ public class GroupConcatTest extends AbstractMapTest {
 
     @Test
     public void testInference() {
-        OntGraphModel s = assembleSource();
+        OntModel s = assembleSource();
         TestUtils.debug(s);
-        OntGraphModel t = assembleTarget();
+        OntModel t = assembleTarget();
         TestUtils.debug(t);
         MapManager manager = manager();
         MapModel map = assembleMapping(manager, s, t);
@@ -108,7 +108,7 @@ public class GroupConcatTest extends AbstractMapTest {
         Assert.assertEquals(expected, m.asGraphModel().getBaseGraph().size());
     }
 
-    private void validateIndividual(OntGraphModel m, String name, String value) {
+    private void validateIndividual(OntModel m, String name, String value) {
         OntIndividual i = m.individuals()
                 .filter(s -> Objects.equals(s.getURI(), name))
                 .findFirst().orElseThrow(AssertionError::new);
@@ -119,13 +119,13 @@ public class GroupConcatTest extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("source");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
-        OntClass class1 = m.createOntEntity(OntClass.class, ns + "SourceClass1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty2");
-        OntNDP prop3 = m.createOntEntity(OntNDP.class, ns + "sourceDataProperty3");
+        OntClass class1 = m.createOntClass(ns + "SourceClass1");
+        OntDataProperty prop1 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty1");
+        OntDataProperty prop2 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty2");
+        OntDataProperty prop3 = m.createOntEntity(OntDataProperty.class, ns + "sourceDataProperty3");
         prop1.addDomain(class1);
         prop2.addDomain(class1);
         prop3.addDomain(class1);
@@ -147,12 +147,12 @@ public class GroupConcatTest extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("target");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("target");
         String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + "TargetClass1");
-        m.createOntEntity(OntNDP.class, ns + "targetDataProperty1").addDomain(clazz);
-        m.createOntEntity(OntNDP.class, ns + "targetDataProperty2").addDomain(clazz);
+        OntClass clazz = m.createOntClass(ns + "TargetClass1");
+        m.createOntEntity(OntDataProperty.class, ns + "targetDataProperty1").addDomain(clazz);
+        m.createOntEntity(OntDataProperty.class, ns + "targetDataProperty2").addDomain(clazz);
         return m;
     }
 }

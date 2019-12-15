@@ -18,10 +18,10 @@
 
 package com.github.owlcs.map;
 
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntClass;
 import com.github.owlcs.ontapi.jena.model.OntID;
-import com.github.owlcs.ontapi.jena.model.OntOPE;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntObjectProperty;
 import org.apache.jena.graph.Graph;
 
 import java.util.stream.Stream;
@@ -45,20 +45,20 @@ public interface MapModel {
     /**
      * Answers the OWL2 model which wraps the same mapping graph.
      *
-     * @return {@link OntGraphModel OWL2 jena model}
+     * @return {@link OntModel OWL2 jena model}
      */
-    OntGraphModel asGraphModel();
+    OntModel asGraphModel();
 
     /**
      * Lists all linked OWL2 ontologies,
      * i.e. all actual imports with exclusion of library
      * plus this mapping model itself if it has its own OWL-declarations.
      *
-     * @return Stream of linked ontologies in form of {@link OntGraphModel OWL2 jena model}s
-     * @see OntGraphModel#imports()
+     * @return Stream of linked ontologies in form of {@link OntModel OWL2 jena model}s
+     * @see OntModel#imports()
      * @see #asGraphModel()
      */
-    Stream<OntGraphModel> ontologies();
+    Stream<OntModel> ontologies();
 
     /**
      * Returns the manager with which this mapping model is associated.
@@ -79,11 +79,11 @@ public interface MapModel {
      * The specified class expressions can be anonymous,
      * since OWL2 allows individuals to be attached to any class expression.
      *
-     * @param source {@link OntCE} a source class expression
-     * @param target {@link OntCE} a target class expression
+     * @param source {@link OntClass} a source class expression
+     * @param target {@link OntClass} a target class expression
      * @return {@link MapContext} existing or fresh context
      */
-    MapContext createContext(OntCE source, OntCE target);
+    MapContext createContext(OntClass source, OntClass target);
 
     /**
      * Deletes the specified context and all related triples including property bindings.
@@ -107,7 +107,7 @@ public interface MapModel {
      * @param right {@link MapContext}
      * @return this model
      * @throws MapJenaException if something goes wrong
-     * @see MapContext#attachContext(MapContext, OntOPE)
+     * @see MapContext#attachContext(MapContext, OntObjectProperty)
      */
     MapModel bindContexts(MapContext left, MapContext right) throws MapJenaException;
 
@@ -145,14 +145,14 @@ public interface MapModel {
     /**
      * Creates a ready to use context.
      *
-     * @param source         {@link OntCE} a source class expression, not {@code null}
-     * @param target         {@link OntCE} a target class expression, not {@code null}
+     * @param source         {@link OntClass} a source class expression, not {@code null}
+     * @param target         {@link OntClass} a target class expression, not {@code null}
      * @param targetFunction {@link MapFunction.Builder}, not {@code null}
      * @return {@link MapContext} a new context instance
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
-    default MapContext createContext(OntCE source,
-                                     OntCE target,
+    default MapContext createContext(OntClass source,
+                                     OntClass target,
                                      MapFunction.Builder targetFunction) throws MapJenaException {
         return createContext(source, target, targetFunction.build());
     }
@@ -161,14 +161,14 @@ public interface MapModel {
     /**
      * Creates a ready to use context, i.e. a class expression binding with an target rule expression.
      *
-     * @param source         {@link OntCE} a source class expression, not {@code null}
-     * @param target         {@link OntCE} a target class expression, not {@code null}
+     * @param source         {@link OntClass} a source class expression, not {@code null}
+     * @param target         {@link OntClass} a target class expression, not {@code null}
      * @param targetFunction {@link MapFunction.Call}, not {@code null}
      * @return {@link MapContext} a new context instance
      * @throws MapJenaException if something goes wrong (e.g. not target function specified)
      */
-    default MapContext createContext(OntCE source,
-                                     OntCE target,
+    default MapContext createContext(OntClass source,
+                                     OntClass target,
                                      MapFunction.Call targetFunction) throws MapJenaException {
         return createContext(source, target).addClassBridge(targetFunction);
     }

@@ -19,7 +19,7 @@
 package com.github.owlcs.map.tests.maps;
 
 import com.github.owlcs.map.utils.TestUtils;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.riot.Lang;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.io.IOException;
 abstract class MapTestData4 extends AbstractMapTest {
 
     @Override
-    public OntGraphModel assembleSource() {
+    public OntModel assembleSource() {
         try {
             return TestUtils.load("/iswc.ttl", Lang.TURTLE);
         } catch (IOException e) {
@@ -39,7 +39,7 @@ abstract class MapTestData4 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
+    public OntModel assembleTarget() {
         return new RelatedContextMapTest().assembleTarget();
     }
 

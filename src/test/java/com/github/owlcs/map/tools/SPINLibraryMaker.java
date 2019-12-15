@@ -23,7 +23,10 @@ import com.github.owlcs.map.spin.functions.spinmap.targetResource;
 import com.github.owlcs.map.spin.functions.spinmapl.concatWithSeparator;
 import com.github.owlcs.map.spin.functions.spl.object;
 import com.github.owlcs.map.spin.vocabulary.*;
-import com.github.owlcs.ontapi.jena.model.*;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
+import com.github.owlcs.ontapi.jena.model.OntID;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
@@ -58,7 +61,7 @@ import java.util.stream.Stream;
 public class SPINLibraryMaker {
 
     public static void main(String... args) {
-        OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
+        OntModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(AVC.BASE_URI);
         id.setVersionIRI(AVC.NS + "1.0");
         id.addComment("A library that contains basic definitions required by ONT-MAP API.\n" +
@@ -67,30 +70,30 @@ public class SPINLibraryMaker {
         // depends on spinmap to reuse variables (spinmap:_source, spin:_this, spin:_arg*) while building functions bodies
         id.addImport(SPINMAPL.BASE_URI);
 
-        OntDT xsdString = m.getOntEntity(OntDT.class, XSD.xstring);
+        OntDataRange.Named xsdString = m.getDatatype(XSD.xstring);
 
-        OntNDP hidden = m.createOntEntity(OntNDP.class, AVC.hidden.getURI());
+        OntDataProperty hidden = m.createDataProperty(AVC.hidden.getURI());
         hidden.addRange(xsdString);
         hidden.addComment("A property for marking unused functions from standard spin-map library supply.", null);
 
-        OntNDP runtime = m.createOntEntity(OntNDP.class, AVC.runtime.getURI());
+        OntDataProperty runtime = m.createDataProperty(AVC.runtime.getURI());
         runtime.addRange(xsdString);
         runtime.addComment("A property for using to describe runtime functionality provided by ONT-MAP API", null);
 
         // any rdf-node datatype
-        m.createOntEntity(OntDT.class, AVC.undefined.getURI()).addProperty(RDFS.comment, "Any RDF Node, i.e. either resource or literal");
+        m.createDatatype(AVC.undefined.getURI()).addProperty(RDFS.comment, "Any RDF Node, i.e. either resource or literal");
 
         // numeric datatype (xs:numeric)
-        OntDT numeric = m.createOntEntity(OntDT.class, AVC.numeric.getURI());
+        OntDataRange.Named numeric = m.createDatatype(AVC.numeric.getURI());
         numeric.addComment("Represents all numeric datatypes", null);
         numeric.addProperty(RDFS.seeAlso, m.getResource("https://www.w3.org/TR/sparql11-query/#operandDataTypes"));
-        List<OntDR> numberDRs = Stream.of(XSD.integer, XSD.decimal, XSD.xfloat, XSD.xdouble,
+        List<OntDataRange> numberDRs = Stream.of(XSD.integer, XSD.decimal, XSD.xfloat, XSD.xdouble,
                 XSD.nonPositiveInteger, XSD.negativeInteger,
                 XSD.nonNegativeInteger, XSD.positiveInteger,
                 XSD.xlong, XSD.xint, XSD.xshort, XSD.xbyte,
                 XSD.unsignedLong, XSD.unsignedInt, XSD.unsignedShort, XSD.unsignedByte)
-                .map(r -> m.getOntEntity(OntDT.class, r)).collect(Collectors.toList());
-        numeric.addEquivalentClass(m.createUnionOfDataRange(numberDRs));
+                .map(m::getDatatype).collect(Collectors.toList());
+        numeric.addEquivalentClass(m.createDataUnionOf(numberDRs));
 
         // AVC:MagicFunctions
         AVC.MagicFunctions.inModel(m)

@@ -18,7 +18,7 @@
 
 package com.github.owlcs.map;
 
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
@@ -60,13 +60,13 @@ public interface MapManager {
     /**
      * Copies all meaningful data from the given {@code Graph} into the manager's primary {@code Graph}.
      * The most obvious (and currently single) use of this method is registering all functions that graph may contain.
-     * In this sense, the method behaves in the same way as method {@link #asMapModel(OntGraphModel)},
+     * In this sense, the method behaves in the same way as method {@link #asMapModel(OntModel)},
      * but does not return anything.
      * No changes to the input graph are made.
      *
      * @param g {@link Graph}, not {@code null}
      * @throws MapJenaException in case the given graph contains desired data, but it is corrupted
-     * @see #asMapModel(OntGraphModel)
+     * @see #asMapModel(OntModel)
      */
     void addGraph(Graph g) throws MapJenaException;
 
@@ -81,22 +81,22 @@ public interface MapManager {
      * Wraps the given ontology model into the map model interface.
      * If the specified model contains custom functions inside, they will be registered in the manager.
      *
-     * @param model {@link OntGraphModel}, not {@code null}
+     * @param model {@link OntModel}, not {@code null}
      * @return {@link MapModel}
      * @throws MapJenaException if such wrapping is not possible or the model contains broken functions
      * @see #addGraph(Graph)
      */
-    MapModel asMapModel(OntGraphModel model) throws MapJenaException;
+    MapModel asMapModel(OntModel model) throws MapJenaException;
 
     /**
      * Answers {@code true} if the given ontology model is also a mapping model,
-     * and therefore it can be safely wrapped as {@link MapModel} using the method {@link #asMapModel(OntGraphModel)}.
+     * and therefore it can be safely wrapped as {@link MapModel} using the method {@link #asMapModel(OntModel)}.
      *
-     * @param model {@link OntGraphModel}
+     * @param model {@link OntModel}
      * @return boolean indicating whether the ontology contains mapping specific elements
      * and therefore is assignable to the {@link MapModel mapping} interface
      */
-    boolean isMapModel(OntGraphModel model);
+    boolean isMapModel(OntModel model);
 
     /**
      * Provides a class-properties mapping,
@@ -111,10 +111,10 @@ public interface MapManager {
      * but such kind of mappings would be almost useless, since no individual property assertions would be inferred
      * in a valid OWL2 model.
      *
-     * @param model {@link OntGraphModel OWL model}
+     * @param model {@link OntModel OWL model}
      * @return {@link ClassPropertyMap class properties mapping object}
      */
-    ClassPropertyMap getClassProperties(OntGraphModel model);
+    ClassPropertyMap getClassProperties(OntModel model);
 
     /**
      * Gets an engine to conduct inference on top of the specified {@link MapModel Mapping Model}.

@@ -20,7 +20,7 @@ package com.github.owlcs.map.spin;
 
 import com.github.owlcs.map.MapJenaException;
 import com.github.owlcs.map.spin.vocabulary.AVC;
-import com.github.owlcs.ontapi.jena.model.OntCE;
+import com.github.owlcs.ontapi.jena.model.OntClass;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
@@ -221,8 +221,8 @@ public class ContextHelper {
     }
 
     private Set<Property> getClassProperties(Resource clazz) {
-        return clazz.canAs(OntCE.class) ?
-                getModel().properties(clazz.as(OntCE.class)).collect(Collectors.toSet()) :
+        return clazz.canAs(OntClass.class) ?
+                getModel().properties(clazz.as(OntClass.class)).collect(Collectors.toSet()) :
                 Collections.emptySet();
     }
 
@@ -334,7 +334,7 @@ public class ContextHelper {
      * {@code replacement} - Property-Variable map, where keys are existing properties either from source or target classes
      * and values - spin variables, e.g. {@code spin:_arg1}
      */
-    class ExprRes {
+    static class ExprRes {
         private final List<Property> sources = new ArrayList<>();
         private final Map<Property, Resource> replacement = new HashMap<>();
 

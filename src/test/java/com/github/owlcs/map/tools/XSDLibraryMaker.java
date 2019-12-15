@@ -20,8 +20,8 @@ package com.github.owlcs.map.tools;
 
 import com.github.owlcs.map.spin.system.Resources;
 import com.github.owlcs.map.spin.vocabulary.AVC;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
 import com.github.owlcs.ontapi.jena.model.OntID;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.XSD;
 import org.apache.jena.graph.Factory;
@@ -58,7 +58,7 @@ import org.topbraid.spin.vocabulary.SPL;
 public class XSDLibraryMaker {
 
     public static void main(String... args) {
-        OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
+        OntModel m = LibraryMaker.createModel(Factory.createGraphMem());
         OntID id = m.setID(Resources.AVC_XSD.getURI());
         id.setVersionIRI(id.getURI() + "#1.0");
         id.addComment("A collection of XSD-cast functions.\n" +

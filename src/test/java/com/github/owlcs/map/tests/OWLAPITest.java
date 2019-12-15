@@ -28,9 +28,8 @@ import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.Ontology;
 import com.github.owlcs.ontapi.jena.UnionGraph;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
-import com.github.owlcs.ontapi.jena.model.OntNOP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Graphs;
 import com.github.owlcs.ontapi.jena.utils.OntModels;
 import org.apache.jena.graph.Factory;
@@ -70,7 +69,7 @@ public class OWLAPITest {
     @Test
     public void testLoadMapping() throws OWLOntologyCreationException {
         String uri = "http://test.com/some-function3";
-        OntGraphModel m = new LoadMapTestData(uri, "data-x")
+        OntModel m = new LoadMapTestData(uri, "data-x")
                 .assembleMapping(Managers.createMapManager(), null, null)
                 .asGraphModel();
         String s = TestUtils.asString(m);
@@ -88,7 +87,7 @@ public class OWLAPITest {
     @Test
     public void testLoadFunction() {
         String uri = "http://test.com/some-function4";
-        OntGraphModel m = new LoadMapTestData(uri, "data-x")
+        OntModel m = new LoadMapTestData(uri, "data-x")
                 .assembleMapping(Managers.createMapManager(), null, null)
                 .asGraphModel();
 
@@ -117,8 +116,8 @@ public class OWLAPITest {
         Assert.assertNotNull(o1);
         TestUtils.debug(o1.asGraphModel());
 
-        OntClass class1 = o1.asGraphModel().createOntEntity(OntClass.class, iri + "#Class1");
-        OntClass class2 = o1.asGraphModel().createOntEntity(OntClass.class, iri + "#Class2");
+        OntClass class1 = o1.asGraphModel().createOntClass(iri + "#Class1");
+        OntClass class2 = o1.asGraphModel().createOntClass(iri + "#Class2");
         Assert.assertEquals(2, o1.axioms().count());
         manager.asMapModel(o1.asGraphModel()).createContext(class1, class2,
                 // do not choose a function that produce additional content in the mapping itself (like avc:.*),
@@ -186,8 +185,8 @@ public class OWLAPITest {
         Path path_sub = Paths.get(OWLAPITest.class.getResource("/ex-sub-test.ttl").toURI()).toRealPath();
 
         OWLMapManager manager = factory.create();
-        OntGraphModel sup = manager.loadOntologyFromOntologyDocument(path_sup.toFile()).asGraphModel();
-        OntGraphModel sub = manager.loadOntologyFromOntologyDocument(path_sub.toFile()).asGraphModel();
+        OntModel sup = manager.loadOntologyFromOntologyDocument(path_sup.toFile()).asGraphModel();
+        OntModel sub = manager.loadOntologyFromOntologyDocument(path_sub.toFile()).asGraphModel();
 
         UnionGraph g_sup = (UnionGraph) sup.getGraph();
         UnionGraph g_sub = (UnionGraph) sub.getGraph();
@@ -198,10 +197,10 @@ public class OWLAPITest {
         Assert.assertEquals(2, g_sub.getEventManager().listeners().count());
         Assert.assertEquals(2, g_sup.getEventManager().listeners().count());
 
-        OntClass CCPIU_000012 = sub.getOntEntity(OntClass.class, "ttt://ex.com/sub/test#CCPIU_000012");
+        OntClass CCPIU_000012 = sub.getOntClass("ttt://ex.com/sub/test#CCPIU_000012");
         Assert.assertNotNull(CCPIU_000012);
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(sub, OntClass.class, "CCPAS_000006");
-        OntNDP DAUUU = TestUtils.findOntEntity(sup, OntNDP.class, "DAUUU");
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(sub, OntClass.Named.class, "CCPAS_000006");
+        OntDataProperty DAUUU = TestUtils.findOntEntity(sup, OntDataProperty.class, "DAUUU");
 
         Assert.assertEquals(19, map_sub.properties(CCPIU_000012)
                 .peek(p -> LOGGER.debug("1::{}-property {}", CCPIU_000012.getLocalName(), p.getURI())).count());
@@ -216,9 +215,9 @@ public class OWLAPITest {
                 .peek(p -> LOGGER.debug("2::{}-property = {}", CCPIU_000012.getLocalName(), p.getURI())).count());
 
         String ns = sup.getID().getURI() + "#";
-        OntClass c = sup.createOntEntity(OntClass.class, ns + "OneMoreClass");
-        sup.createOntEntity(OntNOP.class, ns + "OneMoreProperty1").addDomain(c);
-        sub.createOntEntity(OntNOP.class, sub.getID().getURI() + "#OneMorePropery2").addDomain(CCPIU_000012);
+        OntClass c = sup.createOntClass(ns + "OneMoreClass");
+        sup.createObjectProperty(ns + "OneMoreProperty1").addDomain(c);
+        sub.createObjectProperty(sub.getID().getURI() + "#OneMorePropery2").addDomain(CCPIU_000012);
         CCPIU_000012.addSuperClass(c);
 
         TestUtils.debug(sub);

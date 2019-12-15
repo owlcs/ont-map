@@ -27,7 +27,7 @@ import com.github.owlcs.ontapi.jena.UnionGraph;
 import com.github.owlcs.ontapi.jena.impl.conf.OntModelConfig;
 import com.github.owlcs.ontapi.jena.impl.conf.OntPersonality;
 import com.github.owlcs.ontapi.jena.impl.conf.PersonalityBuilder;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Property;
@@ -48,10 +48,10 @@ abstract class LibraryMaker {
         return m.createResource().addProperty(SPL.predicate, predicate);
     }
 
-    static OntGraphModel createModel(Graph graph) {
+    static OntModel createModel(Graph graph) {
         OntPersonality p = PersonalityBuilder.from(OntModelConfig.ONT_PERSONALITY_LAX)
                 .addPersonality(SpinModelConfig.LIB_PERSONALITY).build();
-        OntGraphModel res = OntModelFactory.createModel(graph, p).setNsPrefix("avc", AVC.NS);
+        OntModel res = OntModelFactory.createModel(graph, p).setNsPrefix("avc", AVC.NS);
         AutoPrefixListener.addAutoPrefixListener((UnionGraph) res.getGraph(), SPINLibrary.prefixes());
         return res;
     }

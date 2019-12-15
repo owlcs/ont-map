@@ -29,13 +29,13 @@ import java.util.stream.Stream;
 abstract class MapTestData5 extends AbstractMapTest {
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = createDataModel("source");
+    public OntModel assembleSource() {
+        OntModel m = createDataModel("source");
         String ns = m.getID().getURI() + "#";
-        OntClass class1 = m.createOntEntity(OntClass.class, ns + "SrcClass1");
-        OntNDP prop1 = m.createOntEntity(OntNDP.class, ns + "srcDataProperty1");
-        OntNDP prop2 = m.createOntEntity(OntNDP.class, ns + "srcDataProperty2");
-        OntDT xdouble = m.getOntEntity(OntDT.class, XSD.xdouble);
+        OntClass class1 = m.createOntClass(ns + "SrcClass1");
+        OntDataProperty prop1 = m.createOntEntity(OntDataProperty.class, ns + "srcDataProperty1");
+        OntDataProperty prop2 = m.createOntEntity(OntDataProperty.class, ns + "srcDataProperty2");
+        OntDataRange.Named xdouble = m.getDatatype(XSD.xdouble);
         prop1.addDomain(class1);
         prop1.addRange(xdouble);
         prop2.addDomain(class1);
@@ -51,18 +51,18 @@ abstract class MapTestData5 extends AbstractMapTest {
     }
 
     @Override
-    public OntGraphModel assembleTarget() {
-        OntGraphModel m = createDataModel("target");
+    public OntModel assembleTarget() {
+        OntModel m = createDataModel("target");
         String ns = m.getID().getURI() + "#";
-        OntClass clazz = m.createOntEntity(OntClass.class, ns + "DstClass1");
-        OntDT xdouble = m.getOntEntity(OntDT.class, XSD.xdouble);
-        OntDT xstring = m.getOntEntity(OntDT.class, XSD.xstring);
+        OntClass clazz = m.createOntClass(ns + "DstClass1");
+        OntDataRange xdouble = m.getDatatype(XSD.xdouble);
+        OntDataRange xstring = m.getDatatype(XSD.xstring);
         Stream.of("dstDataProperty1", "dstDataProperty2").forEach(s -> {
-            OntNDP p = m.createOntEntity(OntNDP.class, ns + s);
+            OntDataProperty p = m.createOntEntity(OntDataProperty.class, ns + s);
             p.addDomain(clazz);
             p.addRange(xdouble);
         });
-        m.createOntEntity(OntNDP.class, ns + "dstDataProperty3")
+        m.createOntEntity(OntDataProperty.class, ns + "dstDataProperty3")
                 .addDomain(clazz)
                 .addRange(xstring);
         return m;

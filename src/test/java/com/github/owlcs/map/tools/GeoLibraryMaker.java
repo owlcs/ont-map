@@ -23,10 +23,9 @@ import com.github.owlcs.map.spin.geos.vocabulary.GEOSPARQL;
 import com.github.owlcs.map.spin.geos.vocabulary.SPATIAL;
 import com.github.owlcs.map.spin.geos.vocabulary.UOM;
 import com.github.owlcs.map.spin.vocabulary.AVC;
-import com.github.owlcs.ontapi.jena.model.OntDR;
-import com.github.owlcs.ontapi.jena.model.OntDT;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
 import com.github.owlcs.ontapi.jena.model.OntID;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
@@ -51,7 +50,7 @@ import java.util.Map;
 public class GeoLibraryMaker {
 
     public static void main(String... args) {
-        OntGraphModel m = LibraryMaker.createModel(Factory.createGraphMem());
+        OntModel m = LibraryMaker.createModel(Factory.createGraphMem());
         m.setNsPrefix(GEOSPARQL.PREFIX, GEOSPARQL.NS)
                 .setNsPrefix(SPATIAL.PREFIX, SPATIAL.NS)
                 .setNsPrefix(UOM.PREFIX, UOM.NS);
@@ -64,11 +63,11 @@ public class GeoLibraryMaker {
 
         m.createDatatype(GEOSPARQL.wktLiteral.getURI());
 
-        OntDT units = m.createDatatype(GEO.Units.getURI());
+        OntDataRange.Named units = m.createDatatype(GEO.Units.getURI());
         units.addComment("Represents all OGC Unit of Measure datatypes");
         units.addAnnotation(m.getAnnotationProperty(RDFS.seeAlso), m.createResource(UOM.getURI() + "#"));
         units.addEquivalentClass(m.createResource(RDFS.Datatype)
-                .addProperty(OWL.unionOf, m.createList(UOM.getAllUOMs().iterator())).as(OntDR.class));
+                .addProperty(OWL.unionOf, m.createList(UOM.getAllUOMs().iterator())).as(OntDataRange.class));
 
         GEO.GeoSPARQLFunctions.inModel(m)
                 .addProperty(RDF.type, SPIN.Function)

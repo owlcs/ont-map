@@ -19,10 +19,10 @@
 package com.github.owlcs.map.utils;
 
 import com.github.owlcs.map.ClassPropertyMap;
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntObject;
-import com.github.owlcs.ontapi.jena.model.OntPE;
+import com.github.owlcs.ontapi.jena.model.OntProperty;
 import com.github.owlcs.ontapi.jena.utils.BuiltIn;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 /**
  * An implementation of {@link ClassPropertyMap},
  * which provides access only to the local and builtin ontology OWL-classes and properties.
- * An object is local to an {@link OntGraphModel ontology} if its base graph contains a declaration statement for that object.
+ * An object is local to an {@link OntModel ontology} if its base graph contains a declaration statement for that object.
  * <p>
  * Created by @szuev on 26.05.2018.
  *
@@ -45,8 +45,8 @@ public class LocalClassPropertyMapImpl extends ClassPropertyMapImpl {
     private static final Set<Property> BUILT_IN_PROPERTIES = BuiltIn.get().properties();
     private static final Set<Resource> BUILT_IN_CLASSES = BuiltIn.get().classes();
 
-    private final OntGraphModel toSearch;
-    private final OntGraphModel model;
+    private final OntModel toSearch;
+    private final OntModel model;
 
     /**
      * Constructs an instance.
@@ -54,26 +54,26 @@ public class LocalClassPropertyMapImpl extends ClassPropertyMapImpl {
      * This division into models is need for caching: only local-defined entities must be available for cache,
      * but they should be valid within the given parent model (i.e. {@code toSearch}).
      *
-     * @param toSearch {@link OntGraphModel} to search, not null
-     * @param model    {@link OntGraphModel} to check, not null
+     * @param toSearch {@link OntModel} to search, not null
+     * @param model    {@link OntModel} to check, not null
      */
-    public LocalClassPropertyMapImpl(OntGraphModel model, OntGraphModel toSearch) {
+    public LocalClassPropertyMapImpl(OntModel model, OntModel toSearch) {
         this.toSearch = Objects.requireNonNull(toSearch);
         this.model = Objects.requireNonNull(model);
     }
 
     @Override
-    public Stream<Property> properties(OntCE ce) {
+    public Stream<Property> properties(OntClass ce) {
         Resource c = ce.inModel(toSearch);
-        return c.canAs(OntCE.class) ? super.properties(c.as(OntCE.class))
+        return c.canAs(OntClass.class) ? super.properties(c.as(OntClass.class))
                 .filter(this::isLocal)
                 : Stream.empty();
     }
 
     @Override
-    public Stream<OntCE> classes(OntPE pe) {
+    public Stream<OntClass> classes(OntProperty pe) {
         Resource p = pe.inModel(toSearch);
-        return p.canAs(OntPE.class) ? super.classes(p.as(OntPE.class))
+        return p.canAs(OntProperty.class) ? super.classes(p.as(OntProperty.class))
                 .filter(this::isLocal)
                 : Stream.empty();
     }
@@ -82,7 +82,7 @@ public class LocalClassPropertyMapImpl extends ClassPropertyMapImpl {
         return BUILT_IN_PROPERTIES.contains(pe) || pe.inModel(model).as(OntObject.class).isLocal();
     }
 
-    public boolean isLocal(OntCE ce) {
+    public boolean isLocal(OntClass ce) {
         return BUILT_IN_CLASSES.contains(ce) || ce.inModel(model).as(OntObject.class).isLocal();
     }
 }

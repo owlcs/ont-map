@@ -23,8 +23,7 @@ import com.github.owlcs.map.MapJenaException;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.ModelUtils;
-import com.github.owlcs.ontapi.jena.model.OntDR;
-import com.github.owlcs.ontapi.jena.model.OntDT;
+import com.github.owlcs.ontapi.jena.model.OntDataRange;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.utils.Models;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
@@ -333,7 +332,7 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
         return findClass(org.apache.jena.sparql.function.Function.class, AVC.optimize);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected <X> Optional<Class<X>> findClass(Class<X> type, Property property) {
         String classPath = Iter.findFirst(func.listProperties(property)
                 .mapWith(Statement::getObject)
@@ -369,16 +368,16 @@ public abstract class MapFunctionImpl implements MapFunction, ToString {
         if (object.canAs(RDFList.class)) {
             return object.as(RDFList.class);
         }
-        if (object.canAs(OntDT.class)) {
-            return object.as(OntDT.class).equivalentClasses()
-                    .filter(x -> x.canAs(OntDR.ComponentsDR.class))
+        if (object.canAs(OntDataRange.Named.class)) {
+            return object.as(OntDataRange.Named.class).equivalentClasses()
+                    .filter(x -> x.canAs(OntDataRange.ComponentsDR.class))
                     .map(MapFunctionImpl::getList)
                     .filter(Objects::nonNull)
                     .findFirst()
                     .orElse(null);
         }
-        if (object.canAs(OntDR.ComponentsDR.class)) {
-            return object.as(OntDR.ComponentsDR.class).getList().as(RDFList.class);
+        if (object.canAs(OntDataRange.ComponentsDR.class)) {
+            return object.as(OntDataRange.ComponentsDR.class).getList().as(RDFList.class);
         }
         return null;
     }

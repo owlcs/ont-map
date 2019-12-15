@@ -29,7 +29,9 @@ import com.github.owlcs.ontapi.jena.impl.OntGraphModelImpl;
 import com.github.owlcs.ontapi.jena.impl.PersonalityModel;
 import com.github.owlcs.ontapi.jena.impl.UnionModel;
 import com.github.owlcs.ontapi.jena.impl.conf.OntPersonality;
-import com.github.owlcs.ontapi.jena.model.*;
+import com.github.owlcs.ontapi.jena.model.OntClass;
+import com.github.owlcs.ontapi.jena.model.OntModel;
+import com.github.owlcs.ontapi.jena.model.OntProperty;
 import com.github.owlcs.ontapi.jena.utils.Graphs;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.utils.OntModels;
@@ -299,8 +301,8 @@ public class MapManagerImpl implements MapManager, HasConfig {
      * Creates and configures a fresh (SPIN-) mapping model in form of rdf-ontology.
      * Uses {@link OntPersonality ont-personality} in order to reuse some owl2 resources
      * such as {@link com.github.owlcs.ontapi.jena.model.OntID ontology id},
-     * {@link com.github.owlcs.ontapi.jena.model.OntCE ont class expression},
-     * {@link com.github.owlcs.ontapi.jena.model.OntPE ont property expression}.
+     * {@link com.github.owlcs.ontapi.jena.model.OntClass ont class expression},
+     * {@link com.github.owlcs.ontapi.jena.model.OntProperty ont property expression}.
      *
      * @return {@link MapModel mapping model}, which also ia anonymous owl ontology
      */
@@ -325,10 +327,10 @@ public class MapManagerImpl implements MapManager, HasConfig {
     /**
      * Wraps the given Ontology Model as Mapping model.
      *
-     * @param m {@link OntGraphModel}, not null
+     * @param m {@link OntModel}, not null
      * @return {@link MapModelImpl}
      */
-    public MapModelImpl newMapModelImpl(OntGraphModel m) {
+    public MapModelImpl newMapModelImpl(OntModel m) {
         return newMapModelImpl(m.getGraph(),
                 m instanceof PersonalityModel ? ((PersonalityModel) m).getOntPersonality() : null);
     }
@@ -378,17 +380,17 @@ public class MapManagerImpl implements MapManager, HasConfig {
      * that map-model must have &lt;http://topbraid.org/spin/spinmapl&gt; in the imports.
      * In general case it is not right, but both Topbraid Composer and ONT-MAP provides such mappings by default.
      *
-     * @param m {@link OntGraphModel}
+     * @param m {@link OntModel}
      * @return true if it is also {@link MapModelImpl}
      */
     @Override
-    public boolean isMapModel(OntGraphModel m) {
+    public boolean isMapModel(OntModel m) {
         if (m instanceof MapModelImpl) return true;
         return m.getID().imports().anyMatch(SpinModels::isTopSpinURI);
     }
 
     @Override
-    public MapModelImpl asMapModel(OntGraphModel m) throws MapJenaException {
+    public MapModelImpl asMapModel(OntModel m) throws MapJenaException {
         return asMapModel(m, SpinModelConfig.ONT_PERSONALITY);
     }
 
@@ -396,12 +398,12 @@ public class MapManagerImpl implements MapManager, HasConfig {
      * Wraps the given OWL2 model as a mapping model if it is possible.
      * Also puts any local defined functions to the manager registry.
      *
-     * @param m           {@link OntGraphModel}
+     * @param m           {@link OntModel}
      * @param personality {@link OntPersonality}
      * @return {@link MapModelImpl}
      * @throws MapJenaException in case model can not be wrap as MapModelImpl
      */
-    public MapModelImpl asMapModel(OntGraphModel m, OntPersonality personality) throws MapJenaException {
+    public MapModelImpl asMapModel(OntModel m, OntPersonality personality) throws MapJenaException {
         if (!isMapModel(m)) {
             throw new MapJenaException("<" + m.getID() + "> is not a mapping model");
         }
@@ -417,11 +419,11 @@ public class MapManagerImpl implements MapManager, HasConfig {
     /**
      * Reassembles the given model so that it has correct structure and references to the manager.
      *
-     * @param m {@link OntGraphModel}, not {@code null}
+     * @param m {@link OntModel}, not {@code null}
      * @param p {@link OntPersonality}, not {@code null}
      * @return {@link MapModelImpl}
      */
-    protected MapModelImpl reassemble(OntGraphModel m, OntPersonality p) {
+    protected MapModelImpl reassemble(OntModel m, OntPersonality p) {
         MapModelImpl res = newMapModelImpl(m.getBaseGraph(), p);
         m.imports()
                 .filter(i -> !SpinModels.isTopSpinURI(i.getID().getURI())) // skip spin-top graph to be added then separately
@@ -468,22 +470,6 @@ public class MapManagerImpl implements MapManager, HasConfig {
     }
 
     /**
-     * Returns all numeric datatypes ({@code rdfs:Datatype}) defined in avc.spin.ttl.
-     *
-     * @return Stream of all number datatypes
-     * @see AVC#numeric
-     * @see <a href='https://www.w3.org/TR/sparql11-query/#operandDataTypes'>SPARQL Operand Data Types</a>
-     * @deprecated no need any more
-     */
-    @Deprecated
-    public Stream<OntDT> numberDatatypes() {
-        OntDT res = AVC.numeric.inModel(getLibrary()).as(OntDT.class);
-        OntDR dr = res.equivalentClasses().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Can't find owl:equivalentClass for " + res));
-        return dr.as(OntDR.UnionOf.class).getList().members().map(d -> d.as(OntDT.class));
-    }
-
-    /**
      * Gets a a class-properties map object.
      * The resulting {@link ClassPropertyMap Class-Properties Mapping} is cached object and
      * it is placed directly within the specified model:
@@ -492,31 +478,31 @@ public class MapManagerImpl implements MapManager, HasConfig {
      * Note: this method is used during validation of input arguments,
      * although SPIN-MAP API allows perform mapping even for properties which is not belonged to the context class.
      *
-     * @param model {@link OntGraphModel OWL model}
+     * @param model {@link OntModel OWL model}
      * @return {@link ClassPropertyMap mapping}
      * @see ClassPropertyMapListener
      */
     @Override
-    public ClassPropertyMap getClassProperties(OntGraphModel model) {
-        Stream<OntGraphModel> models = relatedModels(model);
+    public ClassPropertyMap getClassProperties(OntModel model) {
+        Stream<OntModel> models = relatedModels(model);
         List<ClassPropertyMap> maps = models
                 .map(m -> ClassPropertyMapListener.getCachedClassPropertyMap((UnionGraph) m.getGraph(),
                         () -> new LocalClassPropertyMapImpl(m, model)))
                 .collect(Collectors.toList());
         return new ClassPropertyMap() {
             @Override
-            public Stream<Property> properties(OntCE ce) {
+            public Stream<Property> properties(OntClass ce) {
                 return maps.stream().flatMap(m -> m.properties(ce)).distinct();
             }
 
             @Override
-            public Stream<OntCE> classes(OntPE pe) {
+            public Stream<OntClass> classes(OntProperty pe) {
                 return maps.stream().flatMap(m -> m.classes(pe)).distinct();
             }
         };
     }
 
-    public Stream<OntGraphModel> relatedModels(OntGraphModel model) {
+    public Stream<OntModel> relatedModels(OntModel model) {
         return (model instanceof MapModel ? ((MapModel) model).ontologies() : Stream.of(model))
                 .flatMap(OntModels::importsClosure);
     }

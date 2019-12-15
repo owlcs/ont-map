@@ -51,8 +51,8 @@ public class IntersectConcatMapTest extends MapTestData4 {
     @Test
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
+        OntModel src = assembleSource();
+        OntModel dst = assembleTarget();
 
         MapManager manager = manager();
         MapModel map = assembleMapping(manager, src, dst);
@@ -66,17 +66,17 @@ public class IntersectConcatMapTest extends MapTestData4 {
         validate(map, src, dst);
     }
 
-    void validate(MapModel map, OntGraphModel src, OntGraphModel dst) {
+    void validate(MapModel map, OntModel src, OntModel dst) {
         PrefixMapping pm = map.asGraphModel();
         dst.namedIndividuals()
                 .flatMap(OntIndividual::positiveAssertions)
                 .sorted(Comparator.comparing((Statement s) -> s.getPredicate().getURI()).thenComparing(s -> s.getSubject().getURI()))
                 .forEach(a -> LOGGER.debug("Assertion: {}", TestUtils.toString(pm, a)));
         // number of source and target individuals are the same:
-        OntClass persons = TestUtils.findOntEntity(src, OntClass.class, "persons");
+        OntClass persons = TestUtils.findOntEntity(src, OntClass.Named.class, "persons");
         Assert.assertEquals(persons.individuals().count(), dst.individuals().count());
         // have 5 data property assertions for address (two of them on the same individual):
-        OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
+        OntDataProperty userAddress = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-address");
         Set<String> addresses = dst.statements(null, userAddress, null)
                 .map(Statement::getObject)
                 .map(RDFNode::asLiteral)
@@ -89,18 +89,18 @@ public class IntersectConcatMapTest extends MapTestData4 {
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass persons = TestUtils.findOntEntity(src, OntClass.class, "persons");
-        OntClass organizations = TestUtils.findOntEntity(src, OntClass.class, "organizations");
-        OntClass users = TestUtils.findOntEntity(dst, OntClass.class, "User");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass persons = TestUtils.findOntEntity(src, OntClass.Named.class, "persons");
+        OntClass organizations = TestUtils.findOntEntity(src, OntClass.Named.class, "organizations");
+        OntClass users = TestUtils.findOntEntity(dst, OntClass.Named.class, "User");
 
-        OntNOP personOrganization = TestUtils.findOntEntity(src, OntNOP.class, "rel_person_organization");
-        OntNDP personAddress = TestUtils.findOntEntity(src, OntNDP.class, "persons_Address");
-        OntNDP personsFirstName = TestUtils.findOntEntity(src, OntNDP.class, "persons_FirstName");
-        OntNDP organizationsAddress = TestUtils.findOntEntity(src, OntNDP.class, "organizations_Address");
+        OntObjectProperty.Named personOrganization = TestUtils.findOntEntity(src, OntObjectProperty.Named.class, "rel_person_organization");
+        OntDataProperty personAddress = TestUtils.findOntEntity(src, OntDataProperty.class, "persons_Address");
+        OntDataProperty personsFirstName = TestUtils.findOntEntity(src, OntDataProperty.class, "persons_FirstName");
+        OntDataProperty organizationsAddress = TestUtils.findOntEntity(src, OntDataProperty.class, "organizations_Address");
 
-        OntNDP userAddress = TestUtils.findOntEntity(dst, OntNDP.class, "user-address");
-        OntNDP userName = TestUtils.findOntEntity(dst, OntNDP.class, "user-name");
+        OntDataProperty userAddress = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-address");
+        OntDataProperty userName = TestUtils.findOntEntity(dst, OntDataProperty.class, "user-name");
 
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI.getURI());
         MapFunction equals = manager.getFunction(SPINMAP.equals.getURI());

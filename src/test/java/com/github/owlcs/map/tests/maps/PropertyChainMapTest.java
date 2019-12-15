@@ -48,8 +48,8 @@ public class PropertyChainMapTest extends MapTestData6 {
     @Test
     public void testInference() {
         LOGGER.info("Assembly models.");
-        OntGraphModel src = assembleSource();
-        OntGraphModel dst = assembleTarget();
+        OntModel src = assembleSource();
+        OntModel dst = assembleTarget();
         TestUtils.debug(src);
 
         MapManager manager = manager();
@@ -65,7 +65,7 @@ public class PropertyChainMapTest extends MapTestData6 {
         validate(dst);
     }
 
-    public void validate(OntGraphModel dst) {
+    public void validate(OntModel dst) {
         Assert.assertEquals(3, dst.individuals().count());
         validateIndividual(dst, SHIP_1_NAME, SHIP_1_COORDINATES);
         validateIndividual(dst, SHIP_2_NAME, SHIP_2_COORDINATES);
@@ -73,31 +73,31 @@ public class PropertyChainMapTest extends MapTestData6 {
         commonValidate(dst);
     }
 
-    private static void validateIndividual(OntGraphModel m, String name, double[] coordinates) {
+    private static void validateIndividual(OntModel m, String name, double[] coordinates) {
         String s = "res-" + name.toLowerCase().replace(" ", "-");
         LOGGER.debug("Validate '{}'", s);
         OntIndividual.Named i = TestUtils.findOntEntity(m, OntIndividual.Named.class, s);
         List<OntStatement> assertions = i.positiveAssertions().collect(Collectors.toList());
         Assert.assertEquals("<" + m.shortForm(i.getURI()) + ">: wrong assertion number", 2, assertions.size());
-        OntNDP nameProp = TestUtils.findOntEntity(m, OntNDP.class, "name");
-        OntNDP messageProp = TestUtils.findOntEntity(m, OntNDP.class, "message");
+        OntDataProperty nameProp = TestUtils.findOntEntity(m, OntDataProperty.class, "name");
+        OntDataProperty messageProp = TestUtils.findOntEntity(m, OntDataProperty.class, "message");
         Assert.assertEquals(name, TestUtils.getStringValue(i, nameProp));
         String expected = Arrays.stream(coordinates).mapToObj(String::valueOf).collect(Collectors.joining("-"));
         Assert.assertEquals(expected, TestUtils.getStringValue(i, messageProp));
     }
 
     @Override
-    public MapModel assembleMapping(MapManager manager, OntGraphModel src, OntGraphModel dst) {
-        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.class, "CDSPR_D00001");
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000011");
-        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000005");
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.class, "CCPAS_000006");
-        OntNOP OASUU = TestUtils.findOntEntity(src, OntNOP.class, "OASUU");
-        OntNDP DEUUU = TestUtils.findOntEntity(src, OntNDP.class, "DEUUU");
+    public MapModel assembleMapping(MapManager manager, OntModel src, OntModel dst) {
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(src, OntClass.Named.class, "CDSPR_D00001");
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000011");
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000005");
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(src, OntClass.Named.class, "CCPAS_000006");
+        OntObjectProperty.Named OASUU = TestUtils.findOntEntity(src, OntObjectProperty.Named.class, "OASUU");
+        OntDataProperty DEUUU = TestUtils.findOntEntity(src, OntDataProperty.class, "DEUUU");
 
-        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.class, "Res");
-        OntNDP nameProp = TestUtils.findOntEntity(dst, OntNDP.class, "name");
-        OntNDP messageProp = TestUtils.findOntEntity(dst, OntNDP.class, "message");
+        OntClass resClass = TestUtils.findOntEntity(dst, OntClass.Named.class, "Res");
+        OntDataProperty nameProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "name");
+        OntDataProperty messageProp = TestUtils.findOntEntity(dst, OntDataProperty.class, "message");
 
         MapFunction composeURI = manager.getFunction(SPINMAPL.composeURI);
         MapFunction concatWithSeparator = manager.getFunction(SPINMAPL.concatWithSeparator);
@@ -149,12 +149,12 @@ public class PropertyChainMapTest extends MapTestData6 {
     }
 
     @Override
-    public OntGraphModel assembleSource() {
-        OntGraphModel m = super.assembleSource();
-        OntNOP OAGUU = TestUtils.findOntEntity(m, OntNOP.class, "OAGUU");
-        OntNOP OAHUU = TestUtils.findOntEntity(m, OntNOP.class, "OAHUU");
-        OntNOP OASUU = m.createOntEntity(OntNOP.class, m.expandPrefix("ex:OASUU"));
-        OASUU.addSuperProperty(m.getOntEntity(OntNOP.class, OWL.topObjectProperty)).setTransitive(true);
+    public OntModel assembleSource() {
+        OntModel m = super.assembleSource();
+        OntObjectProperty.Named OAGUU = TestUtils.findOntEntity(m, OntObjectProperty.Named.class, "OAGUU");
+        OntObjectProperty.Named OAHUU = TestUtils.findOntEntity(m, OntObjectProperty.Named.class, "OAHUU");
+        OntObjectProperty.Named OASUU = m.createOntEntity(OntObjectProperty.Named.class, m.expandPrefix("ex:OASUU"));
+        OASUU.addSuperProperty(m.getOntEntity(OntObjectProperty.Named.class, OWL.topObjectProperty)).setTransitive(true);
         // add property chain relationship:
         OASUU.addPropertyChain(OAGUU, OAHUU);
         addDataIndividual(m, SHIP_1_NAME, SHIP_1_COORDINATES);
@@ -163,13 +163,13 @@ public class PropertyChainMapTest extends MapTestData6 {
         return m;
     }
 
-    public static void addDataIndividual(OntGraphModel m, String shipName, double[] coordinates) {
-        OntNOP OASUU = TestUtils.findOntEntity(m, OntNOP.class, "OASUU");
-        OntNDP DEUUU = TestUtils.findOntEntity(m, OntNDP.class, "DEUUU");
-        OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.class, "CDSPR_D00001");
-        OntClass CCPAS_000005 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000005"); // Latitude
-        OntClass CCPAS_000006 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000006"); // Longitude
-        OntClass CCPAS_000011 = TestUtils.findOntEntity(m, OntClass.class, "CCPAS_000011"); // Name
+    public static void addDataIndividual(OntModel m, String shipName, double[] coordinates) {
+        OntObjectProperty.Named OASUU = TestUtils.findOntEntity(m, OntObjectProperty.Named.class, "OASUU");
+        OntDataProperty DEUUU = TestUtils.findOntEntity(m, OntDataProperty.class, "DEUUU");
+        OntClass CDSPR_D00001 = TestUtils.findOntEntity(m, OntClass.Named.class, "CDSPR_D00001");
+        OntClass CCPAS_000005 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000005"); // Latitude
+        OntClass CCPAS_000006 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000006"); // Longitude
+        OntClass CCPAS_000011 = TestUtils.findOntEntity(m, OntClass.Named.class, "CCPAS_000011"); // Name
         OntIndividual res = CDSPR_D00001.createIndividual(m.expandPrefix("data:" + shipName.toLowerCase().replace(" ", "-")));
         res.addAssertion(OASUU, CCPAS_000005.createIndividual()
                 .addAssertion(DEUUU, m.createLiteral(String.valueOf(coordinates[0]))));

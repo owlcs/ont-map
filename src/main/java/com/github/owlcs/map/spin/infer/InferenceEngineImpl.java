@@ -29,9 +29,9 @@ import com.github.owlcs.map.utils.ModelUtils;
 import com.github.owlcs.ontapi.jena.OntModelFactory;
 import com.github.owlcs.ontapi.jena.UnionGraph;
 import com.github.owlcs.ontapi.jena.impl.UnionModel;
-import com.github.owlcs.ontapi.jena.model.OntCE;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
+import com.github.owlcs.ontapi.jena.model.OntClass;
 import com.github.owlcs.ontapi.jena.model.OntIndividual;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.utils.Graphs;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
@@ -164,7 +164,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
     protected void run(Collection<ProcessedQuery> queries, Graph source, Graph target) {
         Context context = factory.getContext();
         UnionGraph queryGraph = (UnionGraph) (queries.iterator().next().getModel()).getGraph();
-        OntGraphModel src = assembleSourceDataModel(queryGraph, source, target);
+        OntModel src = assembleSourceDataModel(queryGraph, source, target);
         Model dst = ModelFactory.createModelForGraph(target);
         // insets the source data into the query model, if it is absent:
         if (!GraphUtils.containsAll(queryGraph, source)) {
@@ -179,7 +179,7 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
         Map<Node, NodeValue> factoryCache = context.get(MapARQFactory.NODE_TO_VALUE_CACHE);
         // first process all direct individuals from the source graph:
         listIndividuals(src, dst).forEach(i -> {
-            Set<OntCE> classes = i.classes(false).collect(Collectors.toSet());
+            Set<OntClass> classes = i.classes(false).collect(Collectors.toSet());
             Map<String, Set<QueryWrapper>> visited;
             processOne(queries, classes, visited = new HashMap<>(), inMemory, dst, i);
             // in case no enough memory to keep temporary objects, flush individuals set-store immediately:
@@ -201,11 +201,11 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * Warning: in case the source and the target match,
      * the method puts all found individuals to memory to avoid {@link ConcurrentModificationException}.
      *
-     * @param src {@link OntGraphModel}, the source, not {@code null}
+     * @param src {@link OntModel}, the source, not {@code null}
      * @param dst {@link Model}, the target, not {@code null}
      * @return {@code Stream} of {@link OntIndividual}s
      */
-    protected Stream<OntIndividual> listIndividuals(OntGraphModel src, Model dst) {
+    protected Stream<OntIndividual> listIndividuals(OntModel src, Model dst) {
         if (Graphs.isSameBase(src.getBaseGraph(), dst.getGraph())) {
             return src.individuals().collect(Collectors.toList()).stream();
         }
@@ -221,10 +221,10 @@ public class InferenceEngineImpl implements MapManager.InferenceEngine {
      * @param query  {@link UnionGraph}, the query model, not {@code null}
      * @param source {@link Graph}, not {@code null}
      * @param target {@link Graph}, not {@code null}
-     * @return {@link OntGraphModel}, not {@code null}
+     * @return {@link OntModel}, not {@code null}
      * @see #assembleQueryModel()
      */
-    public OntGraphModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
+    public OntModel assembleSourceDataModel(UnionGraph query, Graph source, Graph target) {
         if (GraphUtils.containsAll(query, source)) { // the source contains schema
             return OntModelFactory.createModel(source, SpinModelConfig.ONT_PERSONALITY);
         }

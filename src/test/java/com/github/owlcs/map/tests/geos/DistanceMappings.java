@@ -28,8 +28,8 @@ import com.github.owlcs.map.spin.vocabulary.SPIF;
 import com.github.owlcs.map.spin.vocabulary.SPINMAPL;
 import com.github.owlcs.map.utils.TestUtils;
 import com.github.owlcs.ontapi.jena.model.OntClass;
-import com.github.owlcs.ontapi.jena.model.OntGraphModel;
-import com.github.owlcs.ontapi.jena.model.OntNDP;
+import com.github.owlcs.ontapi.jena.model.OntDataProperty;
+import com.github.owlcs.ontapi.jena.model.OntModel;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.Assert;
 import org.topbraid.spin.vocabulary.SP;
@@ -50,8 +50,8 @@ enum DistanceMappings {
 
         @Override
         MapModel assembleMapping(MapManager manager,
-                                 OntClass city, OntNDP lat, OntNDP lon,
-                                 OntClass pole, OntNDP dis,
+                                 OntClass city, OntDataProperty lat, OntDataProperty lon,
+                                 OntClass pole, OntDataProperty dis,
                                  MapFunction.Call north) {
             MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
             MapFunction distance = manager.getFunction(SPATIAL.distance);
@@ -91,8 +91,8 @@ enum DistanceMappings {
 
         @Override
         MapModel assembleMapping(MapManager manager,
-                                 OntClass city, OntNDP lat, OntNDP lon,
-                                 OntClass pole, OntNDP dis,
+                                 OntClass city, OntDataProperty lat, OntDataProperty lon,
+                                 OntClass pole, OntDataProperty dis,
                                  MapFunction.Call north) {
             MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
             MapFunction distance = manager.getFunction(SPATIAL.distance);
@@ -142,8 +142,8 @@ enum DistanceMappings {
 
         @Override
         MapModel assembleMapping(MapManager manager,
-                                 OntClass city, OntNDP lat, OntNDP lon,
-                                 OntClass pole, OntNDP dis,
+                                 OntClass city, OntDataProperty lat, OntDataProperty lon,
+                                 OntClass pole, OntDataProperty dis,
                                  MapFunction.Call north) {
             MapFunction convertLatLon = manager.getFunction(SPATIAL.convertLatLon);
             MapFunction distance = manager.getFunction(SPATIAL.distance);
@@ -159,9 +159,9 @@ enum DistanceMappings {
                     .getModel();
         }
 
-        void validate(OntGraphModel m) {
-            OntNDP dis = TestUtils.findOntEntity(m, OntNDP.class, getDistanceDataPropertyLocalName());
-            OntClass pole = TestUtils.findOntEntity(m, OntClass.class, PoleDistanceMapTest.POLE_NAME);
+        void validate(OntModel m) {
+            OntDataProperty dis = TestUtils.findOntEntity(m, OntDataProperty.class, getDistanceDataPropertyLocalName());
+            OntClass pole = TestUtils.findOntEntity(m, OntClass.Named.class, PoleDistanceMapTest.POLE_NAME);
             Map<String, Integer> expected = expectedValues();
             pole.individuals().forEach(i -> {
                 Integer ex = expected.get(i.getLocalName());
@@ -176,29 +176,29 @@ enum DistanceMappings {
     abstract Map<String, Integer> expectedValues();
 
     abstract MapModel assembleMapping(MapManager manager,
-                                      OntClass city, OntNDP lat, OntNDP lon,
-                                      OntClass pole, OntNDP dis,
+                                      OntClass city, OntDataProperty lat, OntDataProperty lon,
+                                      OntClass pole, OntDataProperty dis,
                                       MapFunction.Call north);
 
-    OntGraphModel target(Supplier<OntGraphModel> factory) {
+    OntModel target(Supplier<OntModel> factory) {
         return PoleDistanceMapTest.createTarget(factory, getDistanceDataPropertyLocalName());
     }
 
-    MapModel mapping(OntGraphModel source, OntGraphModel target, MapManager manager) {
+    MapModel mapping(OntModel source, OntModel target, MapManager manager) {
         MapFunction.Call north = manager.getFunction(SPATIAL.convertLatLon).create()
                 .addLiteral(SP.arg1, 90d).addLiteral(SP.arg2, 0d).build();
 
-        OntClass city = TestUtils.findOntEntity(source, OntClass.class, PoleDistanceMapTest.CITY_NAME);
-        OntClass pole = TestUtils.findOntEntity(target, OntClass.class, PoleDistanceMapTest.POLE_NAME);
-        OntNDP lat = TestUtils.findOntEntity(source, OntNDP.class, PoleDistanceMapTest.LATITUDE_NAME);
-        OntNDP lon = TestUtils.findOntEntity(source, OntNDP.class, PoleDistanceMapTest.LONGITUDE_NAME);
-        OntNDP dis = TestUtils.findOntEntity(target, OntNDP.class, getDistanceDataPropertyLocalName());
+        OntClass city = TestUtils.findOntEntity(source, OntClass.Named.class, PoleDistanceMapTest.CITY_NAME);
+        OntClass pole = TestUtils.findOntEntity(target, OntClass.Named.class, PoleDistanceMapTest.POLE_NAME);
+        OntDataProperty lat = TestUtils.findOntEntity(source, OntDataProperty.class, PoleDistanceMapTest.LATITUDE_NAME);
+        OntDataProperty lon = TestUtils.findOntEntity(source, OntDataProperty.class, PoleDistanceMapTest.LONGITUDE_NAME);
+        OntDataProperty dis = TestUtils.findOntEntity(target, OntDataProperty.class, getDistanceDataPropertyLocalName());
 
         return assembleMapping(manager, city, lat, lon, pole, dis, north);
     }
 
-    void validate(OntGraphModel m) {
-        OntNDP dis = TestUtils.findOntEntity(m, OntNDP.class, getDistanceDataPropertyLocalName());
+    void validate(OntModel m) {
+        OntDataProperty dis = TestUtils.findOntEntity(m, OntDataProperty.class, getDistanceDataPropertyLocalName());
         expectedValues().forEach((k, v) -> m.listResourcesWithProperty(RDFS.label, k)
                 .mapWith(x -> m.getRequiredProperty(x, dis).getLiteral().getInt())
                 .forEachRemaining(i -> Assert.assertEquals(v, i)));
