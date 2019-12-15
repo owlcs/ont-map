@@ -41,9 +41,9 @@ all needs are already delivered in the mapping graph itself.
 There is an example of such an extension: [ont-map-ext-factorial](https://github.com/sszuev/ont-map-ext-factorial).
 * All functions (i.e. `MapFunction`s) are supplemented with the complete information about arguments and types 
 to be used as elements of constructor in GUI, any inappropriate usage (e.g. incompatible types) causes an error.
-* API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntCE.java), 
-to make contexts references [OWL Object Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntOPE.java) is used, 
-and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntNAP.java) and [OWL Datatype Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntNDP.java) are used.
+* API can work only with OWL2 entities: the context arrow connects two [OWL Class Expressions](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntClass.java), 
+to make contexts references [OWL Object Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntObjectProperty.java) is used, 
+and to map data (make a property bridge in Diagram) [OWL Annotation Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntAnnotationProperty.java) and [OWL Datatype Property](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntDataProperty.java) are used.
 * The mapping inference engine creates [OWL Named Individuals](https://github.com/owlcs/ont-api/blob/master/src/main/java/com/github/owlcs/ontapi/jena/model/OntIndividual.java). 
 Although, anonymous individuals are theoretically possible, 
 currently they are not supported due to SPIN-API limitations related to the target functions.
@@ -58,9 +58,9 @@ which can be used to draw class-boxes with all related properties.
         // get some target-function: 
         MapFunction changeNamespace = manager.getFunction(pm.expandPrefix("spinmapl:changeNamespace"));
         // get the source class from the source schema ontology:
-        OntCE sourceClass = source.getOntEntity(OntCE.class, ...);
+        OntCE sourceClass = source.getOntEntity(OntClass.class, ...);
         // get the target class from the target schema ontology:
-        OntCE targetClass = target.getOntEntity(OntCE.class, ...);
+        OntCE targetClass = target.getOntEntity(OntClass.class, ...);
         // build target function-call:
         String arg = pm.expandPrefix("spinmapl:targetNamespace");
         MapFunction.Call call = changeNamespace.create().add(arg, "http://example.com#").build();
