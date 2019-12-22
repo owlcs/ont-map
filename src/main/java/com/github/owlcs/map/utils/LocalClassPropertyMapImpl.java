@@ -19,11 +19,11 @@
 package com.github.owlcs.map.utils;
 
 import com.github.owlcs.map.ClassPropertyMap;
+import com.github.owlcs.ontapi.jena.OntVocabulary;
 import com.github.owlcs.ontapi.jena.model.OntClass;
 import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntObject;
 import com.github.owlcs.ontapi.jena.model.OntProperty;
-import com.github.owlcs.ontapi.jena.utils.BuiltIn;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 
@@ -42,8 +42,8 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings("WeakerAccess")
 public class LocalClassPropertyMapImpl extends ClassPropertyMapImpl {
-    private static final Set<Property> BUILT_IN_PROPERTIES = BuiltIn.get().properties();
-    private static final Set<Resource> BUILT_IN_CLASSES = BuiltIn.get().classes();
+    private static final Set<Property> BUILT_IN_PROPERTIES = OntVocabulary.Factory.get().getBuiltinOWLProperties();
+    private static final Set<Resource> BUILT_IN_CLASSES = OntVocabulary.Factory.get().getBuiltinClasses();
 
     private final OntModel toSearch;
     private final OntModel model;

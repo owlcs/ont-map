@@ -22,7 +22,6 @@ import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.ontapi.jena.model.OntClass;
 import com.github.owlcs.ontapi.jena.model.OntModel;
 import com.github.owlcs.ontapi.jena.model.OntNamedProperty;
-import com.github.owlcs.ontapi.jena.utils.BuiltIn;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.ResourceFactory;
@@ -387,14 +386,15 @@ public interface MapFunction extends Description {
          * then it is assumed that it is a plain (string) literal,
          * e.g. if you set 'Anything' it would be actually {@code "Anything"^^<http://www.w3.org/2001/XMLSchema#string>}.
          * If some value is already associated with the given {@code predicate}, it will be replaced by the new value.
-         * To list all built-in datatypes the method {@link BuiltIn.Vocabulary#datatypes()} can be used.
+         * To list all built-in datatypes
+         * the method {@link com.github.owlcs.ontapi.jena.OntVocabulary#getBuiltinDatatypes()} can be used.
          * To list all model datatypes the expression {@link OntModel#datatypes()}
          *
          * @param predicate iri ({@link Arg#name()}), not {@code null}
          * @param value     String, value, not {@code null}
          * @return this builder
          * @throws MapJenaException.IllegalArgument if input is wrong
-         * @see BuiltIn#get()
+         * @see com.github.owlcs.ontapi.jena.OntVocabulary.Factory#get()
          */
         Builder add(String predicate, String value) throws MapJenaException.IllegalArgument;
 

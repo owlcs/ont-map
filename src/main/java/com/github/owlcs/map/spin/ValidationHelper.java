@@ -22,8 +22,8 @@ import com.github.owlcs.map.MapFunction;
 import com.github.owlcs.map.MapJenaException;
 import com.github.owlcs.map.spin.vocabulary.AVC;
 import com.github.owlcs.map.utils.ModelUtils;
+import com.github.owlcs.ontapi.jena.OntVocabulary;
 import com.github.owlcs.ontapi.jena.model.*;
-import com.github.owlcs.ontapi.jena.utils.BuiltIn;
 import com.github.owlcs.ontapi.jena.utils.Iter;
 import com.github.owlcs.ontapi.jena.vocabulary.OWL;
 import com.github.owlcs.ontapi.jena.vocabulary.RDF;
@@ -255,7 +255,7 @@ public class ValidationHelper {
                 }
                 if (value.isURIResource()) {
                     //noinspection SuspiciousMethodCalls
-                    if (BuiltIn.get().reservedProperties().contains(value))
+                    if (OntVocabulary.Factory.get().getSystemProperties().contains(value))
                         return;
                     if (value.canAs(OntProperty.class))
                         return;
