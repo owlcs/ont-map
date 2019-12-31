@@ -24,6 +24,7 @@ import com.github.owlcs.map.spin.SpinModels;
 import com.github.owlcs.map.spin.system.SystemLibraries;
 import com.github.owlcs.ontapi.*;
 import com.github.owlcs.ontapi.jena.utils.Graphs;
+import com.github.owlcs.ontapi.transforms.GraphFilter;
 import com.github.owlcs.ontapi.transforms.GraphTransformers;
 import org.apache.jena.graph.Factory;
 import org.apache.jena.graph.Graph;
@@ -66,7 +67,7 @@ public class Managers {
      * The filter to skip transformations on system library graphs (from {@code file://resources/etc})
      * and on any incoming spin-rdf mapping file.
      */
-    public static final GraphTransformers.Filter TRANSFORM_FILTER = g -> {
+    public static final GraphFilter TRANSFORM_FILTER = g -> {
         if (SystemLibraries.graphs().containsKey(Graphs.getURI(g))) return false;
         return Graphs.getImports(g).stream().noneMatch(SpinModels::isTopSpinURI);
     };
@@ -134,8 +135,8 @@ public class Managers {
         res.getOntologyStorers().set(OWLLangRegistry.storerFactories().collect(Collectors.toSet()));
         res.getOntologyParsers().set(OWLLangRegistry.parserFactories().collect(Collectors.toSet()));
         res.getDocumentSourceMappers().set(MAP_RESOURCES_MAPPING);
-        GraphTransformers.Store store = res.getOntologyConfigurator().getGraphTransformers();
-        res.getOntologyConfigurator().setGraphTransformers(store.addFilter(TRANSFORM_FILTER));
+        GraphTransformers store = res.getOntologyConfigurator().getGraphTransformers();
+        res.getOntologyConfigurator().setGraphTransformers(store.setFilter(TRANSFORM_FILTER));
         return res;
     }
 
