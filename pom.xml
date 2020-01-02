@@ -2,7 +2,7 @@
 <!--
   ~ This file is part of the ONT MAP.
   ~ The contents of this file are subject to the Apache License, Version 2.0.
-  ~ Copyright (c) 2019, The University of Manchester, owl.cs group.
+  ~ Copyright (c) 2020, The University of Manchester, owl.cs group.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -54,8 +54,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <version.jena>3.13.1</version.jena>
-        <version.ontapi>2.0.0-SNAPSHOT</version.ontapi>
-        <version.slf4j>1.7.29</version.slf4j>
+        <version.ontapi>2.0.0</version.ontapi>
+        <version.slf4j>1.7.30</version.slf4j>
         <version.caffeine>2.8.0</version.caffeine>
     </properties>
 
